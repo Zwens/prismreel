@@ -29,6 +29,15 @@ _VOICINGS = {
 DURATION_S = 60
 OUT_DIR = os.path.join("output", "presets", "bgm")
 
+# Placeholder loudness. These files exist so a human can confirm BY EAR that a
+# render actually picked up background music, so they must sit at a realistic
+# music-bed level. The render chain attenuates them again by the mix's bgm
+# level (default 35% ≈ -9 dB), and loudnorm in the final pass rescales the
+# whole programme without changing the BGM-to-dialogue ratio — so anything
+# mixed too quiet here stays inaudible under dialogue no matter what follows.
+# Target a measured peak of roughly -16..-12 dBFS; verify, do not assume.
+GAIN = 1.6
+
 
 def main() -> int:
     ff = get_ffmpeg_path()
@@ -48,7 +57,7 @@ def main() -> int:
             f"sine=frequency={fifth}:duration={DURATION_S}[c];"
             f"[a][b][c]amix=inputs=3:duration=longest,"
             f"tremolo=f={trem}:d=0.6,"
-            f"volume=0.25,"
+            f"volume={GAIN},"
             f"afade=t=in:st=0:d=2,afade=t=out:st={DURATION_S - 2}:d=2[out]"
         )
         cmd = [
