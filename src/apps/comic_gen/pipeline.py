@@ -16,6 +16,7 @@ from .video import VideoGenerator
 from .audio import AudioGenerator
 from .export import ExportManager
 from ...utils import get_logger
+from ...utils.atomic_json import DataCorruptionError, atomic_write_json, load_json_strict
 from ...utils.oss_utils import is_object_key
 from ...utils.provider_registry import resolve_provider_backend
 from ...utils.system_check import get_ffmpeg_path, get_ffmpeg_install_instructions
@@ -386,23 +387,19 @@ class ComicGenPipeline:
         return self.scripts.get(script_id)
 
     def _load_data(self) -> Dict[str, Script]:
-        if not os.path.exists(self.data_file):
+        data = load_json_strict(self.data_file)
+        if data is None:
             return {}
-        try:
-            with open(self.data_file, 'r') as f:
-                data = json.load(f)
-                return {k: Script(**v) for k, v in data.items()}
-        except Exception as e:
-            logger.error(f"Failed to load data: {e}")
-            return {}
+        return {k: Script(**v) for k, v in data.items()}
 
     def _save_data(self):
         """Save data with thread lock to prevent concurrent write issues."""
         with self._save_lock:
             try:
-                os.makedirs(os.path.dirname(self.data_file), exist_ok=True)
-                with open(self.data_file, 'w') as f:
-                    json.dump({k: v.dict() for k, v in self.scripts.items()}, f, indent=2)
+                atomic_write_json(
+                    self.data_file,
+                    {k: v.model_dump() for k, v in self.scripts.items()},
+                )
             except Exception as e:
                 logger.error(f"Failed to save data: {e}")
 
@@ -3871,22 +3868,18 @@ class ComicGenPipeline:
     # ============================================================
 
     def _load_series_data(self) -> Dict[str, Series]:
-        if not os.path.exists(self.series_data_file):
+        data = load_json_strict(self.series_data_file)
+        if data is None:
             return {}
-        try:
-            with open(self.series_data_file, 'r') as f:
-                data = json.load(f)
-                return {k: Series(**v) for k, v in data.items()}
-        except Exception as e:
-            logger.error(f"Failed to load series data: {e}")
-            return {}
+        return {k: Series(**v) for k, v in data.items()}
 
     def _save_series_data_unlocked(self):
         """Save series data without acquiring the lock (caller must hold self._save_lock)."""
         try:
-            os.makedirs(os.path.dirname(self.series_data_file) or ".", exist_ok=True)
-            with open(self.series_data_file, 'w') as f:
-                json.dump({k: v.model_dump() for k, v in self.series_store.items()}, f, indent=2)
+            atomic_write_json(
+                self.series_data_file,
+                {k: v.model_dump() for k, v in self.series_store.items()},
+            )
         except Exception as e:
             logger.error(f"Failed to save series data: {e}")
 
@@ -3900,22 +3893,15 @@ class ComicGenPipeline:
     # ============================================================
 
     def _load_library_data(self) -> GlobalAssetLibrary:
-        if not os.path.exists(self.library_data_file):
+        data = load_json_strict(self.library_data_file)
+        if data is None:
             return GlobalAssetLibrary()
-        try:
-            with open(self.library_data_file, 'r') as f:
-                data = json.load(f)
-                return GlobalAssetLibrary(**data)
-        except Exception as e:
-            logger.error(f"Failed to load library data: {e}")
-            return GlobalAssetLibrary()
+        return GlobalAssetLibrary(**data)
 
     def _save_library_data_unlocked(self):
         """Save global library data without acquiring the lock (caller must hold self._save_lock)."""
         try:
-            os.makedirs(os.path.dirname(self.library_data_file) or ".", exist_ok=True)
-            with open(self.library_data_file, 'w') as f:
-                json.dump(self.library_store.model_dump(), f, indent=2)
+            atomic_write_json(self.library_data_file, self.library_store.model_dump())
         except Exception as e:
             logger.error(f"Failed to save library data: {e}")
 

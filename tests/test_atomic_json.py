@@ -79,3 +79,24 @@ def test_creates_parent_dir(tmp_path):
     p = str(tmp_path / "deep" / "nested" / "d.json")
     atomic_write_json(p, {"v": 1})
     assert load_json_strict(p) == {"v": 1}
+
+
+def test_pipeline_refuses_to_start_on_corrupt_store(tmp_path, monkeypatch):
+    """回归 B1：损坏的 projects.json 必须让启动失败，而不是静默清空。"""
+    from src.apps.comic_gen.pipeline import ComicGenPipeline
+
+    monkeypatch.chdir(tmp_path)
+    os.makedirs("output", exist_ok=True)
+    with open("output/projects.json", "w", encoding="utf-8") as f:
+        f.write('{"proj-1": {"id": "proj-1", ')  # 截断，模拟写到一半被杀
+
+    with pytest.raises(DataCorruptionError):
+        ComicGenPipeline()
+
+
+def test_pipeline_starts_clean_when_no_store(tmp_path, monkeypatch):
+    from src.apps.comic_gen.pipeline import ComicGenPipeline
+
+    monkeypatch.chdir(tmp_path)
+    p = ComicGenPipeline()
+    assert p.scripts == {}
