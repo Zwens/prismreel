@@ -48,35 +48,70 @@ def collect_render_segments(
     *,
     resolve: Callable[[str], str],
     probe: Callable[[str], float] = probe_duration,
+    exists: Callable[[str], bool] = os.path.exists,
 ) -> List[RenderSegment]:
     """Pick the video for each frame and measure it.
 
-    Mirrors the selection precedence already used by merge_videos:
-    dubbed video > explicitly selected take > first completed take.
-    Frames with no usable video are skipped, exactly as before.
+    This is the single source of truth for "which video does this shot
+    use" — merge_videos's own concat-list construction must call this
+    instead of keeping a second copy of the selection logic. Two
+    implementations of the same selection rule can only drift apart; a
+    dangling reference resolved one way for the video and another way for
+    the subtitle timeline desyncs every cue after it.
+
+    Selection precedence, exactly mirroring the old inline loop in
+    merge_videos: dubbed video (if the file exists) > explicitly selected
+    take (if it resolves to a real task with a url) > first completed
+    take. A frame whose selected_video_id points at nothing is skipped —
+    it is NOT silently replaced by some other take, because that would
+    give the subtitle timeline one more shot than the concatenated video
+    actually has.
 
     `resolve` maps a stored relative url to an absolute filesystem path
-    (production passes _safe_resolve_path bound to "output").
+    (production passes _safe_resolve_path bound to "output"). `exists`
+    checks whether that resolved path is present on disk (production
+    passes os.path.exists; tests override it since they use fake paths).
     """
     segments: List[RenderSegment] = []
 
     for frame in script.frames:
         url = None
+
         if frame.dubbed_video_url:
-            url = frame.dubbed_video_url
-        elif frame.selected_video_id:
-            task = next((t for t in script.video_tasks if t.id == frame.selected_video_id), None)
-            url = task.video_url if task else None
-        if not url:
-            task = next(
-                (
-                    t
-                    for t in script.video_tasks
-                    if t.frame_id == frame.id and t.status == "completed" and t.video_url
-                ),
-                None,
-            )
-            url = task.video_url if task else None
+            candidate = resolve(frame.dubbed_video_url)
+            if exists(candidate):
+                url = frame.dubbed_video_url
+            else:
+                logger.warning(
+                    f"[RENDER] frame {frame.id}: dubbed video missing "
+                    f"({candidate}); falling back to a take"
+                )
+
+        if url is None:
+            if not frame.selected_video_id:
+                task = next(
+                    (
+                        t
+                        for t in script.video_tasks
+                        if t.frame_id == frame.id and t.status == "completed" and t.video_url
+                    ),
+                    None,
+                )
+                url = task.video_url if task else None
+            else:
+                task = next(
+                    (t for t in script.video_tasks if t.id == frame.selected_video_id), None
+                )
+                # A dangling selected_video_id skips the shot; it is NOT
+                # silently replaced by some other take. Substituting here
+                # would give the subtitle timeline one more shot than the
+                # concatenated video has, desyncing everything after it.
+                url = task.video_url if (task and task.video_url) else None
+                if url is None:
+                    logger.warning(
+                        f"[RENDER] frame {frame.id}: selected video "
+                        f"{frame.selected_video_id} not found or has no URL"
+                    )
 
         if not url:
             logger.debug(f"[RENDER] frame {frame.id}: no usable video, skipping")

@@ -2830,64 +2830,49 @@ class ComicGenPipeline:
         except Exception as e:
             logger.warning(f"[MERGE] Could not get FFmpeg version: {e}")
             
-        # Collect video paths
-        video_paths = []
-        for i, frame in enumerate(script.frames):
-            logger.info(f"[MERGE] Processing frame {i+1}/{len(script.frames)}: {frame.id}")
+        # Collect video paths. collect_render_segments is the single source
+        # of truth for "which video does this shot use" — it is also what
+        # RenderEngine's subtitle timeline is built from below, so selecting
+        # here and selecting there must not be two different computations
+        # (that was the bug: a shot present in one list and absent from the
+        # other silently desyncs every subtitle cue after it).
+        segments = collect_render_segments(
+            script,
+            resolve=lambda u: _safe_resolve_path("output", u),
+        )
 
-            # Prefer dubbed version (TTS audio already overlaid with lip-sync offset)
-            if frame.dubbed_video_url:
-                dubbed_path = _safe_resolve_path("output", frame.dubbed_video_url)
-                if os.path.exists(dubbed_path):
-                    logger.debug(f"[MERGE]   -> Using dubbed video: {frame.dubbed_video_url}")
-                    video_paths.append(frame.dubbed_video_url)
-                    continue
-                else:
-                    logger.warning(f"[MERGE]   -> Dubbed video file missing: {dubbed_path}, falling back")
-
-            if not frame.selected_video_id:
-                # Try to find a default completed video
-                default_video = next((v for v in script.video_tasks if v.frame_id == frame.id and v.status == "completed"), None)
-                if default_video and default_video.video_url:
-                    logger.debug(f"[MERGE]   -> Using default video: {default_video.video_url}")
-                    video_paths.append(default_video.video_url)
-                else:
-                    logger.warning(f"[MERGE]   -> No video selected or available, skipping")
-                continue
-                
-            video = next((v for v in script.video_tasks if v.id == frame.selected_video_id), None)
-            if video and video.video_url:
-                logger.debug(f"[MERGE]   -> Selected video: {video.video_url}")
-                video_paths.append(video.video_url)
-            else:
-                logger.warning(f"[MERGE]   -> Selected video {frame.selected_video_id} not found or has no URL")
-                
-        if not video_paths:
+        if not segments:
             logger.error("[MERGE] No videos found to merge!")
             raise ValueError("No videos selected to merge. Please select videos for each frame first.")
-        
-        logger.info(f"[MERGE] Found {len(video_paths)} videos to merge")
-            
-        # Create file list for ffmpeg
-        list_path = _safe_resolve_path("output", f"merge_list_{script_id}.txt")
-        abs_video_paths = []
 
-        with open(list_path, "w") as f:
-            for path in video_paths:
-                # Resolve to absolute path
-                if not path.startswith("http"):
-                    abs_path = _safe_resolve_path("output", path)
-                    if os.path.exists(abs_path):
-                        f.write(f"file '{abs_path}'\n")
-                        abs_video_paths.append(abs_path)
-                        logger.debug(f"[MERGE] Added to list: {abs_path}")
-                    else:
-                        logger.warning(f"[MERGE] Video file not found: {abs_path}")
-                        
+        logger.info(f"[MERGE] Found {len(segments)} videos to merge")
+
+        # Create file list for ffmpeg. A segment's video_path can still fail
+        # to exist on disk (e.g. a selected/first-completed take whose file
+        # was deleted after selection — collect_render_segments only checks
+        # existence for the dubbed-video branch), so this existence filter
+        # is kept, exactly mirroring the old per-file os.path.exists() check.
+        # Filtering `segments` itself (not a separate path list) keeps the
+        # concat list and the RenderEngine subtitle timeline in lockstep.
+        list_path = _safe_resolve_path("output", f"merge_list_{script_id}.txt")
+        existing_segments = []
+        for seg in segments:
+            if os.path.exists(seg.video_path):
+                existing_segments.append(seg)
+            else:
+                logger.warning(f"[MERGE] Video file not found: {seg.video_path}")
+        segments = existing_segments
+        abs_video_paths = [seg.video_path for seg in segments]
+
         if not abs_video_paths:
             logger.error("[MERGE] No valid video files found on disk!")
             raise ValueError("No valid video files found. The video files may have been deleted or moved.")
-        
+
+        with open(list_path, "w") as f:
+            for abs_path in abs_video_paths:
+                f.write(f"file '{abs_path}'\n")
+                logger.debug(f"[MERGE] Added to list: {abs_path}")
+
         logger.info(f"[MERGE] Merge list created with {len(abs_video_paths)} videos")
 
         # Output path
@@ -2945,12 +2930,10 @@ class ComicGenPipeline:
 
             # V-1 · Pass 2: audio chain (ducking + loudnorm) + subtitle burn.
             # Replaces the old BGM-only mux. Any failure here is non-fatal —
-            # the concat output stays usable.
+            # the concat output stays usable. Reuses the same `segments`
+            # used to build the concat list above — one selection, shared by
+            # both the video and the subtitle timeline.
             try:
-                segments = collect_render_segments(
-                    script,
-                    resolve=lambda u: _safe_resolve_path("output", u),
-                )
                 bgm_abs = None
                 if (script.bgm_url or "").strip():
                     bgm_abs = _safe_resolve_path("output", script.bgm_url.strip())

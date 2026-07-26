@@ -54,7 +54,10 @@ def test_prefers_dubbed_video():
     f.selected_video_id = "t1"
     t = _task("t1", "f1", "video/sel.mp4")
     segs = collect_render_segments(
-        _script_with([f], [t]), resolve=lambda u: f"/abs/{u}", probe=lambda p: 3.0
+        _script_with([f], [t]),
+        resolve=lambda u: f"/abs/{u}",
+        probe=lambda p: 3.0,
+        exists=lambda p: True,
     )
     assert len(segs) == 1
     assert segs[0].video_path == "/abs/video/dub.mp4"
@@ -67,14 +70,20 @@ def test_falls_back_to_selected_then_first_completed():
     f2 = _frame("f2")  # 无 selected
     tasks = [_task("t1", "f1", "video/a.mp4"), _task("t2", "f2", "video/b.mp4")]
     segs = collect_render_segments(
-        _script_with([f1, f2], tasks), resolve=lambda u: f"/abs/{u}", probe=lambda p: 2.0
+        _script_with([f1, f2], tasks),
+        resolve=lambda u: f"/abs/{u}",
+        probe=lambda p: 2.0,
+        exists=lambda p: True,
     )
     assert [s.video_path for s in segs] == ["/abs/video/a.mp4", "/abs/video/b.mp4"]
 
 
 def test_frames_without_any_video_are_dropped():
     segs = collect_render_segments(
-        _script_with([_frame("f1")], []), resolve=lambda u: f"/abs/{u}", probe=lambda p: 2.0
+        _script_with([_frame("f1")], []),
+        resolve=lambda u: f"/abs/{u}",
+        probe=lambda p: 2.0,
+        exists=lambda p: True,
     )
     assert segs == []
 
@@ -82,9 +91,44 @@ def test_frames_without_any_video_are_dropped():
 def test_segments_carry_measured_duration():
     f = _frame("f1", dubbed_video_url="video/a.mp4")
     segs = collect_render_segments(
-        _script_with([f], []), resolve=lambda u: f"/abs/{u}", probe=lambda p: 4.25
+        _script_with([f], []),
+        resolve=lambda u: f"/abs/{u}",
+        probe=lambda p: 4.25,
+        exists=lambda p: True,
     )
     assert segs[0].duration_s == pytest.approx(4.25)
+
+
+def test_dubbed_video_missing_falls_back_to_take():
+    """回归发现 (1)：dubbed_video_url 指向的文件在磁盘上不存在时，必须
+    像 merge_videos 一样退回到 take，而不是继续用那条不存在的路径
+    （否则 probe 会失败 -> duration=0.0 -> 字幕被整集禁用）。"""
+    f = _frame("f1", dubbed_video_url="video/dub.mp4")
+    t = _task("t1", "f1", "video/take.mp4")
+    segs = collect_render_segments(
+        _script_with([f], [t]),
+        resolve=lambda u: f"/abs/{u}",
+        probe=lambda p: 2.0,
+        exists=lambda p: p != "/abs/video/dub.mp4",
+    )
+    assert len(segs) == 1
+    assert segs[0].video_path == "/abs/video/take.mp4"
+
+
+def test_dangling_selected_video_id_is_skipped_not_substituted():
+    """回归发现 (2)：selected_video_id 指向不存在的 task 时，merge_videos
+    直接跳过该镜头；collect_render_segments 必须一致，不能替换成别的
+    take —— 否则字幕时间线比实际拼接的视频多出一镜，后续全部字幕错位。"""
+    f = _frame("f1")
+    f.selected_video_id = "does-not-exist"
+    other_task = _task("t2", "f1", "video/other.mp4")
+    segs = collect_render_segments(
+        _script_with([f], [other_task]),
+        resolve=lambda u: f"/abs/{u}",
+        probe=lambda p: 2.0,
+        exists=lambda p: True,
+    )
+    assert segs == []
 
 
 @requires_ffmpeg
