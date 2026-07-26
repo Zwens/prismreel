@@ -23,7 +23,7 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from typing import Optional, Dict, List, Any
 import asyncio
 import re
@@ -3025,6 +3025,12 @@ def update_subtitle_settings(script_id: str, request: UpdateSubtitleSettingsRequ
             detail=f"Unknown template '{request.template_id}'. "
             f"Available: {sorted(SUBTITLE_TEMPLATES)}",
         )
+
+    # Build the settings OUTSIDE the not-found handler below. pydantic's
+    # ValidationError subclasses ValueError, so constructing inside that
+    # `except ValueError -> 404` would report a bad style_override on a
+    # perfectly existing project as "project not found" — sending the UI to
+    # a missing-project state instead of showing a field error.
     try:
         settings = SubtitleSettings(
             enabled=request.enabled,
@@ -3033,6 +3039,10 @@ def update_subtitle_settings(script_id: str, request: UpdateSubtitleSettingsRequ
                 SubtitleStyle(**request.style_override) if request.style_override else None
             ),
         )
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid subtitle style: {e}")
+
+    try:
         script = pipeline.update_subtitle_settings(script_id, settings)
         return signed_response(script)
     except ValueError as e:
