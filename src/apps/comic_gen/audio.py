@@ -32,10 +32,29 @@ BGM_PRESETS: List[Dict[str, Any]] = [
 ]
 
 
+def _bgm_abs_path(rel_url: str) -> str:
+    """Preset urls are relative to output/, e.g. 'presets/bgm/calm_warm.mp3'."""
+    return os.path.join("output", rel_url)
+
+
+def verify_bgm_assets() -> List[str]:
+    """Return the relative urls of presets whose audio file is missing.
+
+    The catalog and the mux implementation (pipeline._maybe_apply_bgm_mux)
+    have always been complete; only the audio files were never shipped, so
+    every export came out silent while the code logged at INFO and moved on.
+    Surfacing the gap loudly is the whole point of this function.
+    """
+    return [p["url"] for p in BGM_PRESETS if not os.path.exists(_bgm_abs_path(p["url"]))]
+
+
 def get_bgm_presets() -> List[Dict[str, Any]]:
-    """PR-3k · Return BGM preset list. UI displays these in the Mix phase
-    picker; selected entry's url is stored on Script.bgm_url."""
-    return list(BGM_PRESETS)
+    """PR-3k · Return BGM preset list with per-entry availability.
+
+    UI displays these in the Mix phase picker; selected entry's url is
+    stored on Script.bgm_url.
+    """
+    return [{**p, "available": os.path.exists(_bgm_abs_path(p["url"]))} for p in BGM_PRESETS]
 
 
 def _effective_dialogue_text(frame: StoryboardFrame) -> str:

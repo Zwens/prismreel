@@ -97,6 +97,20 @@ os.makedirs("output/uploads", exist_ok=True)
 os.makedirs("output/video", exist_ok=True)
 os.makedirs("output/assets", exist_ok=True)
 
+# BGM presets: the mux code path is complete but silently skips when the
+# audio file is absent, which used to make every export silent. Warn loudly.
+try:
+    from .audio import verify_bgm_assets
+
+    _missing_bgm = verify_bgm_assets()
+    if _missing_bgm:
+        logger.warning(
+            f"[STARTUP] {len(_missing_bgm)} BGM preset file(s) missing — "
+            f"exports using them will have no background music: {_missing_bgm}"
+        )
+except Exception as e:  # never block startup on a cosmetic check
+    logger.warning(f"[STARTUP] BGM asset verification skipped: {e}")
+
 # Mount static files with multiple aliases to handle plural/singular inconsistencies
 # Legacy paths in projects.json often use 'outputs/videos' or 'outputs/assets'
 app.mount("/files/outputs/videos", StaticFiles(directory="output/video"), name="files_outputs_videos")

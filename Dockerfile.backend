@@ -18,6 +18,10 @@ COPY src/ src/
 RUN mkdir -p output/uploads output/video output/assets output/storyboard \
     output/audio output/export output/video_inputs output/outputs/videos
 
+# Ship BGM preset audio (see output/presets/bgm/LICENSES.md — currently
+# placeholders; without these files every export with BGM comes out silent).
+COPY output/presets/ output/presets/
+
 # Environment
 ENV NO_PROXY="*.aliyuncs.com,localhost,127.0.0.1"
 ENV no_proxy="*.aliyuncs.com,localhost,127.0.0.1"
