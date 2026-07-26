@@ -132,27 +132,40 @@ def test_dangling_selected_video_id_is_skipped_not_substituted():
 
 
 def test_bad_video_url_is_skipped_not_raised():
-    """回归发现 C：video_url 逃出 output 目录（脏数据/被篡改的项目文件）时，
-    resolve() 必须只丢弃这一镜，不能让整个 collect_render_segments 抛出 ——
-    merge_videos 在 pass 1 之前、任何 try/except 之外调用它，一次未捕获的
-    raise 会让整段导出失败，而不是像以前一样优雅退化成少一镜。用真实的
-    _safe_resolve_path 绑定到 "output"，才能触发真正的 ValueError。"""
+    """回归发现 C：video_url / dubbed_video_url 逃出 output 目录（脏数据/
+    被篡改的项目文件）时，resolve() 必须只丢弃/退化这一镜，不能让整个
+    collect_render_segments 抛出 —— merge_videos 在 pass 1 之前、任何
+    try/except 之外调用它，一次未捕获的 raise 会让整段导出失败。两个
+    resolve() 调用点都要覆盖：dubbed 分支（应退回到 take）和已选 take
+    分支（应跳过该镜）。用真实的 _safe_resolve_path 绑定到 "output"，
+    才能触发真正的 ValueError。"""
     from src.apps.comic_gen.pipeline import _safe_resolve_path
 
-    bad = _frame("f1")
-    bad.selected_video_id = "t1"
-    bad_task = _task("t1", "f1", "../../../../etc/passwd")
+    # dubbed_video_url escapes the base dir but a valid take exists ->
+    # must fall back to the take, not raise.
+    dubbed_bad = _frame("f1", dubbed_video_url="../../../../etc/passwd")
+    dubbed_fallback_task = _task("t1", "f1", "video/f1_take.mp4")
 
-    good = _frame("f2")
-    good.selected_video_id = "t2"
-    good_task = _task("t2", "f2", "video/f2.mp4")
+    # selected_video_id resolves to a task whose video_url escapes the
+    # base dir, with no fallback -> must be skipped, not raise.
+    selected_bad = _frame("f2")
+    selected_bad.selected_video_id = "t2"
+    selected_bad_task = _task("t2", "f2", "../../../../etc/passwd")
+
+    # A normal frame, to prove the render continues past both bad ones.
+    good = _frame("f3")
+    good.selected_video_id = "t3"
+    good_task = _task("t3", "f3", "video/f3.mp4")
 
     segs = collect_render_segments(
-        _script_with([bad, good], [bad_task, good_task]),
+        _script_with(
+            [dubbed_bad, selected_bad, good],
+            [dubbed_fallback_task, selected_bad_task, good_task],
+        ),
         resolve=lambda u: _safe_resolve_path("output", u),
         probe=lambda p: 2.0,
     )
-    assert [s.frame_id for s in segs] == ["f2"]
+    assert [s.frame_id for s in segs] == ["f1", "f3"]
 
 
 @requires_ffmpeg

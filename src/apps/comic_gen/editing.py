@@ -43,6 +43,24 @@ def escape_filter_path(path: str) -> str:
     return path.replace("\\", "/").replace(":", "\\:")
 
 
+def _resolve_or_none(
+    resolve: Callable[[str], str], url: str, frame_id: str, what: str
+) -> Optional[str]:
+    """Resolve a stored url, returning None instead of raising.
+
+    A url that escapes the output directory — corrupted or hand-edited
+    project data — must degrade to dropping one shot, never abort the
+    export. merge_videos calls collect_render_segments before pass 1, so an
+    unguarded raise anywhere in the selection path kills the whole render.
+    Every resolve() call site in this module must go through here.
+    """
+    try:
+        return resolve(url)
+    except Exception as e:
+        logger.warning(f"[RENDER] frame {frame_id}: unusable {what} url {url!r} ({e})")
+        return None
+
+
 def collect_render_segments(
     script: Script,
     *,
@@ -78,13 +96,13 @@ def collect_render_segments(
         url = None
 
         if frame.dubbed_video_url:
-            candidate = resolve(frame.dubbed_video_url)
-            if exists(candidate):
+            candidate = _resolve_or_none(resolve, frame.dubbed_video_url, frame.id, "dubbed")
+            if candidate and exists(candidate):
                 url = frame.dubbed_video_url
             else:
                 logger.warning(
-                    f"[RENDER] frame {frame.id}: dubbed video missing "
-                    f"({candidate}); falling back to a take"
+                    f"[RENDER] frame {frame.id}: dubbed video unusable "
+                    f"({frame.dubbed_video_url}); falling back to a take"
                 )
 
         if url is None:
@@ -117,14 +135,8 @@ def collect_render_segments(
             logger.debug(f"[RENDER] frame {frame.id}: no usable video, skipping")
             continue
 
-        try:
-            abs_path = resolve(url)
-        except Exception as e:
-            # A stored url that escapes the output directory — corrupted or
-            # hand-edited project data — must degrade to dropping one shot,
-            # not abort the export. merge_videos calls this before pass 1,
-            # so an unguarded raise here kills the whole render.
-            logger.warning(f"[RENDER] frame {frame.id}: unusable video url {url!r} ({e}); skipping")
+        abs_path = _resolve_or_none(resolve, url, frame.id, "video")
+        if abs_path is None:
             continue
 
         try:
