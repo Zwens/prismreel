@@ -131,6 +131,30 @@ def test_dangling_selected_video_id_is_skipped_not_substituted():
     assert segs == []
 
 
+def test_bad_video_url_is_skipped_not_raised():
+    """回归发现 C：video_url 逃出 output 目录（脏数据/被篡改的项目文件）时，
+    resolve() 必须只丢弃这一镜，不能让整个 collect_render_segments 抛出 ——
+    merge_videos 在 pass 1 之前、任何 try/except 之外调用它，一次未捕获的
+    raise 会让整段导出失败，而不是像以前一样优雅退化成少一镜。用真实的
+    _safe_resolve_path 绑定到 "output"，才能触发真正的 ValueError。"""
+    from src.apps.comic_gen.pipeline import _safe_resolve_path
+
+    bad = _frame("f1")
+    bad.selected_video_id = "t1"
+    bad_task = _task("t1", "f1", "../../../../etc/passwd")
+
+    good = _frame("f2")
+    good.selected_video_id = "t2"
+    good_task = _task("t2", "f2", "video/f2.mp4")
+
+    segs = collect_render_segments(
+        _script_with([bad, good], [bad_task, good_task]),
+        resolve=lambda u: _safe_resolve_path("output", u),
+        probe=lambda p: 2.0,
+    )
+    assert [s.frame_id for s in segs] == ["f2"]
+
+
 @requires_ffmpeg
 def test_ass_burn_accepted_by_ffmpeg(tmp_path):
     """真跑一次烧录 —— 路径转义写错在单测里看不出来。"""

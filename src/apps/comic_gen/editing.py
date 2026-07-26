@@ -117,7 +117,16 @@ def collect_render_segments(
             logger.debug(f"[RENDER] frame {frame.id}: no usable video, skipping")
             continue
 
-        abs_path = resolve(url)
+        try:
+            abs_path = resolve(url)
+        except Exception as e:
+            # A stored url that escapes the output directory — corrupted or
+            # hand-edited project data — must degrade to dropping one shot,
+            # not abort the export. merge_videos calls this before pass 1,
+            # so an unguarded raise here kills the whole render.
+            logger.warning(f"[RENDER] frame {frame.id}: unusable video url {url!r} ({e}); skipping")
+            continue
+
         try:
             duration = probe(abs_path)
         except Exception as e:
