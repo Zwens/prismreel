@@ -527,10 +527,10 @@ class SubtitleStyle(BaseModel):
     outline_color: str = Field("#000000", description="描边颜色 #RRGGBB")
     outline_width: int = Field(3, description="描边宽度")
     bold: bool = Field(True)
-    alignment: int = Field(2, description="ASS numpad 对齐：2=底部居中, 8=顶部居中, 5=正中")
-    margin_v: int = Field(180, description="垂直边距，避开平台 UI 遮挡区")
-    chars_per_line: int = Field(18, description="每行字数，超出自动换行")
-    max_lines: int = Field(2, description="最大行数，超出截断并加省略号")
+    alignment: int = Field(2, ge=1, le=9, description="ASS numpad 对齐：2=底部居中, 8=顶部居中, 5=正中")
+    margin_v: int = Field(180, ge=0, description="垂直边距，避开平台 UI 遮挡区")
+    chars_per_line: int = Field(18, ge=1, description="每行字数，超出自动换行")
+    max_lines: int = Field(2, ge=1, description="最大行数，超出截断并加省略号")
 
 
 class SubtitleSettings(BaseModel):

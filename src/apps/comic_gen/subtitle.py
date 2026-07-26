@@ -176,22 +176,35 @@ def _ass_time(seconds: float) -> str:
 
 
 def wrap_cjk(text: str, per_line: int, max_lines: int) -> str:
-    """Hard-wrap by character count and join with the ASS line break \\N.
+    """Hard-wrap by character count, joining lines with the ASS break \\N.
+
+    `text` may already contain authored \\N breaks. Each authored line is
+    wrapped independently and the cue as a whole is then capped at
+    max_lines, so an authored break can neither escape wrapping nor
+    multiply the line budget.
 
     CJK has no word boundaries, so counting characters is the correct
     strategy here — a word-based wrapper would never break.
     """
     text = text.strip()
-    if per_line <= 0 or len(text) <= per_line:
+    if per_line <= 0:
         return text
+    # max_lines is user-overridable via SubtitleStyle; 0 would make the
+    # truncation branch index an empty list.
+    max_lines = max(1, max_lines)
 
-    lines = [text[i : i + per_line] for i in range(0, len(text), per_line)]
+    lines: List[str] = []
+    for authored in text.split(r"\N"):
+        if not authored:
+            continue
+        lines.extend(authored[i : i + per_line] for i in range(0, len(authored), per_line))
+
+    if not lines:
+        return text
     if len(lines) > max_lines:
         lines = lines[:max_lines]
-        if len(lines[-1]) >= per_line:
-            lines[-1] = lines[-1][:-1] + "…"
-        else:
-            lines[-1] = lines[-1] + "…"
+        last = lines[-1]
+        lines[-1] = (last[:-1] if len(last) >= per_line else last) + "…"
     return r"\N".join(lines)
 
 
@@ -246,8 +259,10 @@ def render_ass(
     events = []
     for cue in cues:
         text = _escape_ass_text(cue.text).replace("\r\n", "\n").replace("\n", r"\N")
-        if r"\N" not in text:
-            text = wrap_cjk(text, style.chars_per_line, style.max_lines)
+        # Always wrap. wrap_cjk handles authored \N breaks itself — skipping
+        # the call when a break is present would let a long authored line
+        # render unwrapped and overflow the frame.
+        text = wrap_cjk(text, style.chars_per_line, style.max_lines)
         events.append(
             f"Dialogue: 0,{_ass_time(cue.start_s)},{_ass_time(cue.end_s)},"
             f"Default,,0,0,0,,{text}"

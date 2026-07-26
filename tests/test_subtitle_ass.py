@@ -91,3 +91,37 @@ def test_bold_flag_maps_to_minus_one():
     ass = render_ass([], SUBTITLE_TEMPLATES["douyin"], play_res=(1080, 1920))
     style_line = next(ln for ln in ass.splitlines() if ln.startswith("Style:"))
     assert ",-1," in style_line
+
+
+def test_long_segment_after_authored_break_still_wraps():
+    """作者手打了换行、但其中一行很长时，那一行仍必须折行，不能整条跳过换行。"""
+    cues = [SubtitleCue(start_s=0.0, end_s=2.0, text="短\n" + "长" * 60)]
+    ass = render_ass(cues, SUBTITLE_TEMPLATES["douyin"], play_res=(1080, 1920))
+    body = next(ln for ln in ass.splitlines() if ln.startswith("Dialogue:")).split(",,", 1)[1]
+    per_line = SUBTITLE_TEMPLATES["douyin"].chars_per_line
+    assert all(len(seg) <= per_line for seg in body.split(r"\N")[1:])
+
+
+def test_authored_break_does_not_multiply_line_budget():
+    """手打换行不得让总行数突破 max_lines。"""
+    style = SUBTITLE_TEMPLATES["douyin"]
+    out = wrap_cjk("一" * 30 + r"\N" + "二" * 30, style.chars_per_line, style.max_lines)
+    assert out.count(r"\N") == style.max_lines - 1
+
+
+def test_wrap_survives_degenerate_max_lines():
+    """max_lines 可被 style_override 覆盖；0 不得让截断分支索引空列表。"""
+    assert wrap_cjk("一" * 50, 18, 0)  # 不抛异常
+    assert wrap_cjk("一" * 50, 0, 2) == "一" * 50  # per_line<=0 原样返回
+
+
+def test_style_rejects_out_of_range_values():
+    """ge/le 约束把坏值挡在模型层，而不是等到渲染时炸。"""
+    import pytest as _pytest
+    from pydantic import ValidationError
+
+    from src.apps.comic_gen.models import SubtitleStyle
+
+    for bad in ({"max_lines": 0}, {"chars_per_line": 0}, {"alignment": 0}, {"alignment": 10}):
+        with _pytest.raises(ValidationError):
+            SubtitleStyle(**bad)
