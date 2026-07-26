@@ -14,6 +14,7 @@ from .storyboard import StoryboardGenerator
 from .video import VideoGenerator
 from .audio import AudioGenerator
 from .export import ExportManager
+from .editing import RenderEngine, collect_render_segments
 from ...utils import get_logger
 from ...utils.atomic_json import atomic_write_json, load_json_strict
 from ...utils.oss_utils import is_object_key
@@ -2942,22 +2943,36 @@ class ComicGenPipeline:
                 logger.error(f"[MERGE] ❌ Merged video file NOT found at: {output_path}")
                 raise RuntimeError(f"Video merge completed but output file not found: {output_path}")
 
-            # PR-3l · Pass 2: BGM mux. If script.bgm_url is set and the BGM
-            # file exists, overlay it under the existing audio track at the
-            # configured mix level. Dialogue stays on the original track of
-            # the per-frame videos (sound-driven I2V already embedded it);
-            # a future enhancement can swap to per-frame dialogue overlay.
+            # V-1 · Pass 2: audio chain (ducking + loudnorm) + subtitle burn.
+            # Replaces the old BGM-only mux. Any failure here is non-fatal —
+            # the concat output stays usable.
             try:
-                mixed_path = self._maybe_apply_bgm_mux(
-                    script, output_path, ffmpeg_path,
+                segments = collect_render_segments(
+                    script,
+                    resolve=lambda u: _safe_resolve_path("output", u),
                 )
-                if mixed_path:
-                    # Replace the concat output with the mixed one (same filename)
-                    os.replace(mixed_path, output_path)
-                    logger.info(f"[MERGE] ✅ BGM mux applied — final file: {output_filename}")
-            except Exception as bgm_err:
-                # BGM is optional; log + carry on with the silent video
-                logger.warning(f"[MERGE] BGM mux skipped due to error: {bgm_err}")
+                bgm_abs = None
+                if (script.bgm_url or "").strip():
+                    bgm_abs = _safe_resolve_path("output", script.bgm_url.strip())
+                    if not os.path.exists(bgm_abs):
+                        logger.warning(
+                            f"[MERGE/BGM] preset file missing — {bgm_abs}; "
+                            f"rendering without background music"
+                        )
+                        bgm_abs = None
+
+                final_path = RenderEngine().finalize(
+                    script,
+                    output_path,
+                    ffmpeg_path=ffmpeg_path,
+                    segments=segments,
+                    bgm_abs_path=bgm_abs,
+                )
+                if final_path:
+                    os.replace(final_path, output_path)
+                    logger.info(f"[MERGE] ✅ pass 2 applied — final file: {output_filename}")
+            except Exception as post_err:
+                logger.warning(f"[MERGE] pass 2 skipped due to error: {post_err}")
 
             self._save_data()
 
@@ -2983,64 +2998,6 @@ class ComicGenPipeline:
             # Extract user-friendly error message
             user_msg = self._extract_ffmpeg_error_message(stderr_msg, abs_video_paths)
             raise RuntimeError(user_msg)
-    
-    def _maybe_apply_bgm_mux(
-        self,
-        script: Script,
-        video_path: str,
-        ffmpeg_path: str,
-    ) -> Optional[str]:
-        """PR-3l · Overlay BGM at the configured mix level on top of the
-        already-merged video. Returns the path of the new file, or None
-        when no BGM is configured / the file is missing.
-
-        Strategy: 2-input filter — amix the existing video audio (volume =
-        dialogue_level/100) with the looped BGM (volume = bgm_level/100).
-        SFX track will be added in a later pass when SFX files exist.
-        """
-        bgm_rel = (script.bgm_url or "").strip()
-        if not bgm_rel:
-            return None
-        bgm_abs = _safe_resolve_path("output", bgm_rel)
-        if not os.path.exists(bgm_abs):
-            logger.info(f"[MERGE/BGM] preset file missing — {bgm_abs}; skipping mux")
-            return None
-
-        mix = script.mix_settings or {"dialogue": 100, "bgm": 35, "sfx": 60}
-        dial = max(0, min(100, int(mix.get("dialogue", 100)))) / 100.0
-        bgm_lvl = max(0, min(100, int(mix.get("bgm", 35)))) / 100.0
-
-        mixed_path = video_path.replace(".mp4", "_mixed.mp4")
-        # -stream_loop -1 loops BGM until shortest (the video) ends.
-        # apad on the dialogue side avoids amix cutting early on silence.
-        filter_complex = (
-            f"[0:a]volume={dial:.3f},apad[a0];"
-            f"[1:a]volume={bgm_lvl:.3f},aloop=loop=-1:size=2e9[a1];"
-            f"[a0][a1]amix=inputs=2:duration=first:dropout_transition=0[aout]"
-        )
-        cmd = [
-            ffmpeg_path, "-y",
-            "-i", video_path,
-            "-stream_loop", "-1", "-i", bgm_abs,
-            "-filter_complex", filter_complex,
-            "-map", "0:v", "-map", "[aout]",
-            "-c:v", "copy",
-            "-c:a", "aac", "-b:a", "192k",
-            "-shortest",
-            "-movflags", "+faststart",
-            mixed_path,
-        ]
-        logger.info(f"[MERGE/BGM] muxing BGM dial={dial:.2f} bgm={bgm_lvl:.2f} — {os.path.basename(bgm_abs)}")
-        try:
-            subprocess.run(cmd, check=True, capture_output=True, timeout=300)
-        except subprocess.CalledProcessError as e:
-            stderr_msg = e.stderr.decode() if e.stderr else ""
-            logger.warning(f"[MERGE/BGM] ffmpeg failed: {stderr_msg[:400]}")
-            return None
-        if not os.path.exists(mixed_path):
-            logger.warning(f"[MERGE/BGM] mixed output not found: {mixed_path}")
-            return None
-        return mixed_path
 
     def _extract_ffmpeg_error_message(self, stderr: str, video_paths: List[str]) -> str:
         """
