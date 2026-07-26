@@ -1,10 +1,10 @@
-# Contributing to LumenX Studio
+# Contributing to PrismReel Studio
 
-Thank you for your interest in contributing to LumenX Studio! We welcome contributions from the community.
+Thank you for your interest in contributing to PrismReel Studio! We welcome contributions from the community.
 
 ## 🌟 Ways to Contribute
 
-- **Bug Reports**: Submit detailed bug reports via [GitHub Issues](https://github.com/alibaba/lumenx/issues)
+- **Bug Reports**: Submit detailed bug reports via [GitHub Issues](https://github.com/alibaba/prismreel/issues)
 - **Feature Requests**: Propose new features through GitHub Issues
 - **Code Contributions**: Submit pull requests for bug fixes or new features
 - **Documentation**: Improve documentation, tutorials, or examples
@@ -16,11 +16,11 @@ Thank you for your interest in contributing to LumenX Studio! We welcome contrib
 
 ```bash
 # Fork the repository on GitHub, then clone your fork
-git clone https://github.com/YOUR_USERNAME/lumenx.git
-cd lumenx
+git clone https://github.com/YOUR_USERNAME/prismreel.git
+cd prismreel
 
 # Add upstream remote
-git remote add upstream https://github.com/alibaba/lumenx.git
+git remote add upstream https://github.com/alibaba/prismreel.git
 ```
 
 ### 2. Set Up Development Environment
@@ -65,10 +65,10 @@ Use the following vocabulary consistently in PRs, code, and docs:
 
 When your change touches model support, do not treat it as an ordinary string-replacement task. Use the repo-native model workflow entry:
 
-- textual alias: `/lumenx-model-onboarding`
+- textual alias: `/prismreel-model-onboarding`
 - workflow docs:
-  - `.codex/workflows/lumenx-model-onboarding.md`
-  - `.claude/commands/lumenx-model-onboarding.md`
+  - `.codex/workflows/prismreel-model-onboarding.md`
+  - `.claude/commands/prismreel-model-onboarding.md`
 
 Typical use cases:
 
@@ -324,13 +324,13 @@ For feature requests, please describe:
 
 ## 📞 Questions?
 
-- **Technical Questions**: [GitHub Discussions](https://github.com/alibaba/lumenx/discussions)
+- **Technical Questions**: [GitHub Discussions](https://github.com/alibaba/prismreel/discussions)
 - **Security Issues**: Email security@alibaba-inc.com (do not file public issues)
 
 ## 📄 License
 
-By contributing to LumenX Studio, you agree that your contributions will be licensed under the [MIT License](LICENSE).
+By contributing to PrismReel Studio, you agree that your contributions will be licensed under the [MIT License](LICENSE).
 
 ---
 
-Thank you for contributing to LumenX Studio! 🎉
+Thank you for contributing to PrismReel Studio! 🎉

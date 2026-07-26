@@ -416,7 +416,7 @@
     "library": "资产库",
     "playground": "创作台",
     "settings": "设置",
-    "workspaceAria": "LumenX Studio · 工作区",
+    "workspaceAria": "PrismReel Studio · 工作区",
     "mainNavAria": "主导航"
   },
   "workspace": {
@@ -591,9 +591,9 @@
     "endpointPlaceholder": "oss-cn-beijing.aliyuncs.com（可选）",
     "basePathHint": "对象前缀路径。",
     "dataDirLabel": "本地数据目录",
-    "dataDirHint": "只读 · 由系统管理（可设 LUMENX_DATA_DIR 环境变量覆盖）。",
+    "dataDirHint": "只读 · 由系统管理（可设 PRISMREEL_DATA_DIR 环境变量覆盖）。",
     "logDirLabel": "日志目录",
-    "logDirHint": "只读 · 由系统管理（可设 LUMENX_LOG_DIR 环境变量覆盖）。",
+    "logDirHint": "只读 · 由系统管理（可设 PRISMREEL_LOG_DIR 环境变量覆盖）。",
     "aboutAppVersion": "应用版本",
     "aboutBackendApi": "后端 API",
     "aboutDataDir": "数据目录",

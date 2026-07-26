@@ -536,7 +536,7 @@ Include exact required env vars for each mode.
 Run:
 
 ```bash
-HOME=/tmp/lumenx-test-home pytest tests -q
+HOME=/tmp/prismreel-test-home pytest tests -q
 ```
 
 Expected: PASS.

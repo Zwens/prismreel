@@ -12,51 +12,51 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 When the user asks to do any of the following in this repository:
 
-- publish to the LumenX GitHub mirror
-- run the LumenX GitHub publish workflow
-- follow the LumenX GitHub release or PR flow
-- prepare a GitHub-safe branch, commit, push, or PR for LumenX
-- use `/lumenx-git-publish`
+- publish to the PrismReel GitHub mirror
+- run the PrismReel GitHub publish workflow
+- follow the PrismReel GitHub release or PR flow
+- prepare a GitHub-safe branch, commit, push, or PR for PrismReel
+- use `/prismreel-git-publish`
 
 Treat that as a request to load and follow:
 
-`.codex/workflows/lumenx-git-publish.md`
+`.codex/workflows/prismreel-git-publish.md`
 
 When the user asks to do any of the following in this repository:
 
-- onboard a new model into LumenX
+- onboard a new model into PrismReel
 - update model docs, model versions, defaults, or parameters
 - refresh Wan / Kling / Vidu / PixVerse model support
-- run the LumenX model onboarding workflow
+- run the PrismReel model onboarding workflow
 - review whether a model change is catalog-only or also needs runtime / UI work
-- use `/lumenx-model-onboarding`
+- use `/prismreel-model-onboarding`
 
 Treat that as a request to load and follow:
 
-`.codex/workflows/lumenx-model-onboarding.md`
+`.codex/workflows/prismreel-model-onboarding.md`
 
 When the user asks to do any of the following in this repository:
 
-- build the LumenX desktop app
-- package LumenX Studio for macOS or Windows
+- build the PrismReel desktop app
+- package PrismReel Studio for macOS or Windows
 - create a DMG or EXE build
-- run the LumenX desktop build workflow
-- use `/lumenx-build`
+- run the PrismReel desktop build workflow
+- use `/prismreel-build`
 
 Treat that as a request to load and follow:
 
-`.codex/workflows/lumenx-build.md`
+`.codex/workflows/prismreel-build.md`
 
-This repository does not rely on native slash commands in Codex. The strings `/lumenx-git-publish`, `/lumenx-build`, and `/lumenx-model-onboarding` are textual aliases for the workflows above.
+This repository does not rely on native slash commands in Codex. The strings `/prismreel-git-publish`, `/prismreel-build`, and `/prismreel-model-onboarding` are textual aliases for the workflows above.
 
 ## Workflow Files
 
-- `.claude/commands/lumenx-git-publish.md` remains the Claude project command source.
-- `.claude/commands/lumenx-build.md` remains the Claude project command source.
-- `.claude/commands/lumenx-model-onboarding.md` remains the Claude project command source.
-- `.codex/workflows/lumenx-git-publish.md` is the Codex workflow mirror for the same project process.
-- `.codex/workflows/lumenx-build.md` is the Codex workflow mirror for the desktop build process.
-- `.codex/workflows/lumenx-model-onboarding.md` is the Codex workflow mirror for model onboarding, catalog updates, and verification.
+- `.claude/commands/prismreel-git-publish.md` remains the Claude project command source.
+- `.claude/commands/prismreel-build.md` remains the Claude project command source.
+- `.claude/commands/prismreel-model-onboarding.md` remains the Claude project command source.
+- `.codex/workflows/prismreel-git-publish.md` is the Codex workflow mirror for the same project process.
+- `.codex/workflows/prismreel-build.md` is the Codex workflow mirror for the desktop build process.
+- `.codex/workflows/prismreel-model-onboarding.md` is the Codex workflow mirror for model onboarding, catalog updates, and verification.
 
 If both Claude and Codex guidance exist, preserve behavior parity unless the user asks for divergence.
 
@@ -253,13 +253,13 @@ User project data is stored in `~/.tron/comic/`:
 Primary: independent creators (self-media, short-video makers) who need to turn text scripts into comic-style videos quickly. Secondary: professional teams using it as a pre-production tool. Both share a need for speed and creative control — they think in stories, not in software.
 
 ### Brand Personality
-**Creative · Immersive · Geeky** — LumenX feels like a creator's cockpit, not an admin panel. It respects the user's craft while putting AI power at their fingertips. The tagline "Render Noise into Narrative" captures the mission: raw ideas in, polished stories out.
+**Creative · Immersive · Geeky** — PrismReel feels like a creator's cockpit, not an admin panel. It respects the user's craft while putting AI power at their fingertips. The tagline "Render Noise into Narrative" captures the mission: raw ideas in, polished stories out.
 
 ### Aesthetic Direction
 - **Dark-first**: Deep space black (#050508) background, no light mode. The darkness lets content (images, videos, storyboards) be the hero.
 - **Glassmorphism**: Frosted glass panels (5% white + backdrop-blur) for structure. Layered transparency creates depth without clutter.
 - **Neon accents**: Electric blue (#646cff) primary, hot pink (#ff0080) accent. Used sparingly for interactive elements and emphasis — not decoration.
-- **Brand gradient**: Purple → Indigo → Pink (the "X" in LumenX). Reserved for branding moments, not sprinkled everywhere.
+- **Brand gradient**: Purple → Indigo → Pink (the "X" in PrismReel). Reserved for branding moments, not sprinkled everywhere.
 - **Typography**: Space Grotesk (display/headings — geometric, modern), Inter (body — clean, readable), JetBrains Mono (code/technical values).
 - **Anti-references**: No dense tables/forms that feel like enterprise admin. No excessive particles/animations that distract from content. No multi-panel professional tool complexity (not Figma/Photoshop).
 

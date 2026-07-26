@@ -345,8 +345,8 @@ interface ProjectStore {
 // localStorage keys mirrored from SettingsPage. These hold the user's
 // global default model settings / prompt config. Kept here so newly
 // created projects can be backfilled with those defaults.
-const LS_KEY_DEFAULT_MODEL = 'lumenx_default_model_settings';
-const LS_KEY_DEFAULT_PROMPT = 'lumenx_default_prompt_config';
+const LS_KEY_DEFAULT_MODEL = 'prismreel_default_model_settings';
+const LS_KEY_DEFAULT_PROMPT = 'prismreel_default_prompt_config';
 
 function readLS<T>(key: string): T | null {
     if (typeof window === 'undefined') return null;

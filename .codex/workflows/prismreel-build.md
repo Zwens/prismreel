@@ -1,11 +1,11 @@
 ---
-name: lumenx-build
-description: LumenX Studio desktop build workflow for macOS DMG and Windows EXE packaging.
+name: prismreel-build
+description: PrismReel Studio desktop build workflow for macOS DMG and Windows EXE packaging.
 ---
 
-# LumenX Studio Desktop Build Workflow
+# PrismReel Studio Desktop Build Workflow
 
-Use this workflow when the user asks to build, package, or prepare a desktop release of LumenX Studio for macOS or Windows.
+Use this workflow when the user asks to build, package, or prepare a desktop release of PrismReel Studio for macOS or Windows.
 
 ## Prerequisites
 
@@ -51,20 +51,20 @@ Expected build flow:
 Expected outputs:
 
 ```text
-dist_mac/LumenX Studio.app
-dist_mac/LumenX Studio.dmg
+dist_mac/PrismReel Studio.app
+dist_mac/PrismReel Studio.dmg
 ```
 
 Smoke test:
 
 ```bash
-open "dist_mac/LumenX Studio.app"
+open "dist_mac/PrismReel Studio.app"
 ```
 
 Common macOS issues:
 
 - FFmpeg missing: `brew install ffmpeg`
-- DMG creation failed: `hdiutil detach "/Volumes/LumenX Studio"`
+- DMG creation failed: `hdiutil detach "/Volumes/PrismReel Studio"`
 - Signing or Gatekeeper issue: open the app via right click and choose Open on first launch
 
 ## Windows Build (.exe)
@@ -86,7 +86,7 @@ Expected build flow:
 Expected output:
 
 ```text
-dist_windows\LumenX Studio.exe
+dist_windows\PrismReel Studio.exe
 ```
 
 Common Windows issues:
@@ -106,8 +106,8 @@ rm -rf frontend/.next frontend/out static/
 
 Packaged app data is stored in:
 
-- macOS and Linux: `~/.lumen-x/`
-- Windows: `C:\Users\<username>\.lumen-x\`
+- macOS and Linux: `~/.prismreel/`
+- Windows: `C:\Users\<username>\.prismreel\`
 
 Typical contents:
 

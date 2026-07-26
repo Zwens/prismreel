@@ -27,7 +27,7 @@ missing_count = 0
 
 def check_value(val):
     global count, exists_count, missing_count
-    if isinstance(val, str) and val.startswith("lumenx/"):
+    if isinstance(val, str) and val.startswith("prismreel/"):
         count += 1
         if uploader.object_exists(val):
             exists_count += 1

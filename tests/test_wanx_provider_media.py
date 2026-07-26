@@ -77,7 +77,7 @@ def _install_fake_uploader(monkeypatch, configured: bool):
             if not self.is_configured:
                 return None
             filename = custom_filename or Path(local_path).name
-            return f"lumenx/{sub_path.strip('/')}/{filename}".replace("//", "/")
+            return f"prismreel/{sub_path.strip('/')}/{filename}".replace("//", "/")
 
         def sign_url_for_api(self, object_key):
             return f"https://oss.example/{object_key}"
@@ -173,13 +173,13 @@ class TestWanxProviderMediaIntegration:
         model.generate(
             prompt="demo",
             output_path="output/video/wanx_i2v_object_key.mp4",
-            img_path="lumenx/temp/i2v_input/ref.png",
+            img_path="prismreel/temp/i2v_input/ref.png",
             model_name="wan2.6-i2v",
         )
 
         assert (
             captured["create_payload"]["input"]["img_url"]
-            == "https://oss.example/lumenx/temp/i2v_input/ref.png"
+            == "https://oss.example/prismreel/temp/i2v_input/ref.png"
         )
 
     def test_create_dashscope_temp_url_calls_policy_and_multipart_upload(self, monkeypatch):

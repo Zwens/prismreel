@@ -1,8 +1,8 @@
 ---
-description: LumenX GitHub 发布流程 - 安全提交、敏感数据扫描、推送到 GitHub 公开仓库
+description: PrismReel GitHub 发布流程 - 安全提交、敏感数据扫描、推送到 GitHub 公开仓库
 ---
 
-# LumenX GitHub 发布流程
+# PrismReel GitHub 发布流程
 
 此 skill 整合了从本地开发到 GitHub 公开仓库的完整发布流程，包含安全检查和规范约束。
 
@@ -11,7 +11,7 @@ description: LumenX GitHub 发布流程 - 安全提交、敏感数据扫描、�
 - **禁止直接推送 `main` 分支** — 必须通过 feature 分支 + PR
 - **推送前必须执行敏感数据扫描**
 - **Commit Message 遵循 Conventional Commits** (`feat:` / `fix:` / `docs:` / `refactor:` / `chore:`)
-- **GitHub remote 名称为 `github`**，仓库地址：`https://github.com/alibaba/lumenx.git`
+- **GitHub remote 名称为 `github`**，仓库地址：`https://github.com/alibaba/prismreel.git`
 - **GitHub 镜像提交的作者固定为** `Mike4Ellis <1007062267@qq.com>`
 - **GitHub PR 统一由** `Star-Lotus` **账号发起**；如果 `Mike4Ellis` 无法创建 PR，需要先切换 `gh` 活跃账号再执行 `gh pr create`
 
@@ -124,7 +124,7 @@ gh auth switch --hostname github.com --user Star-Lotus
 ```
 
 ```bash
-gh pr create --repo alibaba/lumenx --title "feat: your PR title" --body "$(cat <<'EOF'
+gh pr create --repo alibaba/prismreel --title "feat: your PR title" --body "$(cat <<'EOF'
 ## Summary
 - <change description>
 
@@ -137,7 +137,7 @@ EOF
 
 ## 阶段四：推送后验证
 
-- 访问 https://github.com/alibaba/lumenx 确认内容正确
+- 访问 https://github.com/alibaba/prismreel 确认内容正确
 - 检查 README 格式渲染
 - 确认无敏感信息泄露
 

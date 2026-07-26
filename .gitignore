@@ -79,7 +79,7 @@ frontend/.vercel
 # Logs
 *.log
 logs/
-.lumen-x/
+.prismreel/
 
 # Secrets (extra safety)
 *secret*

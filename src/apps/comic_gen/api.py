@@ -121,7 +121,7 @@ def debug_config():
     return {
         "oss_configured": uploader.is_configured,
         "oss_bucket_initialized": uploader.bucket is not None,
-        "oss_base_path": os.getenv("OSS_BASE_PATH", "lumenx"),
+        "oss_base_path": os.getenv("OSS_BASE_PATH", "prismreel"),
         "output_dir_exists": os.path.exists("output"),
         "output_contents": os.listdir("output") if os.path.exists("output") else [],
         "cwd": os.getcwd(),
@@ -1123,12 +1123,12 @@ def get_user_config_path() -> str:
     """
     Returns the path to the user config file.
     - Development mode: Uses .env in project root
-    - Packaged app mode: Uses ~/.lumen-x/config.json
+    - Packaged app mode: Uses ~/.prismreel/config.json
     """
     from ...utils import get_user_data_dir
     
     # Check if running in packaged mode (e.g., via environment variable or frozen check)
-    is_packaged = os.getenv("LUMEN_X_PACKAGED", "false").lower() == "true" or getattr(sys, 'frozen', False)
+    is_packaged = os.getenv("PRISMREEL_PACKAGED", "false").lower() == "true" or getattr(sys, 'frozen', False)
     
     if is_packaged:
         # Use user home directory for packaged app
@@ -1223,7 +1223,7 @@ load_user_config()
 def get_config_info():
     """Returns information about the current config storage mode."""
     config_path = get_user_config_path()
-    is_packaged = os.getenv("LUMEN_X_PACKAGED", "false").lower() == "true" or getattr(sys, 'frozen', False)
+    is_packaged = os.getenv("PRISMREEL_PACKAGED", "false").lower() == "true" or getattr(sys, 'frozen', False)
     return {
         "mode": "packaged" if is_packaged else "development",
         "config_path": config_path,

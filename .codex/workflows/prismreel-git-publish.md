@@ -1,11 +1,11 @@
 ---
-name: lumenx-git-publish
-description: LumenX GitHub publish workflow for safe commits, sensitive-data scans, and PR-based pushes to the GitHub mirror.
+name: prismreel-git-publish
+description: PrismReel GitHub publish workflow for safe commits, sensitive-data scans, and PR-based pushes to the GitHub mirror.
 ---
 
-# LumenX GitHub Publish Workflow
+# PrismReel GitHub Publish Workflow
 
-Use this workflow when working in this repository and the user asks to publish work to the LumenX GitHub mirror, prepare a GitHub-ready branch, or follow the LumenX GitHub release process.
+Use this workflow when working in this repository and the user asks to publish work to the PrismReel GitHub mirror, prepare a GitHub-ready branch, or follow the PrismReel GitHub release process.
 
 ## Core Rules
 
@@ -19,7 +19,7 @@ Use this workflow when working in this repository and the user asks to publish w
 Repository-specific constraints:
 
 - GitHub remote: `github`
-- GitHub repository: `https://github.com/alibaba/lumenx.git`
+- GitHub repository: `https://github.com/alibaba/prismreel.git`
 - Allowed branch prefixes: `feature/`, `fix/`, `docs/`
 
 ## Step 1: Confirm Branch
@@ -149,7 +149,7 @@ gh auth switch --hostname github.com --user Star-Lotus
 ```
 
 ```bash
-gh pr create --repo alibaba/lumenx --title "feat: your PR title" --body "$(cat <<'EOF'
+gh pr create --repo alibaba/prismreel --title "feat: your PR title" --body "$(cat <<'EOF'
 ## Summary
 - <change description>
 

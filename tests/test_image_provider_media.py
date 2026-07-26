@@ -27,9 +27,9 @@ class TestImageProviderMediaResolverIntegration:
         monkeypatch.setattr("src.models.image.OSSImageUploader", FakeUploaderConfigured)
 
         model = WanxImageModel({"params": {"i2i_model_name": "wan2.6-image"}})
-        resolved = model._resolve_wan26_reference_image("lumenx/temp/ref.png")
+        resolved = model._resolve_wan26_reference_image("prismreel/temp/ref.png")
 
-        assert resolved == "https://oss.example/lumenx/temp/ref.png"
+        assert resolved == "https://oss.example/prismreel/temp/ref.png"
 
     def test_wan26_reference_remote_url_pass_through(self, monkeypatch):
         monkeypatch.setattr("src.models.image.OSSImageUploader", FakeUploaderNoOss)

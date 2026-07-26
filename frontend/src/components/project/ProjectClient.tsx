@@ -155,8 +155,8 @@ export default function ProjectClient({ id, breadcrumbSegments }: { id: string; 
                 setActiveStep(detail);
             }
         };
-        document.addEventListener("lumenx:navigateStep", handler);
-        return () => document.removeEventListener("lumenx:navigateStep", handler);
+        document.addEventListener("prismreel:navigateStep", handler);
+        return () => document.removeEventListener("prismreel:navigateStep", handler);
     }, [steps]);
 
     useEffect(() => {
@@ -179,7 +179,7 @@ export default function ProjectClient({ id, breadcrumbSegments }: { id: string; 
         );
     }
 
-    const segments = breadcrumbSegments || [{ label: "LumenX", hash: "#/" }, { label: currentProject.title }];
+    const segments = breadcrumbSegments || [{ label: "PrismReel", hash: "#/" }, { label: currentProject.title }];
 
     const settingsActions = (
         <>
@@ -293,7 +293,7 @@ function EntityExtractionConfirm() {
             await confirmExtraction();
             const refreshed = useProjectStore.getState().currentProject;
             if (refreshed?.series_id) {
-                document.dispatchEvent(new CustomEvent("lumenx:openReconcile"));
+                document.dispatchEvent(new CustomEvent("prismreel:openReconcile"));
             }
         } catch {
             const { toast } = await import("@/store/toastStore");

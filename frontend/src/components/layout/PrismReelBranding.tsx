@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSettingsStore, type ThemePreset } from "@/store/settingsStore";
 
-interface LumenXBrandingProps {
+interface PrismReelBrandingProps {
   size?: "sm" | "md";
   showSlogan?: boolean;
 }
@@ -20,7 +20,7 @@ const LOGO_SRC: Record<ThemePreset, string> = {
 // 仅 atelier-dark：把品牌蓝 PNG 着色为 teal，与主色一致。
 const ATELIER_DARK_FILTER = "hue-rotate(-64deg) saturate(1.35) brightness(1.08)";
 
-export default function LumenXBranding({ size = "md", showSlogan = true }: LumenXBrandingProps) {
+export default function PrismReelBranding({ size = "md", showSlogan = true }: PrismReelBrandingProps) {
   const logoSize = size === "sm" ? "w-9 h-9" : "w-14 h-14";
   const titleSize = size === "sm" ? "text-lg" : "text-xl";
 
@@ -39,7 +39,7 @@ export default function LumenXBranding({ size = "md", showSlogan = true }: Lumen
         <div className="flex-shrink-0">
           <img
             src={logoSrc}
-            alt="LumenX"
+            alt="PrismReel"
             className={`${logoSize} object-contain`}
             style={logoFilter ? { filter: logoFilter } : undefined}
           />
@@ -47,10 +47,10 @@ export default function LumenXBranding({ size = "md", showSlogan = true }: Lumen
         <div className="flex flex-col justify-center">
           <div className="flex items-baseline gap-0">
             <span className={`font-mono ${titleSize} font-bold tracking-tight text-foreground`}>
-              LUMEN
+              PRISM
             </span>
             <span className={`font-mono ${titleSize} font-black tracking-tight text-primary`}>
-              X
+              REEL
             </span>
           </div>
           {size !== "sm" && (

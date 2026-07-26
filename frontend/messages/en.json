@@ -416,7 +416,7 @@
     "library": "Library",
     "playground": "Playground",
     "settings": "Settings",
-    "workspaceAria": "LumenX Studio · Workspace",
+    "workspaceAria": "PrismReel Studio · Workspace",
     "mainNavAria": "Main navigation"
   },
   "workspace": {
@@ -591,9 +591,9 @@
     "endpointPlaceholder": "oss-cn-beijing.aliyuncs.com (optional)",
     "basePathHint": "Object prefix path.",
     "dataDirLabel": "Local data directory",
-    "dataDirHint": "Read-only · system-managed (override with the LUMENX_DATA_DIR env var).",
+    "dataDirHint": "Read-only · system-managed (override with the PRISMREEL_DATA_DIR env var).",
     "logDirLabel": "Log directory",
-    "logDirHint": "Read-only · system-managed (override with the LUMENX_LOG_DIR env var).",
+    "logDirHint": "Read-only · system-managed (override with the PRISMREEL_LOG_DIR env var).",
     "aboutAppVersion": "App version",
     "aboutBackendApi": "Backend API",
     "aboutDataDir": "Data directory",
