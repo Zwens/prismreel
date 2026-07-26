@@ -279,6 +279,8 @@ export interface Project {
     episode_number?: number;
     /** T13 — user-starred (featured) flag; drives the amber-halation card. */
     starred?: boolean;
+    /** V-1 — subtitle burn-in settings (Task 8/9). */
+    subtitle_settings?: { enabled: boolean; template_id: string };
 }
 
 interface ProjectStore {
