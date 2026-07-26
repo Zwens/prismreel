@@ -12,6 +12,10 @@ interface Props {
   projectId: string;
   initialEnabled?: boolean;
   initialTemplateId?: string;
+  /** Called with the updated Script after a successful save, so the caller can
+   *  push it into the project store. Without this the store keeps the stale
+   *  settings and the next mount re-reads outdated initial* props. */
+  onSaved?: (updated: unknown) => void;
 }
 
 function fmtTime(s: number): string {
@@ -24,6 +28,7 @@ export function SubtitlePanel({
   projectId,
   initialEnabled = true,
   initialTemplateId = "douyin",
+  onSaved,
 }: Props) {
   const t = useTranslations("subtitle");
 
@@ -33,10 +38,21 @@ export function SubtitlePanel({
   const [templateId, setTemplateId] = useState(initialTemplateId);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // A failed load must not be indistinguishable from "this project has no
+  // dialogue" — that tells the user to add lines they may already have.
+  const [loadError, setLoadError] = useState<string | null>(null);
+  // What the server last accepted. Reverting to the mount-time props instead
+  // would resurrect a setting the user already changed successfully.
+  const [persisted, setPersisted] = useState({
+    enabled: initialEnabled,
+    template_id: initialTemplateId,
+  });
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setLoadError(null);
     Promise.all([api.listSubtitleTemplates(), api.previewSubtitles(projectId)])
       .then(([tpl, cs]) => {
         if (cancelled) return;
@@ -44,7 +60,10 @@ export function SubtitlePanel({
         setCues(cs);
       })
       .catch((e) => {
-        if (!cancelled) toast.error(extractErrorDetail(e, t("loadFailed")));
+        if (cancelled) return;
+        const msg = extractErrorDetail(e, t("loadFailed"));
+        setLoadError(msg);
+        toast.error(msg);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -52,17 +71,20 @@ export function SubtitlePanel({
     return () => {
       cancelled = true;
     };
-  }, [projectId, t]);
+  }, [projectId, t, reloadTick]);
 
   const save = async (next: { enabled: boolean; template_id: string }) => {
+    const prev = persisted;
     setSaving(true);
     try {
-      await api.updateSubtitleSettings(projectId, next);
+      const updated = await api.updateSubtitleSettings(projectId, next);
+      setPersisted(next);
+      onSaved?.(updated);
       toast.success(t("saved"));
     } catch (e) {
       toast.error(extractErrorDetail(e, t("saveFailed")));
-      setEnabled(initialEnabled);
-      setTemplateId(initialTemplateId);
+      setEnabled(prev.enabled);
+      setTemplateId(prev.template_id);
     } finally {
       setSaving(false);
     }
@@ -75,6 +97,21 @@ export function SubtitlePanel({
     return (
       <div className="flex items-center justify-center p-12 text-text-secondary">
         <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center gap-3 p-12 text-center">
+        <p className="text-sm text-text-secondary">{loadError}</p>
+        <button
+          type="button"
+          className="glass-button rounded-lg px-4 py-2 text-sm"
+          onClick={() => setReloadTick((n) => n + 1)}
+        >
+          {t("retry")}
+        </button>
       </div>
     );
   }

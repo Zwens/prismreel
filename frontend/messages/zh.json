@@ -1226,7 +1226,8 @@
     "exportSrt": "导出 SRT",
     "loadFailed": "加载字幕失败",
     "saveFailed": "保存字幕设置失败",
-    "saved": "字幕设置已保存"
+    "saved": "字幕设置已保存",
+    "retry": "重试"
   },
   "motion": {
     "motionParams": "动态参数",

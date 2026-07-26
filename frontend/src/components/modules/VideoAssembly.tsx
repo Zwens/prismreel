@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Loader2, Film, AlertTriangle, Layout, Clock, FileText, Download, Music, Sliders, Package, Subtitles } from "lucide-react";
-import { useProjectStore } from "@/store/projectStore";
+import { useProjectStore, type Project } from "@/store/projectStore";
 import { api, type BgmPreset } from "@/lib/api";
 import { getAssetUrl, extractErrorDetail } from "@/lib/utils";
 import StepPageHeader, { StepPill } from "@/components/shared/StepPageHeader";
@@ -277,6 +277,7 @@ export default function VideoAssembly() {
                             projectId={currentProject.id}
                             initialEnabled={currentProject.subtitle_settings?.enabled ?? true}
                             initialTemplateId={currentProject.subtitle_settings?.template_id ?? "douyin"}
+                            onSaved={(updated) => currentProject && updateProject(currentProject.id, updated as Partial<Project>)}
                         />
                     </div>
                 )}

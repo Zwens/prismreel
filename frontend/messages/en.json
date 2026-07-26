@@ -1226,7 +1226,8 @@
     "exportSrt": "Export SRT",
     "loadFailed": "Failed to load subtitles",
     "saveFailed": "Failed to save subtitle settings",
-    "saved": "Subtitle settings saved"
+    "saved": "Subtitle settings saved",
+    "retry": "Retry"
   },
   "motion": {
     "motionParams": "Motion Params",
