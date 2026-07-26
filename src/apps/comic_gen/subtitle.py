@@ -269,3 +269,30 @@ def render_ass(
         )
 
     return "\n".join(head + events) + "\n"
+
+
+# ----------------------------------------------------------------------
+# SRT rendering
+# ----------------------------------------------------------------------
+
+
+def _srt_time(seconds: float) -> str:
+    """HH:MM:SS,mmm — SRT uses milliseconds and a comma separator."""
+    if seconds < 0:
+        seconds = 0.0
+    total_ms = int(round(seconds * 1000))
+    ms = total_ms % 1000
+    total_s = total_ms // 1000
+    s = total_s % 60
+    m = (total_s // 60) % 60
+    h = total_s // 3600
+    return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+
+
+def render_srt(cues: List[SubtitleCue]) -> str:
+    """Plain SRT for import into external editors."""
+    blocks = []
+    for i, cue in enumerate(cues, start=1):
+        text = cue.text.replace(r"\N", "\n")
+        blocks.append(f"{i}\n{_srt_time(cue.start_s)} --> {_srt_time(cue.end_s)}\n{text}\n")
+    return "\n".join(blocks)

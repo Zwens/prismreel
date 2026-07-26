@@ -2986,6 +2986,72 @@ def list_bgm_presets():
     return get_bgm_presets()
 
 
+# ─────────────────────────────────────────────────────────────
+# V-1 · Subtitle endpoints (templates + preview + settings + export)
+# ─────────────────────────────────────────────────────────────
+
+
+class UpdateSubtitleSettingsRequest(BaseModel):
+    enabled: bool = True
+    template_id: str = "douyin"
+    style_override: Optional[Dict[str, Any]] = None
+
+
+@app.get("/subtitle/templates")
+def list_subtitle_templates():
+    """Available burned-in subtitle style templates."""
+    from .subtitle import SUBTITLE_TEMPLATES
+
+    return [{"id": tid, **style.model_dump()} for tid, style in SUBTITLE_TEMPLATES.items()]
+
+
+@app.get("/projects/{script_id}/subtitle/preview")
+def preview_subtitles(script_id: str):
+    """Cue list derived from dialogue + TTS timing. No rendering, no ASR."""
+    try:
+        return pipeline.get_subtitle_preview(script_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.put("/projects/{script_id}/subtitle/settings")
+def update_subtitle_settings(script_id: str, request: UpdateSubtitleSettingsRequest):
+    from .models import SubtitleSettings, SubtitleStyle
+    from .subtitle import SUBTITLE_TEMPLATES
+
+    if request.template_id not in SUBTITLE_TEMPLATES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown template '{request.template_id}'. "
+            f"Available: {sorted(SUBTITLE_TEMPLATES)}",
+        )
+    try:
+        settings = SubtitleSettings(
+            enabled=request.enabled,
+            template_id=request.template_id,
+            style_override=(
+                SubtitleStyle(**request.style_override) if request.style_override else None
+            ),
+        )
+        script = pipeline.update_subtitle_settings(script_id, settings)
+        return signed_response(script)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/projects/{script_id}/subtitle/export")
+def export_subtitle(script_id: str, fmt: str = "ass"):
+    from fastapi.responses import FileResponse
+
+    if fmt not in ("ass", "srt"):
+        raise HTTPException(status_code=400, detail="fmt must be 'ass' or 'srt'")
+    try:
+        path = pipeline.export_subtitle_file(script_id, fmt)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return FileResponse(path, filename=os.path.basename(path))
+
+
 class AudioMixRequest(BaseModel):
     bgm_url: Optional[str] = None  # null clears bgm
     dialogue_volume: Optional[int] = None  # 0-100

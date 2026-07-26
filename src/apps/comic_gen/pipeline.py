@@ -3070,6 +3070,83 @@ class ComicGenPipeline:
         
         return "FFmpeg merge failed with unknown error. Please check the application logs for details."
 
+    # ============================================================
+    # V-1 · Subtitles
+    # ============================================================
+
+    def get_subtitle_preview(self, script_id: str) -> List[Dict[str, Any]]:
+        """Compute the cue list without rendering, for UI display."""
+        _validate_safe_id(script_id, "script_id")
+        script = self.scripts.get(script_id)
+        if not script:
+            raise ValueError("Script not found")
+
+        from .subtitle import build_subtitle_cues
+
+        segments = collect_render_segments(
+            script, resolve=lambda u: _safe_resolve_path("output", u)
+        )
+        cues = build_subtitle_cues(script.frames, segments)
+        return [
+            {
+                "index": i + 1,
+                "start_s": round(c.start_s, 2),
+                "end_s": round(c.end_s, 2),
+                "text": c.text,
+                "speaker": c.speaker,
+            }
+            for i, c in enumerate(cues)
+        ]
+
+    def update_subtitle_settings(self, script_id: str, settings) -> Script:
+        _validate_safe_id(script_id, "script_id")
+        script = self.scripts.get(script_id)
+        if not script:
+            raise ValueError("Script not found")
+        script.subtitle_settings = settings
+        script.updated_at = time.time()
+        self._save_data()
+        return script
+
+    def export_subtitle_file(self, script_id: str, fmt: str = "ass") -> str:
+        """Write a standalone subtitle file and return its absolute path."""
+        _validate_safe_id(script_id, "script_id")
+        if fmt not in ("ass", "srt"):
+            raise ValueError(f"Unsupported subtitle format: {fmt}")
+
+        script = self.scripts.get(script_id)
+        if not script:
+            raise ValueError("Script not found")
+
+        from .subtitle import (
+            SUBTITLE_TEMPLATES,
+            build_subtitle_cues,
+            render_ass,
+            render_srt,
+        )
+
+        segments = collect_render_segments(
+            script, resolve=lambda u: _safe_resolve_path("output", u)
+        )
+        cues = build_subtitle_cues(script.frames, segments)
+
+        out_dir = _safe_resolve_path("output", "subtitles")
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = os.path.join(out_dir, f"{script_id}.{fmt}")
+
+        if fmt == "srt":
+            content = render_srt(cues)
+        else:
+            settings = script.subtitle_settings
+            style = settings.style_override or SUBTITLE_TEMPLATES.get(
+                settings.template_id, SUBTITLE_TEMPLATES["douyin"]
+            )
+            content = render_ass(cues, style, play_res=(1080, 1920))
+
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return out_path
+
     def create_asset_video_task(self, script_id: str, asset_id: str, asset_type: str, prompt: str, duration: int = 5, aspect_ratio: str = None) -> Tuple[Script, str]:
         """Creates a new video generation task for an asset (R2V)."""
         script = self.scripts.get(script_id)

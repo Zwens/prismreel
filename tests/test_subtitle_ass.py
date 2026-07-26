@@ -125,3 +125,10 @@ def test_style_rejects_out_of_range_values():
     for bad in ({"max_lines": 0}, {"chars_per_line": 0}, {"alignment": 0}, {"alignment": 10}):
         with _pytest.raises(ValidationError):
             SubtitleStyle(**bad)
+
+
+def test_srt_format():
+    from src.apps.comic_gen.subtitle import render_srt
+
+    out = render_srt([SubtitleCue(start_s=1.5, end_s=3.25, text="你好")])
+    assert "1\n00:00:01,500 --> 00:00:03,250\n你好" in out
