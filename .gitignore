@@ -132,3 +132,10 @@ docs/plans/*
 .gstack/
 docs/agents/
 frontend/docs/
+
+# Agent tooling working artifacts
+.playwright-mcp/
+.superpowers/
+
+# Editor/manual backup files
+*.bak
