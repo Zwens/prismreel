@@ -88,7 +88,18 @@ def build_subtitle_cues(
         end = start + _spoken_duration(frame, text, probe)
         end = min(end, shot_end)
         if end - start < MIN_CUE_S:
-            end = start + MIN_CUE_S
+            # Prefer a short flash over a cue that runs past its shot: cues
+            # that overlap stack visually in ASS. A shot shorter than
+            # MIN_CUE_S cannot hold a readable subtitle either way, and the
+            # cumulative clock advances by shot_end regardless — so letting
+            # the floor win here would desync every cue after it.
+            end = min(start + MIN_CUE_S, shot_end)
+        if end <= start:
+            # Zero-length shot — reachable when a duration probe fails and
+            # the caller substitutes 0.0. A cue with no duration is
+            # meaningless and renders as an artefact.
+            offset = shot_end
+            continue
 
         speaker = frame.dialogue_structured.speaker if frame.dialogue_structured else None
         cues.append(SubtitleCue(start_s=start, end_s=end, text=text, speaker=speaker))

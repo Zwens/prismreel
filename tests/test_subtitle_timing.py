@@ -101,3 +101,39 @@ def test_segments_without_matching_frame_are_ignored():
     segs = [_seg("ghost", 2.0), _seg("a", 4.0)]
     cues = build_subtitle_cues(frames, segs, probe=lambda p: 1.0)
     assert cues[0].start_s == pytest.approx(2.0)  # ghost 段仍然推进时钟
+
+
+def test_cues_never_overlap_when_shot_shorter_than_min_cue():
+    """分镜比 MIN_CUE_S 还短时，最小时长下限不得把 cue 推出分镜边界。
+
+    重叠的字幕在 ASS 里会视觉堆叠。宁可闪一下也不越界。
+    """
+    frames = [
+        _frame("a", "短", audio_url="/a.mp3"),
+        _frame("b", "下一句", audio_url="/b.mp3"),
+    ]
+    segs = [_seg("a", 0.3), _seg("b", 5.0)]
+    cues = build_subtitle_cues(frames, segs, probe=lambda p: 2.0)
+    assert len(cues) == 2
+    assert cues[0].end_s == pytest.approx(0.3)  # 截到分镜边界，而非 0.8
+    assert cues[0].end_s <= cues[1].start_s
+
+
+def test_zero_duration_shot_drops_cue_but_keeps_clock():
+    """时长 0 的分镜（探测失败回退值）不该产出零长 cue，但时钟照常推进。"""
+    frames = [
+        _frame("a", "丢弃", audio_url="/a.mp3"),
+        _frame("b", "保留", audio_url="/b.mp3"),
+    ]
+    segs = [_seg("a", 0.0), _seg("b", 5.0)]
+    cues = build_subtitle_cues(frames, segs, probe=lambda p: 2.0)
+    assert len(cues) == 1
+    assert cues[0].text == "保留"
+    assert cues[0].start_s == pytest.approx(0.0)
+
+
+def test_offset_beyond_shot_is_pulled_back_inside():
+    frames = [_frame("a", "台词", offset_ms=9000, audio_url="/a.mp3")]
+    cues = build_subtitle_cues(frames, [_seg("a", 3.0)], probe=lambda p: 1.0)
+    assert cues[0].start_s == pytest.approx(2.2)
+    assert cues[0].end_s == pytest.approx(3.0)
