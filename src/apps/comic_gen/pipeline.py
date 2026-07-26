@@ -3533,6 +3533,17 @@ class ComicGenPipeline:
                      or c.name.strip().lower() in key),
                     None,
                 )
+            if not speaker:
+                # Last resort: frames authored for R2V carry no character_ids and no
+                # speaker name, but embed [characterN:name] reference tags in the
+                # action description. Resolve the speaker from the first such tag.
+                tag_match = re.search(r'\[character\d*:([^\]]+)\]', frame.action_description or "")
+                if tag_match:
+                    tag_name = tag_match.group(1).strip().lower()
+                    speaker = next(
+                        (c for c in script.characters if c.name.strip().lower() == tag_name),
+                        None,
+                    )
 
             if speaker:
                 model_override = None

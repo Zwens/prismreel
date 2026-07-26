@@ -162,6 +162,50 @@ class TestWanxProviderMediaIntegration:
         ]
         assert captured["create_headers"]["X-DashScope-OssResourceResolve"] == "enable"
 
+    def test_wan27_r2v_uses_structured_media_input(self, monkeypatch):
+        """wan2.7-r2v takes input.media objects, not a flat reference_image_urls array."""
+        monkeypatch.setenv("DASHSCOPE_API_KEY", "test-key")
+        _install_fake_uploader(monkeypatch, configured=True)
+
+        captured = {}
+        _install_fake_requests(monkeypatch, captured)
+
+        model = WanxModel({"params": {}})
+        model.generate(
+            prompt="demo",
+            output_path="output/video/wanx_wan27_r2v.mp4",
+            model_name="wan2.7-r2v",
+            ref_image_urls=["https://example.com/ref-a.png", "https://example.com/ref-b.png"],
+        )
+
+        payload_input = captured["create_payload"]["input"]
+        assert payload_input["media"] == [
+            {"type": "reference_image", "url": "https://example.com/ref-a.png"},
+            {"type": "reference_image", "url": "https://example.com/ref-b.png"},
+        ]
+        assert "reference_image_urls" not in payload_input
+        assert "reference_video_urls" not in payload_input
+
+    def test_wan26_r2v_keeps_flat_reference_video_urls(self, monkeypatch):
+        """wan2.6-r2v must keep the flat reference_video_urls shape (no media objects)."""
+        monkeypatch.setenv("DASHSCOPE_API_KEY", "test-key")
+        _install_fake_uploader(monkeypatch, configured=True)
+
+        captured = {}
+        _install_fake_requests(monkeypatch, captured)
+
+        model = WanxModel({"params": {}})
+        model.generate(
+            prompt="demo",
+            output_path="output/video/wanx_wan26_r2v.mp4",
+            model_name="wan2.6-r2v",
+            ref_video_urls=["https://example.com/ref-clip.mp4"],
+        )
+
+        payload_input = captured["create_payload"]["input"]
+        assert payload_input["reference_video_urls"] == ["https://example.com/ref-clip.mp4"]
+        assert "media" not in payload_input
+
     def test_i2v_object_key_with_oss_configured_uses_signed_url(self, monkeypatch):
         monkeypatch.setenv("DASHSCOPE_API_KEY", "test-key")
         _install_fake_uploader(monkeypatch, configured=True)

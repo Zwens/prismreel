@@ -442,7 +442,18 @@ export default function StoryboardR2V() {
         const hasVoiceBinding = (f: any): boolean => {
             if (f.character_ids?.[0] && charsWithVoice.has(f.character_ids[0])) return true;
             const speaker = f.dialogue_structured?.speaker || f.speaker;
-            return !!(speaker && charNameToVoice.has(speaker.toLowerCase()));
+            if (speaker && charNameToVoice.has(speaker.toLowerCase())) return true;
+            // Last resort: R2V frames carry no character_ids and no speaker name,
+            // but embed [characterN:name] reference tags in the description.
+            const desc = f.action_description || f.visual_description || "";
+            const tagMatch = desc.match(/\[character\d*:([^\]]+)\]/);
+            if (tagMatch) {
+                const charByTag = (currentProject as any)?.characters?.find(
+                    (c: any) => c.name === tagMatch[1]
+                );
+                if (charByTag?.voice_id) return true;
+            }
+            return false;
         };
         const dialogueReady = withDialogue.filter((f: any) =>
             hasVoiceBinding(f) && !f.audio_url
@@ -1974,7 +1985,15 @@ export default function StoryboardR2V() {
                             const hasVideoTask = !!(frame.selected_video_id || (currentProject as any)?.video_tasks?.find((t: any) => t.frame_id === frame.id && t.status === "completed"));
                             // Show row when dialogue exists, or when video exists (dub available)
                             if (!dialogueText?.trim() && !hasVideoTask) return null;
-                            const charId = Array.isArray(frame.character_ids) ? frame.character_ids[0] : null;
+                            let charId = Array.isArray(frame.character_ids) ? frame.character_ids[0] : null;
+                            if (!charId) {
+                                // Fall back to the [characterN:name] reference tag in the prompt
+                                const tagMatch = (frame.prompt || shot.prompt || "").match(/\[character\d*:([^\]]+)\]/);
+                                const charByTag = tagMatch
+                                    ? characters.find((c: any) => c.name === tagMatch[1])
+                                    : null;
+                                if (charByTag) charId = charByTag.id;
+                            }
                             const speaker = charId ? characters.find((c: any) => c.id === charId) : null;
                             return (
                                 <div className="mx-5 mb-4">

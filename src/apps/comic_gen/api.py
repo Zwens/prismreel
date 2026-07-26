@@ -26,6 +26,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, List, Any
 import asyncio
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
@@ -3088,6 +3089,13 @@ def generate_dialogue_audio_batch(script_id: str):
                         if key in name or name in key:
                             speaker = char
                             break
+            if not speaker:
+                # Last resort: frames authored for R2V carry no character_ids and no
+                # speaker name, but embed [characterN:name] reference tags in the
+                # action description. Resolve the speaker from the first such tag.
+                tag_match = re.search(r'\[character\d*:([^\]]+)\]', frame.action_description or "")
+                if tag_match:
+                    speaker = char_name_lookup.get(tag_match.group(1).strip().lower())
             if not speaker or not speaker.voice_id:
                 no_voice += 1
                 continue

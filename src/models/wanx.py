@@ -15,8 +15,52 @@ from typing import Callable, Dict, List, Mapping, Optional, Tuple
 from ..utils.oss_utils import OSSImageUploader
 from ..utils.provider_media import resolve_media_input, resolve_media_inputs
 from ..utils.provider_registry import resolve_provider_backend
+from ..utils.model_catalog import get_catalog_accessor
 
 logger = get_logger(__name__)
+
+# Lazy-loaded catalog accessor - avoids circular imports and loading at module level
+_catalog_accessor = None
+
+
+def _get_catalog():
+    global _catalog_accessor
+    if _catalog_accessor is None:
+        try:
+            _catalog_accessor = get_catalog_accessor()
+        except Exception as e:
+            logger.debug("Failed to load model catalog: %s", e)
+            _catalog_accessor = False
+    return _catalog_accessor if _catalog_accessor is not False else None
+
+
+def _resolve_api_model_name(model_name: str, backend: str = "dashscope") -> str:
+    """Resolve a legacy model ID to the actual API model ID using the model catalog.
+
+    Example: 'kling-v3-r2v' -> 'kling/kling-v3-omni-video-generation'
+    If the model is not in the catalog, returns the original name unchanged.
+    """
+    catalog = _get_catalog()
+    if catalog is None:
+        return model_name
+
+    # Step 1: resolve legacy -> canonical mode ID
+    canonical = catalog.resolve_legacy_to_canonical(model_name)
+    if canonical is None:
+        return model_name
+
+    # Step 2: get runtime config for the backend
+    runtime = catalog.get_mode_runtime(canonical)
+    if runtime is None:
+        return model_name
+
+    backend_config = runtime.get(backend, {})
+    api_model = backend_config.get("api_model_id")
+    if api_model:
+        logger.debug("Resolved model '%s' -> '%s' (canonical: %s)", model_name, api_model, canonical)
+        return api_model
+
+    return model_name
 
 
 class WanxModel(VideoGenModel):
@@ -675,13 +719,19 @@ class WanxModel(VideoGenModel):
         if extra_headers:
             headers.update(dict(extra_headers))
 
-        input_key = "reference_image_urls" if model_name.startswith("wan2.7-") else "reference_video_urls"
+        # wan2.7-r2v expects input.media (structured objects), NOT input.reference_image_urls
+        # (flat URL array). DashScope API shape:
+        #   {"input": {"prompt": "...", "media": [{"type": "reference_image", "url": "..."}]}}
+        if model_name == "wan2.7-r2v":
+            media_list = [{"type": "reference_image", "url": url} for url in ref_video_urls]
+            input_payload = {"prompt": prompt, "media": media_list}
+        elif model_name.startswith("wan2.7-"):
+            input_payload = {"prompt": prompt, "reference_image_urls": ref_video_urls}
+        else:
+            input_payload = {"prompt": prompt, "reference_video_urls": ref_video_urls}
         payload = {
             "model": model_name,
-            "input": {
-                "prompt": prompt,
-                input_key: ref_video_urls
-            },
+            "input": input_payload,
             "parameters": {
                 "duration": duration,
                 "audio": audio,
@@ -898,10 +948,15 @@ class WanxModel(VideoGenModel):
                       audio_url: str = None, watermark: bool = False, seed: int = None,
                       camera_motion: str = None, subject_motion: str = None) -> str:
         """Generate video using Dashscope SDK (for older models)."""
+        # Resolve legacy model ID to actual API model ID via catalog
+        api_model_name = _resolve_api_model_name(model_name)
+        if api_model_name != model_name:
+            logger.info("Resolved model name: %s -> %s", model_name, api_model_name)
+
         # Prepare arguments
         call_args = {
             "api_key": self.api_key,
-            "model": model_name,
+            "model": api_model_name,
             "prompt": prompt,
             "size": size,
             "prompt_extend": prompt_extend,
