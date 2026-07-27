@@ -90,6 +90,7 @@ def make_shot_video(
     out_path: str,
     tts_path: Optional[str],
     dub_offset_ms: int,
+    silent: bool = False,
 ) -> None:
     """Placeholder shot video: solid color + burned-in shot number.
 
@@ -98,6 +99,13 @@ def make_shot_video(
     adelay does) — this is what `[0:a]` means to audio_mixer.build_audio_filter
     downstream, since the audio chain reads the concatenated video's own
     audio, not frame.audio_url directly.
+
+    `silent=True` emits a shot with NO audio stream at all, which is what the
+    pipeline's default Silent Mode (create_video_task(generate_audio=False))
+    actually produces. The unconditional anullsrc below used to hide exactly
+    that case: pass 2 referenced [0:a], ffmpeg aborted with "matches no
+    streams", and BGM, loudnorm and burned subtitles were lost together while
+    the export still reported success. Keep this reachable.
     """
     color = _COLORS[(shot_no - 1) % len(_COLORS)]
     drawtext = (
@@ -106,7 +114,26 @@ def make_shot_video(
     )
     color_src = f"color=c={color}:s={WIDTH}x{HEIGHT}:d={duration_s}:r={FPS}"
 
-    if tts_path and os.path.exists(tts_path):
+    if silent:
+        cmd = [
+            ffmpeg,
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            color_src,
+            "-vf",
+            drawtext,
+            "-t",
+            f"{duration_s}",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-an",
+            out_path,
+        ]
+    elif tts_path and os.path.exists(tts_path):
         delay = f"{dub_offset_ms}|{dub_offset_ms}"
         filter_complex = f"[0:v]{drawtext}[v];[1:a]adelay={delay},apad[a]"
         cmd = [
@@ -246,6 +273,15 @@ def main() -> int:
         action="store_true",
         help="Force the reading-rate estimate path (skip DashScope TTS calls entirely).",
     )
+    parser.add_argument(
+        "--silent-shots",
+        action="store_true",
+        help=(
+            "Emit shots with no audio stream at all, reproducing the pipeline's "
+            "DEFAULT Silent Mode. The fixture otherwise muxes an anullsrc track "
+            "into every shot, which masks the pass-2 'matches no streams' failure."
+        ),
+    )
     args = parser.parse_args()
 
     ffmpeg = get_ffmpeg_path()
@@ -272,7 +308,15 @@ def main() -> int:
             tts_notes[shot_no] = "no dialogue"
 
         out_path = os.path.join(shot_dir, f"shot_{shot_no}.mp4")
-        make_shot_video(ffmpeg, shot_no, duration_s, out_path, tts_path, dub_offset_ms)
+        make_shot_video(
+            ffmpeg,
+            shot_no,
+            duration_s,
+            out_path,
+            tts_path,
+            dub_offset_ms,
+            silent=args.silent_shots,
+        )
 
         rel_video_url = os.path.relpath(out_path, "output").replace(os.sep, "/")
         task = VideoTask(
