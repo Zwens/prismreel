@@ -1209,7 +1209,8 @@
     "exportTitle": "导出最终视频",
     "exportSubtitle": "已选定 {ready} / {total} 帧，准备合并为最终 MP4。",
     "framesLabel": "帧",
-    "framesReadyLabel": "已完成"
+    "framesReadyLabel": "已完成",
+    "exportSubtitlesSkipped": "导出成功，但没有烧录字幕。"
   },
   "subtitle": {
     "tab": "字幕",

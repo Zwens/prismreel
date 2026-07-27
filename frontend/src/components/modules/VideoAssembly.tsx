@@ -293,6 +293,7 @@ export default function VideoAssembly() {
                             mergeError={mergeError}
                             framesReady={framesReady}
                             framesTotal={framesTotal}
+                            lastRenderSubtitles={currentProject?.last_render_report?.subtitles ?? null}
                             onMerge={handleMerge}
                             onDownload={handleDownload}
                             onDismissError={() => setMergeError(null)}
@@ -536,6 +537,7 @@ function ExportPhase({
     mergeError,
     framesReady,
     framesTotal,
+    lastRenderSubtitles,
     onMerge,
     onDownload,
     onDismissError,
@@ -546,12 +548,14 @@ function ExportPhase({
     mergeError: string | null;
     framesReady: number;
     framesTotal: number;
+    lastRenderSubtitles: string | null;
     onMerge: () => void;
     onDownload: () => void;
     onDismissError: () => void;
 }) {
     const ta = useTranslations("assembly");
     const allReady = framesTotal > 0 && framesReady === framesTotal;
+    const subtitlesSkipped = !!lastRenderSubtitles && lastRenderSubtitles.startsWith("skipped:");
     return (
         <div className="space-y-6 max-w-3xl">
             <section className="rounded-xl border border-glass-border bg-glass p-6">
@@ -631,6 +635,18 @@ function ExportPhase({
                     </motion.section>
                 )}
             </AnimatePresence>
+
+            {mergedVideoUrl && subtitlesSkipped && (
+                <div className="glass-panel flex items-start gap-3 rounded-lg border border-amber-500/40 p-4">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                    <div className="text-sm text-foreground">
+                        <p>{ta("exportSubtitlesSkipped")}</p>
+                        <p className="mt-1 font-mono text-xs text-text-secondary">
+                            {lastRenderSubtitles!.replace(/^skipped:/, "")}
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

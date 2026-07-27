@@ -1209,7 +1209,8 @@
     "exportTitle": "Export Final Video",
     "exportSubtitle": "{ready} / {total} frames selected — ready to merge into the final MP4.",
     "framesLabel": "Frames",
-    "framesReadyLabel": "Ready"
+    "framesReadyLabel": "Ready",
+    "exportSubtitlesSkipped": "Export succeeded, but subtitles were not burned in."
   },
   "subtitle": {
     "tab": "Subtitles",
