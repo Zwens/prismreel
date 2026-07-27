@@ -1227,7 +1227,8 @@
     "loadFailed": "Failed to load subtitles",
     "saveFailed": "Failed to save subtitle settings",
     "saved": "Subtitle settings saved",
-    "retry": "Retry"
+    "retry": "Retry",
+    "lastRenderSkipped": "The last export did not burn subtitles. The preview below is what would be rendered, not what shipped."
   },
   "motion": {
     "motionParams": "Motion Params",

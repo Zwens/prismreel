@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Download, Loader2, Subtitles } from "lucide-react";
+import { AlertTriangle, Download, Loader2, Subtitles } from "lucide-react";
 
 import { api, SubtitleCue, SubtitleTemplate } from "@/lib/api";
 import { toast } from "@/store/toastStore";
@@ -12,6 +12,12 @@ interface Props {
   projectId: string;
   initialEnabled?: boolean;
   initialTemplateId?: string;
+  /** `subtitles` field of the project's last_render_report: "burned" or
+   *  "skipped:<reason>". The cue list below is what *would* be rendered; it
+   *  says nothing about whether the last export actually carried it. Without
+   *  this the user cannot tell a subtitled film from one whose track was
+   *  silently dropped. */
+  lastRenderSubtitles?: string | null;
   /** Called with the updated Script after a successful save, so the caller can
    *  push it into the project store. Without this the store keeps the stale
    *  settings and the next mount re-reads outdated initial* props. */
@@ -28,6 +34,7 @@ export function SubtitlePanel({
   projectId,
   initialEnabled = true,
   initialTemplateId = "douyin",
+  lastRenderSubtitles = null,
   onSaved,
 }: Props) {
   const t = useTranslations("subtitle");
@@ -163,6 +170,18 @@ export function SubtitlePanel({
           ))}
         </div>
       </section>
+
+      {lastRenderSubtitles && lastRenderSubtitles !== "burned" ? (
+        <div className="glass-panel flex items-start gap-3 rounded-lg border border-amber-500/40 p-4">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+          <div className="text-sm text-foreground">
+            <p>{t("lastRenderSkipped")}</p>
+            <p className="mt-1 font-mono text-xs text-text-secondary">
+              {lastRenderSubtitles.replace(/^skipped:/, "")}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between">

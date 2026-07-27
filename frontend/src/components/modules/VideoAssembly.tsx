@@ -277,6 +277,7 @@ export default function VideoAssembly() {
                             projectId={currentProject.id}
                             initialEnabled={currentProject.subtitle_settings?.enabled ?? true}
                             initialTemplateId={currentProject.subtitle_settings?.template_id ?? "douyin"}
+                            lastRenderSubtitles={currentProject.last_render_report?.subtitles ?? null}
                             onSaved={(updated) => currentProject && updateProject(currentProject.id, updated as Partial<Project>)}
                         />
                     </div>
