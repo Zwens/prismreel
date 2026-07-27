@@ -152,6 +152,7 @@ CONFIG_FILES = {
     "build_windows.ps1": r'"--add-data",\s*"config;config"',
     "build_mac.sh": r'--add-data\s+"config:config"',
     "build.spec.template": r"\('config',\s*'config'\)",
+    "Dockerfile.backend": r"COPY\s+config/\s+config/",
 }
 
 

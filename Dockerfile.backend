@@ -14,6 +14,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY src/ src/
 
+# Ship the model catalog config (see config/model_catalog/catalog.meta.yaml —
+# get_default_model_settings() reads it at import time in models.py; without
+# this the container dies with FileNotFoundError before uvicorn ever binds).
+COPY config/ config/
+
 # Create output directories
 RUN mkdir -p output/uploads output/video output/assets output/storyboard \
     output/audio output/export output/video_inputs output/outputs/videos
