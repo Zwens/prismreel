@@ -4,7 +4,7 @@ import shutil
 import platform
 import os
 import sys
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 import logging
 
 logger = logging.getLogger(__name__)
@@ -75,6 +75,21 @@ def get_ffmpeg_path() -> str:
         )
 
     return None
+
+
+def get_ffprobe_path() -> Optional[str]:
+    """Get path to the ffprobe binary, mirroring get_ffmpeg_path resolution.
+
+    ffprobe ships alongside ffmpeg in every distribution we support, so we
+    derive it from the resolved ffmpeg path first and only fall back to PATH.
+    """
+    ffmpeg = get_ffmpeg_path()
+    if ffmpeg:
+        directory, name = os.path.split(ffmpeg)
+        candidate = os.path.join(directory, name.replace("ffmpeg", "ffprobe", 1))
+        if os.path.exists(candidate):
+            return candidate
+    return shutil.which("ffprobe")
 
 
 def check_ffmpeg() -> Tuple[bool, str]:

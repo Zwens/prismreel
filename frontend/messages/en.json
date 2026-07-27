@@ -1209,7 +1209,27 @@
     "exportTitle": "Export Final Video",
     "exportSubtitle": "{ready} / {total} frames selected — ready to merge into the final MP4.",
     "framesLabel": "Frames",
-    "framesReadyLabel": "Ready"
+    "framesReadyLabel": "Ready",
+    "exportSubtitlesSkipped": "Export succeeded, but subtitles were not burned in."
+  },
+  "subtitle": {
+    "tab": "Subtitles",
+    "title": "Subtitles",
+    "description": "Cues are derived from dialogue and dub timing — no speech recognition needed",
+    "enabled": "Burn subtitles on export",
+    "template": "Style template",
+    "templateDouyin": "Douyin",
+    "templateCinematic": "Cinematic",
+    "preview": "Cue preview",
+    "empty": "No dialogue yet. Add dialogue in the storyboard step first.",
+    "cueCount": "{count} cues",
+    "exportAss": "Export ASS",
+    "exportSrt": "Export SRT",
+    "loadFailed": "Failed to load subtitles",
+    "saveFailed": "Failed to save subtitle settings",
+    "saved": "Subtitle settings saved",
+    "retry": "Retry",
+    "lastRenderSkipped": "The last export did not burn subtitles. The preview below is what would be rendered, not what shipped."
   },
   "motion": {
     "motionParams": "Motion Params",

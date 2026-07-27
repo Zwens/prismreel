@@ -279,6 +279,18 @@ export interface Project {
     episode_number?: number;
     /** T13 — user-starred (featured) flag; drives the amber-halation card. */
     starred?: boolean;
+    /** V-1 — subtitle burn-in settings (Task 8/9). */
+    subtitle_settings?: { enabled: boolean; template_id: string };
+    /** V-1 — what the last export actually achieved. Subtitles can be dropped
+     *  by four independent paths and the resulting film looks like any other,
+     *  so the panel has to surface this rather than let the cue list imply
+     *  the track made it in. `subtitles` is "burned" or "skipped:<reason>". */
+    last_render_report?: {
+        subtitles?: string;
+        bgm?: string;
+        loudnorm?: string;
+        at?: number;
+    } | null;
 }
 
 interface ProjectStore {

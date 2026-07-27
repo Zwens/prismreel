@@ -23,7 +23,7 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from typing import Optional, Dict, List, Any
 import asyncio
 import re
@@ -96,6 +96,26 @@ os.makedirs("output", exist_ok=True)
 os.makedirs("output/uploads", exist_ok=True)
 os.makedirs("output/video", exist_ok=True)
 os.makedirs("output/assets", exist_ok=True)
+
+# BGM presets: the mux code path is complete but silently skips when the
+# audio file is absent, which used to make every export silent. Warn loudly.
+try:
+    from .audio import install_bundled_bgm_presets, verify_bgm_assets
+
+    # In a packaged build the mp3s arrive under sys._MEIPASS, but every
+    # lookup is relative to the CWD (main.py chdir()s to ~/.prismreel), so
+    # they have to be seeded into output/ first or the check below would
+    # correctly report all eight as missing on every desktop install.
+    install_bundled_bgm_presets()
+
+    _missing_bgm = verify_bgm_assets()
+    if _missing_bgm:
+        logger.warning(
+            f"[STARTUP] {len(_missing_bgm)} BGM preset file(s) missing — "
+            f"exports using them will have no background music: {_missing_bgm}"
+        )
+except Exception as e:  # never block startup on a cosmetic check
+    logger.warning(f"[STARTUP] BGM asset verification skipped: {e}")
 
 # Mount static files with multiple aliases to handle plural/singular inconsistencies
 # Legacy paths in projects.json often use 'outputs/videos' or 'outputs/assets'
@@ -2970,6 +2990,82 @@ def list_bgm_presets():
     """Return the BGM preset catalog. UI populates the Mix phase picker."""
     from .audio import get_bgm_presets
     return get_bgm_presets()
+
+
+# ─────────────────────────────────────────────────────────────
+# V-1 · Subtitle endpoints (templates + preview + settings + export)
+# ─────────────────────────────────────────────────────────────
+
+
+class UpdateSubtitleSettingsRequest(BaseModel):
+    enabled: bool = True
+    template_id: str = "douyin"
+    style_override: Optional[Dict[str, Any]] = None
+
+
+@app.get("/subtitle/templates")
+def list_subtitle_templates():
+    """Available burned-in subtitle style templates."""
+    from .subtitle import SUBTITLE_TEMPLATES
+
+    return [{"id": tid, **style.model_dump()} for tid, style in SUBTITLE_TEMPLATES.items()]
+
+
+@app.get("/projects/{script_id}/subtitle/preview")
+def preview_subtitles(script_id: str):
+    """Cue list derived from dialogue + TTS timing. No rendering, no ASR."""
+    try:
+        return pipeline.get_subtitle_preview(script_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.put("/projects/{script_id}/subtitle/settings")
+def update_subtitle_settings(script_id: str, request: UpdateSubtitleSettingsRequest):
+    from .models import SubtitleSettings, SubtitleStyle
+    from .subtitle import SUBTITLE_TEMPLATES
+
+    if request.template_id not in SUBTITLE_TEMPLATES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown template '{request.template_id}'. "
+            f"Available: {sorted(SUBTITLE_TEMPLATES)}",
+        )
+
+    # Build the settings OUTSIDE the not-found handler below. pydantic's
+    # ValidationError subclasses ValueError, so constructing inside that
+    # `except ValueError -> 404` would report a bad style_override on a
+    # perfectly existing project as "project not found" — sending the UI to
+    # a missing-project state instead of showing a field error.
+    try:
+        settings = SubtitleSettings(
+            enabled=request.enabled,
+            template_id=request.template_id,
+            style_override=(
+                SubtitleStyle(**request.style_override) if request.style_override else None
+            ),
+        )
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid subtitle style: {e}")
+
+    try:
+        script = pipeline.update_subtitle_settings(script_id, settings)
+        return signed_response(script)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/projects/{script_id}/subtitle/export")
+def export_subtitle(script_id: str, fmt: str = "ass"):
+    from fastapi.responses import FileResponse
+
+    if fmt not in ("ass", "srt"):
+        raise HTTPException(status_code=400, detail="fmt must be 'ass' or 'srt'")
+    try:
+        path = pipeline.export_subtitle_file(script_id, fmt)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return FileResponse(path, filename=os.path.basename(path))
 
 
 class AudioMixRequest(BaseModel):

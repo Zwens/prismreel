@@ -1,5 +1,4 @@
 from typing import Dict, Any, List, Optional, Tuple
-import json
 import os
 import re
 import time
@@ -15,9 +14,12 @@ from .storyboard import StoryboardGenerator
 from .video import VideoGenerator
 from .audio import AudioGenerator
 from .export import ExportManager
+from .editing import RenderEngine, collect_render_segments
 from ...utils import get_logger
+from ...utils.atomic_json import atomic_write_json, load_json_strict
 from ...utils.oss_utils import is_object_key
 from ...utils.provider_registry import resolve_provider_backend
+from ...utils.safe_path import safe_resolve_path as _safe_resolve_path
 from ...utils.system_check import get_ffmpeg_path, get_ffmpeg_install_instructions
 
 logger = get_logger(__name__)
@@ -33,19 +35,6 @@ def _validate_safe_id(value: str, label: str = "id") -> str:
     if not value or not _SAFE_ID_RE.match(value):
         raise ValueError(f"Invalid {label}: contains unsafe characters")
     return value
-
-
-def _safe_resolve_path(base_dir: str, untrusted_rel: str) -> str:
-    """Resolve *untrusted_rel* under *base_dir* and ensure the result stays inside it.
-
-    Prevents path-traversal attacks (e.g. ``../../etc/passwd``).
-    Returns the resolved absolute path; raises ValueError on escape attempts.
-    """
-    base = os.path.realpath(base_dir)
-    resolved = os.path.realpath(os.path.join(base, untrusted_rel))
-    if not resolved.startswith(base + os.sep) and resolved != base:
-        raise ValueError(f"Path escapes base directory: {untrusted_rel}")
-    return resolved
 
 
 class LibraryAssetInUseError(Exception):
@@ -386,23 +375,19 @@ class ComicGenPipeline:
         return self.scripts.get(script_id)
 
     def _load_data(self) -> Dict[str, Script]:
-        if not os.path.exists(self.data_file):
+        data = load_json_strict(self.data_file)
+        if data is None:
             return {}
-        try:
-            with open(self.data_file, 'r') as f:
-                data = json.load(f)
-                return {k: Script(**v) for k, v in data.items()}
-        except Exception as e:
-            logger.error(f"Failed to load data: {e}")
-            return {}
+        return {k: Script(**v) for k, v in data.items()}
 
     def _save_data(self):
         """Save data with thread lock to prevent concurrent write issues."""
         with self._save_lock:
             try:
-                os.makedirs(os.path.dirname(self.data_file), exist_ok=True)
-                with open(self.data_file, 'w') as f:
-                    json.dump({k: v.dict() for k, v in self.scripts.items()}, f, indent=2)
+                atomic_write_json(
+                    self.data_file,
+                    {k: v.model_dump() for k, v in self.scripts.items()},
+                )
             except Exception as e:
                 logger.error(f"Failed to save data: {e}")
 
@@ -2833,64 +2818,49 @@ class ComicGenPipeline:
         except Exception as e:
             logger.warning(f"[MERGE] Could not get FFmpeg version: {e}")
             
-        # Collect video paths
-        video_paths = []
-        for i, frame in enumerate(script.frames):
-            logger.info(f"[MERGE] Processing frame {i+1}/{len(script.frames)}: {frame.id}")
+        # Collect video paths. collect_render_segments is the single source
+        # of truth for "which video does this shot use" — it is also what
+        # RenderEngine's subtitle timeline is built from below, so selecting
+        # here and selecting there must not be two different computations
+        # (that was the bug: a shot present in one list and absent from the
+        # other silently desyncs every subtitle cue after it).
+        segments = collect_render_segments(
+            script,
+            resolve=lambda u: _safe_resolve_path("output", u),
+        )
 
-            # Prefer dubbed version (TTS audio already overlaid with lip-sync offset)
-            if frame.dubbed_video_url:
-                dubbed_path = _safe_resolve_path("output", frame.dubbed_video_url)
-                if os.path.exists(dubbed_path):
-                    logger.debug(f"[MERGE]   -> Using dubbed video: {frame.dubbed_video_url}")
-                    video_paths.append(frame.dubbed_video_url)
-                    continue
-                else:
-                    logger.warning(f"[MERGE]   -> Dubbed video file missing: {dubbed_path}, falling back")
-
-            if not frame.selected_video_id:
-                # Try to find a default completed video
-                default_video = next((v for v in script.video_tasks if v.frame_id == frame.id and v.status == "completed"), None)
-                if default_video and default_video.video_url:
-                    logger.debug(f"[MERGE]   -> Using default video: {default_video.video_url}")
-                    video_paths.append(default_video.video_url)
-                else:
-                    logger.warning(f"[MERGE]   -> No video selected or available, skipping")
-                continue
-                
-            video = next((v for v in script.video_tasks if v.id == frame.selected_video_id), None)
-            if video and video.video_url:
-                logger.debug(f"[MERGE]   -> Selected video: {video.video_url}")
-                video_paths.append(video.video_url)
-            else:
-                logger.warning(f"[MERGE]   -> Selected video {frame.selected_video_id} not found or has no URL")
-                
-        if not video_paths:
+        if not segments:
             logger.error("[MERGE] No videos found to merge!")
             raise ValueError("No videos selected to merge. Please select videos for each frame first.")
-        
-        logger.info(f"[MERGE] Found {len(video_paths)} videos to merge")
-            
-        # Create file list for ffmpeg
-        list_path = _safe_resolve_path("output", f"merge_list_{script_id}.txt")
-        abs_video_paths = []
 
-        with open(list_path, "w") as f:
-            for path in video_paths:
-                # Resolve to absolute path
-                if not path.startswith("http"):
-                    abs_path = _safe_resolve_path("output", path)
-                    if os.path.exists(abs_path):
-                        f.write(f"file '{abs_path}'\n")
-                        abs_video_paths.append(abs_path)
-                        logger.debug(f"[MERGE] Added to list: {abs_path}")
-                    else:
-                        logger.warning(f"[MERGE] Video file not found: {abs_path}")
-                        
+        logger.info(f"[MERGE] Found {len(segments)} videos to merge")
+
+        # Create file list for ffmpeg. A segment's video_path can still fail
+        # to exist on disk (e.g. a selected/first-completed take whose file
+        # was deleted after selection — collect_render_segments only checks
+        # existence for the dubbed-video branch), so this existence filter
+        # is kept, exactly mirroring the old per-file os.path.exists() check.
+        # Filtering `segments` itself (not a separate path list) keeps the
+        # concat list and the RenderEngine subtitle timeline in lockstep.
+        list_path = _safe_resolve_path("output", f"merge_list_{script_id}.txt")
+        existing_segments = []
+        for seg in segments:
+            if os.path.exists(seg.video_path):
+                existing_segments.append(seg)
+            else:
+                logger.warning(f"[MERGE] Video file not found: {seg.video_path}")
+        segments = existing_segments
+        abs_video_paths = [seg.video_path for seg in segments]
+
         if not abs_video_paths:
             logger.error("[MERGE] No valid video files found on disk!")
             raise ValueError("No valid video files found. The video files may have been deleted or moved.")
-        
+
+        with open(list_path, "w") as f:
+            for abs_path in abs_video_paths:
+                f.write(f"file '{abs_path}'\n")
+                logger.debug(f"[MERGE] Added to list: {abs_path}")
+
         logger.info(f"[MERGE] Merge list created with {len(abs_video_paths)} videos")
 
         # Output path
@@ -2946,22 +2916,52 @@ class ComicGenPipeline:
                 logger.error(f"[MERGE] ❌ Merged video file NOT found at: {output_path}")
                 raise RuntimeError(f"Video merge completed but output file not found: {output_path}")
 
-            # PR-3l · Pass 2: BGM mux. If script.bgm_url is set and the BGM
-            # file exists, overlay it under the existing audio track at the
-            # configured mix level. Dialogue stays on the original track of
-            # the per-frame videos (sound-driven I2V already embedded it);
-            # a future enhancement can swap to per-frame dialogue overlay.
+            # V-1 · Pass 2: audio chain (ducking + loudnorm) + subtitle burn.
+            # Replaces the old BGM-only mux. Any failure here is non-fatal —
+            # the concat output stays usable. Reuses the same `segments`
+            # used to build the concat list above — one selection, shared by
+            # both the video and the subtitle timeline.
             try:
-                mixed_path = self._maybe_apply_bgm_mux(
-                    script, output_path, ffmpeg_path,
+                bgm_abs = None
+                if (script.bgm_url or "").strip():
+                    bgm_abs = _safe_resolve_path("output", script.bgm_url.strip())
+                    if not os.path.exists(bgm_abs):
+                        logger.warning(
+                            f"[MERGE/BGM] preset file missing — {bgm_abs}; "
+                            f"rendering without background music"
+                        )
+                        bgm_abs = None
+
+                render_result = RenderEngine().finalize(
+                    script,
+                    output_path,
+                    ffmpeg_path=ffmpeg_path,
+                    segments=segments,
+                    bgm_abs_path=bgm_abs,
                 )
-                if mixed_path:
-                    # Replace the concat output with the mixed one (same filename)
-                    os.replace(mixed_path, output_path)
-                    logger.info(f"[MERGE] ✅ BGM mux applied — final file: {output_filename}")
-            except Exception as bgm_err:
-                # BGM is optional; log + carry on with the silent video
-                logger.warning(f"[MERGE] BGM mux skipped due to error: {bgm_err}")
+                if render_result.path:
+                    os.replace(render_result.path, output_path)
+                    logger.info(f"[MERGE] ✅ pass 2 applied — final file: {output_filename}")
+                # Record what pass 2 actually achieved. Without this the
+                # user cannot tell a film with subtitles from one whose
+                # subtitle track was silently dropped, and the subtitle
+                # preview happily keeps listing cues that were never burned.
+                report = render_result.as_report()
+                report["at"] = time.time()
+                script.last_render_report = report
+                if not render_result.subtitles_burned:
+                    logger.warning(
+                        f"[MERGE] subtitles were NOT burned into {output_filename} "
+                        f"(reason: {render_result.skip_reason})"
+                    )
+            except Exception as post_err:
+                logger.warning(f"[MERGE] pass 2 skipped due to error: {post_err}")
+                script.last_render_report = {
+                    "subtitles": f"skipped:pass2_error:{post_err}",
+                    "bgm": "none",
+                    "loudnorm": "skipped",
+                    "at": time.time(),
+                }
 
             self._save_data()
 
@@ -2987,64 +2987,6 @@ class ComicGenPipeline:
             # Extract user-friendly error message
             user_msg = self._extract_ffmpeg_error_message(stderr_msg, abs_video_paths)
             raise RuntimeError(user_msg)
-    
-    def _maybe_apply_bgm_mux(
-        self,
-        script: Script,
-        video_path: str,
-        ffmpeg_path: str,
-    ) -> Optional[str]:
-        """PR-3l · Overlay BGM at the configured mix level on top of the
-        already-merged video. Returns the path of the new file, or None
-        when no BGM is configured / the file is missing.
-
-        Strategy: 2-input filter — amix the existing video audio (volume =
-        dialogue_level/100) with the looped BGM (volume = bgm_level/100).
-        SFX track will be added in a later pass when SFX files exist.
-        """
-        bgm_rel = (script.bgm_url or "").strip()
-        if not bgm_rel:
-            return None
-        bgm_abs = _safe_resolve_path("output", bgm_rel)
-        if not os.path.exists(bgm_abs):
-            logger.info(f"[MERGE/BGM] preset file missing — {bgm_abs}; skipping mux")
-            return None
-
-        mix = script.mix_settings or {"dialogue": 100, "bgm": 35, "sfx": 60}
-        dial = max(0, min(100, int(mix.get("dialogue", 100)))) / 100.0
-        bgm_lvl = max(0, min(100, int(mix.get("bgm", 35)))) / 100.0
-
-        mixed_path = video_path.replace(".mp4", "_mixed.mp4")
-        # -stream_loop -1 loops BGM until shortest (the video) ends.
-        # apad on the dialogue side avoids amix cutting early on silence.
-        filter_complex = (
-            f"[0:a]volume={dial:.3f},apad[a0];"
-            f"[1:a]volume={bgm_lvl:.3f},aloop=loop=-1:size=2e9[a1];"
-            f"[a0][a1]amix=inputs=2:duration=first:dropout_transition=0[aout]"
-        )
-        cmd = [
-            ffmpeg_path, "-y",
-            "-i", video_path,
-            "-stream_loop", "-1", "-i", bgm_abs,
-            "-filter_complex", filter_complex,
-            "-map", "0:v", "-map", "[aout]",
-            "-c:v", "copy",
-            "-c:a", "aac", "-b:a", "192k",
-            "-shortest",
-            "-movflags", "+faststart",
-            mixed_path,
-        ]
-        logger.info(f"[MERGE/BGM] muxing BGM dial={dial:.2f} bgm={bgm_lvl:.2f} — {os.path.basename(bgm_abs)}")
-        try:
-            subprocess.run(cmd, check=True, capture_output=True, timeout=300)
-        except subprocess.CalledProcessError as e:
-            stderr_msg = e.stderr.decode() if e.stderr else ""
-            logger.warning(f"[MERGE/BGM] ffmpeg failed: {stderr_msg[:400]}")
-            return None
-        if not os.path.exists(mixed_path):
-            logger.warning(f"[MERGE/BGM] mixed output not found: {mixed_path}")
-            return None
-        return mixed_path
 
     def _extract_ffmpeg_error_message(self, stderr: str, video_paths: List[str]) -> str:
         """
@@ -3133,6 +3075,87 @@ class ComicGenPipeline:
             return f"FFmpeg merge failed: {last_line}\n\nPlease check the application logs for more details."
         
         return "FFmpeg merge failed with unknown error. Please check the application logs for details."
+
+    # ============================================================
+    # V-1 · Subtitles
+    # ============================================================
+
+    def get_subtitle_preview(self, script_id: str) -> List[Dict[str, Any]]:
+        """Compute the cue list without rendering, for UI display."""
+        _validate_safe_id(script_id, "script_id")
+        script = self.scripts.get(script_id)
+        if not script:
+            raise ValueError("Script not found")
+
+        from .subtitle import build_subtitle_cues
+
+        segments = collect_render_segments(
+            script, resolve=lambda u: _safe_resolve_path("output", u)
+        )
+        cues = build_subtitle_cues(
+            script.frames, segments, resolve=lambda u: _safe_resolve_path("output", u)
+        )
+        return [
+            {
+                "index": i + 1,
+                "start_s": round(c.start_s, 2),
+                "end_s": round(c.end_s, 2),
+                "text": c.text,
+                "speaker": c.speaker,
+            }
+            for i, c in enumerate(cues)
+        ]
+
+    def update_subtitle_settings(self, script_id: str, settings) -> Script:
+        _validate_safe_id(script_id, "script_id")
+        script = self.scripts.get(script_id)
+        if not script:
+            raise ValueError("Script not found")
+        script.subtitle_settings = settings
+        script.updated_at = time.time()
+        self._save_data()
+        return script
+
+    def export_subtitle_file(self, script_id: str, fmt: str = "ass") -> str:
+        """Write a standalone subtitle file and return its absolute path."""
+        _validate_safe_id(script_id, "script_id")
+        if fmt not in ("ass", "srt"):
+            raise ValueError(f"Unsupported subtitle format: {fmt}")
+
+        script = self.scripts.get(script_id)
+        if not script:
+            raise ValueError("Script not found")
+
+        from .subtitle import (
+            SUBTITLE_TEMPLATES,
+            build_subtitle_cues,
+            render_ass,
+            render_srt,
+        )
+
+        segments = collect_render_segments(
+            script, resolve=lambda u: _safe_resolve_path("output", u)
+        )
+        cues = build_subtitle_cues(
+            script.frames, segments, resolve=lambda u: _safe_resolve_path("output", u)
+        )
+
+        out_dir = _safe_resolve_path("output", "subtitles")
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = os.path.join(out_dir, f"{script_id}.{fmt}")
+
+        if fmt == "srt":
+            content = render_srt(cues)
+        else:
+            settings = script.subtitle_settings
+            style = settings.style_override or SUBTITLE_TEMPLATES.get(
+                settings.template_id, SUBTITLE_TEMPLATES["douyin"]
+            )
+            content = render_ass(cues, style, play_res=(1080, 1920))
+
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return out_path
 
     def create_asset_video_task(self, script_id: str, asset_id: str, asset_type: str, prompt: str, duration: int = 5, aspect_ratio: str = None) -> Tuple[Script, str]:
         """Creates a new video generation task for an asset (R2V)."""
@@ -3871,22 +3894,18 @@ class ComicGenPipeline:
     # ============================================================
 
     def _load_series_data(self) -> Dict[str, Series]:
-        if not os.path.exists(self.series_data_file):
+        data = load_json_strict(self.series_data_file)
+        if data is None:
             return {}
-        try:
-            with open(self.series_data_file, 'r') as f:
-                data = json.load(f)
-                return {k: Series(**v) for k, v in data.items()}
-        except Exception as e:
-            logger.error(f"Failed to load series data: {e}")
-            return {}
+        return {k: Series(**v) for k, v in data.items()}
 
     def _save_series_data_unlocked(self):
         """Save series data without acquiring the lock (caller must hold self._save_lock)."""
         try:
-            os.makedirs(os.path.dirname(self.series_data_file) or ".", exist_ok=True)
-            with open(self.series_data_file, 'w') as f:
-                json.dump({k: v.model_dump() for k, v in self.series_store.items()}, f, indent=2)
+            atomic_write_json(
+                self.series_data_file,
+                {k: v.model_dump() for k, v in self.series_store.items()},
+            )
         except Exception as e:
             logger.error(f"Failed to save series data: {e}")
 
@@ -3900,22 +3919,15 @@ class ComicGenPipeline:
     # ============================================================
 
     def _load_library_data(self) -> GlobalAssetLibrary:
-        if not os.path.exists(self.library_data_file):
+        data = load_json_strict(self.library_data_file)
+        if data is None:
             return GlobalAssetLibrary()
-        try:
-            with open(self.library_data_file, 'r') as f:
-                data = json.load(f)
-                return GlobalAssetLibrary(**data)
-        except Exception as e:
-            logger.error(f"Failed to load library data: {e}")
-            return GlobalAssetLibrary()
+        return GlobalAssetLibrary(**data)
 
     def _save_library_data_unlocked(self):
         """Save global library data without acquiring the lock (caller must hold self._save_lock)."""
         try:
-            os.makedirs(os.path.dirname(self.library_data_file) or ".", exist_ok=True)
-            with open(self.library_data_file, 'w') as f:
-                json.dump(self.library_store.model_dump(), f, indent=2)
+            atomic_write_json(self.library_data_file, self.library_store.model_dump())
         except Exception as e:
             logger.error(f"Failed to save library data: {e}")
 

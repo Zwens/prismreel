@@ -111,6 +111,28 @@ export interface BgmPreset {
     url: string;
 }
 
+export interface SubtitleTemplate {
+    id: string;
+    font_family: string;
+    font_size: number;
+    primary_color: string;
+    outline_color: string;
+    outline_width: number;
+    bold: boolean;
+    alignment: number;
+    margin_v: number;
+    chars_per_line: number;
+    max_lines: number;
+}
+
+export interface SubtitleCue {
+    index: number;
+    start_s: number;
+    end_s: number;
+    text: string;
+    speaker: string | null;
+}
+
 export interface ReconcileAction {
     local_id: string;
     action: "merge_into_series" | "create_new_in_series" | "skip";
@@ -1498,6 +1520,31 @@ export const api = {
         const response = await axios.post(`${API_URL}/series/import/confirm`, data);
         return response.data;
     },
+
+    // ---- V-1 subtitles ----
+    listSubtitleTemplates: async (): Promise<SubtitleTemplate[]> => {
+        const res = await axios.get(`${API_URL}/subtitle/templates`);
+        return res.data;
+    },
+
+    previewSubtitles: async (projectId: string): Promise<SubtitleCue[]> => {
+        const res = await axios.get(`${API_URL}/projects/${projectId}/subtitle/preview`);
+        return res.data;
+    },
+
+    updateSubtitleSettings: async (
+        projectId: string,
+        settings: { enabled: boolean; template_id: string }
+    ) => {
+        const res = await axios.put(
+            `${API_URL}/projects/${projectId}/subtitle/settings`,
+            settings
+        );
+        return res.data;
+    },
+
+    subtitleExportUrl: (projectId: string, fmt: "ass" | "srt") =>
+        `${API_URL}/projects/${projectId}/subtitle/export?fmt=${fmt}`,
 };
 
 // ============================================

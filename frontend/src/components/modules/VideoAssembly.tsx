@@ -3,18 +3,20 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2, Film, AlertTriangle, Layout, Clock, FileText, Download, Music, Sliders, Package } from "lucide-react";
-import { useProjectStore } from "@/store/projectStore";
+import { Check, Loader2, Film, AlertTriangle, Layout, Clock, FileText, Download, Music, Sliders, Package, Subtitles } from "lucide-react";
+import { useProjectStore, type Project } from "@/store/projectStore";
 import { api, type BgmPreset } from "@/lib/api";
 import { getAssetUrl, extractErrorDetail } from "@/lib/utils";
 import StepPageHeader, { StepPill } from "@/components/shared/StepPageHeader";
 import SidePanelHeader from "@/components/shared/SidePanelHeader";
+import { SubtitlePanel } from "@/components/assembly/SubtitlePanel";
 
-type AssemblyPhase = "takes" | "mix" | "export";
+type AssemblyPhase = "takes" | "mix" | "subtitle" | "export";
 
 export default function VideoAssembly() {
     const ta = useTranslations("assembly");
     const tStep = useTranslations("stepHeader");
+    const tSubtitle = useTranslations("subtitle");
     const currentProject = useProjectStore((state) => state.currentProject);
     const updateProject = useProjectStore((state) => state.updateProject);
 
@@ -135,9 +137,10 @@ export default function VideoAssembly() {
                 {/* PR-3k · Phase tabs — Takes / Mix / Export */}
                 <div className="flex items-center gap-1 px-6 pt-2 border-b border-glass-border bg-surface">
                     {[
-                        { id: "takes" as const,  label: ta("phaseTakes"),  icon: <Film size={12} /> },
-                        { id: "mix" as const,    label: ta("phaseMix"),    icon: <Sliders size={12} /> },
-                        { id: "export" as const, label: ta("phaseExport"), icon: <Package size={12} /> },
+                        { id: "takes" as const,    label: ta("phaseTakes"),   icon: <Film size={12} /> },
+                        { id: "mix" as const,      label: ta("phaseMix"),     icon: <Sliders size={12} /> },
+                        { id: "subtitle" as const, label: tSubtitle("tab"),   icon: <Subtitles size={12} /> },
+                        { id: "export" as const,   label: ta("phaseExport"),  icon: <Package size={12} /> },
                     ].map((p) => (
                         <button
                             key={p.id}
@@ -267,6 +270,19 @@ export default function VideoAssembly() {
                     />
                 )}
 
+                {/* Subtitle phase body — template picker + cue preview + export */}
+                {phase === "subtitle" && currentProject && (
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        <SubtitlePanel
+                            projectId={currentProject.id}
+                            initialEnabled={currentProject.subtitle_settings?.enabled ?? true}
+                            initialTemplateId={currentProject.subtitle_settings?.template_id ?? "douyin"}
+                            lastRenderSubtitles={currentProject.last_render_report?.subtitles ?? null}
+                            onSaved={(updated) => currentProject && updateProject(currentProject.id, updated as Partial<Project>)}
+                        />
+                    </div>
+                )}
+
                 {/* Export phase body — merge action + final preview + download */}
                 {phase === "export" && (
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-6">
@@ -277,6 +293,7 @@ export default function VideoAssembly() {
                             mergeError={mergeError}
                             framesReady={framesReady}
                             framesTotal={framesTotal}
+                            lastRenderSubtitles={currentProject?.last_render_report?.subtitles ?? null}
                             onMerge={handleMerge}
                             onDownload={handleDownload}
                             onDismissError={() => setMergeError(null)}
@@ -520,6 +537,7 @@ function ExportPhase({
     mergeError,
     framesReady,
     framesTotal,
+    lastRenderSubtitles,
     onMerge,
     onDownload,
     onDismissError,
@@ -530,12 +548,14 @@ function ExportPhase({
     mergeError: string | null;
     framesReady: number;
     framesTotal: number;
+    lastRenderSubtitles: string | null;
     onMerge: () => void;
     onDownload: () => void;
     onDismissError: () => void;
 }) {
     const ta = useTranslations("assembly");
     const allReady = framesTotal > 0 && framesReady === framesTotal;
+    const subtitlesSkipped = !!lastRenderSubtitles && lastRenderSubtitles.startsWith("skipped:");
     return (
         <div className="space-y-6 max-w-3xl">
             <section className="rounded-xl border border-glass-border bg-glass p-6">
@@ -615,6 +635,18 @@ function ExportPhase({
                     </motion.section>
                 )}
             </AnimatePresence>
+
+            {mergedVideoUrl && subtitlesSkipped && (
+                <div className="glass-panel flex items-start gap-3 rounded-lg border border-amber-500/40 p-4">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                    <div className="text-sm text-foreground">
+                        <p>{ta("exportSubtitlesSkipped")}</p>
+                        <p className="mt-1 font-mono text-xs text-text-secondary">
+                            {lastRenderSubtitles!.replace(/^skipped:/, "")}
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

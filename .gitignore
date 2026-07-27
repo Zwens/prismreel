@@ -90,7 +90,8 @@ logs/
 
 # Project outputs
 static/output/
-output/
+output/*
+!output/presets/
 static/
 
 # Internal development tools (not for public repo)

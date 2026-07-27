@@ -1209,7 +1209,27 @@
     "exportTitle": "导出最终视频",
     "exportSubtitle": "已选定 {ready} / {total} 帧，准备合并为最终 MP4。",
     "framesLabel": "帧",
-    "framesReadyLabel": "已完成"
+    "framesReadyLabel": "已完成",
+    "exportSubtitlesSkipped": "导出成功，但没有烧录字幕。"
+  },
+  "subtitle": {
+    "tab": "字幕",
+    "title": "字幕",
+    "description": "字幕由台词和配音时长自动推算，无需语音识别",
+    "enabled": "导出时烧录字幕",
+    "template": "样式模板",
+    "templateDouyin": "抖音风",
+    "templateCinematic": "影视风",
+    "preview": "字幕预览",
+    "empty": "还没有台词。请先在分镜步骤填写台词。",
+    "cueCount": "共 {count} 条字幕",
+    "exportAss": "导出 ASS",
+    "exportSrt": "导出 SRT",
+    "loadFailed": "加载字幕失败",
+    "saveFailed": "保存字幕设置失败",
+    "saved": "字幕设置已保存",
+    "retry": "重试",
+    "lastRenderSkipped": "上次导出没有烧录字幕。下面的预览是「将会」渲染的内容，不代表已经进片。"
   },
   "motion": {
     "motionParams": "动态参数",

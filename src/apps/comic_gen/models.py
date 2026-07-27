@@ -517,6 +517,30 @@ class PromptConfig(BaseModel):
     # 显式覆盖时用于切到 vision-capable 或更便宜的模型（qwen3.6-flash、kimi-k2.6 等）。
     polish_model: str = Field("", description="Override LLM model id used for polish calls; empty = use system default")
 
+class SubtitleStyle(BaseModel):
+    """ASS style parameters. Colors are #RRGGBB; conversion to the ASS
+    &HAABBGGRR form happens in subtitle.render_ass."""
+
+    font_family: str = Field("Alibaba PuHuiTi", description="字体名（需在渲染机上已安装）")
+    font_size: int = Field(64, description="字号，基于 1080x1920 参考分辨率")
+    primary_color: str = Field("#FFFFFF", description="字体颜色 #RRGGBB")
+    outline_color: str = Field("#000000", description="描边颜色 #RRGGBB")
+    outline_width: int = Field(3, description="描边宽度")
+    bold: bool = Field(True)
+    alignment: int = Field(2, ge=1, le=9, description="ASS numpad 对齐：2=底部居中, 8=顶部居中, 5=正中")
+    margin_v: int = Field(180, ge=0, description="垂直边距，避开平台 UI 遮挡区")
+    chars_per_line: int = Field(18, ge=1, description="每行字数，超出自动换行")
+    max_lines: int = Field(2, ge=1, description="最大行数，超出截断并加省略号")
+
+
+class SubtitleSettings(BaseModel):
+    """Per-project subtitle configuration."""
+
+    enabled: bool = Field(True, description="导出时是否烧录字幕")
+    template_id: str = Field("douyin", description="样式模板 id：douyin / cinematic")
+    style_override: Optional[SubtitleStyle] = Field(None, description="非空时覆盖模板样式")
+
+
 class Script(BaseModel):
     id: str = Field(..., description="Unique identifier for the script project")
     title: str = Field(..., description="Title of the comic/video")
@@ -562,6 +586,24 @@ class Script(BaseModel):
     mix_settings: Dict[str, int] = Field(
         default_factory=lambda: {"dialogue": 100, "bgm": 35, "sfx": 60},
         description="Per-track gain 0-100: dialogue / bgm / sfx",
+    )
+
+    # V-1 · Burned-in subtitle configuration. Cues are derived from frame
+    # dialogue + TTS timing at render time, not stored.
+    subtitle_settings: SubtitleSettings = Field(
+        default_factory=SubtitleSettings,
+        description="字幕烧录配置（时间码在渲染时从台词与 TTS 时长推算）",
+    )
+
+    # V-1 · Result of the last export. Subtitles can be dropped by four
+    # independent paths (disabled / zero-duration segment / no dialogue /
+    # ffmpeg failure) and the film looks like any other film afterwards, so
+    # the outcome has to be recorded somewhere the caller and the UI can
+    # read it. Shape: {"subtitles": "burned"|"skipped:<reason>",
+    # "bgm": "applied"|"none", "loudnorm": "applied"|"skipped", "at": epoch}
+    last_render_report: Optional[Dict[str, Any]] = Field(
+        None,
+        description="上次导出的结果：字幕/BGM/响度是否实际生效及原因",
     )
 
     # Series association
