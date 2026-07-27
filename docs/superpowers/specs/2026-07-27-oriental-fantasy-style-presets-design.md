@@ -79,7 +79,7 @@
 | `xianxia_ethereal` | 仙侠 · 缥缈仙境 | 青绿冷调 + 柔光溢出 | jade-green / pale cyan、soft bloom、流云飞袂、淡紫高光、低对比 | 苍兰诀、长月烬明 |
 | `cultivation_qi` | 修真 · 天地灵气 | 深蓝紫底 + 金色高光 | indigo / violet 暗部、熔金轮廓光、灵气漩涡、径向神光、高对比高锐度 | 凡人修仙传、斗破苍穹 |
 | `xuanhuan_primordial` | 玄幻 · 洪荒异世 | 暗红橙 + 深青底 | 深青去饱和暗部、暗橙余烬高光、洪荒巨构遗迹、大气雾霾、暗角 + 轻微色差 | 将夜、九州 |
-| `guofeng_silk_scroll` | 古风 · 绢帛画卷 | 暖黄低饱和 | 琥珀低饱和、绢纸颗粒、中间调提亮、宋式内景、克制刺绣、柔和窗光 | 知否、清平乐 |
+| `guofeng_period_drama` | 古风 · 庭院深深 | 暖黄低饱和 | 琥珀低饱和、自然窗光、浅景深、宋式内景、克制刺绣、胶片颗粒 | 知否、清平乐 |
 | `palace_romance` | 古偶爱情 · 桃花灼灼 | 粉暖柔调 + 柔焦 | 粉桃中间调、暖紫阴影、柔焦光晕、落英、纱质汉服、低对比梦幻散景 | 花千骨、香蜜沉沉烬如霜 |
 | `wuxia_jianghu` | 武侠 · 江湖风尘 | 尘土冷灰 + 刀锋冷冽 | 去饱和土色、冷钢高光、风沙布屑、竹林 / 客栈、硬直射光、胶片颗粒 | 徐克、胡金铨 |
 
@@ -131,10 +131,14 @@
 
 ### 4.3 定稿落盘
 
-用 ffmpeg 压到长边 1200px、每张 ≤600KB，按命名规范放入 `frontend/public/assets/styles/`，
+用 ffmpeg 压到长边 1200px，按命名规范放入 `frontend/public/assets/styles/`，
 回填 JSON 的 `thumbnail` 字段。
 
-存量 16 张不动。
+**格式用 JPEG，不用 PNG**。这些是照片类图像，PNG 无损编码在 1200px 下仍是
+2.1–2.6MB，压不到目标体积；JPEG（ffmpeg `-q:v 3`）同样观感下只有 210–350KB。
+`thumbnail` 是自由路径字段，前端 `<img src>` 不关心扩展名。
+
+存量 16 张 PNG 不动。
 
 ---
 
@@ -165,8 +169,31 @@
 | 文件 | 改动 |
 |------|------|
 | `src/apps/comic_gen/style_presets.json` | 新增 1 分类 + 6 预设，1 个预设改分类 |
-| `frontend/public/assets/styles/*.png` | 新增 6 张 |
+| `frontend/public/assets/styles/*.jpg` | 新增 6 张 |
 | `scripts/generate_style_thumbnails.py` | 新增 |
 | `tests/test_style_presets.py` | 新增 |
 
 前后端代码零改动。
+
+---
+
+## 7. 实施记录（2026-07-27 完成）
+
+出图评审阶段发现两个提示词缺陷，都会影响用户实际套用的结果，不只是缩略图：
+
+- **修真**：`floating talisman glyphs` 让模型渲染出满屏可读汉字（敕令/归元/镇/破…），
+  4 张候选全废。删除该词后恢复正常。
+- **古风**：`silk scroll paper grain` 把模型推向平面工笔插画，与「参考知否/清平乐」的
+  真人正剧意图相悖，也与同分类其他 5 个预设的影视质感不成体系。改写为
+  period-drama cinematography，并把 id 从 `guofeng_silk_scroll` 改为
+  `guofeng_period_drama`、名称改为「古风 · 庭院深深」，让名实相符（当时无任何项目引用旧 id）。
+
+此外中式场景会绕过普通的 `text` negative 生成招牌与碑刻，6 个预设统一补充
+`chinese characters, calligraphy, signage`。
+
+**顺带修复**：`src/models/image.py` 的 `_download_image` 用 `os.rename` 做「原子重命名」，
+但在 Windows 上目标文件已存在时会抛 `FileExistsError`，导致任何重复生成到同一路径的
+调用在图片已下载完成后才失败。改为 `os.replace`。
+
+**验证**：`tests/test_style_presets.py` 6 条通过；`/art_direction/presets` 返回
+5 分类 / 21 预设；前端东方奇幻 Tab 下 7 张卡片缩略图全部 `naturalWidth > 0` 加载成功。
