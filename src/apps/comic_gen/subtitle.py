@@ -12,8 +12,11 @@ ASR stays available as a V2 fallback for imported external audio.
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Tuple
 
+from ...utils import get_logger
 from ...utils.media_probe import probe_duration
 from .models import StoryboardFrame, SubtitleStyle
+
+logger = get_logger(__name__)
 
 # Comfortable Chinese subtitle reading rate. Also the fallback cue length
 # when no TTS audio exists yet.
@@ -43,14 +46,33 @@ def _estimate_duration(text: str) -> float:
     return max(MIN_CUE_S, len(text) / CHARS_PER_SECOND)
 
 
-def _spoken_duration(frame: StoryboardFrame, text: str, probe: Callable[[str], float]) -> float:
-    """Real TTS length when available, reading-rate estimate otherwise."""
+def _spoken_duration(
+    frame: StoryboardFrame,
+    text: str,
+    probe: Callable[[str], float],
+    resolve: Callable[[str], str],
+) -> float:
+    """Real TTS length when available, reading-rate estimate otherwise.
+
+    `frame.audio_url` is stored relative to the output directory
+    (audio.py writes os.path.relpath(path, "output")), so it must go
+    through `resolve` before it can be probed. Handing the raw stored
+    string to ffprobe made every probe fail and every cue silently fall
+    back to the reading-rate estimate.
+    """
     if not frame.audio_url:
         return _estimate_duration(text)
     try:
-        return probe(frame.audio_url)
-    except Exception:
-        # A missing or unreadable audio file must not drop the subtitle.
+        return probe(resolve(frame.audio_url))
+    except Exception as e:
+        # A missing or unreadable audio file must not drop the subtitle —
+        # but it must not be silent either: a swallowed exception here is
+        # indistinguishable from "the measurement worked", which is exactly
+        # how a permanently-failing probe survived review.
+        logger.warning(
+            f"[SUB] frame {frame.id}: TTS probe failed for {frame.audio_url!r} "
+            f"({e}); falling back to reading-rate estimate"
+        )
         return _estimate_duration(text)
 
 
@@ -59,12 +81,18 @@ def build_subtitle_cues(
     segments: List[RenderSegment],
     *,
     probe: Callable[[str], float] = probe_duration,
+    resolve: Callable[[str], str] = lambda u: u,
 ) -> List[SubtitleCue]:
     """Map dialogue onto the concatenated timeline.
 
     `segments` must be in render order and carry real measured durations —
     the cumulative sum of those durations is the output timeline. Segments
     with no matching frame still advance the clock so later cues stay aligned.
+
+    `resolve` maps a stored relative url to an absolute filesystem path,
+    mirroring collect_render_segments' convention (production passes
+    safe_resolve_path bound to "output"). The default identity keeps this
+    module free of any filesystem/deployment assumption.
     """
     by_id = {f.id: f for f in frames}
     cues: List[SubtitleCue] = []
@@ -85,7 +113,7 @@ def build_subtitle_cues(
         start = offset + (frame.dub_offset_ms or 0) / 1000.0
         start = min(start, max(offset, shot_end - MIN_CUE_S))
 
-        end = start + _spoken_duration(frame, text, probe)
+        end = start + _spoken_duration(frame, text, probe, resolve)
         end = min(end, shot_end)
         if end - start < MIN_CUE_S:
             # Prefer a short flash over a cue that runs past its shot: cues

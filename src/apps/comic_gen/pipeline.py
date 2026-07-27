@@ -19,6 +19,7 @@ from ...utils import get_logger
 from ...utils.atomic_json import atomic_write_json, load_json_strict
 from ...utils.oss_utils import is_object_key
 from ...utils.provider_registry import resolve_provider_backend
+from ...utils.safe_path import safe_resolve_path as _safe_resolve_path
 from ...utils.system_check import get_ffmpeg_path, get_ffmpeg_install_instructions
 
 logger = get_logger(__name__)
@@ -34,19 +35,6 @@ def _validate_safe_id(value: str, label: str = "id") -> str:
     if not value or not _SAFE_ID_RE.match(value):
         raise ValueError(f"Invalid {label}: contains unsafe characters")
     return value
-
-
-def _safe_resolve_path(base_dir: str, untrusted_rel: str) -> str:
-    """Resolve *untrusted_rel* under *base_dir* and ensure the result stays inside it.
-
-    Prevents path-traversal attacks (e.g. ``../../etc/passwd``).
-    Returns the resolved absolute path; raises ValueError on escape attempts.
-    """
-    base = os.path.realpath(base_dir)
-    resolved = os.path.realpath(os.path.join(base, untrusted_rel))
-    if not resolved.startswith(base + os.sep) and resolved != base:
-        raise ValueError(f"Path escapes base directory: {untrusted_rel}")
-    return resolved
 
 
 class LibraryAssetInUseError(Exception):
@@ -3086,7 +3074,9 @@ class ComicGenPipeline:
         segments = collect_render_segments(
             script, resolve=lambda u: _safe_resolve_path("output", u)
         )
-        cues = build_subtitle_cues(script.frames, segments)
+        cues = build_subtitle_cues(
+            script.frames, segments, resolve=lambda u: _safe_resolve_path("output", u)
+        )
         return [
             {
                 "index": i + 1,
@@ -3128,7 +3118,9 @@ class ComicGenPipeline:
         segments = collect_render_segments(
             script, resolve=lambda u: _safe_resolve_path("output", u)
         )
-        cues = build_subtitle_cues(script.frames, segments)
+        cues = build_subtitle_cues(
+            script.frames, segments, resolve=lambda u: _safe_resolve_path("output", u)
+        )
 
         out_dir = _safe_resolve_path("output", "subtitles")
         os.makedirs(out_dir, exist_ok=True)

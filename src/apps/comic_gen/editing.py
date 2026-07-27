@@ -19,6 +19,7 @@ from typing import Callable, List, Optional
 
 from ...utils import get_logger
 from ...utils.media_probe import probe_dimensions, probe_duration
+from ...utils.safe_path import safe_resolve_path
 from .audio_mixer import build_audio_filter
 from .models import Script
 from .subtitle import (
@@ -181,7 +182,14 @@ class RenderEngine:
             )
             return None
 
-        cues = build_subtitle_cues(script.frames, segments)
+        # frame.audio_url is stored relative to the output dir; without this
+        # resolve every TTS probe fails and every cue silently degrades to a
+        # reading-rate estimate.
+        cues = build_subtitle_cues(
+            script.frames,
+            segments,
+            resolve=lambda u: safe_resolve_path(self.output_dir, u),
+        )
         if not cues:
             logger.info("[RENDER/SUB] no dialogue found; skipping subtitle burn")
             return None
