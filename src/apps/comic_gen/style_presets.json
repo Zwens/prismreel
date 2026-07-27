@@ -204,8 +204,10 @@
       "best_for": ["仙侠", "神话", "修仙情感", "缥缈幻境"],
       "avoid_for": ["写实武打", "赛博朋克", "现代都市"],
       "positive_prompt": "xianxia immortal realm cinematic art, jade-green and pale cyan palette, soft bloom light spill, pale lavender highlights, flowing silk hanfu with drifting ribbons, floating spirit petals, sea of clouds around suspended peaks, ornate jade hairpiece, low contrast ethereal glow, refined elegant composition",
-      "negative_prompt": "western medieval fantasy, cyberpunk neon, modern clothing, gritty realism, harsh contrast, heavy black outlines, dusty earth tones, low quality, blurry, text, logo, watermark",
-      "sample_prompt": "A young immortal disciple stands on a floating stone bridge above a sea of clouds, silk sleeves drifting in the wind, holding a brass compass that glows pale blue, distant jade peaks veiled in soft light"
+      "negative_prompt": "western medieval fantasy, cyberpunk neon, modern clothing, gritty realism, harsh contrast, heavy black outlines, dusty earth tones, low quality, blurry, text, chinese characters, calligraphy, signage, logo, watermark",
+      "sample_prompt": "A young immortal disciple stands on a floating stone bridge above a sea of clouds, silk sleeves drifting in the wind, holding a brass compass that glows pale blue, distant jade peaks veiled in soft light",
+      "thumbnail": "/assets/styles/oriental_fantasy__xianxia_ethereal__cloud_sea_bridge__square.jpg",
+      "object_position": "center 40%"
     },
     {
       "id": "cultivation_qi",
@@ -216,9 +218,11 @@
       "description": "修真功法质感，深蓝紫暗部配熔金轮廓光，灵气漩涡与径向神光",
       "best_for": ["修真", "功法对决", "宗门", "突破渡劫"],
       "avoid_for": ["温馨日常", "低对比柔焦", "写实都市"],
-      "positive_prompt": "cultivation fantasy cinematic art, deep indigo and violet shadows, molten gold rim light, swirling qi energy vortex, radial god rays, ancient sect robes, floating talisman glyphs, thunderous parting sky, high contrast, crisp detail, powerful heroic stance",
-      "negative_prompt": "pastel soft focus, low contrast, cozy daily life, modern city, western plate armor, chibi cartoon, flat lighting, low quality, blurry, text, logo, watermark",
-      "sample_prompt": "A young cultivator stands at the center of a swirling qi vortex on a mountain altar, golden energy tracing his robes, holding a brass compass blazing with light, storm clouds parting above"
+      "positive_prompt": "cultivation fantasy cinematic art, deep indigo and violet shadows, molten gold rim light, swirling qi energy vortex, radial god rays, ancient sect robes, thunderous parting sky, high contrast, crisp detail, powerful heroic stance",
+      "negative_prompt": "pastel soft focus, low contrast, cozy daily life, modern city, western plate armor, chibi cartoon, flat lighting, low quality, blurry, text, chinese characters, calligraphy, floating glyphs, signage, logo, watermark",
+      "sample_prompt": "A young cultivator stands at the center of a swirling qi vortex on a mountain altar, golden energy tracing his robes, holding a brass compass blazing with light, storm clouds parting above",
+      "thumbnail": "/assets/styles/oriental_fantasy__cultivation_qi__storm_altar_qi__square.jpg",
+      "object_position": "center 40%"
     },
     {
       "id": "xuanhuan_primordial",
@@ -230,21 +234,25 @@
       "best_for": ["玄幻", "洪荒", "异世大陆", "史诗战场"],
       "avoid_for": ["明亮小清新", "都市爱情", "Q版"],
       "positive_prompt": "xuanhuan epic fantasy art, desaturated deep teal shadows, dark ember-orange highlights, vast primordial landscape, monumental ancient ruins, heavy atmospheric haze, weathered bronze and stone, maximum contrast, strong vignette, subtle chromatic aberration, solemn desolate grandeur",
-      "negative_prompt": "bright cheerful palette, pastel colors, urban romance, chibi cartoon, clean modern design, flat lighting, low quality, blurry, text, logo, watermark",
-      "sample_prompt": "A lone figure stands before a colossal shattered stone gate on a windswept plain, ember light bleeding through the haze, holding a brass compass, ruins of a lost era stretching to the horizon"
+      "negative_prompt": "bright cheerful palette, pastel colors, urban romance, chibi cartoon, clean modern design, flat lighting, low quality, blurry, text, chinese characters, calligraphy, carved inscriptions, signage, logo, watermark",
+      "sample_prompt": "A lone figure stands before a colossal shattered stone gate on a windswept plain, ember light bleeding through the haze, holding a brass compass, ruins of a lost era stretching to the horizon",
+      "thumbnail": "/assets/styles/oriental_fantasy__xuanhuan_primordial__shattered_gate__square.jpg",
+      "object_position": "center 45%"
     },
     {
-      "id": "guofeng_silk_scroll",
+      "id": "guofeng_period_drama",
       "category": "oriental_fantasy",
-      "name": "Guofeng Silk Scroll",
-      "name_zh": "古风 · 绢帛画卷",
-      "subtitle_zh": "暖黄低饱和 · 绢纸质感 · 古典端庄",
-      "description": "古装正剧质感，暖琥珀低饱和配绢纸颗粒，宋式内景与克制的服饰纹样",
+      "name": "Guofeng Period Drama",
+      "name_zh": "古风 · 庭院深深",
+      "subtitle_zh": "暖黄低饱和 · 自然窗光 · 古典端庄",
+      "description": "古装正剧质感，暖琥珀低饱和配自然窗光，宋式内景与克制的服饰纹样",
       "best_for": ["古装正剧", "宫廷", "家族群像", "文人叙事"],
       "avoid_for": ["奇幻特效", "高饱和", "现代场景"],
-      "positive_prompt": "Chinese classical period drama art, warm amber low-saturation palette, silk scroll paper grain, lifted midtones, refined Song dynasty interiors, understated embroidered garments, soft window light through lattice screens, restrained elegant composition, dignified quiet mood",
-      "negative_prompt": "magical energy effects, neon colors, high saturation, modern setting, western fantasy, anime cel shading, harsh contrast, low quality, blurry, text, logo, watermark",
-      "sample_prompt": "A young scholar sits beside a latticed window in a quiet study, warm afternoon light falling across silk robes, a brass compass resting on the desk beside ink stone and scrolls"
+      "positive_prompt": "Chinese period drama cinematography, live-action film still, warm amber low-saturation grade, lifted midtones, natural window light through wooden lattice screens, refined Song dynasty interior set, silk costume texture with understated embroidery, shallow depth of field, subtle film grain, restrained elegant framing, dignified quiet mood",
+      "negative_prompt": "illustration, flat vector art, gongbi painting, ink wash, anime cel shading, 3d render, magical energy effects, neon colors, high saturation, modern setting, western fantasy, harsh contrast, low quality, blurry, text, chinese characters, calligraphy, signage, logo, watermark",
+      "sample_prompt": "A young scholar sits beside a latticed window in a quiet study, warm afternoon light falling across silk robes, a brass compass resting on the desk beside ink stone and scrolls",
+      "thumbnail": "/assets/styles/oriental_fantasy__guofeng_period_drama__lattice_window_study__square.jpg",
+      "object_position": "center 40%"
     },
     {
       "id": "palace_romance",
@@ -256,8 +264,10 @@
       "best_for": ["古偶爱情", "仙侠情感", "宫斗言情", "唯美单人"],
       "avoid_for": ["硬派动作", "写实厚重", "黑暗压抑"],
       "positive_prompt": "Chinese fantasy romance drama art, blush-peach midtones, warm violet shadows, soft focus glow, drifting blossom petals, gauzy layered hanfu, luminous rosy skin tones, low contrast dreamy bokeh, tender intimate framing, delicate ornamental hairpiece",
-      "negative_prompt": "gritty realism, harsh directional light, dark oppressive mood, heavy armor, desaturated earth tones, horror, low quality, blurry, text, logo, watermark",
-      "sample_prompt": "A young woman in layered gauze hanfu stands beneath a blossoming peach tree at golden hour, petals drifting past, holding a brass compass close to her chest, soft glow wrapping her silhouette"
+      "negative_prompt": "gritty realism, harsh directional light, dark oppressive mood, heavy armor, desaturated earth tones, horror, low quality, blurry, text, chinese characters, calligraphy, signage, logo, watermark",
+      "sample_prompt": "A young woman in layered gauze hanfu stands beneath a blossoming peach tree at golden hour, petals drifting past, holding a brass compass close to her chest, soft glow wrapping her silhouette",
+      "thumbnail": "/assets/styles/oriental_fantasy__palace_romance__peach_blossom_dusk__square.jpg",
+      "object_position": "center 35%"
     },
     {
       "id": "wuxia_jianghu",
@@ -269,8 +279,10 @@
       "best_for": ["武侠", "江湖", "客栈对决", "刀剑写实"],
       "avoid_for": ["仙气柔光", "特效法术", "粉调唯美"],
       "positive_prompt": "wuxia jianghu cinema art, dusty desaturated earth tones, cold steel grey highlights, wind-blown cloth and drifting dust motes, bamboo forest and desert inn settings, grounded martial physicality, hard directional light, pronounced film grain, restrained color, weathered practical costume",
-      "negative_prompt": "immortal soft bloom, magical energy glow, pastel romance palette, glossy 3d, floating celestial elements, oversaturated colors, low quality, blurry, text, logo, watermark",
-      "sample_prompt": "A travel-worn swordsman stands in the doorway of a desert inn at midday, dust hanging in the hard light, sword at his hip, holding a brass compass, wind pulling at his coarse robe"
+      "negative_prompt": "immortal soft bloom, magical energy glow, pastel romance palette, glossy 3d, floating celestial elements, oversaturated colors, low quality, blurry, text, chinese characters, calligraphy, shop sign, signage, logo, watermark",
+      "sample_prompt": "A travel-worn swordsman stands in the doorway of a desert inn at midday, dust hanging in the hard light, sword at his hip, holding a brass compass, wind pulling at his coarse robe",
+      "thumbnail": "/assets/styles/oriental_fantasy__wuxia_jianghu__desert_inn_noon__square.jpg",
+      "object_position": "center 40%"
     },
     {
       "id": "chinese_ink_fantasy",
