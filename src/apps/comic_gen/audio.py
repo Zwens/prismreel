@@ -1,4 +1,6 @@
 import os
+import shutil
+import sys
 import time
 import hashlib
 from typing import Dict, Any, List, Optional
@@ -46,6 +48,75 @@ def verify_bgm_assets() -> List[str]:
     Surfacing the gap loudly is the whole point of this function.
     """
     return [p["url"] for p in BGM_PRESETS if not os.path.exists(_bgm_abs_path(p["url"]))]
+
+
+def _bundled_bgm_dir() -> Optional[str]:
+    """Where PyInstaller unpacked the shipped preset audio, if we are frozen."""
+    base = getattr(sys, "_MEIPASS", None)
+    if not base:
+        return None
+    d = os.path.join(base, "output", "presets", "bgm")
+    return d if os.path.isdir(d) else None
+
+
+def install_bundled_bgm_presets() -> List[str]:
+    """Seed the working output dir from the bundled preset audio.
+
+    Bundling the mp3s is not enough on its own. main.py chdir()s to
+    ~/.prismreel before the app is imported, and every BGM lookup is
+    CWD-relative (_bgm_abs_path here, safe_resolve_path("output", ...) in
+    the pipeline), while PyInstaller unpacks --add-data under sys._MEIPASS.
+    The two never meet, so a packaged build would ship eight mp3s the app
+    can never open and every export would be silent again — precisely the
+    bug this phase set out to fix.
+
+    Copying into the working directory rather than teaching each consumer
+    about _MEIPASS keeps one resolution rule ("everything is relative to
+    output/"), so preset audio and user-uploaded audio stay on the same
+    path and behind the same traversal guard. It also makes the existing
+    verify_bgm_assets() startup check meaningful in a packaged build, and
+    it self-heals if a file is deleted.
+
+    Existing files are never overwritten: an operator who replaced a
+    placeholder with real licensed music must keep it across upgrades.
+
+    Returns the relative urls actually installed. Never raises — a failure
+    here degrades to "no BGM", which is what the startup check reports.
+    """
+    src_dir = _bundled_bgm_dir()
+    if not src_dir:
+        return []
+
+    installed: List[str] = []
+    for preset in BGM_PRESETS:
+        dest = _bgm_abs_path(preset["url"])
+        if os.path.exists(dest):
+            continue
+        src = os.path.join(src_dir, os.path.basename(preset["url"]))
+        if not os.path.exists(src):
+            continue
+        try:
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.copyfile(src, dest)
+        except OSError as e:
+            logger.warning(f"[STARTUP] could not install bundled BGM {preset['url']}: {e}")
+            continue
+        installed.append(preset["url"])
+
+    # The licence file is a release requirement, not decoration — it must
+    # travel with the audio it documents.
+    licences_src = os.path.join(src_dir, "LICENSES.md")
+    licences_dest = os.path.join("output", "presets", "bgm", "LICENSES.md")
+    if os.path.exists(licences_src) and not os.path.exists(licences_dest):
+        try:
+            os.makedirs(os.path.dirname(licences_dest), exist_ok=True)
+            shutil.copyfile(licences_src, licences_dest)
+        except OSError as e:
+            logger.warning(f"[STARTUP] could not install BGM LICENSES.md: {e}")
+
+    if installed:
+        logger.info(f"[STARTUP] installed {len(installed)} bundled BGM preset(s) into output/")
+    return installed
 
 
 def get_bgm_presets() -> List[Dict[str, Any]]:

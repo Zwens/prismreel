@@ -100,7 +100,13 @@ os.makedirs("output/assets", exist_ok=True)
 # BGM presets: the mux code path is complete but silently skips when the
 # audio file is absent, which used to make every export silent. Warn loudly.
 try:
-    from .audio import verify_bgm_assets
+    from .audio import install_bundled_bgm_presets, verify_bgm_assets
+
+    # In a packaged build the mp3s arrive under sys._MEIPASS, but every
+    # lookup is relative to the CWD (main.py chdir()s to ~/.prismreel), so
+    # they have to be seeded into output/ first or the check below would
+    # correctly report all eight as missing on every desktop install.
+    install_bundled_bgm_presets()
 
     _missing_bgm = verify_bgm_assets()
     if _missing_bgm:

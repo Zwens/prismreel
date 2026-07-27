@@ -110,12 +110,16 @@ else
     echo "提示: 未找到 icon.icns，将使用默认图标"
 fi
 
+# --add-data output/presets: BGM preset audio. Without it the packaged
+# app ships no mp3s and every export is silent; the app copies them out
+# of _MEIPASS at startup (audio.install_bundled_bgm_presets).
 pyinstaller --clean --noconfirm \
     --name "PrismReel Studio" \
     --windowed \
     $ICON_PARAM \
     --add-data "static:static" \
     --add-data "src:src" \
+    --add-data "output/presets:output/presets" \
     --add-binary "bin/ffmpeg:." \
     --hidden-import=src \
     --hidden-import=src.apps \
