@@ -17,6 +17,11 @@ Usage:
 
 Prints script_id / series_id / merged_video_url and writes a JSON summary to
 output/verify/synthetic_run_summary.json for the report to reference.
+
+NOT idempotent: every run calls create_project()/create_series() and appends
+a brand-new project + series to output/projects.json. There is no cleanup of
+prior runs, so repeated invocations accumulate synthetic entries in the local
+store. Do not re-run against a store you care about without expecting that.
 """
 
 import argparse
