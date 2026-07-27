@@ -663,8 +663,9 @@ class WanxImageModel(ImageGenModel):
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
             
-            # Atomic rename
-            os.rename(temp_path, output_path)
+            # Atomic replace. os.rename raises FileExistsError on Windows when the
+            # target exists, which breaks any regeneration into a path already on disk.
+            os.replace(temp_path, output_path)
             logger.info("Download complete.")
             
         except Exception as e:
