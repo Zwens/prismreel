@@ -115,6 +115,9 @@ $pyinstallerArgs = @(
     "--windowed",
     "--add-data", "static;static",
     "--add-data", "src;src",
+    # Model catalog YAML. models.py reads it at import time, so a build
+    # without it crashes on launch before the UI ever appears.
+    "--add-data", "config;config",
     # BGM preset audio. Without this the packaged app ships no mp3s and
     # every export is silent; audio.install_bundled_bgm_presets() copies
     # them out of _MEIPASS into the CWD the app actually reads.
@@ -170,6 +173,9 @@ if ($iconParam) {
         $iconParam,
         "--add-data", "static;static",
         "--add-data", "src;src",
+        # Model catalog YAML. models.py reads it at import time, so a build
+        # without it crashes on launch before the UI ever appears.
+        "--add-data", "config;config",
         # BGM preset audio. Without this the packaged app ships no mp3s
         # and every export is silent; audio.install_bundled_bgm_presets()
         # copies them out of _MEIPASS into the CWD the app actually reads.

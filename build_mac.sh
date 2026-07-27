@@ -119,6 +119,7 @@ pyinstaller --clean --noconfirm \
     $ICON_PARAM \
     --add-data "static:static" \
     --add-data "src:src" \
+    --add-data "config:config" \
     --add-data "output/presets:output/presets" \
     --add-binary "bin/ffmpeg:." \
     --hidden-import=src \

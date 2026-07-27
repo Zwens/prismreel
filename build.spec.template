@@ -15,6 +15,9 @@ ROOT_DIR = os.path.abspath('.')
 datas = [
     ('static', 'static'),
     ('src/apps/comic_gen/style_presets.json', 'src/apps/comic_gen'),
+    # models.py reads the model catalog YAML at import time — a build without
+    # it crashes on launch before the UI ever appears.
+    ('config', 'config'),
     # BGM preset audio. The app copies these out of _MEIPASS into its working
     # directory at startup (audio.install_bundled_bgm_presets); without them
     # every export comes out with no background music.

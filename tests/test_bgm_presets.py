@@ -146,3 +146,26 @@ def test_build_definitions_ship_the_bgm_presets(filename, pattern):
         f"{filename} does not ship output/presets — the packaged app would have "
         f"no BGM mp3s and every export would be silent again."
     )
+
+
+CONFIG_FILES = {
+    "build_windows.ps1": r'"--add-data",\s*"config;config"',
+    "build_mac.sh": r'--add-data\s+"config:config"',
+    "build.spec.template": r"\('config',\s*'config'\)",
+}
+
+
+@pytest.mark.parametrize("filename,pattern", sorted(CONFIG_FILES.items()))
+def test_build_definitions_ship_the_model_catalog(filename, pattern):
+    """models.py reads config/model_catalog/*.yaml at import time.
+
+    Found by actually building a bundle: without this entry the packaged
+    binary dies with FileNotFoundError on catalog.meta.yaml before the
+    window is ever created.
+    """
+    with open(os.path.join(REPO_ROOT, filename), encoding="utf-8") as f:
+        content = f.read()
+    assert re.search(pattern, content), (
+        f"{filename} does not ship config/ — the packaged app crashes at import "
+        f"(model_catalog reads catalog.meta.yaml before the UI starts)."
+    )
