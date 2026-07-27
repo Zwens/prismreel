@@ -317,8 +317,12 @@ git commit -m "feat(storage): atomic JSON writes with rolling backups and strict
 顶部 import 区加入：
 
 ```python
-from ...utils.atomic_json import DataCorruptionError, atomic_write_json, load_json_strict
+from ...utils.atomic_json import atomic_write_json, load_json_strict
 ```
+
+> 不要导入 `DataCorruptionError` —— `pipeline.py` 不捕获它。**它被设计成一路向上抛到进程启动失败**（人类伙伴 2026-07-26 裁决：库损坏时保持硬崩，不做友好兜底、更不自动回滚，因为静默回滚会丢掉备份之后的全部变更，那是 B1 的变种）。导入一个不用的名字只会触发 `flake8 F401`。
+>
+> 同时：这次改动移除了 `pipeline.py` 中最后三处 `json.load`/`json.dump`，顶部的 `import json`（`pipeline.py:2`）随之失效，**一并删掉**。
 
 把 `_load_data`（`pipeline.py:388-397`）整个替换为：
 
@@ -700,6 +704,15 @@ _VOICINGS = {
 DURATION_S = 60
 OUT_DIR = os.path.join("output", "presets", "bgm")
 
+# Placeholder loudness. These files exist so a human can confirm BY EAR that a
+# render actually picked up background music, so they must sit at a realistic
+# music-bed level. The render chain attenuates them again by the mix's bgm
+# level (default 35% ≈ -9 dB), and loudnorm in the final pass rescales the
+# whole programme without changing the BGM-to-dialogue ratio — so anything
+# mixed too quiet here stays inaudible under dialogue no matter what follows.
+# Target a measured peak of roughly -16..-12 dBFS; verify, do not assume.
+GAIN = 1.6
+
 
 def main() -> int:
     ff = get_ffmpeg_path()
@@ -719,7 +732,7 @@ def main() -> int:
             f"sine=frequency={fifth}:duration={DURATION_S}[c];"
             f"[a][b][c]amix=inputs=3:duration=longest,"
             f"tremolo=f={trem}:d=0.6,"
-            f"volume=0.25,"
+            f"volume={GAIN},"
             f"afade=t=in:st=0:d=2,afade=t=out:st={DURATION_S - 2}:d=2[out]"
         )
         cmd = [
@@ -744,6 +757,21 @@ if __name__ == "__main__":
 python scripts/generate_placeholder_bgm.py
 ls output/presets/bgm/*.mp3 | wc -l   # 应为 8
 ```
+
+**必须实测响度,不能只看"不是静音"。** 逐个文件测峰值:
+
+```bash
+for f in output/presets/bgm/*.mp3; do
+  echo -n "$(basename $f): "
+  ffmpeg -i "$f" -af volumedetect -f null - 2>&1 | grep max_volume
+done
+```
+
+判定：每个文件 `max_volume` 落在 **-16 ~ -12 dB** 之间。
+- 高于 -12 dB → 调低 `GAIN`，避免三路正弦叠加后削波
+- 低于 -16 dB → 调高 `GAIN`
+
+⚠️ 这条不是形式检查。占位音频存在的**唯一**理由是让人耳确认渲染确实混入了 BGM；若它比人声低 30 dB 以上，Task 10 的人工听查会听不见任何东西，自动化测试却全绿——这个任务就等于什么都没解决。`GAIN = 1.6` 是按 `volume=0.25` 实测 -30.6 dBFS 反推的起点值，**仍需实测确认**。
 
 创建 `output/presets/bgm/LICENSES.md`：
 
@@ -1025,9 +1053,13 @@ def test_no_duplicate_labels():
     f = build_audio_filter(dialogue_level=100, bgm_level=35, has_bgm=True)
     produced = []
     for seg in f.split(";"):
-        tail = seg[seg.rindex("]", 0, len(seg)) :] if seg.endswith("]") else ""
-        if tail:
-            produced.append(tail)
+        # 输出标签挂在片段尾部，可能不止一个（asplit 产出两个）。
+        # 从右往左逐个剥离 [label]；输入标签在片段开头，不会被误收。
+        rhs = seg
+        while rhs.endswith("]"):
+            start = rhs.rindex("[")
+            produced.append(rhs[start:])
+            rhs = rhs[:start]
     assert len(produced) == len(set(produced)), produced
 ```
 
@@ -1349,6 +1381,36 @@ def test_segments_without_matching_frame_are_ignored():
     segs = [_seg("ghost", 2.0), _seg("a", 4.0)]
     cues = build_subtitle_cues(frames, segs, probe=lambda p: 1.0)
     assert cues[0].start_s == pytest.approx(2.0)  # ghost 段仍然推进时钟
+
+
+def test_cues_never_overlap_when_shot_shorter_than_min_cue():
+    """分镜比 MIN_CUE_S 还短时，最小时长下限不得把 cue 推出分镜边界。
+
+    重叠的字幕在 ASS 里会视觉堆叠。宁可闪一下也不越界。
+    """
+    frames = [_frame("a", "短", audio_url="/a.mp3"), _frame("b", "下一句", audio_url="/b.mp3")]
+    segs = [_seg("a", 0.3), _seg("b", 5.0)]
+    cues = build_subtitle_cues(frames, segs, probe=lambda p: 2.0)
+    assert len(cues) == 2
+    assert cues[0].end_s == pytest.approx(0.3)   # 截到分镜边界，而非 0.8
+    assert cues[0].end_s <= cues[1].start_s
+
+
+def test_zero_duration_shot_drops_cue_but_keeps_clock():
+    """时长 0 的分镜（探测失败回退值）不该产出零长 cue，但时钟照常推进。"""
+    frames = [_frame("a", "丢弃", audio_url="/a.mp3"), _frame("b", "保留", audio_url="/b.mp3")]
+    segs = [_seg("a", 0.0), _seg("b", 5.0)]
+    cues = build_subtitle_cues(frames, segs, probe=lambda p: 2.0)
+    assert len(cues) == 1
+    assert cues[0].text == "保留"
+    assert cues[0].start_s == pytest.approx(0.0)
+
+
+def test_offset_beyond_shot_is_pulled_back_inside():
+    frames = [_frame("a", "台词", offset_ms=9000, audio_url="/a.mp3")]
+    cues = build_subtitle_cues(frames, [_seg("a", 3.0)], probe=lambda p: 1.0)
+    assert cues[0].start_s == pytest.approx(2.2)
+    assert cues[0].end_s == pytest.approx(3.0)
 ```
 
 - [ ] **Step 2: 运行确认失败**
@@ -1453,7 +1515,18 @@ def build_subtitle_cues(
         end = start + _spoken_duration(frame, text, probe)
         end = min(end, shot_end)
         if end - start < MIN_CUE_S:
-            end = start + MIN_CUE_S
+            # Prefer a short flash over a cue that runs past its shot: cues
+            # that overlap stack visually in ASS. A shot shorter than
+            # MIN_CUE_S cannot hold a readable subtitle either way, and the
+            # cumulative clock advances by shot_end regardless — so letting
+            # the floor win here would desync every cue after it.
+            end = min(start + MIN_CUE_S, shot_end)
+        if end <= start:
+            # Zero-length shot — reachable when a duration probe fails and
+            # the caller substitutes 0.0. A cue with no duration is
+            # meaningless and renders as an artefact.
+            offset = shot_end
+            continue
 
         speaker = frame.dialogue_structured.speaker if frame.dialogue_structured else None
         cues.append(SubtitleCue(start_s=start, end_s=end, text=text, speaker=speaker))
@@ -1517,10 +1590,10 @@ class SubtitleStyle(BaseModel):
     outline_color: str = Field("#000000", description="描边颜色 #RRGGBB")
     outline_width: int = Field(3, description="描边宽度")
     bold: bool = Field(True)
-    alignment: int = Field(2, description="ASS numpad 对齐：2=底部居中, 8=顶部居中, 5=正中")
-    margin_v: int = Field(180, description="垂直边距，避开平台 UI 遮挡区")
-    chars_per_line: int = Field(18, description="每行字数，超出自动换行")
-    max_lines: int = Field(2, description="最大行数，超出截断并加省略号")
+    alignment: int = Field(2, ge=1, le=9, description="ASS numpad 对齐：2=底部居中, 8=顶部居中, 5=正中")
+    margin_v: int = Field(180, ge=0, description="垂直边距，避开平台 UI 遮挡区")
+    chars_per_line: int = Field(18, ge=1, description="每行字数，超出自动换行")
+    max_lines: int = Field(2, ge=1, description="最大行数，超出截断并加省略号")
 
 
 class SubtitleSettings(BaseModel):
@@ -1639,6 +1712,40 @@ def test_newlines_in_text_become_ass_breaks():
     assert r"第一行\N第二行" in ass
 
 
+def test_long_segment_after_authored_break_still_wraps():
+    """作者手打了换行、但其中一行很长时，那一行仍必须折行，不能整条跳过换行。"""
+    cues = [SubtitleCue(start_s=0.0, end_s=2.0, text="短\n" + "长" * 60)]
+    ass = render_ass(cues, SUBTITLE_TEMPLATES["douyin"], play_res=(1080, 1920))
+    body = next(ln for ln in ass.splitlines() if ln.startswith("Dialogue:")).split(",,", 1)[1]
+    per_line = SUBTITLE_TEMPLATES["douyin"].chars_per_line
+    assert all(len(seg) <= per_line for seg in body.split(r"\N")[1:])
+
+
+def test_authored_break_does_not_multiply_line_budget():
+    """手打换行不得让总行数突破 max_lines。"""
+    style = SUBTITLE_TEMPLATES["douyin"]
+    out = wrap_cjk("一" * 30 + r"\N" + "二" * 30, style.chars_per_line, style.max_lines)
+    assert out.count(r"\N") == style.max_lines - 1
+
+
+def test_wrap_survives_degenerate_max_lines():
+    """max_lines 可被 style_override 覆盖；0 不得让截断分支索引空列表。"""
+    assert wrap_cjk("一" * 50, 18, 0)  # 不抛异常
+    assert wrap_cjk("一" * 50, 0, 2) == "一" * 50  # per_line<=0 原样返回
+
+
+def test_style_rejects_out_of_range_values():
+    """ge/le 约束把坏值挡在模型层，而不是等到渲染时炸。"""
+    import pytest as _pytest
+    from pydantic import ValidationError
+
+    from src.apps.comic_gen.models import SubtitleStyle
+
+    for bad in ({"max_lines": 0}, {"chars_per_line": 0}, {"alignment": 0}, {"alignment": 10}):
+        with _pytest.raises(ValidationError):
+            SubtitleStyle(**bad)
+
+
 def test_bold_flag_maps_to_minus_one():
     """ASS 里 Bold 是 -1 表示真，0 表示假 —— 写 1 不生效。"""
     ass = render_ass([], SUBTITLE_TEMPLATES["douyin"], play_res=(1080, 1920))
@@ -1718,19 +1825,35 @@ def _ass_time(seconds: float) -> str:
 
 
 def wrap_cjk(text: str, per_line: int, max_lines: int) -> str:
-    """Hard-wrap by character count and join with the ASS line break \\N.
+    """Hard-wrap by character count, joining lines with the ASS break \\N.
+
+    `text` may already contain authored \\N breaks. Each authored line is
+    wrapped independently and the cue as a whole is then capped at
+    max_lines, so an authored break can neither escape wrapping nor
+    multiply the line budget.
 
     CJK has no word boundaries, so counting characters is the correct
     strategy here — a word-based wrapper would never break.
     """
     text = text.strip()
-    if per_line <= 0 or len(text) <= per_line:
+    if per_line <= 0:
         return text
+    # max_lines is user-overridable via SubtitleStyle; 0 would make the
+    # truncation branch index an empty list.
+    max_lines = max(1, max_lines)
 
-    lines = [text[i : i + per_line] for i in range(0, len(text), per_line)]
+    lines: List[str] = []
+    for authored in text.split(r"\N"):
+        if not authored:
+            continue
+        lines.extend(authored[i : i + per_line] for i in range(0, len(authored), per_line))
+
+    if not lines:
+        return text
     if len(lines) > max_lines:
         lines = lines[:max_lines]
-        lines[-1] = lines[-1][:-1] + "…" if len(lines[-1]) >= per_line else lines[-1] + "…"
+        last = lines[-1]
+        lines[-1] = (last[:-1] if len(last) >= per_line else last) + "…"
     return r"\N".join(lines)
 
 
@@ -1788,7 +1911,10 @@ def render_ass(
     events = []
     for cue in cues:
         text = _escape_ass_text(cue.text).replace("\r\n", "\n").replace("\n", r"\N")
-        text = wrap_cjk(text, style.chars_per_line, style.max_lines) if r"\N" not in text else text
+        # Always wrap. wrap_cjk handles authored \N breaks itself — skipping
+        # the call when a break is present would let a long authored line
+        # render unwrapped and overflow the frame.
+        text = wrap_cjk(text, style.chars_per_line, style.max_lines)
         events.append(
             f"Dialogue: 0,{_ass_time(cue.start_s)},{_ass_time(cue.end_s)},"
             f"Default,,0,0,0,,{text}"
@@ -2019,48 +2145,97 @@ def escape_filter_path(path: str) -> str:
     return path.replace("\\", "/").replace(":", "\\:")
 
 
+def _resolve_or_none(
+    resolve: Callable[[str], str], url: str, frame_id: str, what: str
+) -> Optional[str]:
+    """Resolve a stored url, returning None instead of raising.
+
+    A url that escapes the output directory — corrupted or hand-edited
+    project data — must degrade to dropping one shot, never abort the
+    export. merge_videos calls collect_render_segments before pass 1, so an
+    unguarded raise anywhere in the selection path kills the whole render.
+    Every resolve() call site in this module must go through here.
+    """
+    try:
+        return resolve(url)
+    except Exception as e:
+        logger.warning(f"[RENDER] frame {frame_id}: unusable {what} url {url!r} ({e})")
+        return None
+
+
 def collect_render_segments(
     script: Script,
     *,
     resolve: Callable[[str], str],
     probe: Callable[[str], float] = probe_duration,
+    exists: Callable[[str], bool] = os.path.exists,
 ) -> List[RenderSegment]:
     """Pick the video for each frame and measure it.
 
-    Mirrors the selection precedence already used by merge_videos:
-    dubbed video > explicitly selected take > first completed take.
-    Frames with no usable video are skipped, exactly as before.
+    This is the SINGLE source of truth for "which video does this shot use".
+    merge_videos concatenates exactly these segments, and the subtitle
+    timeline is built from their durations — if the two ever disagree, every
+    cue after the disagreement is silently misaligned, so there must not be
+    a second copy of this logic anywhere.
+
+    Precedence: dubbed video (only if the file is actually on disk) >
+    explicitly selected take > first completed take. A frame with no usable
+    video is skipped.
 
     `resolve` maps a stored relative url to an absolute filesystem path
-    (production passes _safe_resolve_path bound to "output").
+    (production passes _safe_resolve_path bound to "output"). `probe` and
+    `exists` are injectable so the selection logic can be tested without
+    real media files.
     """
     segments: List[RenderSegment] = []
 
     for frame in script.frames:
         url = None
+
         if frame.dubbed_video_url:
-            url = frame.dubbed_video_url
-        elif frame.selected_video_id:
-            task = next(
-                (t for t in script.video_tasks if t.id == frame.selected_video_id), None
-            )
-            url = task.video_url if task else None
-        if not url:
-            task = next(
-                (
-                    t
-                    for t in script.video_tasks
-                    if t.frame_id == frame.id and t.status == "completed" and t.video_url
-                ),
-                None,
-            )
-            url = task.video_url if task else None
+            candidate = _resolve_or_none(resolve, frame.dubbed_video_url, frame.id, "dubbed")
+            if candidate and exists(candidate):
+                url = frame.dubbed_video_url
+            else:
+                logger.warning(
+                    f"[RENDER] frame {frame.id}: dubbed video unusable "
+                    f"({frame.dubbed_video_url}); falling back to a take"
+                )
+
+        if url is None:
+            if not frame.selected_video_id:
+                task = next(
+                    (
+                        t
+                        for t in script.video_tasks
+                        if t.frame_id == frame.id and t.status == "completed" and t.video_url
+                    ),
+                    None,
+                )
+                url = task.video_url if task else None
+            else:
+                task = next(
+                    (t for t in script.video_tasks if t.id == frame.selected_video_id), None
+                )
+                # A dangling selected_video_id skips the shot; it is NOT
+                # silently replaced by some other take. Substituting here
+                # would give the subtitle timeline one more shot than the
+                # concatenated video has, desyncing everything after it.
+                url = task.video_url if (task and task.video_url) else None
+                if url is None:
+                    logger.warning(
+                        f"[RENDER] frame {frame.id}: selected video "
+                        f"{frame.selected_video_id} not found or has no URL"
+                    )
 
         if not url:
             logger.debug(f"[RENDER] frame {frame.id}: no usable video, skipping")
             continue
 
-        abs_path = resolve(url)
+        abs_path = _resolve_or_none(resolve, url, frame.id, "video")
+        if abs_path is None:
+            continue
+
         try:
             duration = probe(abs_path)
         except Exception as e:
@@ -2334,6 +2509,40 @@ def test_update_settings_rejects_unknown_template(client):
     assert r.status_code == 400
 
 
+def test_bad_style_override_is_400_not_404(client):
+    """回归：pydantic 的 ValidationError 继承 ValueError。
+
+    若模型构造写在 `except ValueError -> 404` 里，项目明明存在、只是样式
+    参数越界，也会被报成 404，前端会跳到「项目不存在」而不是提示字段错误。
+    """
+    from src.apps.comic_gen.api import pipeline
+    from src.apps.comic_gen.models import Script
+
+    pipeline.scripts["p4"] = Script(
+        id="p4", title="t", original_text="x", created_at=0.0, updated_at=0.0
+    )
+    r = client.put(
+        "/projects/p4/subtitle/settings",
+        json={"enabled": True, "template_id": "douyin", "style_override": {"alignment": 0}},
+    )
+    assert r.status_code == 400, r.text
+
+
+def test_valid_style_override_is_persisted(client):
+    from src.apps.comic_gen.api import pipeline
+    from src.apps.comic_gen.models import Script
+
+    pipeline.scripts["p5"] = Script(
+        id="p5", title="t", original_text="x", created_at=0.0, updated_at=0.0
+    )
+    r = client.put(
+        "/projects/p5/subtitle/settings",
+        json={"enabled": True, "template_id": "douyin", "style_override": {"font_size": 48}},
+    )
+    assert r.status_code == 200
+    assert pipeline.scripts["p5"].subtitle_settings.style_override.font_size == 48
+
+
 def test_export_rejects_bad_format(client):
     from src.apps.comic_gen.api import pipeline
     from src.apps.comic_gen.models import Script
@@ -2509,6 +2718,12 @@ def update_subtitle_settings(script_id: str, request: UpdateSubtitleSettingsRequ
             detail=f"Unknown template '{request.template_id}'. "
             f"Available: {sorted(SUBTITLE_TEMPLATES)}",
         )
+
+    # Build the settings OUTSIDE the not-found handler below. pydantic's
+    # ValidationError subclasses ValueError, so constructing inside that
+    # `except ValueError -> 404` would report a bad style_override on a
+    # perfectly existing project as "project not found" — sending the UI to
+    # a missing-project state instead of showing a field error.
     try:
         settings = SubtitleSettings(
             enabled=request.enabled,
@@ -2517,6 +2732,10 @@ def update_subtitle_settings(script_id: str, request: UpdateSubtitleSettingsRequ
                 SubtitleStyle(**request.style_override) if request.style_override else None
             ),
         )
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid subtitle style: {e}")
+
+    try:
         script = pipeline.update_subtitle_settings(script_id, settings)
         return signed_response(script)
     except ValueError as e:
@@ -2693,6 +2912,10 @@ interface Props {
   projectId: string;
   initialEnabled?: boolean;
   initialTemplateId?: string;
+  /** Called with the updated Script after a successful save, so the caller can
+   *  push it into the project store. Without this the store keeps the stale
+   *  settings and the next mount re-reads outdated initial* props. */
+  onSaved?: (updated: unknown) => void;
 }
 
 function fmtTime(s: number): string {
@@ -2714,10 +2937,21 @@ export function SubtitlePanel({
   const [templateId, setTemplateId] = useState(initialTemplateId);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // A failed load must not be indistinguishable from "this project has no
+  // dialogue" — that tells the user to add lines they may already have.
+  const [loadError, setLoadError] = useState<string | null>(null);
+  // What the server last accepted. Reverting to the mount-time props instead
+  // would resurrect a setting the user already changed successfully.
+  const [persisted, setPersisted] = useState({
+    enabled: initialEnabled,
+    template_id: initialTemplateId,
+  });
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setLoadError(null);
     Promise.all([api.listSubtitleTemplates(), api.previewSubtitles(projectId)])
       .then(([tpl, cs]) => {
         if (cancelled) return;
@@ -2725,7 +2959,10 @@ export function SubtitlePanel({
         setCues(cs);
       })
       .catch((e) => {
-        if (!cancelled) toast.error(extractErrorDetail(e, t("loadFailed")));
+        if (cancelled) return;
+        const msg = extractErrorDetail(e, t("loadFailed"));
+        setLoadError(msg);
+        toast.error(msg);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -2733,17 +2970,20 @@ export function SubtitlePanel({
     return () => {
       cancelled = true;
     };
-  }, [projectId, t]);
+  }, [projectId, t, reloadTick]);
 
   const save = async (next: { enabled: boolean; template_id: string }) => {
+    const prev = persisted;
     setSaving(true);
     try {
-      await api.updateSubtitleSettings(projectId, next);
+      const updated = await api.updateSubtitleSettings(projectId, next);
+      setPersisted(next);
+      onSaved?.(updated);
       toast.success(t("saved"));
     } catch (e) {
       toast.error(extractErrorDetail(e, t("saveFailed")));
-      setEnabled(initialEnabled);
-      setTemplateId(initialTemplateId);
+      setEnabled(prev.enabled);
+      setTemplateId(prev.template_id);
     } finally {
       setSaving(false);
     }
@@ -2760,18 +3000,33 @@ export function SubtitlePanel({
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center gap-3 p-12 text-center">
+        <p className="text-sm text-text-secondary">{loadError}</p>
+        <button
+          type="button"
+          className="glass-button rounded-lg px-4 py-2 text-sm"
+          onClick={() => setReloadTick((n) => n + 1)}
+        >
+          {t("retry")}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <header className="flex items-start gap-3">
         <Subtitles className="mt-1 h-5 w-5 text-text-secondary" />
         <div>
-          <h3 className="text-lg font-medium text-text-primary">{t("title")}</h3>
+          <h3 className="text-lg font-medium text-foreground">{t("title")}</h3>
           <p className="text-sm text-text-secondary">{t("description")}</p>
         </div>
       </header>
 
       <label className="glass-panel flex items-center justify-between rounded-lg p-4">
-        <span className="text-sm text-text-primary">{t("enabled")}</span>
+        <span className="text-sm text-foreground">{t("enabled")}</span>
         <input
           type="checkbox"
           checked={enabled}
@@ -2799,7 +3054,7 @@ export function SubtitlePanel({
                 templateId === tpl.id ? "border-accent" : "border-glass-border"
               } border`}
             >
-              <div className="text-sm font-medium text-text-primary">{labelFor(tpl.id)}</div>
+              <div className="text-sm font-medium text-foreground">{labelFor(tpl.id)}</div>
               <div className="mt-1 text-xs text-text-secondary">
                 {tpl.font_size}px · {tpl.chars_per_line}/line
               </div>
@@ -2831,7 +3086,7 @@ export function SubtitlePanel({
                 <span className="w-28 shrink-0 font-mono text-xs text-text-secondary">
                   {fmtTime(c.start_s)} → {fmtTime(c.end_s)}
                 </span>
-                <span className="text-text-primary">
+                <span className="text-foreground">
                   {c.speaker ? <b className="mr-1 text-text-secondary">{c.speaker}:</b> : null}
                   {c.text}
                 </span>
@@ -2931,27 +3186,73 @@ git commit -m "feat(ui): subtitle panel in Assembly with template picker and cue
 
 产出 V-1 的核心交付物之一：**基线报告**。V0 与 V1 的排期要按它复评（见 spec §11 Q1/Q2）。
 
+> **范围决策（2026-07-27，人类伙伴确认）**：本机没有 `output/projects.json`，没有任何真实项目。
+> 从零走完整生成管线会消耗真实的 DashScope / Kling / Vidu 额度。
+>
+> **V-1 改动的是渲染 / 字幕 / 音频层，没有动生成层**，所以验证采用
+> **合成项目 + 真实渲染链**：用 ffmpeg 造占位分镜视频，写真实中文台词，
+> 跑真实 TTS，然后走**完整的真实** `merge_videos → collect_render_segments →
+> RenderEngine.finalize → 音频链 → 字幕烧录` 代码路径。
+>
+> 这验证了 V-1 实际写的每一行代码，成本接近零。它**不**验证生成管线
+> （图/视频/抽卡），那部分本期未改动。报告必须显著声明这个边界。
+
 **Files:**
+- Create: `scripts/make_synthetic_project.py`
 - Create: `scripts/baseline_report.py`
-- Create: `docs/superpowers/reports/2026-XX-XX-v-1-baseline.md`（日期填实际完成日）
+- Create: `docs/superpowers/reports/2026-07-27-v-1-baseline.md`
 
 **Interfaces:**
-- Consumes: `output/projects.json`、`output/video/merged_*.mp4`
-- Produces: 基线报告 Markdown
+- Consumes: `ComicGenPipeline`、`output/presets/bgm/*.mp3`（Task 3 的占位音频）
+- Produces: 合成项目 + 真实成片 + 基线报告 Markdown
 
 ---
 
-- [ ] **Step 1: 跑通一部完整的剧**
+- [ ] **Step 1: 造合成项目并跑真实渲染**
 
-选一部 12 集短剧，从剧本导入到导出全程走一遍。**每一集都记录**：
+创建 `scripts/make_synthetic_project.py`，构造一个能踩到 V-1 每条分支的项目：
 
-| 记录项 | 怎么拿 |
-|---|---|
-| 各步墙钟耗时 | 后端日志时间戳 |
-| API 调用次数 | 按 provider 统计日志中的 submit 行 |
-| 人工点击次数 | 手动计数（挑图/挑视频/重试/微调） |
-| 失败与重试次数 | 日志中的 `status.*failed` |
-| 成片文件大小与时长 | `ffprobe` |
+| 分镜 | 时长 | 台词 | 目的 |
+|---|---|---|---|
+| 1 | 4s | 短句 | 基础 cue |
+| 2 | 5s | 超长句（60+ 字） | 触发 `wrap_cjk` 折行与截断 |
+| 3 | 3s | **无台词** | 验证时钟仍推进（Task 5 的核心不变量） |
+| 4 | 4s | 含手打换行的两行台词 | 触发 Task 6 修的「有 `\N` 仍要折行」 |
+| 5 | 0.6s | 短句 | 时长 < `MIN_CUE_S`，验证不越界重叠 |
+| 6 | 5s | 带 `dub_offset_ms=800` | 验证偏移 |
+
+要求：
+- 每个占位视频用 ffmpeg `drawtext` 烧上分镜号，**肉眼可确认拼接顺序**
+- 台词用真实中文，不要 `aaa`
+- 走真实 TTS 生成 `audio_url`（若 API 不可用则跳过并在报告中说明，
+  `_spoken_duration` 会退化为阅读速度估算，这本身也是一条要验的分支）
+- `script.bgm_url` 指向 Task 3 的一个占位 BGM
+- **必须调用真实的 `pipeline.merge_videos(script_id)`**，不要绕过它自己拼 ffmpeg
+
+- [ ] **Step 1b: 客观测量**
+
+```bash
+OUT=$(ls -t output/video/merged_*.mp4 | head -1)
+ffprobe -v error -show_entries format=duration -of csv=p=0 "$OUT"          # 应 ≈ 21.6s
+ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 "$OUT"  # aac
+ffmpeg -i "$OUT" -af volumedetect -f null - 2>&1 | grep -E "max_volume|mean_volume"
+ffmpeg -i "$OUT" -af loudnorm=print_format=json -f null - 2>&1 | grep input_i
+```
+
+判定：时长与分镜总和一致（不长出来 → `-shortest` 生效）；有 aac 音轨；
+`max_volume < -1 dB`；`input_i` 在 **-16 ± 1.5 LUFS**。
+
+- [ ] **Step 1c: 抽帧供人眼确认**
+
+```bash
+mkdir -p output/verify
+for t in 2 6.5 12 19; do
+  ffmpeg -y -ss $t -i "$OUT" -frames:v 1 "output/verify/frame_${t}s.png"
+done
+```
+
+这四帧要能看出：分镜号顺序正确、字幕烧在画面上、位置在底部不遮挡、
+长句已折行未溢出画面。**把这四张图的路径写进报告，由人工过目。**
 
 - [ ] **Step 2: 写指标采集脚本**
 
