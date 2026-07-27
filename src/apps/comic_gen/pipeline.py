@@ -2932,18 +2932,36 @@ class ComicGenPipeline:
                         )
                         bgm_abs = None
 
-                final_path = RenderEngine().finalize(
+                render_result = RenderEngine().finalize(
                     script,
                     output_path,
                     ffmpeg_path=ffmpeg_path,
                     segments=segments,
                     bgm_abs_path=bgm_abs,
                 )
-                if final_path:
-                    os.replace(final_path, output_path)
+                if render_result.path:
+                    os.replace(render_result.path, output_path)
                     logger.info(f"[MERGE] ✅ pass 2 applied — final file: {output_filename}")
+                # Record what pass 2 actually achieved. Without this the
+                # user cannot tell a film with subtitles from one whose
+                # subtitle track was silently dropped, and the subtitle
+                # preview happily keeps listing cues that were never burned.
+                report = render_result.as_report()
+                report["at"] = time.time()
+                script.last_render_report = report
+                if not render_result.subtitles_burned:
+                    logger.warning(
+                        f"[MERGE] subtitles were NOT burned into {output_filename} "
+                        f"(reason: {render_result.skip_reason})"
+                    )
             except Exception as post_err:
                 logger.warning(f"[MERGE] pass 2 skipped due to error: {post_err}")
+                script.last_render_report = {
+                    "subtitles": f"skipped:pass2_error:{post_err}",
+                    "bgm": "none",
+                    "loudnorm": "skipped",
+                    "at": time.time(),
+                }
 
             self._save_data()
 

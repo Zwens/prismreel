@@ -56,6 +56,29 @@ def probe_duration(path: str) -> float:
         raise MediaProbeError(f"Unparseable duration {raw!r} for {path}") from e
 
 
+def has_audio_stream(path: str) -> bool:
+    """Whether the file carries at least one audio stream.
+
+    The generation pipeline's default is Silent Mode, so a concatenated
+    film routinely has no audio stream at all. An audio filter graph that
+    references [0:a] on such a file makes ffmpeg abort with "matches no
+    streams", taking the BGM, the loudness normalisation and the subtitle
+    burn down with it.
+
+    Returns False when the probe itself fails: the caller's safe response
+    to "unknown" is the same as to "no audio" (synthesise a silent track),
+    whereas guessing True re-creates the failure this exists to prevent.
+    """
+    try:
+        data = _run_ffprobe(
+            path,
+            ["-select_streams", "a", "-show_entries", "stream=codec_type"],
+        )
+    except MediaProbeError:
+        return False
+    return bool(data.get("streams"))
+
+
 def probe_dimensions(path: str) -> Tuple[int, int]:
     """(width, height) of the first video stream."""
     data = _run_ffprobe(

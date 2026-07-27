@@ -18,6 +18,16 @@ def test_escape_path_posix():
     assert escape_filter_path("/out/sub.ass") == "/out/sub.ass"
 
 
+def test_escape_path_quotes_and_filter_metachars():
+    """终审发现 #4：转义结果会被包进 ass='...'，ffmpeg 的引号层会吃掉裸的
+    单引号，而 , [ ] 会提前截断滤镜链。三类字符都必须转义。"""
+    assert escape_filter_path("/o'brien/s.ass") == "/o\\'brien/s.ass"
+    assert escape_filter_path("/a,b/s.ass") == "/a\\,b/s.ass"
+    assert escape_filter_path("/x[1]/s.ass") == "/x\\[1\\]/s.ass"
+    # 顺序：先转义引号，否则后插入的反斜杠会被二次转义
+    assert escape_filter_path(r"C:\O'Brien\s.ass") == "C\\:/O\\'Brien/s.ass"
+
+
 def _script_with(frames, tasks):
     return Script(
         id="s1",

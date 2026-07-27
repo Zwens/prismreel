@@ -22,6 +22,24 @@ def test_no_bgm_without_normalize_is_passthrough_volume():
     assert f.endswith("[aout]")
 
 
+@pytest.mark.parametrize("has_bgm", [False, True])
+@pytest.mark.parametrize("ducking", [False, True])
+def test_dialogue_label_is_honoured_in_every_branch(has_bgm, ducking):
+    """终审发现 #2：拼接产物没有音轨时（默认 Silent Mode），调用方会追加一路
+    合成静音输入并把对话标号切过去。三个分支（no-bgm / ducking / 非 ducking）
+    里任何一处还写死 [0:a]，pass 2 就会以 "matches no streams" 整体失败。"""
+    f = build_audio_filter(
+        dialogue_level=100, bgm_level=35, has_bgm=has_bgm, ducking=ducking, dialogue_label="2:a"
+    )
+    assert "[0:a]" not in f, f
+    assert "[2:a]" in f, f
+
+
+def test_dialogue_label_defaults_to_the_concat_audio():
+    f = build_audio_filter(dialogue_level=100, bgm_level=35, has_bgm=True)
+    assert "[0:a]" in f
+
+
 def test_bgm_with_ducking_splits_dialogue():
     """人声既要进混音又要做侧链 —— 不 asplit 会让 filter graph 报错。"""
     f = build_audio_filter(dialogue_level=100, bgm_level=35, has_bgm=True)

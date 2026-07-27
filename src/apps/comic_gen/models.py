@@ -595,6 +595,17 @@ class Script(BaseModel):
         description="字幕烧录配置（时间码在渲染时从台词与 TTS 时长推算）",
     )
 
+    # V-1 · Result of the last export. Subtitles can be dropped by four
+    # independent paths (disabled / zero-duration segment / no dialogue /
+    # ffmpeg failure) and the film looks like any other film afterwards, so
+    # the outcome has to be recorded somewhere the caller and the UI can
+    # read it. Shape: {"subtitles": "burned"|"skipped:<reason>",
+    # "bgm": "applied"|"none", "loudnorm": "applied"|"skipped", "at": epoch}
+    last_render_report: Optional[Dict[str, Any]] = Field(
+        None,
+        description="上次导出的结果：字幕/BGM/响度是否实际生效及原因",
+    )
+
     # Series association
     series_id: Optional[str] = Field(None, description="ID of the parent Series, None for standalone projects")
     episode_number: Optional[int] = Field(None, description="Episode number within the Series")
