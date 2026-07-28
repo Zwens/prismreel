@@ -137,6 +137,21 @@
       "object_position": "top"
     },
     {
+      "id": "tender_romance_anime",
+      "category": "japanese_anime",
+      "name": "Tender Romance Anime",
+      "name_zh": "甜宠 · 心动瞬间",
+      "subtitle_zh": "逢魔暖光 · 双人特写 · 脸红心跳",
+      "description": "日系情感番质感，赛璐璐上色配逢魔时刻暖光，双人贴近构图与细腻的表情戏",
+      "best_for": ["男女情感", "百合情感", "双人特写", "告白/轻吻", "校园恋爱"],
+      "avoid_for": ["硬派动作", "写实真人", "群像大场面"],
+      "positive_prompt": "Japanese romance anime, adult characters, clean cel shading, warm golden-hour rim light, blush-tinted cheeks, delicate expressive eyes, intimate two-shot composition, close framing on faces, soft bokeh background, gentle wind in hair, tender emotional atmosphere, subtle lens flare, high-quality anime key visual",
+      "negative_prompt": "child, minor, teenager, loli, shota, explicit content, nudity, suggestive posing, western cartoon, 3d render, photorealistic, gritty realism, harsh contrast, action battle scene, crowd, low quality, blurry, deformed hands, extra fingers, text, chinese characters, logo, watermark",
+      "sample_prompt": "Two young adults lean close beneath a blossoming tree at golden hour, foreheads almost touching in a tender near-kiss, one holding a brass compass between them, petals drifting past, warm rim light catching their hair",
+      "thumbnail": "/assets/styles/japanese_anime__tender_romance_anime__golden_hour_near_kiss__square.jpg",
+      "object_position": "center 35%"
+    },
+    {
       "id": "stylized_3d_animation",
       "category": "american_animation",
       "name": "Stylized 3D Animation",
