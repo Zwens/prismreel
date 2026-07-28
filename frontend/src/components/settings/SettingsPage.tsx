@@ -980,7 +980,7 @@ export default function SettingsPage() {
     ];
     return (
       <Section id="about" title={t("secAboutTitle")}>
-        {/* Line B brand signature block — teal-glow logo, serif name, amber tagline */}
+        {/* Line B brand signature block — serif name, amber tagline */}
         <div className="flex flex-col items-start gap-3 pb-6 mb-6 border-b border-glass-border">
           <PrismReelBranding size="md" showSlogan={false} />
           <p className="font-display atelier-display text-base italic text-accent leading-snug">

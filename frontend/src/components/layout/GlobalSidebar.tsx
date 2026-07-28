@@ -66,7 +66,7 @@ function NavButton({
 /**
  * 全局导航 —— 带文字标签的品牌侧栏（Line B "Luminous Atelier"）。
  *
- * 顶部常驻 Logo + PRISMREEL 字标 + Slogan；主导航图标+文字（无 hover、无歧义）；
+ * 顶部常驻 PRISMREEL 字标 + Slogan；主导航图标+文字（无 hover、无歧义）；
  * 设置固定底部；底部版本号。早先为给二级筛选栏腾地的 60px 图标轨已废弃——
  * 资产库/设置改走横向筛选后，竖向只剩这一条栏，故恢复完整品牌呈现。
  * 结构对所有主题统一，视觉身份由语义 token 切换（zero-leak）。
@@ -81,7 +81,7 @@ export default function GlobalSidebar({ activeTab, onTabChange }: GlobalSidebarP
 
   return (
     <aside className="w-52 flex-shrink-0 h-full hidden md:flex flex-col border-r border-glass-border bg-surface/60 backdrop-blur-xl">
-      {/* Brand lockup — Logo + PRISMREEL + Slogan, click → workspace */}
+      {/* Brand lockup — PRISMREEL 字标 + Slogan, click → workspace */}
       <button
         type="button"
         onClick={() => handleNav("workspace", "#/")}
