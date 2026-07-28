@@ -10,7 +10,8 @@ import {
     Check,
     Image as ImageIcon,
     Users,
-    Film
+    Film,
+    Sparkles
 } from "lucide-react";
 
 
@@ -22,6 +23,8 @@ import { api, API_URL, VideoTask } from "@/lib/api";
 import { R2V_SELECTION_MODEL_ID, getR2vRouteModelId, isR2vImageBased } from "@/lib/modelCatalog";
 import { getAssetUrl, getAssetUrlWithTimestamp } from "@/lib/utils";
 import PromptBuilder, { PromptSegment, PromptBuilderRef } from "./PromptBuilder";
+import ShotPresetPicker from "./ShotPresetPicker";
+import { ACTION_GROUPS, CAMERA_GROUPS } from "./shotPresets";
 import type { VideoParams } from "@/store/projectStore";
 
 interface VideoCreatorProps {
@@ -1074,15 +1077,19 @@ export default function VideoCreator({ onTaskCreated, remixData, onRemixClear, p
                             <label className="text-sm font-medium text-text-secondary">{tc("promptLabel")}</label>
                             <div className="flex items-center gap-2">
                                 {generationMode === 'i2v' && (
-                                    <div className="relative">
-                                        <button
-                                            onClick={() => promptBuilderRef.current?.insertCamera()}
-                                            className="text-xs flex items-center gap-1 px-2 py-1 rounded transition-colors text-text-secondary hover:text-foreground hover:bg-glass"
-                                        >
-                                            <Video size={12} /> Camera
-                                        </button>
-                                    </div>
+                                    <ShotPresetPicker
+                                        label="Camera"
+                                        icon={<Video size={12} />}
+                                        groups={CAMERA_GROUPS}
+                                        onPick={(value) => promptBuilderRef.current?.insertCamera(value)}
+                                    />
                                 )}
+                                <ShotPresetPicker
+                                    label="Action"
+                                    icon={<Sparkles size={12} />}
+                                    groups={ACTION_GROUPS}
+                                    onPick={(value) => promptBuilderRef.current?.insertText(value)}
+                                />
                                 <button
                                     onClick={() => handlePolish()}
                                     disabled={isPolishing || !prompt}

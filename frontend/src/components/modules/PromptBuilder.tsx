@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef, useLayoutEffect } from "react";
+import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from "react";
 import { useTranslations } from "next-intl";
-import { X, ChevronDown, Video, User } from "lucide-react";
 
 export type PromptSegment =
     | { type: "text"; value: string; id: string }
@@ -17,44 +16,10 @@ interface PromptBuilderProps {
 }
 
 export interface PromptBuilderRef {
-    insertCamera: () => void;
+    insertCamera: (value: string) => void;
     insertText: (text: string) => void;
     insertCharacter: (characterIndex: number, name: string, thumbnail?: string) => void;
 }
-
-const CAMERA_GROUPS = [
-    {
-        label: "Basic Movement (基础运镜)",
-        options: [
-            { label: "⬅️ 水平左移 (Pan Left)", value: "camera pans left" },
-            { label: "➡️ 水平右移 (Pan Right)", value: "camera pans right" },
-            { label: "⬆️ 向上推移 (Tilt Up)", value: "camera pans up" },
-            { label: "⬇️ 向下推移 (Tilt Down)", value: "camera pans down" },
-            { label: "🔍+ 镜头推进 (Zoom In)", value: "zoom in, close up" },
-            { label: "🔍- 镜头拉远 (Zoom Out)", value: "zoom out, wide angle" },
-        ]
-    },
-    {
-        label: "Cinematic (高级/电影感运镜)",
-        options: [
-            { label: "🔄 环绕拍摄 (Orbit)", value: "camera orbits around, 360 degree view" },
-            { label: "👀 第一人称 (FPV)", value: "FPV view, first person perspective" },
-            { label: "✈️ 无人机航拍 (Drone)", value: "drone shot, aerial view, fly over" },
-            { label: "🎦 手持晃动 (Handheld)", value: "handheld camera, shaky cam, realistic" },
-            { label: "🏃 跟随运镜 (Tracking)", value: "tracking shot, following the subject" },
-            { label: "📍 固定机位 (Static)", value: "static camera, no movement, tripod shot" },
-        ]
-    }
-];
-
-// Helper to find option across groups
-const findCameraOption = (value: string) => {
-    for (const group of CAMERA_GROUPS) {
-        const found = group.options.find(opt => opt.value === value);
-        if (found) return found;
-    }
-    return null;
-};
 
 const PromptBuilder = forwardRef<PromptBuilderRef, PromptBuilderProps>(({ segments, onChange, onSubmit, placeholder }, ref) => {
     const ts = useTranslations("storyboard");
@@ -185,7 +150,16 @@ const PromptBuilder = forwardRef<PromptBuilderRef, PromptBuilderProps>(({ segmen
         const before = text.substring(0, start);
         const after = text.substring(end, text.length);
 
-        const newValue = before + textToInsert + after;
+        // Pad against neighbouring words. Inserting several presets in a row
+        // otherwise runs them together ("...360 degree view)turning to look
+        // back..."), and a character chip dropped mid-sentence would fuse with
+        // the word before it.
+        const needsLeadingSpace = before.length > 0 && !/\s$/.test(before);
+        const needsTrailingSpace = after.length > 0 && !/^[\s,.;:!?)\]]/.test(after);
+        const padded =
+            (needsLeadingSpace ? " " : "") + textToInsert + (needsTrailingSpace ? " " : "");
+
+        const newValue = before + padded + after;
 
         setValue(newValue);
 
@@ -193,20 +167,21 @@ const PromptBuilder = forwardRef<PromptBuilderRef, PromptBuilderProps>(({ segmen
         const newSegments = parseTextToSegments(newValue);
         onChange(newSegments);
 
-        // Restore cursor position
+        // Restore cursor position — land after the inserted text, before any
+        // trailing pad, so typing continues where the user expects.
         setTimeout(() => {
             if (textareaRef.current) {
                 textareaRef.current.focus();
-                const newCursorPos = start + textToInsert.length;
+                const newCursorPos =
+                    start + (needsLeadingSpace ? 1 : 0) + textToInsert.length;
                 textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
             }
         }, 0);
     };
 
     useImperativeHandle(ref, () => ({
-        insertCamera: () => {
-            // Default camera
-            insertTextAtCursor("(camera: camera pans left)");
+        insertCamera: (value: string) => {
+            insertTextAtCursor(`(camera: ${value})`);
         },
         insertText: (text: string) => {
             insertTextAtCursor(text);
