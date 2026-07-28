@@ -208,7 +208,34 @@ def collect_render_segments(
             logger.warning(f"[RENDER] frame {frame.id}: duration probe failed ({e}); using 0")
             duration = 0.0
 
-        segments.append(RenderSegment(frame_id=frame.id, video_path=abs_path, duration_s=duration))
+        # Beat-sync trim. Applied here rather than in merge_videos because
+        # duration_s also drives the subtitle timeline — computing the trim in
+        # two places is the same class of bug the selection logic above was
+        # consolidated to avoid. Only shortening is honoured; a trim_end_s
+        # longer than the clip would ask ffmpeg to invent frames.
+        effective = duration
+        trim = getattr(frame, "trim_end_s", None)
+        if trim is not None and duration > 0:
+            if trim <= 0:
+                logger.warning(
+                    f"[RENDER] frame {frame.id}: ignoring non-positive trim_end_s {trim}"
+                )
+            elif trim < duration:
+                effective = trim
+            elif trim > duration:
+                logger.warning(
+                    f"[RENDER] frame {frame.id}: trim_end_s {trim:.3f}s exceeds clip "
+                    f"length {duration:.3f}s; using the full clip"
+                )
+
+        segments.append(
+            RenderSegment(
+                frame_id=frame.id,
+                video_path=abs_path,
+                duration_s=effective,
+                source_duration_s=duration,
+            )
+        )
 
     return segments
 

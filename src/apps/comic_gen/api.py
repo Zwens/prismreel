@@ -3102,6 +3102,156 @@ def update_audio_mix(script_id: str, request: AudioMixRequest):
     return signed_response(script)
 
 
+# ─────────────────────────────────────────────────────────────
+# 卡点 · Beat-synced shot trimming
+# ─────────────────────────────────────────────────────────────
+
+
+@app.get("/projects/{script_id}/beats")
+def analyze_project_beats(script_id: str):
+    """Detect tempo and the beat grid of this project's BGM.
+
+    The BPM is a suggestion, not a verdict — tempo estimation hits an octave
+    ambiguity often enough (a 128 BPM click track reads as 63.8) that the UI
+    lets the user correct it. See beats.estimate_bpm.
+    """
+    from ...utils.safe_path import safe_resolve_path
+
+    from .beats import BeatAnalysisError, analyze
+
+    script = pipeline.get_script(script_id)
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found")
+    if not script.bgm_url:
+        raise HTTPException(
+            status_code=400,
+            detail="该项目还没有设置 BGM，请先在音频混音里选择或上传背景音乐",
+        )
+
+    try:
+        path = safe_resolve_path("output", script.bgm_url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"BGM 路径无效: {e}")
+
+    try:
+        result = analyze(path)
+    except BeatAnalysisError as e:
+        # A tone or a silent track is a real, explainable outcome — surface the
+        # reason rather than a 500 the user cannot act on.
+        raise HTTPException(status_code=422, detail=str(e))
+
+    result["shots"] = _shot_trim_table(script)
+    return result
+
+
+def _shot_trim_table(script) -> List[Dict[str, Any]]:
+    """Per-shot source length + current trim, for the beat-sync panel.
+
+    Reuses collect_render_segments so the panel lists exactly the shots the
+    render will emit — a frame whose take is missing is absent from both.
+    Source durations live only on disk, so the UI cannot compute beat counts
+    or clamp a "+1 beat" without this.
+    """
+    from ...utils.safe_path import safe_resolve_path
+
+    from .editing import collect_render_segments
+
+    segments = collect_render_segments(
+        script, resolve=lambda u: safe_resolve_path("output", u)
+    )
+    return [
+        {
+            "frame_id": seg.frame_id,
+            "source_duration_s": round(seg.source_duration_s or 0.0, 3),
+            "trim_end_s": round(seg.duration_s, 3) if seg.source_duration_s
+            and seg.duration_s < seg.source_duration_s - 1e-6 else None,
+        }
+        for seg in segments
+    ]
+
+
+class AlignBeatsRequest(BaseModel):
+    bpm: float
+    min_beats: int = 1
+
+
+@app.post("/projects/{script_id}/beats/align", response_model=Script)
+def align_shots_to_beats(script_id: str, request: AlignBeatsRequest):
+    """Snap every shot's length to a whole number of beats at the given BPM.
+
+    The BPM comes from the client rather than being re-detected, because the
+    user is allowed to correct the detected value — octave errors are common
+    enough that aligning to a number they already rejected would be worse than
+    useless.
+    """
+    from ...utils.safe_path import safe_resolve_path
+
+    from .beats import snap_to_beats
+    from .editing import collect_render_segments
+
+    if request.bpm <= 0:
+        raise HTTPException(status_code=400, detail=f"BPM 必须为正数，收到 {request.bpm}")
+
+    script = pipeline.get_script(script_id)
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found")
+
+    interval = 60.0 / request.bpm
+    segments = collect_render_segments(
+        script, resolve=lambda u: safe_resolve_path("output", u)
+    )
+    by_id = {f.id: f for f in script.frames}
+
+    for seg in segments:
+        source = seg.source_duration_s or 0.0
+        if source <= 0:
+            continue
+        target = snap_to_beats(source, interval, min_beats=max(1, request.min_beats))
+        frame = by_id.get(seg.frame_id)
+        if frame is None:
+            continue
+        # An unchanged length is stored as None so the render skips the out
+        # point entirely rather than round-tripping a no-op trim.
+        frame.trim_end_s = None if abs(target - source) < 1e-6 else round(target, 4)
+
+    pipeline._save_data()
+    return signed_response(script)
+
+
+class UpdateFrameTrimsRequest(BaseModel):
+    # frame_id -> seconds, or null to clear that frame's trim
+    trims: Dict[str, Optional[float]]
+
+
+@app.put("/projects/{script_id}/frames/trims", response_model=Script)
+def update_frame_trims(script_id: str, request: UpdateFrameTrimsRequest):
+    """Set per-shot trimmed durations for beat sync.
+
+    Batched on purpose: "align everything to the beat" writes every frame at
+    once, and one request per shot would leave the project half-aligned if any
+    of them failed.
+    """
+    script = pipeline.get_script(script_id)
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found")
+
+    by_id = {f.id: f for f in script.frames}
+    unknown = [fid for fid in request.trims if fid not in by_id]
+    if unknown:
+        raise HTTPException(status_code=404, detail=f"未知的分镜 id: {unknown}")
+
+    for fid, seconds in request.trims.items():
+        if seconds is not None and seconds <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"分镜 {fid} 的裁剪时长必须为正数，收到 {seconds}",
+            )
+        by_id[fid].trim_end_s = seconds
+
+    pipeline._save_data()
+    return signed_response(script)
+
+
 class DubPreviewRequest(BaseModel):
     video_task_id: str
     offset_ms: int = 0

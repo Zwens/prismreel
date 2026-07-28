@@ -111,6 +111,21 @@ export interface BgmPreset {
     url: string;
 }
 
+export interface BeatShot {
+    frame_id: string;
+    source_duration_s: number;
+    trim_end_s: number | null;
+}
+
+export interface BeatAnalysis {
+    bpm: number;
+    beat_interval_s: number;
+    first_beat_s: number;
+    beat_times: number[];
+    duration_s: number;
+    shots: BeatShot[];
+}
+
 export interface SubtitleTemplate {
     id: string;
     font_family: string;
@@ -1166,6 +1181,46 @@ export const api = {
             body: JSON.stringify(payload),
         });
         if (!response.ok) throw new Error("Failed to update audio mix");
+        return response.json();
+    },
+
+    /** 卡点 · Detect the BGM's tempo and beat grid. */
+    analyzeBeats: async (scriptId: string): Promise<BeatAnalysis> => {
+        const response = await fetch(`${API_URL}/projects/${scriptId}/beats`);
+        if (!response.ok) {
+            // The backend explains *why* (no BGM set, silent track, decode
+            // failure) and the user can act on each — don't flatten it.
+            const detail = await response.json().catch(() => null);
+            throw new Error(detail?.detail || "节拍检测失败");
+        }
+        return response.json();
+    },
+
+    /** 卡点 · Snap every shot to a whole number of beats at the given BPM. */
+    alignBeats: async (scriptId: string, bpm: number) => {
+        const response = await fetch(`${API_URL}/projects/${scriptId}/beats/align`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bpm }),
+        });
+        if (!response.ok) {
+            const detail = await response.json().catch(() => null);
+            throw new Error(detail?.detail || "按节拍对齐失败");
+        }
+        return response.json();
+    },
+
+    /** 卡点 · Set per-shot trimmed durations. null clears a frame's trim. */
+    updateFrameTrims: async (scriptId: string, trims: Record<string, number | null>) => {
+        const response = await fetch(`${API_URL}/projects/${scriptId}/frames/trims`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ trims }),
+        });
+        if (!response.ok) {
+            const detail = await response.json().catch(() => null);
+            throw new Error(detail?.detail || "保存卡点时长失败");
+        }
         return response.json();
     },
 

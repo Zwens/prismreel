@@ -79,6 +79,33 @@ def has_audio_stream(path: str) -> bool:
     return bool(data.get("streams"))
 
 
+def probe_fps(path: str) -> float:
+    """Frame rate of the first video stream.
+
+    Needed to place a concat out point exactly: ffmpeg emits
+    ceil(outpoint * fps) + 1 frames, so hitting a target length means
+    requesting (frames - 1) / fps, which requires knowing fps.
+    """
+    data = _run_ffprobe(
+        path,
+        ["-select_streams", "v:0", "-show_entries", "stream=r_frame_rate"],
+    )
+    streams = data.get("streams") or []
+    if not streams:
+        raise MediaProbeError(f"No video stream in {path}")
+    rate = streams[0].get("r_frame_rate")
+    if not rate:
+        raise MediaProbeError(f"Missing frame rate in {path}")
+    try:
+        num, _, den = rate.partition("/")
+        fps = float(num) / float(den or 1)
+    except (TypeError, ValueError) as e:
+        raise MediaProbeError(f"Unparsable frame rate {rate!r} in {path}") from e
+    if fps <= 0:
+        raise MediaProbeError(f"Non-positive frame rate {rate!r} in {path}")
+    return fps
+
+
 def probe_dimensions(path: str) -> Tuple[int, int]:
     """(width, height) of the first video stream."""
     data = _run_ffprobe(

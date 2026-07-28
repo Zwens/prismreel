@@ -2856,10 +2856,45 @@ class ComicGenPipeline:
             logger.error("[MERGE] No valid video files found on disk!")
             raise ValueError("No valid video files found. The video files may have been deleted or moved.")
 
+        # Beat-sync trim rides on the concat demuxer's per-entry `outpoint`.
+        # Only the out point — `inpoint` snaps backwards to the preceding
+        # keyframe (measured at over a second of error on a 25fps source),
+        # while `outpoint` is frame-exact once the request accounts for
+        # ffmpeg emitting ceil(outpoint * fps) + 1 frames.
+        from ...utils.media_probe import probe_fps
+
         with open(list_path, "w") as f:
-            for abs_path in abs_video_paths:
-                f.write(f"file '{abs_path}'\n")
-                logger.debug(f"[MERGE] Added to list: {abs_path}")
+            for seg in segments:
+                f.write(f"file '{seg.video_path}'\n")
+                trimmed = (
+                    seg.source_duration_s is not None
+                    and seg.duration_s > 0
+                    and seg.duration_s < seg.source_duration_s - 1e-6
+                )
+                if trimmed:
+                    try:
+                        fps = probe_fps(seg.video_path)
+                        frames = max(1, round(seg.duration_s * fps))
+                        f.write(f"outpoint {(frames - 1) / fps:.6f}\n")
+                        logger.debug(
+                            f"[MERGE] frame {seg.frame_id}: trimmed to {frames} frames "
+                            f"({seg.duration_s:.3f}s of {seg.source_duration_s:.3f}s)"
+                        )
+                    except Exception as e:
+                        # A failed probe must not drop the shot — fall back to
+                        # the untrimmed clip and say so, rather than emitting a
+                        # bad out point or aborting the whole export.
+                        #
+                        # duration_s has to come back with it: RenderEngine
+                        # builds the subtitle timeline from these same segments
+                        # below, and leaving it at the trimmed value would put
+                        # every cue after this shot ahead of the picture.
+                        logger.warning(
+                            f"[MERGE] frame {seg.frame_id}: fps probe failed ({e}); "
+                            f"using the untrimmed clip"
+                        )
+                        seg.duration_s = seg.source_duration_s
+                logger.debug(f"[MERGE] Added to list: {seg.video_path}")
 
         logger.info(f"[MERGE] Merge list created with {len(abs_video_paths)} videos")
 

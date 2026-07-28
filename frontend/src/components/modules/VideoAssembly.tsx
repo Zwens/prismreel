@@ -10,6 +10,7 @@ import { getAssetUrl, extractErrorDetail } from "@/lib/utils";
 import StepPageHeader, { StepPill } from "@/components/shared/StepPageHeader";
 import SidePanelHeader from "@/components/shared/SidePanelHeader";
 import { SubtitlePanel } from "@/components/assembly/SubtitlePanel";
+import BeatSyncPanel from "./BeatSyncPanel";
 
 type AssemblyPhase = "takes" | "mix" | "subtitle" | "export";
 
@@ -526,6 +527,9 @@ function MixPhase({
                     {ta("mixHint")}
                 </p>
             </section>
+
+            {/* 卡点紧跟 BGM 选择——节拍来自这里选的曲子，换了 BGM 就要重测 */}
+            <BeatSyncPanel scriptId={scriptId} hasBgm={!!bgmUrl} />
         </div>
     );
 }

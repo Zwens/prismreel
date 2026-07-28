@@ -27,11 +27,21 @@ MIN_CUE_S = 0.8
 
 @dataclass
 class RenderSegment:
-    """One shot as it will appear in the concatenated output."""
+    """One shot as it will appear in the concatenated output.
+
+    duration_s is the **effective** length — what the shot occupies in the
+    finished film after any beat-sync trim. Everything downstream (the concat
+    out point, the subtitle timeline) must read this one number, or a trimmed
+    shot desyncs every cue after it.
+
+    source_duration_s keeps the untrimmed length so merge_videos can tell
+    whether an out point is needed at all.
+    """
 
     frame_id: str
     video_path: str
     duration_s: float
+    source_duration_s: Optional[float] = None
 
 
 @dataclass

@@ -138,6 +138,8 @@ export interface StoryboardFrame {
     rendered_image_asset?: ImageAsset;
     status?: string;
     locked?: boolean;
+    /** 卡点：裁剪后的镜头时长（秒）。未设置时用完整片段。 */
+    trim_end_s?: number | null;
     // ... other fields
 }
 

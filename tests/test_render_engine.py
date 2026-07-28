@@ -107,6 +107,53 @@ def test_segments_carry_measured_duration():
         exists=lambda p: True,
     )
     assert segs[0].duration_s == pytest.approx(4.25)
+    assert segs[0].source_duration_s == pytest.approx(4.25)
+
+
+def test_trim_end_shortens_the_effective_duration():
+    """卡点裁剪必须体现在 duration_s 上。
+
+    字幕时间轴和 concat 出点都读这一个数（editing.py 的选片逻辑当初被合并
+    成单一来源就是为了这个）。裁剪只改 concat 而不改 duration_s，会让这一镜
+    之后的每条字幕都跑到画面前面去。
+    """
+    f = _frame("f1", dubbed_video_url="video/a.mp4")
+    f.trim_end_s = 2.0
+    segs = collect_render_segments(
+        _script_with([f], []),
+        resolve=lambda u: f"/abs/{u}",
+        probe=lambda p: 5.0,
+        exists=lambda p: True,
+    )
+    assert segs[0].duration_s == pytest.approx(2.0)
+    assert segs[0].source_duration_s == pytest.approx(5.0)
+
+
+def test_trim_longer_than_clip_is_ignored():
+    """渲染只能剪短。要求 8s 而素材只有 5s 时，用完整素材而不是产生一个
+    ffmpeg 无法满足的出点。"""
+    f = _frame("f1", dubbed_video_url="video/a.mp4")
+    f.trim_end_s = 8.0
+    segs = collect_render_segments(
+        _script_with([f], []),
+        resolve=lambda u: f"/abs/{u}",
+        probe=lambda p: 5.0,
+        exists=lambda p: True,
+    )
+    assert segs[0].duration_s == pytest.approx(5.0)
+
+
+def test_non_positive_trim_is_ignored():
+    """0 或负值会让这一镜从成片里整段消失，且字幕时间轴随之塌陷。"""
+    f = _frame("f1", dubbed_video_url="video/a.mp4")
+    f.trim_end_s = 0.0
+    segs = collect_render_segments(
+        _script_with([f], []),
+        resolve=lambda u: f"/abs/{u}",
+        probe=lambda p: 5.0,
+        exists=lambda p: True,
+    )
+    assert segs[0].duration_s == pytest.approx(5.0)
 
 
 def test_dubbed_video_missing_falls_back_to_take():

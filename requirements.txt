@@ -26,9 +26,11 @@ oss2>=2.18.0
 # Audio Processing
 demucs>=4.0.0
 soundfile>=0.12.0
+# 卡点的节拍检测直接 import numpy（src/apps/comic_gen/beats.py）。它此前只是
+# 别的包的传递依赖，恰好装上了——列在这里是因为现在有代码明写着依赖它。
+numpy>=1.24.0
 
 # Optional Dependencies
 # Uncomment if needed:
-# numpy>=1.24.0
 # pillow>=10.0.0
 # openai>=1.0.0  # Required when LLM_PROVIDER=openai

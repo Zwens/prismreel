@@ -417,6 +417,11 @@ class StoryboardFrame(BaseModel):
     bg_audio_source_video: Optional[str] = Field(None, description="Video URL that bg_audio_url was separated from (cache key)")
     preview_video_url: Optional[str] = Field(None, description="Current preview dubbed video (temporary, not committed)")
 
+    # 卡点：把这一镜剪短到落在 BGM 节拍上。存秒而不是拍数，因为渲染层不该
+    # 依赖 BPM——用户改了 BPM，已经定好的镜头时长不该被动跟着变。UI 负责把
+    # 「N 拍」换算成秒。只能剪短：渲染没有凭空补帧的能力（见 beats.snap_to_beats）。
+    trim_end_s: Optional[float] = Field(None, description="Trimmed shot duration in seconds; None uses the full clip")
+
     selected_video_id: Optional[str] = Field(None, description="ID of the selected VideoTask for this frame")
     is_video_pinned: bool = Field(False, description="True when the user has manually pinned an active video take; auto_select_latest_video skips pinned frames so newly generated takes don't overwrite a hand-picked selection")
     locked: bool = Field(False, description="Whether this frame is locked from regeneration")
