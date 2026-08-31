@@ -6,7 +6,6 @@ PROVIDER_DEFAULTS = {
     "KLING": "https://api-beijing.klingai.com/v1",
     "VIDU": "https://api.vidu.cn/ent/v2",
     "MULEROUTER": "https://api.mulerouter.ai",
-    "SEEVIO": "https://api.seevio.ai",
 }
 
 

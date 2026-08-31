@@ -1130,10 +1130,7 @@ class EnvConfig(ProviderRoutingConfig):
     KLING_SECRET_KEY: Optional[str] = None
     VIDU_API_KEY: Optional[str] = None
     MULEROUTER_API_KEY: Optional[str] = None
-    # Seevio — the aggregator that issues this project's Seedance keys
-    # (sk_live_/sk_test_). Default gateway for the whole Seedance family.
-    SEEVIO_API_KEY: Optional[str] = None
-    # BytePlus ModelArk / Volcano Ark — alternative Seedance 2.5 route.
+    # BytePlus ModelArk / Volcano Ark — Seedance 2.5 runs here.
     ARK_API_KEY: Optional[str] = None
     ARK_REGION: Optional[str] = None
     ARK_BASE_URL: Optional[str] = None
@@ -4137,7 +4134,6 @@ SECRET_FIELDS = {
     "KLING_SECRET_KEY",
     "VIDU_API_KEY",
     "MULEROUTER_API_KEY",
-    "SEEVIO_API_KEY",
     "ARK_API_KEY",
 }
 
@@ -4190,7 +4186,6 @@ def get_env_config():
             "KLING_SECRET_KEY": _mask_secret(os.getenv("KLING_SECRET_KEY")),
             "VIDU_API_KEY": _mask_secret(os.getenv("VIDU_API_KEY")),
             "MULEROUTER_API_KEY": _mask_secret(os.getenv("MULEROUTER_API_KEY")),
-            "SEEVIO_API_KEY": _mask_secret(os.getenv("SEEVIO_API_KEY")),
             "ARK_API_KEY": _mask_secret(os.getenv("ARK_API_KEY")),
             # Non-secret config.
             "ARK_REGION": os.getenv("ARK_REGION", ""),

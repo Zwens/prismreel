@@ -47,7 +47,6 @@ type EnvConfig = EnvConfigPayload & {
   KLING_SECRET_KEY: string;
   VIDU_API_KEY: string;
   MULEROUTER_API_KEY: string;
-  SEEVIO_API_KEY: string;
   ARK_API_KEY: string;
   ARK_REGION: string;
   MULERUN_CLI_LOGGED_IN?: boolean;
@@ -59,7 +58,6 @@ const ENDPOINT_PROVIDERS = [
   { key: "KLING_BASE_URL", label: "Kling", placeholder: "https://api-beijing.klingai.com/v1" },
   { key: "VIDU_BASE_URL", label: "Vidu", placeholder: "https://api.vidu.cn/ent/v2" },
   { key: "MULEROUTER_BASE_URL", label: "MuleRouter", placeholder: "https://api.mulerouter.ai" },
-  { key: "SEEVIO_BASE_URL", label: "Seevio", placeholder: "https://api.seevio.ai" },
 ];
 
 const DEFAULT_CONFIG: EnvConfig = {
@@ -77,7 +75,6 @@ const DEFAULT_CONFIG: EnvConfig = {
   KLING_SECRET_KEY: "",
   VIDU_API_KEY: "",
   MULEROUTER_API_KEY: "",
-  SEEVIO_API_KEY: "",
   ARK_API_KEY: "",
   ARK_REGION: "",
   endpoint_overrides: {},
@@ -738,18 +735,6 @@ export default function SettingsPage() {
             )}
           </FormRow>
 
-          {/* Seevio issues the Seedance keys this project actually uses, so it
-              leads the Seedance-related rows; MuleRouter and Ark below are the
-              opt-in alternatives. */}
-          <FormRow label={t("seevioLabel")} hint={t("seevioHint")}>
-            <FieldLabel>SEEVIO_API_KEY</FieldLabel>
-            <KeyField
-              value={config.SEEVIO_API_KEY}
-              onChange={(v) => setConfig((c) => ({ ...c, SEEVIO_API_KEY: v }))}
-              placeholder={t("seevioKeyPlaceholder")}
-            />
-          </FormRow>
-
           <FormRow label={t("mulerunLabel")} hint={t("mulerunHint")}>
             {!config.MULEROUTER_API_KEY && !config.MULERUN_CLI_LOGGED_IN && (
               <button
@@ -846,8 +831,8 @@ export default function SettingsPage() {
             </details>
           </FormRow>
 
-          {/* BytePlus / Volcano Ark — vendor-direct alternative for Seedance
-              2.5, reachable only via SEEDANCE_PROVIDER_MODE=byteplus. */}
+          {/* BytePlus / Volcano Ark — Seedance 2.5 does not run on the
+              MuleRouter gateway, so it needs its own credential. */}
           <FormRow label={t("arkLabel")} hint={t("arkHint")}>
             <FieldLabel>ARK_API_KEY</FieldLabel>
             <KeyField

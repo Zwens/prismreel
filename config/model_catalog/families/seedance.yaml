@@ -1,27 +1,15 @@
 family: seedance
 display_name: "Seedance (即梦)"
-# The Seedance keys this project actually holds are issued by Seevio
-# (https://seevio.ai, sk_live_ / sk_test_ prefix) — an aggregator, not
-# ByteDance direct. MuleRouter (muk- keys) and BytePlus/Volcano Ark
-# (Ark keys) stay wired up as alternative backends for anyone holding
-# those credentials, but they are no longer the default.
-provider: seevio
+provider: mulerouter
 routing_prefixes:
-  # Bare `seedance` so 2.5's flat ids (seedance-2.5-t2v) resolve too; the
-  # longer prefixes stay for longest-match clarity.
-  - seedance
   - seedance-2.0-
-  - seedance-2.5-
   - seedance/seedance-
 supported_backends:
-  - seevio
   - mulerouter
   - byteplus
-default_backend: seevio
+default_backend: mulerouter
 backend_env_key: SEEDANCE_PROVIDER_MODE
 credential_sources:
-  seevio:
-    - SEEVIO_API_KEY
   mulerouter:
     - MULEROUTER_API_KEY
   byteplus:
@@ -32,21 +20,15 @@ supported_modalities:
   - r2v
 docs:
   official_snapshot_ids:
-    - seevio/seedance/2026-08-31
     - mulerouter/seedance-2.0/2026-06-03
 transport:
   image_input_mode:
-    # Seevio takes image_urls[] and documents them as publicly reachable URLs;
-    # it has no upload endpoint, so local files must go through OSS first.
-    seevio: seevio_image_url
     mulerouter: mulerouter_base64_image
     # Ark takes an image_url item that may be a public URL or a data URI.
     byteplus: byteplus_ark_image_url
   audio_input_mode:
-    seevio: seevio_audio_url
     mulerouter: mulerouter_audio_url
   reference_video_input_mode:
-    seevio: seevio_video_url
     mulerouter: mulerouter_video_url
 models:
   - id: seedance/seedance-2.0-video
@@ -56,12 +38,8 @@ models:
     release_stage: stable
     docs:
       context_hub_doc_ids:
-        - seevio/seedance
         - mulerouter/seedance-2.0
     runtime:
-      seevio:
-        gateway: seevio
-        api_model_id: seedance-2-0
       mulerouter:
         gateway: mulerouter
     modes:
@@ -149,7 +127,6 @@ models:
           watermark: true
         docs:
           context_hub_doc_ids:
-            - seevio/seedance
             - mulerouter/seedance-2.0
         inputs:
           reference_images:
@@ -162,12 +139,8 @@ models:
     release_stage: stable
     docs:
       context_hub_doc_ids:
-        - seevio/seedance
         - mulerouter/seedance-2.0
     runtime:
-      seevio:
-        gateway: seevio
-        api_model_id: seedance-2-0-fast
       mulerouter:
         gateway: mulerouter
     modes:
@@ -255,16 +228,15 @@ models:
           watermark: true
         docs:
           context_hub_doc_ids:
-            - seevio/seedance
             - mulerouter/seedance-2.0
         inputs:
           reference_images:
             max: 9
             reference_type: image
-  # Seedance 2.5 (ByteDance, launched 2026-07-31). Default route is Seevio
-  # (`seedance-2-5`); BytePlus/Volcano Ark direct stays available for Ark-key
-  # holders. MuleRouter never carried 2.5 — probed 2026-08-30, it 404s on every
-  # seedance-2.5 path variant while 2.0 answers 400.
+  # Seedance 2.5 (ByteDance, launched 2026-07-31). Reached through BytePlus
+  # ModelArk / Volcano Ark, NOT MuleRouter — probed 2026-08-30, the gateway
+  # 404s on every seedance-2.5 path variant while 2.0 answers 400.
+  # Wire id is env-overridable; see src/models/byteplus.py.
   - id: seedance/seedance-2.5-video
     display_name: Seedance 2.5
     description: ByteDance Seedance 2.5 — native 30s takes, up to 4K, multimodal references
@@ -272,12 +244,8 @@ models:
     release_stage: stable
     docs:
       context_hub_doc_ids:
-        - seevio/seedance
         - byteplus/modelark-seedance-2.5
     runtime:
-      seevio:
-        gateway: seevio
-        api_model_id: seedance-2-5
       byteplus:
         gateway: byteplus
     modes:
@@ -302,9 +270,7 @@ models:
           default: 5
         params:
           resolution:
-            # Seevio's enum is 480p|720p|1080p — 4k was reachable on the Ark
-            # direct path only, and would be rejected on the default backend.
-            options: [480p, 720p, 1080p]
+            options: [480p, 720p, 1080p, 4k]
             default: 1080p
           seed: true
           negativePrompt: false
@@ -331,9 +297,7 @@ models:
           default: 5
         params:
           resolution:
-            # Seevio's enum is 480p|720p|1080p — 4k was reachable on the Ark
-            # direct path only, and would be rejected on the default backend.
-            options: [480p, 720p, 1080p]
+            options: [480p, 720p, 1080p, 4k]
             default: 1080p
           seed: true
           negativePrompt: false
@@ -364,9 +328,7 @@ models:
           default: 5
         params:
           resolution:
-            # Seevio's enum is 480p|720p|1080p — 4k was reachable on the Ark
-            # direct path only, and would be rejected on the default backend.
-            options: [480p, 720p, 1080p]
+            options: [480p, 720p, 1080p, 4k]
             default: 1080p
           seed: true
           negativePrompt: false
@@ -374,7 +336,6 @@ models:
           watermark: true
         docs:
           context_hub_doc_ids:
-            - seevio/seedance
             - byteplus/modelark-seedance-2.5
         inputs:
           reference_images:

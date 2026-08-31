@@ -1,11 +1,5 @@
 # Seedance via MuleRouter vendor passthrough
 
-> **已不是默认路径（2026-08-31）。** Seedance 全系（2.0 / 2.0-fast / 2.5）默认改走
-> Seevio 聚合平台，见 `seedance-seevio.md`——本项目持有的是 Seevio 签发的
-> `sk_live_` key，不是 MuleRouter 的 `muk-`，也不是 Ark 官网直连的 key。
-> 本文件描述的 MuleRouter 路径保留为 `SEEDANCE_PROVIDER_MODE=mulerouter` 的备用通道，
-> 其中 GPT-Image-2 部分仍然是唯一路径、未受影响。
-
 > 抓取日期: 2026-08-30
 > 原文链接: 无公开文档（vendor 透传路径不在 https://mulerouter.ai/docs/llms.txt 索引内）
 > Provider: mulerouter / family: seedance / 范围: seedance-2.0, seedance-2.0-fast

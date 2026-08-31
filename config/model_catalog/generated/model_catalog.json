@@ -304,16 +304,12 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "display_name": "Seedance (即梦)",
       "docs": {
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -329,15 +325,12 @@
         "seedance-2.5-r2v",
         "seedance-2.5-t2v"
       ],
-      "provider": "seevio",
+      "provider": "mulerouter",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
@@ -348,17 +341,14 @@
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       }
     },
@@ -1136,21 +1126,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "ByteDance Seedance 2.0 Fast — lower latency variant of the 2.0 endpoints",
       "display_name": "Seedance 2.0 Fast",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "mulerouter/seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -1166,26 +1151,19 @@
         "seedance/seedance-2.0-fast-video#r2v",
         "seedance/seedance-2.0-fast-video#t2v"
       ],
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
         "mulerouter": {
           "gateway": "mulerouter"
-        },
-        "seevio": {
-          "api_model_id": "seedance-2-0-fast",
-          "gateway": "seevio"
         }
       },
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
@@ -1196,17 +1174,14 @@
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       }
     },
@@ -1218,21 +1193,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "ByteDance Seedance 2.0 video generation via MuleRouter",
       "display_name": "Seedance 2.0",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "mulerouter/seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -1248,26 +1218,19 @@
         "seedance/seedance-2.0-video#r2v",
         "seedance/seedance-2.0-video#t2v"
       ],
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
         "mulerouter": {
           "gateway": "mulerouter"
-        },
-        "seevio": {
-          "api_model_id": "seedance-2-0",
-          "gateway": "seevio"
         }
       },
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
@@ -1278,17 +1241,14 @@
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       }
     },
@@ -1300,21 +1260,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "ByteDance Seedance 2.5 — native 30s takes, up to 4K, multimodal references",
       "display_name": "Seedance 2.5",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "byteplus/modelark-seedance-2.5"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -1330,26 +1285,19 @@
         "seedance/seedance-2.5-video#r2v",
         "seedance/seedance-2.5-video#t2v"
       ],
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
         "byteplus": {
           "gateway": "byteplus"
-        },
-        "seevio": {
-          "api_model_id": "seedance-2-5",
-          "gateway": "seevio"
         }
       },
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
@@ -1360,17 +1308,14 @@
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       }
     },
@@ -3718,21 +3663,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Image-to-video generation",
       "display_name": "Seedance 2.0 Fast I2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "mulerouter/seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -3765,33 +3705,27 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -3820,21 +3754,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Reference-to-video with multi-image input",
       "display_name": "Seedance 2.0 Fast R2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "mulerouter/seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -3867,33 +3796,27 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -3922,21 +3845,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Text-to-video generation",
       "display_name": "Seedance 2.0 Fast T2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "mulerouter/seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -3964,33 +3882,27 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -4019,21 +3931,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Image-to-video generation",
       "display_name": "Seedance 2.0 I2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "mulerouter/seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -4066,33 +3973,27 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -4121,21 +4022,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Reference-to-video with multi-image input",
       "display_name": "Seedance 2.0 R2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "mulerouter/seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -4168,33 +4064,27 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -4223,21 +4113,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Text-to-video generation",
       "display_name": "Seedance 2.0 T2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "mulerouter/seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -4265,33 +4150,27 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -4320,21 +4199,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "First-frame image to video",
       "display_name": "Seedance 2.5 I2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "byteplus/modelark-seedance-2.5"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -4361,39 +4235,34 @@
           "options": [
             "480p",
             "720p",
-            "1080p"
+            "1080p",
+            "4k"
           ]
         },
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -4422,21 +4291,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Multimodal reference-to-video, up to 50 reference assets",
       "display_name": "Seedance 2.5 R2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "byteplus/modelark-seedance-2.5"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -4463,39 +4327,34 @@
           "options": [
             "480p",
             "720p",
-            "1080p"
+            "1080p",
+            "4k"
           ]
         },
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -4524,21 +4383,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Text-to-video, native long takes",
       "display_name": "Seedance 2.5 T2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "byteplus/modelark-seedance-2.5"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -4560,39 +4414,34 @@
           "options": [
             "480p",
             "720p",
-            "1080p"
+            "1080p",
+            "4k"
           ]
         },
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -7799,21 +7648,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Image-to-video generation",
       "display_name": "Seedance 2.0 Fast I2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "mulerouter/seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -7849,42 +7693,32 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
         "mulerouter": {
           "gateway": "mulerouter"
-        },
-        "seevio": {
-          "api_model_id": "seedance-2-0-fast",
-          "gateway": "seevio"
         }
       },
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -7913,21 +7747,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Reference-to-video with multi-image input",
       "display_name": "Seedance 2.0 Fast R2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "mulerouter/seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -7963,42 +7792,32 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
         "mulerouter": {
           "gateway": "mulerouter"
-        },
-        "seevio": {
-          "api_model_id": "seedance-2-0-fast",
-          "gateway": "seevio"
         }
       },
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -8027,21 +7846,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Text-to-video generation",
       "display_name": "Seedance 2.0 Fast T2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "mulerouter/seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -8072,42 +7886,32 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
         "mulerouter": {
           "gateway": "mulerouter"
-        },
-        "seevio": {
-          "api_model_id": "seedance-2-0-fast",
-          "gateway": "seevio"
         }
       },
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -8136,21 +7940,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Image-to-video generation",
       "display_name": "Seedance 2.0 I2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "mulerouter/seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -8186,42 +7985,32 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
         "mulerouter": {
           "gateway": "mulerouter"
-        },
-        "seevio": {
-          "api_model_id": "seedance-2-0",
-          "gateway": "seevio"
         }
       },
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -8250,21 +8039,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Reference-to-video with multi-image input",
       "display_name": "Seedance 2.0 R2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "mulerouter/seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -8300,42 +8084,32 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
         "mulerouter": {
           "gateway": "mulerouter"
-        },
-        "seevio": {
-          "api_model_id": "seedance-2-0",
-          "gateway": "seevio"
         }
       },
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -8364,21 +8138,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Text-to-video generation",
       "display_name": "Seedance 2.0 T2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "mulerouter/seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -8409,42 +8178,32 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
         "mulerouter": {
           "gateway": "mulerouter"
-        },
-        "seevio": {
-          "api_model_id": "seedance-2-0",
-          "gateway": "seevio"
         }
       },
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -8473,21 +8232,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "First-frame image to video",
       "display_name": "Seedance 2.5 I2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "byteplus/modelark-seedance-2.5"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -8517,49 +8271,40 @@
           "options": [
             "480p",
             "720p",
-            "1080p"
+            "1080p",
+            "4k"
           ]
         },
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
         "byteplus": {
           "api_model_id": "dreamina-seedance-2-5-260628",
           "gateway": "byteplus"
-        },
-        "seevio": {
-          "api_model_id": "seedance-2-5",
-          "gateway": "seevio"
         }
       },
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -8588,21 +8333,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Multimodal reference-to-video, up to 50 reference assets",
       "display_name": "Seedance 2.5 R2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "byteplus/modelark-seedance-2.5"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -8632,49 +8372,40 @@
           "options": [
             "480p",
             "720p",
-            "1080p"
+            "1080p",
+            "4k"
           ]
         },
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
         "byteplus": {
           "api_model_id": "dreamina-seedance-2-5-260628",
           "gateway": "byteplus"
-        },
-        "seevio": {
-          "api_model_id": "seedance-2-5",
-          "gateway": "seevio"
         }
       },
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {
@@ -8703,21 +8434,16 @@
         ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
-        ],
-        "seevio": [
-          "SEEVIO_API_KEY"
         ]
       },
-      "default_backend": "seevio",
+      "default_backend": "mulerouter",
       "description": "Text-to-video, native long takes",
       "display_name": "Seedance 2.5 T2V",
       "docs": {
         "context_hub_doc_ids": [
-          "seevio/seedance",
           "byteplus/modelark-seedance-2.5"
         ],
         "official_snapshot_ids": [
-          "seevio/seedance/2026-08-31",
           "mulerouter/seedance-2.0/2026-06-03"
         ]
       },
@@ -8742,49 +8468,40 @@
           "options": [
             "480p",
             "720p",
-            "1080p"
+            "1080p",
+            "4k"
           ]
         },
         "seed": true,
         "watermark": true
       },
-      "provider": "seevio",
+      "provider": "mulerouter",
       "release_stage": "stable",
       "routing_prefixes": [
-        "seedance",
         "seedance-2.0-",
-        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
         "byteplus": {
           "api_model_id": "dreamina-seedance-2-5-260628",
           "gateway": "byteplus"
-        },
-        "seevio": {
-          "api_model_id": "seedance-2-5",
-          "gateway": "seevio"
         }
       },
       "status": "active",
       "supported_backends": [
-        "seevio",
         "mulerouter",
         "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url",
-          "seevio": "seevio_audio_url"
+          "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image",
-          "seevio": "seevio_image_url"
+          "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url",
-          "seevio": "seevio_video_url"
+          "mulerouter": "mulerouter_video_url"
         }
       },
       "ui": {

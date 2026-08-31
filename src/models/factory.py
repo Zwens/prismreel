@@ -15,10 +15,8 @@ class ModelFactory:
         elif model_name in ('vidu', 'viduq3-pro', 'viduq3-turbo'):
             from .vidu import ViduModel
             return ViduModel(config.get('model') or {})
-        elif model_name in ('seedance', 'seedance-2.0', 'seedance-2.5'):
-            # Seedance keys here are Seevio-issued; MuleRouter/Ark remain
-            # selectable through SEEDANCE_PROVIDER_MODE on the routed paths.
-            from .seevio import SeevioVideoModel
-            return SeevioVideoModel(config.get('model') or {})
+        elif model_name in ('seedance', 'seedance-2.0'):
+            from .mulerouter import MuleRouterVideoModel
+            return MuleRouterVideoModel(config.get('model') or {})
         else:
             raise ValueError(f"Unknown model: {model_name}")
