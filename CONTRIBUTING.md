@@ -4,7 +4,7 @@ Thank you for your interest in contributing to PrismReel Studio! We welcome cont
 
 ## 🌟 Ways to Contribute
 
-- **Bug Reports**: Submit detailed bug reports via [GitHub Issues](https://github.com/alibaba/prismreel/issues)
+- **Bug Reports**: Submit detailed bug reports via [GitHub Issues](https://github.com/Zwens/prismreel/issues)
 - **Feature Requests**: Propose new features through GitHub Issues
 - **Code Contributions**: Submit pull requests for bug fixes or new features
 - **Documentation**: Improve documentation, tutorials, or examples
@@ -20,7 +20,7 @@ git clone https://github.com/YOUR_USERNAME/prismreel.git
 cd prismreel
 
 # Add upstream remote
-git remote add upstream https://github.com/alibaba/prismreel.git
+git remote add upstream https://github.com/Zwens/prismreel.git
 ```
 
 ### 2. Set Up Development Environment
@@ -324,8 +324,8 @@ For feature requests, please describe:
 
 ## 📞 Questions?
 
-- **Technical Questions**: [GitHub Discussions](https://github.com/alibaba/prismreel/discussions)
-- **Security Issues**: Email security@alibaba-inc.com (do not file public issues)
+- **Technical Questions**: [GitHub Discussions](https://github.com/Zwens/prismreel/discussions)
+- **Security Issues**: Report privately via [GitHub Security Advisory](https://github.com/Zwens/prismreel/security/advisories/new) (do not file public issues)
 
 ## 📄 License
 

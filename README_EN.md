@@ -13,7 +13,7 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![Node](https://img.shields.io/badge/node-18%2B-green)](https://nodejs.org/)
-[![GitHub Stars](https://img.shields.io/github/stars/alibaba/prismreel?style=social)](https://github.com/alibaba/prismreel)
+[![GitHub Stars](https://img.shields.io/github/stars/Zwens/prismreel?style=social)](https://github.com/Zwens/prismreel)
 
 [English](README_EN.md) · [中文](README.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
 
@@ -119,7 +119,7 @@ PrismReel currently includes two core modules:
 
 ```bash
 # Clone
-git clone https://github.com/alibaba/prismreel.git
+git clone https://github.com/Zwens/prismreel.git
 cd prismreel
 
 # Configure API Key
@@ -218,9 +218,8 @@ prismreel/
 
 Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md).
 
-- **Bug Reports**: [GitHub Issues](https://github.com/alibaba/prismreel/issues)
-- **Feature Requests**: [GitHub Discussions](https://github.com/alibaba/prismreel/discussions)
-- **Email**: [zhangjunhe.zjh@alibaba-inc.com](mailto:zhangjunhe.zjh@alibaba-inc.com)
+- **Bug Reports**: [GitHub Issues](https://github.com/Zwens/prismreel/issues)
+- **Feature Requests**: [GitHub Discussions](https://github.com/Zwens/prismreel/discussions)
 
 ---
 
@@ -231,5 +230,5 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 ---
 
 <div align="center">
-  Made with ❤️ by StarLotus · Alibaba Group
+  Made with ❤️ by Zwens
 </div>
