@@ -140,3 +140,7 @@ frontend/docs/
 
 # Editor/manual backup files
 *.bak
+
+# Env backups and local scratch files
+.env.bak*
+scratch_common.txt

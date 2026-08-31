@@ -1,33 +1,29 @@
 ---
-description: PrismReel GitHub 发布流程 - 安全提交、敏感数据扫描、推送到 GitHub 公开仓库
+description: PrismReel GitHub 发布流程 - 安全提交、敏感数据扫描、推送到 GitHub 仓库
 ---
 
 # PrismReel GitHub 发布流程
 
-此 skill 整合了从本地开发到 GitHub 公开仓库的完整发布流程，包含安全检查和规范约束。
+此 skill 整合了从本地开发到 GitHub 仓库的完整发布流程，包含安全检查和规范约束。
 
 ## 核心规则
 
-- **禁止直接推送 `main` 分支** — 必须通过 feature 分支 + PR
-- **推送前必须执行敏感数据扫描**
+- **仓库地址：`https://github.com/Zwens/prismreel.git`，remote 名称为 `origin`**
+- **推送前必须执行敏感数据扫描** — 任何一项命中都必须修复后才能继续
 - **Commit Message 遵循 Conventional Commits** (`feat:` / `fix:` / `docs:` / `refactor:` / `chore:`)
-- **GitHub remote 名称为 `github`**，仓库地址：`https://github.com/alibaba/prismreel.git`
-- **GitHub 镜像提交的作者固定为** `Mike4Ellis <1007062267@qq.com>`
-- **GitHub PR 统一由** `Star-Lotus` **账号发起**；如果 `Mike4Ellis` 无法创建 PR，需要先切换 `gh` 活跃账号再执行 `gh pr create`
+- **提交作者使用本地 git 配置**，不需要切换身份
+- 日常开发直接在 `main` 上提交并推送；只有需要隔离的大改动才另开 `feature/*` 分支
 
 ## 阶段一：提交前检查
 
-### 1. 确认分支
+### 1. 确认远程与分支
 
 ```bash
+git remote -v
 git branch --show-current
 ```
 
-**必须**在 `feature/*`、`fix/*`、`docs/*` 分支上工作。如果在 main 上：
-
-```bash
-git checkout -b feature/<your-feature-name>
-```
+预期 remote 为 `origin  https://github.com/Zwens/prismreel.git`。
 
 ### 2. 敏感数据扫描
 
@@ -38,7 +34,7 @@ git checkout -b feature/<your-feature-name>
 git grep -E "['\"][a-zA-Z0-9_-]{40,}['\"]" -- ':(exclude)*.lock' ':(exclude)node_modules'
 ```
 
-**搜索内部域名:**
+**搜索内部/公司域名:**
 ```bash
 git grep -i "alibaba-inc.com"
 ```
@@ -51,6 +47,11 @@ git grep -iE "(sk-|AKID|access_key|password|pwd|token|bearer)" -- ':(exclude)*.l
 **检查敏感文件是否被追踪:**
 ```bash
 git ls-files | grep -E "\.env$|secret|credential|\.key$|\.pem$" | grep -v "\.example"
+```
+
+**检查待暂存的未追踪文件里有没有 .env 备份 / 临时草稿:**
+```bash
+git status --porcelain | grep '^??'
 ```
 
 ### 3. 检查 .gitignore 完整性
@@ -90,16 +91,6 @@ git add <specific-files>
 git commit -m "feat: your descriptive commit message"
 ```
 
-提交前确认作者身份符合项目约定：
-
-```bash
-git log -1 --format='%an <%ae>'
-```
-
-期望作者：
-
-- `Mike4Ellis <1007062267@qq.com>`
-
 Commit 类型：
 - `feat:` 新功能
 - `fix:` Bug 修复
@@ -112,32 +103,18 @@ Commit 类型：
 ### 3. 推送到 GitHub
 
 ```bash
-git push -u github <branch-name>
+git push origin main
 ```
 
-### 4. 创建 Pull Request
-
-先切换到有 PR 创建权限的账号：
+如果是在 feature 分支上工作：
 
 ```bash
-gh auth switch --hostname github.com --user Star-Lotus
-```
-
-```bash
-gh pr create --repo alibaba/prismreel --title "feat: your PR title" --body "$(cat <<'EOF'
-## Summary
-- <change description>
-
-## Test plan
-- [ ] <test checklist>
-
-EOF
-)"
+git push -u origin <branch-name>
 ```
 
 ## 阶段四：推送后验证
 
-- 访问 https://github.com/alibaba/prismreel 确认内容正确
+- 访问 https://github.com/Zwens/prismreel 确认内容正确
 - 检查 README 格式渲染
 - 确认无敏感信息泄露
 
@@ -149,4 +126,4 @@ git reset --soft HEAD~1
 ```
 
 **已 push:**
-需要使用 BFG Repo-Cleaner 清理历史并 force push。联系团队协助。
+需要使用 BFG Repo-Cleaner 清理历史并 force push。

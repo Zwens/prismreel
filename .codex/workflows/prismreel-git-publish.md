@@ -1,40 +1,28 @@
 ---
 name: prismreel-git-publish
-description: PrismReel GitHub publish workflow for safe commits, sensitive-data scans, and PR-based pushes to the GitHub mirror.
+description: PrismReel GitHub publish workflow for safe commits, sensitive-data scans, and pushes to the GitHub repository.
 ---
 
 # PrismReel GitHub Publish Workflow
 
-Use this workflow when working in this repository and the user asks to publish work to the PrismReel GitHub mirror, prepare a GitHub-ready branch, or follow the PrismReel GitHub release process.
+Use this workflow when working in this repository and the user asks to publish work to GitHub, prepare a push, or follow the PrismReel release process.
 
 ## Core Rules
 
-- Never push directly to `main`. Use a feature, fix, or docs branch and open a PR.
-- Push to the `github` remote only. Ignore `origin` for publishing.
-- Run sensitive-data checks before any push.
+- Repository: `https://github.com/Zwens/prismreel.git`, remote name `origin`.
+- Run sensitive-data checks before any push. Any hit must be resolved first.
 - Commit messages must follow Conventional Commits.
-- Use `Mike4Ellis <1007062267@qq.com>` as the git commit author for GitHub mirror submissions in this repo.
-- Open GitHub PRs with the `Star-Lotus` GitHub account. If `Mike4Ellis` lacks `createPullRequest` permission, switch `gh` to `Star-Lotus` before running `gh pr create`.
+- Use the local git configuration as the commit author. Do not switch identities.
+- Day-to-day work commits and pushes directly to `main`. Open a `feature/*` branch only for changes that need isolation.
 
-Repository-specific constraints:
-
-- GitHub remote: `github`
-- GitHub repository: `https://github.com/alibaba/prismreel.git`
-- Allowed branch prefixes: `feature/`, `fix/`, `docs/`
-
-## Step 1: Confirm Branch
-
-Check the current branch:
+## Step 1: Confirm Remote and Branch
 
 ```bash
+git remote -v
 git branch --show-current
 ```
 
-If the branch is `main`, create a safe branch first:
-
-```bash
-git checkout -b feature/<your-feature-name>
-```
+Expect `origin  https://github.com/Zwens/prismreel.git`.
 
 ## Step 2: Sensitive-Data Checks
 
@@ -62,6 +50,12 @@ Search tracked sensitive files:
 
 ```bash
 git ls-files | grep -E "\.env$|secret|credential|\.key$|\.pem$" | grep -v "\.example"
+```
+
+Review untracked files for `.env` backups or scratch notes before staging:
+
+```bash
+git status --porcelain | grep '^??'
 ```
 
 ## Step 3: Check .gitignore Coverage
@@ -112,16 +106,6 @@ Create an English Conventional Commit message:
 git commit -m "feat: your descriptive commit message"
 ```
 
-Before committing, confirm the author identity matches the project convention:
-
-```bash
-git log -1 --format='%an <%ae>'
-```
-
-Expected author for GitHub-bound commits in this repo:
-
-- `Mike4Ellis <1007062267@qq.com>`
-
 Common prefixes:
 
 - `feat:`
@@ -134,35 +118,19 @@ Common prefixes:
 
 ## Step 7: Push to GitHub
 
-Push the current branch to the `github` remote:
-
 ```bash
-git push -u github <branch-name>
+git push origin main
 ```
 
-## Step 8: Create a Pull Request
-
-Use GitHub CLI to open the PR:
+When working on a feature branch instead:
 
 ```bash
-gh auth switch --hostname github.com --user Star-Lotus
+git push -u origin <branch-name>
 ```
 
-```bash
-gh pr create --repo alibaba/prismreel --title "feat: your PR title" --body "$(cat <<'EOF'
-## Summary
-- <change description>
+## Step 8: Post-Push Verification
 
-## Test plan
-- [ ] <test checklist>
-
-EOF
-)"
-```
-
-## Step 9: Post-Push Verification
-
-- Confirm the branch and PR are visible on GitHub.
+- Confirm the commit is visible at https://github.com/Zwens/prismreel
 - Check README rendering if docs changed.
 - Confirm no sensitive information leaked in the diff.
 
@@ -174,4 +142,4 @@ If the commit has not been pushed yet:
 git reset --soft HEAD~1
 ```
 
-If sensitive data was already pushed, stop and escalate to the team for history cleanup.
+If sensitive data was already pushed, clean history with BFG Repo-Cleaner and force push.
