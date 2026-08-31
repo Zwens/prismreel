@@ -91,7 +91,7 @@ export default function GalleryView({
   if (generations.length === 0) {
     return (
       <div className="flex flex-col h-full items-center justify-center">
-        <p className="text-sm text-text-muted">No results to display</p>
+        <p className="text-sm text-text-muted">{t("noResults")}</p>
       </div>
     );
   }
@@ -130,7 +130,7 @@ export default function GalleryView({
         ) : current.status === 'failed' ? (
           <div className="flex flex-col items-center gap-3 text-status-failed-fg">
             <AlertCircle className="w-10 h-10" />
-            <p className="font-mono text-xs">Generation failed</p>
+            <p className="font-mono text-xs">{t("genFailed")}</p>
             {current.error && (
               <p className="text-[0.625rem] text-text-muted max-w-xs text-center line-clamp-3">
                 {current.error}

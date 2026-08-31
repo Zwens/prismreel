@@ -2,8 +2,9 @@ import os
 import time
 from typing import Dict, Any, List
 from .models import StoryboardFrame, Character, Scene, Prop, GenerationStatus, ImageAsset, ImageVariant
-from ...models.image import WanxImageModel
+from ...models.image import WanxImageModel, resolve_image_adapter
 from ...utils import get_logger
+from ...utils.media_refs import to_project_media_ref
 from ...utils.oss_utils import is_object_key
 
 logger = get_logger(__name__)
@@ -179,10 +180,11 @@ class StoryboardGenerator:
                 # Use I2I if reference images are available
                 # Pass collected asset paths to model
                 logger.info(f"[Storyboard] Calling model.generate with {len(asset_ref_paths)} reference images using model {model_name or 'default'}")
-                self.model.generate(prompt, output_path, ref_image_paths=asset_ref_paths, size=effective_size, model_name=model_name)
+                image_model = resolve_image_adapter(model_name, self.model)
+                image_model.generate(prompt, output_path, ref_image_paths=asset_ref_paths, size=effective_size, model_name=model_name)
                 
                 # Store relative path for frontend serving
-                rel_path = os.path.relpath(output_path, "output")
+                rel_path = to_project_media_ref(output_path)
                 
                 # Create Variant
                 variant = ImageVariant(

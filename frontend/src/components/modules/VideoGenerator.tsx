@@ -133,7 +133,7 @@ export default function VideoGenerator() {
                 stepNumber={5}
                 totalSteps={6}
                 icon={<Video />}
-                englishName="Motion Generator"
+                sectionName={tStep("motionSection")}
                 title={tStep("motionTitle")}
                 subtitle={tStep("motionSubtitle")}
                 trailing={tasks.length > 0 ? (

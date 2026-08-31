@@ -26,6 +26,8 @@ type EnvConfig = EnvConfigPayload & {
   KLING_SECRET_KEY: string;
   VIDU_API_KEY: string;
   MULEROUTER_API_KEY: string;
+  ARK_API_KEY: string;
+  ARK_REGION: string;
   MULERUN_CLI_LOGGED_IN?: boolean;
   endpoint_overrides: Record<string, string>;
 };
@@ -51,6 +53,8 @@ const DEFAULT_CONFIG: EnvConfig = {
   KLING_SECRET_KEY: "",
   VIDU_API_KEY: "",
   MULEROUTER_API_KEY: "",
+  ARK_API_KEY: "",
+  ARK_REGION: "",
   endpoint_overrides: {},
 };
 
@@ -224,14 +228,14 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
               <>
                 <div>
                   <label className="flex items-center justify-between text-sm font-medium text-foreground mb-2">
-                    <span>DashScope API Key <span className="text-red-500">*</span></span>
+                    <span>{t("dashscopeApiKeyLabel")} <span className="text-red-500">*</span></span>
                     <span className="text-text-muted font-normal text-xs">e.g. sk-xxx</span>
                   </label>
                   <input
                     type="password"
                     value={config.DASHSCOPE_API_KEY}
                     onChange={(e) => handleChange("DASHSCOPE_API_KEY", e.target.value)}
-                    placeholder="Required for DashScope-first model routing"
+                    placeholder={t("dashscopeKeyPlaceholder")}
                     className={inputClass}
                   />
                 </div>
@@ -248,7 +252,7 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                       type="password"
                       value={config.ALIBABA_CLOUD_ACCESS_KEY_ID}
                       onChange={(e) => handleChange("ALIBABA_CLOUD_ACCESS_KEY_ID", e.target.value)}
-                      placeholder="Optional, used when OSS mirror is enabled"
+                      placeholder={t("ossCredentialPlaceholder")}
                       className={inputClass}
                     />
                   </div>
@@ -261,7 +265,7 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                       type="password"
                       value={config.ALIBABA_CLOUD_ACCESS_KEY_SECRET}
                       onChange={(e) => handleChange("ALIBABA_CLOUD_ACCESS_KEY_SECRET", e.target.value)}
-                      placeholder="Optional, used when OSS mirror is enabled"
+                      placeholder={t("ossCredentialPlaceholder")}
                       className={inputClass}
                     />
                   </div>
@@ -286,35 +290,35 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                   <div className="space-y-4">
                     <div>
                       <label className="flex items-center justify-between text-sm font-medium text-foreground mb-2">
-                        <span>OSS Bucket Name</span>
+                        <span>{t("ossBucketLabel")}</span>
                         <span className="text-text-muted font-normal text-xs">e.g. my-comic-bucket</span>
                       </label>
                       <input
                         type="text"
                         value={config.OSS_BUCKET_NAME}
                         onChange={(e) => handleChange("OSS_BUCKET_NAME", e.target.value)}
-                        placeholder="your_bucket_name (optional)"
+                        placeholder={t("ossBucketPlaceholder")}
                         className={inputClass}
                       />
                     </div>
 
                     <div>
                       <label className="flex items-center justify-between text-sm font-medium text-foreground mb-2">
-                        <span>OSS Endpoint</span>
+                        <span>{t("ossEndpointLabel")}</span>
                         <span className="text-text-muted font-normal text-xs">e.g. oss-cn-hangzhou.aliyuncs.com</span>
                       </label>
                       <input
                         type="text"
                         value={config.OSS_ENDPOINT}
                         onChange={(e) => handleChange("OSS_ENDPOINT", e.target.value)}
-                        placeholder="oss-cn-beijing.aliyuncs.com (optional)"
+                        placeholder={t("ossEndpointPlaceholder")}
                         className={inputClass}
                       />
                     </div>
 
                     <div>
                       <label className="flex items-center justify-between text-sm font-medium text-foreground mb-2">
-                        <span>OSS Base Path</span>
+                        <span>{t("ossBasePathLabel")}</span>
                         <span className="text-text-muted font-normal text-xs">e.g. prismreel</span>
                       </label>
                       <input
@@ -330,7 +334,7 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
 
                 <div className="pt-4 border-t border-glass-border">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold text-foreground">Kling Provider</h3>
+                    <h3 className="text-sm font-bold text-foreground">{t("klingProvider")}</h3>
                     <span className="text-[0.625rem] text-text-muted">{t("chooseProvider")}</span>
                   </div>
                   <div className="bg-glass border border-glass-border rounded-lg p-4 space-y-4">
@@ -364,7 +368,7 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                             type="password"
                             value={config.KLING_ACCESS_KEY}
                             onChange={(e) => handleChange("KLING_ACCESS_KEY", e.target.value)}
-                            placeholder="Kling API Access Key"
+                            placeholder={t("klingAccessKeyPlaceholder")}
                             className={inputClass}
                           />
                         </div>
@@ -377,7 +381,7 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                             type="password"
                             value={config.KLING_SECRET_KEY}
                             onChange={(e) => handleChange("KLING_SECRET_KEY", e.target.value)}
-                            placeholder="Kling API Secret Key"
+                            placeholder={t("klingSecretKeyPlaceholder")}
                             className={inputClass}
                           />
                         </div>
@@ -388,7 +392,7 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
 
                 <div className="pt-4 border-t border-glass-border">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold text-foreground">Vidu Provider</h3>
+                    <h3 className="text-sm font-bold text-foreground">{t("viduProvider")}</h3>
                     <span className="text-[0.625rem] text-text-muted">{t("chooseProvider")}</span>
                   </div>
                   <div className="bg-input-bg border border-glass-border rounded-lg p-4 space-y-4">
@@ -421,7 +425,7 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                           type="password"
                           value={config.VIDU_API_KEY}
                           onChange={(e) => handleChange("VIDU_API_KEY", e.target.value)}
-                          placeholder="Vidu API Key"
+                          placeholder={t("viduApiKeyPlaceholder")}
                           className={inputClass}
                         />
                       </div>
@@ -434,7 +438,7 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                   <h4 className="text-sm font-medium text-text-secondary">MuleRun / MuleRouter</h4>
                   <p className="text-xs text-text-secondary/60">用于 Seedance 2.0 视频生成和 GPT-Image-2 图片生成</p>
                   <div>
-                    <label className="block text-xs text-text-secondary mb-1">API Key</label>
+                    <label className="block text-xs text-text-secondary mb-1">{t("apiKeyLabel")}</label>
                     <input
                       type="password"
                       value={config.MULEROUTER_API_KEY}

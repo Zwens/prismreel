@@ -395,3 +395,105 @@ class TestImportAssetsFromSeries:
         assert len(result.scenes) == 1
         assert len(result.props) == 1
         assert len(imported_ids) == 3
+
+
+# ===================================================================
+# 8. Voice binding on series-shared characters
+# ===================================================================
+
+class TestBindVoiceSeriesShared:
+    """`bind_voice` must reach series-shared characters.
+
+    An episode that inherits its whole cast from the parent series has
+    an EMPTY `script.characters`; every character the UI shows comes
+    from `series.characters` (merged in by GET /projects/{id} with
+    source="series"). Looking the id up only in the episode-local list
+    raises "Character not found" -> API 500 -> the picker silently
+    keeps showing 未绑定音色.
+    """
+
+    def _episode_in_series(self, pipeline, char):
+        series = pipeline.create_series("Series A")
+        series.characters = [char]
+        script = _make_script()
+        pipeline.scripts[script.id] = script
+        pipeline.add_episode_to_series(series.id, script.id)
+        return series, script
+
+    def test_bind_voice_on_series_shared_character(self, pipeline):
+        char = _make_character(name="二月红")
+        series, script = self._episode_in_series(pipeline, char)
+
+        pipeline.bind_voice(script.id, char.id, "longxiaochun_v2", "龙小淳 (知性女)")
+
+        bound = next(c for c in pipeline.get_series(series.id).characters if c.id == char.id)
+        assert bound.voice_id == "longxiaochun_v2"
+        assert bound.voice_name == "龙小淳 (知性女)"
+
+    def test_bind_voice_prefers_episode_local_override(self, pipeline):
+        """Episode-local fork wins over the series copy of the same id."""
+        shared = _make_character(name="二月红")
+        series, script = self._episode_in_series(pipeline, shared)
+        local = _make_character(name="二月红 (本集)", id=shared.id)
+        script.characters = [local]
+
+        pipeline.bind_voice(script.id, shared.id, "longyue_v2", "龙悦")
+
+        assert script.characters[0].voice_id == "longyue_v2"
+        series_copy = next(c for c in pipeline.get_series(series.id).characters if c.id == shared.id)
+        assert series_copy.voice_id is None
+
+    def test_bind_voice_unknown_character_still_raises(self, pipeline):
+        _, script = self._episode_in_series(pipeline, _make_character(name="二月红"))
+        with pytest.raises(ValueError, match="Character not found"):
+            pipeline.bind_voice(script.id, "no-such-id", "v", "n")
+
+
+# ===================================================================
+# 8. Series-shared asset mutations (regression)
+# ===================================================================
+
+class TestSeriesSharedAssetMutation:
+    """Writes targeting an asset that lives in the parent series' shared
+    pool must succeed. GET /projects/{id} merges series-shared
+    characters/scenes/props into the episode response, so the frontend
+    legitimately sends ids that are NOT in script.characters. Any
+    mutation that only searches the episode-local list raises
+    "Character not found" and surfaces as a silent 500."""
+
+    def _series_episode_with_shared_char(self, pipeline):
+        series = pipeline.create_series("Old Nine Gates")
+        char = _make_character(name="Er Yue Hong")
+        series.characters = [char]
+        script = _make_script(title="Episode 1")
+        pipeline.scripts[script.id] = script
+        pipeline.add_episode_to_series(series.id, script.id)
+        # Episode-local list stays empty — the asset only exists series-side.
+        assert script.characters == []
+        return series, script, char
+
+    def test_bind_voice_on_series_shared_character(self, pipeline):
+        series, script, char = self._series_episode_with_shared_char(pipeline)
+
+        pipeline.bind_voice(script.id, char.id, "longxiaochun_v2", "龙小淳 (知性女)")
+
+        shared = next(c for c in series.characters if c.id == char.id)
+        assert shared.voice_id == "longxiaochun_v2"
+        assert shared.voice_name == "龙小淳 (知性女)"
+
+    def test_bind_voice_unknown_character_still_raises(self, pipeline):
+        _, script, _ = self._series_episode_with_shared_char(pipeline)
+        with pytest.raises(ValueError, match="Character not found"):
+            pipeline.bind_voice(script.id, "no-such-id", "v", "V")
+
+    def test_bind_voice_prefers_episode_local_override(self, pipeline):
+        series, script, char = self._series_episode_with_shared_char(pipeline)
+        # Episode forks the character (same id, local copy wins).
+        local = _make_character(name="Er Yue Hong (local)", id=char.id)
+        script.characters = [local]
+
+        pipeline.bind_voice(script.id, char.id, "longwan_v2", "龙婉")
+
+        assert local.voice_id == "longwan_v2"
+        shared = next(c for c in series.characters if c.id == char.id)
+        assert shared.voice_id is None

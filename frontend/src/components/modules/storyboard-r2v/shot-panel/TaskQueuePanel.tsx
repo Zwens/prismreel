@@ -80,7 +80,7 @@ export default function TaskQueuePanel({
             />
             <aside
                 role="region"
-                aria-label="Task queue"
+                aria-label={t("queueAria")}
                 className={[
                     // Always: flex layout, glass surface, slide-in entry.
                     "flex h-full shrink-0 flex-col border-l border-glass-border bg-surface/55 backdrop-blur-xl",
@@ -106,7 +106,7 @@ export default function TaskQueuePanel({
                 trailing={(
                     <button
                         type="button"
-                        aria-label="Close queue"
+                        aria-label={t("queueCloseAria")}
                         onClick={onClose}
                         className="p-1.5 hover:bg-hover-bg rounded-md text-text-secondary hover:text-foreground transition-colors"
                     >
@@ -308,7 +308,7 @@ function TaskRow({
                     {task.frame_id ? (
                         <button
                             type="button"
-                            aria-label="Jump to shot"
+                            aria-label={t("queueJumpAria")}
                             title={t("queueJumpToShot")}
                             onClick={() => onJumpToShot(task.frame_id!)}
                             className="-m-1 grid h-7 w-7 place-items-center rounded text-text-muted transition-colors duration-fast ease-out-quart hover:bg-hover-bg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
@@ -319,8 +319,8 @@ function TaskRow({
                     {isInFlight && onCancel ? (
                         <button
                             type="button"
-                            aria-label="Cancel task"
-                            title="Cancel"
+                            aria-label={t("queueCancelAria")}
+                            title={t("queueCancel")}
                             onClick={() => { void onCancel(task); }}
                             className="-m-1 grid h-7 w-7 place-items-center rounded text-text-muted transition-colors duration-fast ease-out-quart hover:bg-status-failed-bg hover:text-status-failed-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed-border"
                         >
@@ -425,7 +425,7 @@ function TaskRow({
                                         type="button"
                                         onClick={() => void handleCopy("providerId", task.provider_task_id!)}
                                         title={t("queueCopyTaskId")}
-                                        aria-label="Copy task ID"
+                                        aria-label={t("queueCopyTaskIdAria")}
                                         className="-m-1 grid h-6 w-6 place-items-center rounded text-text-muted transition-colors duration-fast ease-out-quart hover:bg-hover-bg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
                                     >
                                         {copiedField === "providerId" ? <Check size={10} /> : <Copy size={10} />}
@@ -442,7 +442,7 @@ function TaskRow({
                                         type="button"
                                         onClick={() => void handleCopy("providerRequest", task.provider_request_id!)}
                                         title={t("queueCopyRequestId")}
-                                        aria-label="Copy request ID"
+                                        aria-label={t("queueCopyReqIdAria")}
                                         className="-m-1 grid h-6 w-6 place-items-center rounded text-text-muted transition-colors duration-fast ease-out-quart hover:bg-hover-bg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
                                     >
                                         {copiedField === "providerRequest" ? <Check size={10} /> : <Copy size={10} />}
@@ -473,8 +473,8 @@ function TaskRow({
                             {isFailed && onRetry ? (
                                 <button
                                     type="button"
-                                    aria-label="Retry task"
-                                    title="Retry"
+                                    aria-label={t("queueRetryAria")}
+                                    title={t("queueRetry")}
                                     disabled={retrying}
                                     onClick={() => void handleRetry()}
                                     className="inline-flex min-h-[24px] items-center gap-1 rounded border border-status-failed-border bg-status-failed-bg px-2 py-[2px] font-mono text-chrome-sm font-medium uppercase text-status-failed-fg transition-colors duration-fast ease-out-quart hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed-border disabled:cursor-not-allowed disabled:opacity-70"

@@ -14,6 +14,7 @@ import {
     getCanonicalModeId,
     getLegacyModelId,
     getMaxReferenceImages,
+    getReferenceSlotCapacity,
     getModelLineEntry,
     getModeGateway,
     resolveModelSettings,
@@ -55,6 +56,11 @@ describe('model catalog selectors', () => {
         expect(GLOBAL_I2V_MODELS.map((model) => model.id)).toEqual([
             'happyhorse-1.0-i2v',
             'kling-v3-i2v',
+            // Seedance 2.5 (order 95) sits above both 2.0 entries.
+            'seedance-2.5-i2v',
+            // Fast sits one order above its standard sibling so the pair stays
+            // adjacent in the picker.
+            'seedance-2.0-fast-i2v',
             'pixverse/pixverse-v6-video',
             'seedance-2.0-i2v',
             'pixverse-c1-i2v',
@@ -199,6 +205,20 @@ describe('model catalog runtime helpers', () => {
         // use the project's i2i_model setting.
         expect(getMaxReferenceImages('wan2.6-image')).toBe(9);
         expect(getMaxReferenceImages('wan2.5-i2i-preview')).toBe(9);
+    });
+
+    it('reads the reference slot budget of an already-resolved video model', () => {
+        // getMaxReferenceImages forces its input through the 'i2i' surface,
+        // so it cannot answer for a video model. R2V slot filling needs the
+        // literal id's own budget — these differ per vendor and a wrong
+        // ceiling means silently dropped references.
+        expect(getReferenceSlotCapacity('wan2.7-r2v')).toBe(5);
+        expect(getReferenceSlotCapacity('happyhorse-1.0-r2v')).toBe(9);
+        expect(getReferenceSlotCapacity('viduq3-drama-r2v')).toBe(7);
+    });
+
+    it('falls back to a single slot for a model with no declared budget', () => {
+        expect(getReferenceSlotCapacity('nonexistent-model')).toBe(1);
     });
 });
 

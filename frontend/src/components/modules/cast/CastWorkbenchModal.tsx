@@ -28,72 +28,25 @@ import { toast } from "@/store/toastStore";
 import { getAssetUrl } from "@/lib/utils";
 import PreviewImage from "@/components/shared/preview/PreviewImage";
 import GroupedModelGrid from "@/components/common/GroupedModelGrid";
+import {
+    activePolls,
+    readVariants,
+    submitAssetGeneration,
+    type CastKind,
+} from "@/lib/assetGenerationTask";
 
-export type CastKind = "character" | "scene" | "prop";
+// Submit + poll live in @/lib/assetGenerationTask so the Cast batch button
+// runs the exact same path this modal does. Re-exported here because Cast
+// still imports them from the modal.
+export { activePolls };
+export type { CastKind };
 
-// Module-level poll registry — survives modal close/reopen.
-export const activePolls = new Map<string, ReturnType<typeof setInterval>>();
-
-function startAssetPoll(
-    entityId: string,
-    taskId: string,
-    projectId: string,
-    kind: CastKind,
-    generationType: string,
-    t: ReturnType<typeof useTranslations<"castWorkbench">>,
-    getStore: () => {
-        updateProject: (id: string, data: any) => void;
-        removeGeneratingTask: (assetId: string, generationType: string) => void;
-    },
-    progressToastId?: string,
-) {
-    if (activePolls.has(entityId)) return;
-    const interval = setInterval(async () => {
-        try {
-            const status = await api.getTaskStatus(taskId);
-            if (status?.status === "completed") {
-                clearInterval(interval);
-                activePolls.delete(entityId);
-                if (progressToastId) toast.dismiss(progressToastId);
-                const fresh = await api.getProject(projectId);
-                const { updateProject, removeGeneratingTask } = getStore();
-                updateProject(projectId, fresh);
-                removeGeneratingTask(entityId, generationType);
-                const entityPool = (kind === "character" ? fresh.characters : kind === "scene" ? fresh.scenes : fresh.props) || [];
-                const updatedEntity = entityPool.find((e: any) => e.id === entityId);
-                const count = updatedEntity ? readVariants(updatedEntity, kind).length : 0;
-                toast.success(t("toastVariantDone"), { body: t("toastVariantDoneBody", { count }) });
-            } else if (status?.status === "failed") {
-                clearInterval(interval);
-                activePolls.delete(entityId);
-                if (progressToastId) toast.dismiss(progressToastId);
-                const { removeGeneratingTask } = getStore();
-                removeGeneratingTask(entityId, generationType);
-                toast.error(t("toastGenErr"), { body: status?.error || t("toastGenErrUnknown") });
-            }
-        } catch (err) {
-            clearInterval(interval);
-            activePolls.delete(entityId);
-            if (progressToastId) toast.dismiss(progressToastId);
-            const { removeGeneratingTask } = getStore();
-            removeGeneratingTask(entityId, generationType);
-            toast.error(t("toastPollErr"), { body: t("toastPollErrBody") });
-        }
-    }, 2500);
-    activePolls.set(entityId, interval);
-}
 
 interface CastWorkbenchModalProps {
     isOpen: boolean;
     kind: CastKind | null;
     entityId: string | null;
     onClose: () => void;
-}
-
-interface ImageVariant {
-    id: string;
-    url: string;
-    is_favorited?: boolean;
 }
 
 type CharacterTemplate = "simple" | "detailed" | "design_sheet";
@@ -130,7 +83,9 @@ const CHARACTER_TEMPLATES: Record<CharacterTemplate, {
     },
 };
 
-function buildTemplate(kind: CastKind, entity: any, template?: CharacterTemplate): string {
+/** Exported so the Cast batch button seeds the exact same prompt the user
+ *  would have seen had they opened this modal for that asset. */
+export function buildTemplate(kind: CastKind, entity: any, template?: CharacterTemplate): string {
     const name = entity?.name || "";
     const desc = entity?.description || "";
     const charDesc = `${name}${desc ? "，" + desc : ""}`;
@@ -145,31 +100,12 @@ function buildTemplate(kind: CastKind, entity: any, template?: CharacterTemplate
     return `${name}${desc ? "：" + desc : ""}\n\nComposition: product photography style on neutral gray background, single unified image, seamless layout without borders. Main view: object centered at slight angle. Secondary views: detail close-ups of material and texture. Clean even studio lighting, subtle shadow beneath object.`;
 }
 
-function getTemplateNegative(kind: CastKind, template?: CharacterTemplate): string {
+export function getTemplateNegative(kind: CastKind, template?: CharacterTemplate): string {
     if (kind === "character") {
         const tpl = CHARACTER_TEMPLATES[template || "simple"];
         return tpl.negativeAppend;
     }
     return "text, labels, watermark, UI overlay, panel borders, frames";
-}
-
-/** Variants live in different slots depending on kind + legacy schema:
- *  · character → reference_sheet.image_variants (new) or full_body_asset.variants (legacy)
- *  · scene → image_asset.variants
- *  · prop → image_asset.variants
- *  Returns a normalized [{id, url, is_favorited?}] list. */
-function readVariants(entity: any, kind: CastKind): ImageVariant[] {
-    if (!entity) return [];
-    if (kind === "character") {
-        const sheet = entity?.reference_sheet?.image_variants ?? [];
-        if (sheet.length > 0) {
-            return sheet.map((v: any) => ({ id: v.id, url: v.url, is_favorited: v.is_favorited }));
-        }
-        const legacy = entity?.full_body_asset?.variants ?? [];
-        return legacy.map((v: any) => ({ id: v.id, url: v.url, is_favorited: v.is_favorited }));
-    }
-    const arr = entity?.image_asset?.variants ?? [];
-    return arr.map((v: any) => ({ id: v.id, url: v.url, is_favorited: v.is_favorited }));
 }
 
 function readSelectedId(entity: any, kind: CastKind): string | null {
@@ -189,8 +125,6 @@ export default function CastWorkbenchModal({ isOpen, kind, entityId, onClose }: 
     const allProjects = useProjectStore((state) => state.projects);
     const updateProject = useProjectStore((state) => state.updateProject);
     const generatingTasks = useProjectStore((state) => state.generatingTasks);
-    const addGeneratingTask = useProjectStore((state) => state.addGeneratingTask);
-    const removeGeneratingTask = useProjectStore((state) => state.removeGeneratingTask);
 
     // Look up the live entity from the store so it stays in sync after
     // generation calls patch the project.
@@ -329,7 +263,6 @@ export default function CastWorkbenchModal({ isOpen, kind, entityId, onClose }: 
             // if the entity truly is stale and the poll surfaces the error.
         }
         const effectiveBatchSize = Math.max(1, Math.min(4, batchSize));
-        addGeneratingTask(entity.id, kind === "character" ? "reference_sheet" : "all", effectiveBatchSize);
 
         const progressId = toast.progress(t("toastGenStart", { kind: t(`kind.${kind}`) }), {
             projectId: currentProject.id,
@@ -337,43 +270,28 @@ export default function CastWorkbenchModal({ isOpen, kind, entityId, onClose }: 
             body: t("toastGenStartBody"),
         });
 
-        try {
-            const resp = await api.generateAsset(
-                currentProject.id,
-                entity.id,
-                kind,
-                currentProject.style_preset || "realistic",
-                applyStyle ? stylePositive : "",
-                kind === "character" ? "reference_sheet" : "all",
-                prompt.trim(),
-                applyStyle,
-                [applyStyle ? styleNegative : "", getTemplateNegative(kind, selectedTemplate)].filter(Boolean).join(", "),
-                effectiveBatchSize,
-                modelOverride || currentProject.model_settings?.t2i_model,
-                aspectRatioOverride || undefined,
-            );
-
-            const taskId = (resp as any)?._task_id;
-            if (taskId) {
-                const capturedEntityId = entity.id;
-                const capturedKind = kind;
-                const capturedProjectId = currentProject.id;
-                startAssetPoll(capturedEntityId, taskId, capturedProjectId, capturedKind, kind === "character" ? "reference_sheet" : "all", t, () => ({
-                    updateProject: useProjectStore.getState().updateProject,
-                    removeGeneratingTask: useProjectStore.getState().removeGeneratingTask,
-                }), progressId);
-            } else if (resp) {
-                toast.dismiss(progressId);
-                updateProject(currentProject.id, resp);
-                removeGeneratingTask(entity.id, kind === "character" ? "reference_sheet" : "all");
-                toast.success(t("toastGenDone", { kind: t(`kind.${kind}`) }));
-            }
-        } catch (err: any) {
-            toast.dismiss(progressId);
-            removeGeneratingTask(entity.id, kind === "character" ? "reference_sheet" : "all");
-            const detail = err?.response?.data?.detail || err?.message || t("toastGenErrUnknown");
-            toast.error(t("toastGenErr"), { body: String(detail) });
-        }
+        // Errors already surfaced as toasts inside submitAssetGeneration; the
+        // rejection is there for the batch queue's tally, not for the modal.
+        await submitAssetGeneration({
+            projectId: currentProject.id,
+            entityId: entity.id,
+            kind,
+            prompt: prompt.trim(),
+            stylePreset: currentProject.style_preset || "realistic",
+            stylePositive,
+            negativePrompt: [applyStyle ? styleNegative : "", getTemplateNegative(kind, selectedTemplate)].filter(Boolean).join(", "),
+            applyStyle,
+            batchSize: effectiveBatchSize,
+            model: modelOverride || currentProject.model_settings?.t2i_model,
+            aspectRatio: aspectRatioOverride || undefined,
+            t,
+            getStore: () => ({
+                updateProject: useProjectStore.getState().updateProject,
+                addGeneratingTask: useProjectStore.getState().addGeneratingTask,
+                removeGeneratingTask: useProjectStore.getState().removeGeneratingTask,
+            }),
+            progressToastId: progressId,
+        }).catch(() => {});
     };
 
     const handleSelectVariant = async (variantId: string) => {
@@ -632,7 +550,7 @@ export default function CastWorkbenchModal({ isOpen, kind, entityId, onClose }: 
                                                         </span>
                                                     )}
                                                     {isLocked && (
-                                                        <span className="absolute top-1.5 right-1.5 text-[0.5625rem] text-text-muted font-mono uppercase">Soon</span>
+                                                        <span className="absolute top-1.5 right-1.5 text-[0.5625rem] text-text-muted font-mono uppercase">{t("comingSoonBadge")}</span>
                                                     )}
                                                 </button>
                                             );

@@ -2,13 +2,21 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { Plus, Loader2, Sparkles, PanelBottomOpen, PanelBottomClose } from "lucide-react";
+import { Plus, Loader2, Sparkles, PanelBottomOpen, PanelBottomClose, Video } from "lucide-react";
 import StepPageHeader, { StepPill } from "@/components/shared/StepPageHeader";
 import { useTranslations } from "next-intl";
 import { useProjectStore } from "@/store/projectStore";
 import { api, crudApi, type VideoTask, type RefineSSEEvent } from "@/lib/api";
 import { getAssetUrl } from "@/lib/utils";
 import { selectedVariantUrl } from "@/lib/characterImage";
+import { augmentPromptWithAssetTags, resolveAssetByTagName } from "@/lib/assetTags";
+import { frameLinkedAssetNames } from "@/lib/frameReferenceSlots";
+import {
+    BATCH_VIDEO_CONCURRENCY,
+    planBatchVideoRun,
+    type BatchVideoSkipReason,
+} from "@/lib/batchGeneration";
+import BatchVideoConfirmDialog from "./storyboard-r2v/BatchVideoConfirmDialog";
 import { debugLog } from "@/lib/debugLog";
 import type { BatchSummary } from "./storyboard-r2v/shot-panel/CandidatesSection";
 import { getR2vRouteModelId, isR2vImageBased, VIDEO_I2V_MODELS, VIDEO_R2V_MODELS, DEFAULT_I2V_MODEL_ID, DEFAULT_R2V_MODEL_ID } from "@/lib/modelCatalog";
@@ -27,6 +35,7 @@ import {
     removeT2IImage,
     getActiveT2IImageUrl,
     frameToShotNode,
+    shotPromptField,
 } from "./storyboard-r2v/shotNodeHelpers";
 import { overridePanelSectionState } from "./storyboard-r2v/shot-panel/usePanelSectionState";
 import ParamsSection, { type ParamsState } from "./storyboard-r2v/shot-panel/ParamsSection";
@@ -277,9 +286,14 @@ export default function StoryboardR2V() {
         map.set(shotId, { timer, patch: merged });
     }, [currentProject?.id, updateProject]);
 
-    // Prompt edits hit a different endpoint (POST /frames/update with
-    // action_description) — debounced separately from workbench so a
-    // user typing fast doesn't push 6 PATCH /workbench every keystroke.
+    // Prompt edits hit a different endpoint (POST /frames/update) —
+    // debounced separately from workbench so a user typing fast doesn't push
+    // 6 PATCH /workbench every keystroke.
+    //
+    // The write targets whichever field frameToShotNode reads back
+    // (shotPromptField). Persisting unconditionally to action_description
+    // silently dropped every edit on a refined frame, because the reader
+    // prefers visual_description and never saw the write.
     const promptPendingRef = useRef<Map<string, { timer: number; prompt: string }>>(new Map());
     const persistPrompt = useCallback((shotId: string, prompt: string) => {
         if (!currentProject?.id) return;
@@ -290,12 +304,15 @@ export default function StoryboardR2V() {
         if (existing) window.clearTimeout(existing.timer);
         const timer = window.setTimeout(() => {
             map.delete(shotId);
-            api.updateFrame(projectId, shotId, { action_description: prompt })
+            const proj0 = useProjectStore.getState().currentProject;
+            const frame0 = (proj0?.frames ?? []).find((f: any) => f.id === shotId);
+            const field = shotPromptField(frame0 ?? {});
+            api.updateFrame(projectId, shotId, { [field]: prompt })
                 .then(() => {
                     const proj = useProjectStore.getState().currentProject;
                     if (!proj || proj.id !== projectId) return;
                     const nextFrames = (proj.frames ?? []).map((f: any) =>
-                        f.id === shotId ? { ...f, action_description: prompt } : f,
+                        f.id === shotId ? { ...f, [field]: prompt } : f,
                     );
                     updateProject(projectId, { frames: nextFrames });
                 })
@@ -672,6 +689,43 @@ export default function StoryboardR2V() {
         }));
     }, [persistPrompt]);
 
+    /* 「一键补全素材」— write the [characterN:name] tags each shot's own asset
+     * links imply.
+     *
+     * R2V reads its reference images by parsing these tags, but nothing ever
+     * wrote them: shots arrive from the LLM with prose only, so every shot
+     * generated with zero references unless the user clicked each chip by
+     * hand. The frame already knows its character/scene/prop ids, so this is
+     * exact lookup — prose is untouched, existing tags keep their slot number.
+     */
+    const fillAssetTagsForAll = useCallback(() => {
+        if (!currentProject) return;
+        const frames: any[] = currentProject.frames ?? [];
+        let shotsTouched = 0;
+        let tagsAdded = 0;
+
+        setShots(prev => prev.map((s) => {
+            const frame = frames.find((f: any) => f.id === s.id);
+            if (!frame) return s;
+            const names = frameLinkedAssetNames(frame, currentProject);
+            if (names.length === 0) return s;
+            const { prompt, added } = augmentPromptWithAssetTags(s.prompt, names);
+            if (added.length === 0) return s;
+            shotsTouched += 1;
+            tagsAdded += added.length;
+            persistPrompt(s.id, prompt);
+            return { ...s, prompt };
+        }));
+
+        if (tagsAdded === 0) {
+            toast.info(t("fillTagsNoop"));
+        } else {
+            toast.success(t("fillTagsDone"), {
+                body: t("fillTagsDoneBody", { shots: shotsTouched, tags: tagsAdded }),
+            });
+        }
+    }, [currentProject, persistPrompt, t]);
+
     // Set shot tab mode + persist so the user's last-active tab
     // survives refresh.
     const setTabMode = useCallback((index: number, mode: "t2i_i2v" | "direct_r2v") => {
@@ -766,31 +820,23 @@ export default function StoryboardR2V() {
             const name = match[2];
             let url: string | undefined;
 
-            // Try character first
-            const char = characters.find((c: any) => c.name === name);
-            if (char) {
-                url = selectedVariantUrl(char.reference_sheet) || selectedVariantUrl(char.full_body_asset);
-            }
-            // Try scene
-            if (!url) {
-                const scene = scenes.find((s: any) => s.name === name);
-                const sceneAsset = scene?.image_asset;
-                if (sceneAsset?.selected_id && sceneAsset.variants?.length) {
-                    const selected = sceneAsset.variants.find((v: any) => v.id === sceneAsset.selected_id);
-                    if (selected) url = selected.url;
-                } else if (sceneAsset?.variants?.[0]) {
-                    url = sceneAsset.variants[0].url;
-                }
-            }
-            // Try prop
-            if (!url) {
-                const prop = props.find((p: any) => p.name === name);
-                const propAsset = prop?.image_asset;
-                if (propAsset?.selected_id && propAsset.variants?.length) {
-                    const selected = propAsset.variants.find((v: any) => v.id === propAsset.selected_id);
-                    if (selected) url = selected.url;
-                } else if (propAsset?.variants?.[0]) {
-                    url = propAsset.variants[0].url;
+            // One resolution pass over all three pools — the tag label is
+            // LLM-written and often a shortened form of the real asset
+            // name, so it can't be matched exactly (see lib/assetTags).
+            const asset: any = resolveAssetByTagName(name, [characters, scenes, props]);
+            if (asset) {
+                // Character containers first (reference_sheet / legacy
+                // full_body), then the single image_asset that scenes and
+                // props share.
+                url = selectedVariantUrl(asset.reference_sheet) || selectedVariantUrl(asset.full_body_asset);
+                if (!url) {
+                    const imageAsset = asset.image_asset;
+                    if (imageAsset?.selected_id && imageAsset.variants?.length) {
+                        const selected = imageAsset.variants.find((v: any) => v.id === imageAsset.selected_id);
+                        if (selected) url = selected.url;
+                    } else if (imageAsset?.variants?.[0]) {
+                        url = imageAsset.variants[0].url;
+                    }
                 }
             }
 
@@ -814,22 +860,12 @@ export default function StoryboardR2V() {
         let match;
         while ((match = tagPattern.exec(prompt)) !== null) {
             const name = match[1];
-            let hasImage = false;
-            // Check character
-            const char = characters.find((c: any) => c.name === name);
-            if (char) {
-                hasImage = !!(char.reference_sheet?.image_variants?.length || char.full_body_asset?.variants?.length);
-            }
-            // Check scene
-            if (!hasImage) {
-                const scene = scenes.find((s: any) => s.name === name);
-                hasImage = !!(scene?.image_asset?.variants?.length);
-            }
-            // Check prop
-            if (!hasImage) {
-                const prop = props.find((p: any) => p.name === name);
-                hasImage = !!(prop?.image_asset?.variants?.length);
-            }
+            const asset: any = resolveAssetByTagName(name, [characters, scenes, props]);
+            const hasImage = !!(
+                asset?.reference_sheet?.image_variants?.length
+                || asset?.full_body_asset?.variants?.length
+                || asset?.image_asset?.variants?.length
+            );
             if (!hasImage) unresolved.push(name);
         }
         return unresolved;
@@ -1755,6 +1791,80 @@ export default function StoryboardR2V() {
         [shotCounts],
     );
 
+    /* ── 「一键生成全部」batch video run ──────────────────────────────
+     *
+     * Submission is throttled against the page's EXISTING in-flight count
+     * rather than a second polling loop: shots already report pending /
+     * processing / completed through the poll above, so the queue just
+     * releases the next shot whenever that count drops below the cap. One
+     * state source, so the two can't disagree about what is running.
+     */
+    const batchQueueRef = useRef<string[]>([]);
+    const [batchRemaining, setBatchRemaining] = useState(0);
+    const [batchPlan, setBatchPlan] = useState<{
+        readyIds: string[];
+        skipped: Array<{ index: number; reason: BatchVideoSkipReason }>;
+    } | null>(null);
+
+    const shotHasReferences = useCallback(
+        (s: ShotNode) => parseAssetTags(s.prompt).length > 0,
+        [parseAssetTags],
+    );
+    const shotHasFirstFrame = useCallback(
+        (s: ShotNode) => Boolean(getActiveT2IImageUrl(s) || s.imageUrl),
+        [],
+    );
+
+    const openBatchVideoDialog = useCallback(() => {
+        const plan = planBatchVideoRun(shots, {
+            hasReferences: shotHasReferences,
+            hasFirstFrame: shotHasFirstFrame,
+        });
+        const indexOf = new Map(shots.map((s, i) => [s.id, i]));
+        setBatchPlan({
+            readyIds: plan.ready.map((s) => s.id),
+            skipped: plan.skipped.map(({ shot, reason }) => ({
+                index: indexOf.get(shot.id) ?? 0,
+                reason,
+            })),
+        });
+    }, [shots, shotHasReferences, shotHasFirstFrame]);
+
+    const startBatchVideoRun = useCallback(() => {
+        if (!batchPlan) return;
+        batchQueueRef.current = [...batchPlan.readyIds];
+        setBatchRemaining(batchQueueRef.current.length);
+        setBatchPlan(null);
+    }, [batchPlan]);
+
+    const stopBatchVideoRun = useCallback(() => {
+        // Already-submitted tasks keep running — that spend is committed.
+        // Stopping only means no further shots are released.
+        batchQueueRef.current = [];
+        setBatchRemaining(0);
+        toast.info(t("batchVideoStopped"));
+    }, [t]);
+
+    useEffect(() => {
+        if (batchQueueRef.current.length === 0) return;
+        if (totalInFlight >= BATCH_VIDEO_CONCURRENCY) return;
+
+        const nextId = batchQueueRef.current[0];
+        const index = shots.findIndex((s) => s.id === nextId);
+        batchQueueRef.current = batchQueueRef.current.slice(1);
+        setBatchRemaining(batchQueueRef.current.length);
+
+        // A shot deleted mid-run simply drops out; the effect re-runs and
+        // picks up the one after it.
+        if (index >= 0) void generateVideoBatch(index, 1);
+
+        if (batchQueueRef.current.length === 0) {
+            toast.success(t("batchVideoQueued"));
+        }
+    }, [totalInFlight, shots, generateVideoBatch, t]);
+
+    const batchReadyCount = batchPlan?.readyIds.length ?? 0;
+
     return (
         // Layout v4: outer horizontal split. Custom page header belongs
         // to main column (not page-wide), so the right TaskQueuePanel can
@@ -1767,7 +1877,7 @@ export default function StoryboardR2V() {
             {/* Unified page header (shared StepPageHeader) */}
             <StepPageHeader
                 stepNumber={4}
-                englishName="STORYBOARD R2V"
+                sectionName={tStep("storyboardSection")}
                 title={tStep("storyboardTitle")}
                 subtitle={tStep("storyboardSubtitle")}
                 pills={(
@@ -1815,8 +1925,42 @@ export default function StoryboardR2V() {
                         {t("addShot")}
                     </motion.button>
                 </div>
+                <div className="ml-auto flex items-center gap-2">
+                    {shots.length > 0 ? (
+                        <button
+                            type="button"
+                            onClick={fillAssetTagsForAll}
+                            title={t("fillTagsHint")}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3.5 font-mono text-[13px] uppercase tracking-[0.06em] text-primary transition-colors duration-fast ease-out-quart hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
+                        >
+                            <Wand2 size={12} strokeWidth={1.8} />
+                            {t("fillTags")}
+                        </button>
+                    ) : null}
+                    {shots.length > 0 ? (
+                        batchRemaining > 0 ? (
+                            <button
+                                type="button"
+                                onClick={stopBatchVideoRun}
+                                className="inline-flex h-8 items-center gap-1.5 rounded-full border border-status-failed-border bg-status-failed-bg px-3.5 font-mono text-[13px] uppercase tracking-[0.06em] text-status-failed-fg transition-colors duration-fast ease-out-quart hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
+                            >
+                                <Loader2 size={12} strokeWidth={1.8} className="animate-spin" />
+                                {t("batchVideoStop", { count: batchRemaining })}
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={openBatchVideoDialog}
+                                title={t("batchVideoHint")}
+                                className="inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3.5 font-mono text-[13px] uppercase tracking-[0.06em] text-primary transition-colors duration-fast ease-out-quart hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
+                            >
+                                <Video size={12} strokeWidth={1.8} />
+                                {t("batchVideoAll")}
+                            </button>
+                        )
+                    ) : null}
                 {shots.length > 1 ? (
-                    <div className="ml-auto flex items-center gap-2">
+                    <>
                         <button
                             type="button"
                             onClick={expandAllShots}
@@ -1835,8 +1979,9 @@ export default function StoryboardR2V() {
                             <PanelBottomClose size={12} strokeWidth={1.8} />
                             {t("collapseAll")}
                         </button>
-                    </div>
+                    </>
                 ) : null}
+                </div>
             </div>
 
             <GenerationBanner
@@ -2293,6 +2438,20 @@ export default function StoryboardR2V() {
                 setGenDialogOpen(false);
                 window.dispatchEvent(new CustomEvent("navigateStep", { detail: "script" }));
             }}
+        />
+        {/* Batch video run — confirm gate before any provider call */}
+        <BatchVideoConfirmDialog
+            isOpen={batchPlan !== null}
+            onClose={() => setBatchPlan(null)}
+            onConfirm={startBatchVideoRun}
+            readyCount={batchReadyCount}
+            skipped={batchPlan?.skipped ?? []}
+            modelLabel={
+                VIDEO_R2V_MODELS.find(m => m.id === videoConfig.r2vModel)?.name
+                ?? videoConfig.r2vModel
+            }
+            durationSeconds={videoConfig.duration}
+            concurrency={BATCH_VIDEO_CONCURRENCY}
         />
         </div>
     );

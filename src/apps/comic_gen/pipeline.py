@@ -16,6 +16,7 @@ from .audio import AudioGenerator
 from .export import ExportManager
 from .editing import RenderEngine, collect_render_segments
 from ...utils import get_logger
+from ...utils.media_refs import to_project_media_ref
 from ...utils.atomic_json import atomic_write_json, load_json_strict
 from ...utils.oss_utils import is_object_key
 from ...utils.provider_registry import resolve_provider_backend
@@ -91,6 +92,7 @@ class ComicGenPipeline:
         self._kling_model = None
         self._vidu_model = None
         self._mulerouter_video_model = None
+        self._byteplus_video_model = None
 
         # Pre-download Demucs model in background so first dub request is fast
         self._demucs_ready = threading.Event()
@@ -1662,6 +1664,8 @@ class ComicGenPipeline:
             frame.image_prompt = kwargs['image_prompt']
         if kwargs.get('action_description') is not None:
             frame.action_description = kwargs['action_description']
+        if kwargs.get('visual_description') is not None:
+            frame.visual_description = kwargs['visual_description']
         if kwargs.get('dialogue') is not None:
             frame.dialogue = kwargs['dialogue']
         if kwargs.get('camera_angle') is not None:
@@ -2253,7 +2257,7 @@ class ComicGenPipeline:
         from ...utils.oss_utils import OSSImageUploader
         uploader = OSSImageUploader()
         oss_url = uploader.upload_image(output_path)
-        image_url = oss_url if oss_url else os.path.relpath(output_path, "output")
+        image_url = oss_url if oss_url else to_project_media_ref(output_path)
 
         # Create new variant
         variant = ImageVariant(
@@ -2282,7 +2286,7 @@ class ComicGenPipeline:
         from .models import ImageVariant, ImageAsset
 
         # Validate that image_path is inside the output directory
-        safe_path = _safe_resolve_path("output", os.path.relpath(image_path, "output") if os.path.isabs(image_path) else image_path)
+        safe_path = _safe_resolve_path("output", to_project_media_ref(image_path) if os.path.isabs(image_path) else image_path)
 
         script = self.get_script(script_id)
         if not script:
@@ -2296,7 +2300,7 @@ class ComicGenPipeline:
         from ...utils.oss_utils import OSSImageUploader
         uploader = OSSImageUploader()
         oss_url = uploader.upload_image(safe_path)
-        image_url = oss_url if oss_url else os.path.relpath(safe_path, "output")
+        image_url = oss_url if oss_url else to_project_media_ref(safe_path)
 
         # Create new variant
         variant = ImageVariant(
@@ -3321,8 +3325,30 @@ class ComicGenPipeline:
             use_mulerouter = backend == "mulerouter" and (
                 model_name_lower.startswith("seedance")
             )
+            # Seedance 2.5 is not on the MuleRouter gateway (probed 2026-08-30:
+            # every seedance-2.5 path 404s while 2.0 answers) — it is reached
+            # through BytePlus / Volcano Ark instead.
+            use_byteplus = backend == "byteplus" or model_name_lower.startswith("seedance-2.5")
 
-            if use_mulerouter:
+            if use_byteplus:
+                if self._byteplus_video_model is None:
+                    from ...models.byteplus import BytePlusVideoModel
+                    self._byteplus_video_model = BytePlusVideoModel({})
+                video_path, _ = self._byteplus_video_model.generate(
+                    prompt=task.prompt,
+                    output_path=output_path,
+                    img_url=img_url,
+                    img_path=img_path,
+                    duration=task.duration,
+                    resolution=task.resolution,
+                    aspect_ratio=task.ratio or "16:9",
+                    seed=task.seed,
+                    watermark=bool(task.watermark) if task.watermark is not None else False,
+                    generation_mode=task.generation_mode,
+                    ref_image_urls=task.reference_image_urls if task.generation_mode == "r2v" else None,
+                    model_name=task.model,
+                )
+            elif use_mulerouter:
                 if self._mulerouter_video_model is None:
                     from ...models.mulerouter import MuleRouterVideoModel
                     self._mulerouter_video_model = MuleRouterVideoModel({})
@@ -3338,6 +3364,9 @@ class ComicGenPipeline:
                     watermark=bool(task.watermark) if task.watermark is not None else False,
                     generation_mode=task.generation_mode,
                     ref_image_urls=task.reference_image_urls if task.generation_mode == "r2v" else None,
+                    # The instance is cached across shots, so the fast/standard
+                    # variant has to travel with the request, not the object.
+                    model_name=task.model,
                 )
             elif use_vendor_kling:
                 # Use Kling model (cached)
@@ -3370,10 +3399,17 @@ class ComicGenPipeline:
                     duration=task.duration,
                     model=task.model,
                     resolution=task.resolution,
-                    aspect_ratio="16:9",
+                    # Leave unset unless the task pins one, so viduq3-drama can
+                    # apply its 9:16 default instead of being forced to 16:9.
+                    aspect_ratio=task.ratio,
                     seed=task.seed or 0,
                     audio=task.vidu_audio if task.vidu_audio is not None else True,
                     movement_amplitude=task.movement_amplitude or "auto",
+                    # R2V (reference2video) routing — without these the adapter
+                    # can only ever see an i2v/t2v request.
+                    generation_mode=task.generation_mode,
+                    ref_image_urls=task.reference_image_urls if task.generation_mode == "r2v" else None,
+                    watermark=bool(task.watermark) if task.watermark is not None else False,
                 )
             else:
                 # Default: Wanx model
@@ -3416,7 +3452,7 @@ class ComicGenPipeline:
                     on_provider_ids=_capture_provider_ids,
                 )
             
-            task.video_url = os.path.relpath(output_path, "output")
+            task.video_url = to_project_media_ref(output_path)
             task.status = "completed"
             
             # Sync with asset if this is an asset video
@@ -3428,6 +3464,10 @@ class ComicGenPipeline:
             logger.exception("Failed to process video task")
             logger.error(f"Video generation failed: {e}")
             task.status = "failed"
+            # Surface the reason on the task itself: the queue panel's
+            # diagnostics copy reads this, and without it a failure is a red
+            # dot whose cause only exists in the server log.
+            task.error = str(e) or e.__class__.__name__
             if task.asset_id:
                 self._sync_asset_video_task(script, task)
             
@@ -3549,6 +3589,51 @@ class ComicGenPipeline:
         self._save_data()
         return script
 
+    def resolve_dialogue_speaker(self, script: Script, frame) -> Optional[object]:
+        """Who speaks this frame's line, searched across every layer the
+        episode can see (episode-local > series-shared > global library).
+
+        Reading only `script.characters` was wrong: an episode whose cast was
+        never forked locally has an EMPTY character list — the whole cast
+        lives in the parent series pool — so every line resolved to no
+        speaker and reported "尚未绑定语音" while the voices were bound all
+        along. bind_voice already writes through _find_asset_with_source, so
+        resolution has to look in the same places.
+
+        Order: character_ids[0] → speaker name (exact, then loose) →
+        first [characterN:name] reference tag in the action description
+        (R2V frames carry no speaker field).
+        """
+        characters = self.resolve_episode_assets(script).get("characters", [])
+
+        if frame.character_ids:
+            speaker = next((c for c in characters if c.id == frame.character_ids[0]), None)
+            if speaker:
+                return speaker
+
+        speaker_name = frame.speaker or (
+            frame.dialogue_structured.speaker if frame.dialogue_structured else None
+        )
+        if speaker_name:
+            key = speaker_name.strip().lower()
+            speaker = next(
+                (c for c in characters if c.name.strip().lower() == key
+                 or key in c.name.strip().lower()
+                 or c.name.strip().lower() in key),
+                None,
+            )
+            if speaker:
+                return speaker
+
+        tag_match = re.search(r'\[character\d*:([^\]]+)\]', frame.action_description or "")
+        if tag_match:
+            tag_name = tag_match.group(1).strip().lower()
+            return next(
+                (c for c in characters if c.name.strip().lower() == tag_name),
+                None,
+            )
+        return None
+
     def generate_dialogue_line(
         self,
         script_id: str,
@@ -3577,32 +3662,7 @@ class ComicGenPipeline:
             or frame.dialogue
         )
         if dialogue_text:
-            speaker = None
-            if frame.character_ids:
-                speaker = next((c for c in script.characters if c.id == frame.character_ids[0]), None)
-            speaker_name = frame.speaker or (
-                frame.dialogue_structured.speaker if frame.dialogue_structured else None
-            )
-            if not speaker and speaker_name:
-                key = speaker_name.strip().lower()
-                speaker = next(
-                    (c for c in script.characters if c.name.strip().lower() == key
-                     or key in c.name.strip().lower()
-                     or c.name.strip().lower() in key),
-                    None,
-                )
-            if not speaker:
-                # Last resort: frames authored for R2V carry no character_ids and no
-                # speaker name, but embed [characterN:name] reference tags in the
-                # action description. Resolve the speaker from the first such tag.
-                tag_match = re.search(r'\[character\d*:([^\]]+)\]', frame.action_description or "")
-                if tag_match:
-                    tag_name = tag_match.group(1).strip().lower()
-                    speaker = next(
-                        (c for c in script.characters if c.name.strip().lower() == tag_name),
-                        None,
-                    )
-
+            speaker = self.resolve_dialogue_speaker(script, frame)
             if speaker:
                 model_override = None
                 family_override = None
@@ -3622,18 +3682,26 @@ class ComicGenPipeline:
         return script
 
     def bind_voice(self, script_id: str, char_id: str, voice_id: str, voice_name: str) -> Script:
-        """Binds a voice to a character."""
+        """Binds a voice to a character.
+
+        Resolves through _find_asset_with_source so a character that
+        lives in the parent series' shared pool (or the global library)
+        binds correctly. GET /projects/{id} merges those characters into
+        the episode response, so the id the frontend sends is often not
+        in script.characters at all — searching only the episode-local
+        list raised "Character not found" and surfaced as a silent 500.
+        """
         script = self.scripts.get(script_id)
         if not script:
             raise ValueError("Script not found")
-            
-        char = next((c for c in script.characters if c.id == char_id), None)
+
+        char, source = self._find_asset_with_source(script, char_id, "character")
         if not char:
             raise ValueError("Character not found")
-            
+
         char.voice_id = voice_id
         char.voice_name = voice_name
-        self._save_data()
+        self._save_after_asset_mutation(source)
         return script
 
     def get_script(self, script_id: str) -> Optional[Script]:

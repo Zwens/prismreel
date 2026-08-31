@@ -11,12 +11,14 @@
  * Mock ref: docs/design/tasty-sam/storyboard-r2v-unified.html `.wb-head`.
  */
 import type { ReactNode } from "react";
+import { useTranslations, useLocale } from "next-intl";
+import clsx from "clsx";
 
 export interface StepPageHeaderProps {
     /** 1-based step number; rendered as the primary-colored eyebrow numeral. */
     stepNumber: number;
-    /** English chrome name (e.g. "Script" / "Storyboard R2V"). */
-    englishName: string;
+    /** 已本地化的步骤名（如 "剧本" / "分镜"）。调用方传 t(...) 结果。 */
+    sectionName: string;
     /** Localized title (Fraunces display). */
     title: string;
     /** Localized subtitle one-liner. */
@@ -30,22 +32,27 @@ export interface StepPageHeaderProps {
 
 export default function StepPageHeader({
     stepNumber,
-    englishName,
+    sectionName,
     title,
     subtitle,
     pills,
     trailing,
 }: StepPageHeaderProps) {
-    const stepStr = String(stepNumber).padStart(2, "0");
+    const tp = useTranslations("pipeline");
+    const isCJK = useLocale() === "zh";
     return (
         <header className="shrink-0 border-b border-border-subtle px-7 pt-[22px] pb-4">
             <div className="flex items-start gap-5">
                 <div className="flex-1 min-w-0">
-                    <div className="font-mono text-[0.59375rem] font-normal uppercase tracking-[0.22em] text-text-muted">
-                        <span>STEP</span>
-                        <span className="ml-1.5 font-medium text-primary">{stepStr}</span>
+                    {/* Eyebrow：英文走 mono uppercase + 宽 tracking；中文收紧字距
+                        并取消 uppercase —— 0.22em 字距会把中文拆散。 */}
+                    <div className={clsx(
+                        "font-mono text-[0.59375rem] font-normal text-text-muted",
+                        isCJK ? "tracking-[0.08em]" : "uppercase tracking-[0.22em]",
+                    )}>
+                        <span className="font-medium text-primary">{tp("stepIndex", { number: stepNumber })}</span>
                         <span className="mx-1.5">·</span>
-                        <span>{englishName}</span>
+                        <span>{sectionName}</span>
                     </div>
                     <div className="mt-1.5 flex flex-wrap items-baseline gap-3.5">
                         <h1 className="font-display text-[2.125rem] font-semibold leading-[1.05] tracking-[-0.02em] text-foreground">

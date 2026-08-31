@@ -6,10 +6,14 @@ routing_prefixes:
   - seedance/seedance-
 supported_backends:
   - mulerouter
+  - byteplus
 default_backend: mulerouter
+backend_env_key: SEEDANCE_PROVIDER_MODE
 credential_sources:
   mulerouter:
     - MULEROUTER_API_KEY
+  byteplus:
+    - ARK_API_KEY
 supported_modalities:
   - t2v
   - i2v
@@ -20,6 +24,8 @@ docs:
 transport:
   image_input_mode:
     mulerouter: mulerouter_base64_image
+    # Ark takes an image_url item that may be a public URL or a data URI.
+    byteplus: byteplus_ark_image_url
   audio_input_mode:
     mulerouter: mulerouter_audio_url
   reference_video_input_mode:
@@ -55,7 +61,9 @@ models:
           default: 5
         params:
           resolution:
-            options: [720p, 1080p]
+            # 480p verified accepted by the gateway on 2026-08-30; it rejects
+            # anything outside {480p, 720p, 1080p}.
+            options: [480p, 720p, 1080p]
             default: 1080p
           seed: true
           negativePrompt: false
@@ -79,7 +87,9 @@ models:
           default: 5
         params:
           resolution:
-            options: [720p, 1080p]
+            # 480p verified accepted by the gateway on 2026-08-30; it rejects
+            # anything outside {480p, 720p, 1080p}.
+            options: [480p, 720p, 1080p]
             default: 1080p
           seed: true
           negativePrompt: false
@@ -107,7 +117,9 @@ models:
           default: 5
         params:
           resolution:
-            options: [720p, 1080p]
+            # 480p verified accepted by the gateway on 2026-08-30; it rejects
+            # anything outside {480p, 720p, 1080p}.
+            options: [480p, 720p, 1080p]
             default: 1080p
           seed: true
           negativePrompt: false
@@ -119,4 +131,213 @@ models:
         inputs:
           reference_images:
             max: 9
+            reference_type: image
+  - id: seedance/seedance-2.0-fast-video
+    display_name: Seedance 2.0 Fast
+    description: ByteDance Seedance 2.0 Fast — lower latency variant of the 2.0 endpoints
+    status: active
+    release_stage: stable
+    docs:
+      context_hub_doc_ids:
+        - mulerouter/seedance-2.0
+    runtime:
+      mulerouter:
+        gateway: mulerouter
+    modes:
+      t2v:
+        legacy_id: seedance-2.0-fast-t2v
+        display_name: Seedance 2.0 Fast T2V
+        description: Text-to-video generation
+        capabilities: [t2v]
+        ui:
+          selection_group: t2v
+          visible_in: [project_settings, series_settings, video_sidebar, global_settings]
+          order: 86
+          badges: [new]
+        duration:
+          type: slider
+          min: 4
+          max: 15
+          step: 1
+          default: 5
+        params:
+          resolution:
+            # 480p verified accepted by the gateway on 2026-08-30; it rejects
+            # anything outside {480p, 720p, 1080p}.
+            options: [480p, 720p, 1080p]
+            default: 1080p
+          seed: true
+          negativePrompt: false
+          promptExtend: false
+          watermark: true
+      i2v:
+        legacy_id: seedance-2.0-fast-i2v
+        display_name: Seedance 2.0 Fast I2V
+        description: Image-to-video generation
+        capabilities: [i2v]
+        ui:
+          selection_group: i2v
+          visible_in: [project_settings, series_settings, video_sidebar, global_settings]
+          order: 91
+          badges: [new]
+        duration:
+          type: slider
+          min: 4
+          max: 15
+          step: 1
+          default: 5
+        params:
+          resolution:
+            # 480p verified accepted by the gateway on 2026-08-30; it rejects
+            # anything outside {480p, 720p, 1080p}.
+            options: [480p, 720p, 1080p]
+            default: 1080p
+          seed: true
+          negativePrompt: false
+          promptExtend: false
+          watermark: true
+        inputs:
+          reference_images:
+            max: 1
+            reference_type: image
+      r2v:
+        legacy_id: seedance-2.0-fast-r2v
+        display_name: Seedance 2.0 Fast R2V
+        description: Reference-to-video with multi-image input
+        capabilities: [r2v]
+        ui:
+          selection_group: r2v
+          visible_in: [project_settings, series_settings, video_sidebar, global_settings]
+          order: 81
+          badges: [new]
+        duration:
+          type: slider
+          min: 4
+          max: 15
+          step: 1
+          default: 5
+        params:
+          resolution:
+            # 480p verified accepted by the gateway on 2026-08-30; it rejects
+            # anything outside {480p, 720p, 1080p}.
+            options: [480p, 720p, 1080p]
+            default: 1080p
+          seed: true
+          negativePrompt: false
+          promptExtend: false
+          watermark: true
+        docs:
+          context_hub_doc_ids:
+            - mulerouter/seedance-2.0
+        inputs:
+          reference_images:
+            max: 9
+            reference_type: image
+  # Seedance 2.5 (ByteDance, launched 2026-07-31). Reached through BytePlus
+  # ModelArk / Volcano Ark, NOT MuleRouter — probed 2026-08-30, the gateway
+  # 404s on every seedance-2.5 path variant while 2.0 answers 400.
+  # Wire id is env-overridable; see src/models/byteplus.py.
+  - id: seedance/seedance-2.5-video
+    display_name: Seedance 2.5
+    description: ByteDance Seedance 2.5 — native 30s takes, up to 4K, multimodal references
+    status: active
+    release_stage: stable
+    docs:
+      context_hub_doc_ids:
+        - byteplus/modelark-seedance-2.5
+    runtime:
+      byteplus:
+        gateway: byteplus
+    modes:
+      t2v:
+        legacy_id: seedance-2.5-t2v
+        display_name: Seedance 2.5 T2V
+        description: Text-to-video, native long takes
+        capabilities: [t2v]
+        runtime:
+          byteplus:
+            api_model_id: dreamina-seedance-2-5-260628
+        ui:
+          selection_group: t2v
+          visible_in: [project_settings, series_settings, video_sidebar, global_settings]
+          order: 95
+          badges: [new]
+        duration:
+          type: slider
+          min: 4
+          max: 30
+          step: 1
+          default: 5
+        params:
+          resolution:
+            options: [480p, 720p, 1080p, 4k]
+            default: 1080p
+          seed: true
+          negativePrompt: false
+          promptExtend: false
+          watermark: true
+      i2v:
+        legacy_id: seedance-2.5-i2v
+        display_name: Seedance 2.5 I2V
+        description: First-frame image to video
+        capabilities: [i2v]
+        runtime:
+          byteplus:
+            api_model_id: dreamina-seedance-2-5-260628
+        ui:
+          selection_group: i2v
+          visible_in: [project_settings, series_settings, video_sidebar, global_settings]
+          order: 95
+          badges: [new]
+        duration:
+          type: slider
+          min: 4
+          max: 30
+          step: 1
+          default: 5
+        params:
+          resolution:
+            options: [480p, 720p, 1080p, 4k]
+            default: 1080p
+          seed: true
+          negativePrompt: false
+          promptExtend: false
+          watermark: true
+        inputs:
+          reference_images:
+            max: 1
+            reference_type: image
+      r2v:
+        legacy_id: seedance-2.5-r2v
+        display_name: Seedance 2.5 R2V
+        description: Multimodal reference-to-video, up to 50 reference assets
+        capabilities: [r2v]
+        runtime:
+          byteplus:
+            api_model_id: dreamina-seedance-2-5-260628
+        ui:
+          selection_group: r2v
+          visible_in: [project_settings, series_settings, video_sidebar, global_settings]
+          order: 95
+          badges: [new]
+        duration:
+          type: slider
+          min: 4
+          max: 30
+          step: 1
+          default: 5
+        params:
+          resolution:
+            options: [480p, 720p, 1080p, 4k]
+            default: 1080p
+          seed: true
+          negativePrompt: false
+          promptExtend: false
+          watermark: true
+        docs:
+          context_hub_doc_ids:
+            - byteplus/modelark-seedance-2.5
+        inputs:
+          reference_images:
+            max: 50
             reference_type: image

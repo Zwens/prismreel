@@ -184,7 +184,7 @@ export default function ParamsSection({
         >
             <div className="space-y-3">
                 {/* Model picker — dropdown (scales past a pill wall). */}
-                <ParamRow label="Model">
+                <ParamRow label={t("paramModel")}>
                     <div className="relative">
                         <button
                             ref={trigRef}
@@ -233,7 +233,7 @@ export default function ParamsSection({
                 </ParamRow>
 
                 {/* Duration */}
-                <ParamRow label="Duration">
+                <ParamRow label={t("paramDuration")}>
                     <DurationControl
                         cfg={durationCfg}
                         value={params.duration}
@@ -251,7 +251,7 @@ export default function ParamsSection({
 
                 {/* Resolution */}
                 {modelParams.resolution ? (
-                    <ParamRow label="Resolution">
+                    <ParamRow label={t("paramResolution")}>
                         <PillCluster
                             options={modelParams.resolution.options}
                             value={params.resolution ?? modelParams.resolution.default}
@@ -262,7 +262,7 @@ export default function ParamsSection({
 
                 {/* Ratio */}
                 {modelParams.ratio ? (
-                    <ParamRow label="Ratio">
+                    <ParamRow label={t("paramRatio")}>
                         <PillCluster
                             options={modelParams.ratio.options}
                             value={params.ratio ?? modelParams.ratio.default}
@@ -296,18 +296,18 @@ export default function ParamsSection({
                         {advOpen ? (
                             <div className="space-y-3 mt-2">
                                 {modelParams.negativePrompt ? (
-                                    <ParamRow label="Negative">
+                                    <ParamRow label={t("paramNegative")}>
                                         <input
                                             type="text"
                                             value={params.negativePrompt ?? ""}
                                             onChange={(e) => set("negativePrompt", e.target.value)}
-                                            placeholder="things to avoid…"
+                                            placeholder={t("paramNegativePlaceholder")}
                                             className="w-full rounded-lg border border-glass-border bg-surface-inset px-2.5 py-1.5 font-sans text-body-sm text-foreground placeholder:text-text-muted outline-none transition-colors duration-fast ease-out-quart focus:border-primary/55 focus-visible:ring-2 focus-visible:ring-primary/45"
                                         />
                                     </ParamRow>
                                 ) : null}
                                 {modelParams.seed ? (
-                                    <ParamRow label="Seed">
+                                    <ParamRow label={t("paramSeed")}>
                                         <div className="flex items-center gap-1.5">
                                             <input
                                                 type="number"
@@ -329,8 +329,8 @@ export default function ParamsSection({
                                                     const parsed = parseInt(v, 10);
                                                     set("seed", Number.isNaN(parsed) ? undefined : parsed);
                                                 }}
-                                                placeholder="random"
-                                                aria-label="Random seed (leave blank for provider default)"
+                                                placeholder={t("paramSeedRandom")}
+                                                aria-label={t("paramSeedAria")}
                                                 className="w-32 rounded-lg border border-glass-border bg-surface-inset px-2 py-1.5 font-mono text-body-sm text-foreground placeholder:text-text-muted outline-none transition-colors duration-fast ease-out-quart focus:border-primary/55 focus-visible:ring-2 focus-visible:ring-primary/45"
                                             />
                                             {/* Dice = randomize. Lucide icon for
@@ -340,9 +340,9 @@ export default function ParamsSection({
                                             <button
                                                 type="button"
                                                 onClick={() => set("seed", Math.floor(Math.random() * 1_000_000_000))}
-                                                aria-label="Generate random seed"
+                                                aria-label={t("paramSeedNewAria")}
                                                 className="grid h-8 w-8 place-items-center rounded text-text-muted transition-colors duration-fast ease-out-quart hover:bg-hover-bg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
-                                                title="New random seed"
+                                                title={t("paramSeedNew")}
                                             >
                                                 <Dices size={15} aria-hidden="true" />
                                             </button>
@@ -354,8 +354,8 @@ export default function ParamsSection({
                                                 <button
                                                     type="button"
                                                     onClick={() => set("seed", undefined)}
-                                                    aria-label="Clear seed"
-                                                    title="Clear (random)"
+                                                    aria-label={t("paramSeedClearAria")}
+                                                    title={t("paramSeedClear")}
                                                     className="grid h-8 w-8 place-items-center rounded text-text-muted transition-colors duration-fast ease-out-quart hover:bg-hover-bg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
                                                 >
                                                     <X size={13} aria-hidden="true" />
@@ -365,7 +365,7 @@ export default function ParamsSection({
                                     </ParamRow>
                                 ) : null}
                                 {modelParams.cfgScale ? (
-                                    <ParamRow label="CFG">
+                                    <ParamRow label={t("paramCfg")}>
                                         <SliderControl
                                             min={modelParams.cfgScale.min}
                                             max={modelParams.cfgScale.max}
@@ -376,7 +376,7 @@ export default function ParamsSection({
                                     </ParamRow>
                                 ) : null}
                                 {modelParams.mode ? (
-                                    <ParamRow label="Mode">
+                                    <ParamRow label={t("paramMode")}>
                                         <PillCluster
                                             options={modelParams.mode.options}
                                             value={params.mode ?? modelParams.mode.default}
@@ -385,7 +385,7 @@ export default function ParamsSection({
                                     </ParamRow>
                                 ) : null}
                                 {modelParams.movementAmplitude ? (
-                                    <ParamRow label="Motion">
+                                    <ParamRow label={t("paramMotion")}>
                                         <PillCluster
                                             options={modelParams.movementAmplitude.options}
                                             value={params.movementAmplitude ?? modelParams.movementAmplitude.default}
@@ -394,7 +394,7 @@ export default function ParamsSection({
                                     </ParamRow>
                                 ) : null}
                                 {modelParams.sound ? (
-                                    <ParamRow label="Sound">
+                                    <ParamRow label={t("paramSound")}>
                                         <ToggleControl
                                             value={!!params.sound}
                                             onChange={(v) => set("sound", v)}
@@ -402,7 +402,7 @@ export default function ParamsSection({
                                     </ParamRow>
                                 ) : null}
                                 {modelParams.viduAudio ? (
-                                    <ParamRow label="Vidu audio">
+                                    <ParamRow label={t("paramViduAudio")}>
                                         <ToggleControl
                                             value={!!params.viduAudio}
                                             onChange={(v) => set("viduAudio", v)}
@@ -410,7 +410,7 @@ export default function ParamsSection({
                                     </ParamRow>
                                 ) : null}
                                 {modelParams.promptExtend ? (
-                                    <ParamRow label="Prompt extend">
+                                    <ParamRow label={t("paramPromptExtend")}>
                                         <ToggleControl
                                             value={!!params.promptExtend}
                                             onChange={(v) => set("promptExtend", v)}
@@ -418,7 +418,7 @@ export default function ParamsSection({
                                     </ParamRow>
                                 ) : null}
                                 {modelParams.watermark ? (
-                                    <ParamRow label="Watermark">
+                                    <ParamRow label={t("paramWatermark")}>
                                         <ToggleControl
                                             value={!!params.watermark}
                                             onChange={(v) => set("watermark", v)}
@@ -426,7 +426,7 @@ export default function ParamsSection({
                                     </ParamRow>
                                 ) : null}
                                 {modelParams.shotType ? (
-                                    <ParamRow label="Shot type">
+                                    <ParamRow label={t("paramShotType")}>
                                         <PillCluster
                                             options={typeof modelParams.shotType === "boolean"
                                                 ? ["single", "multi"]
@@ -523,10 +523,12 @@ function DurationControl({
     value: number;
     onChange: (v: number) => void;
 }) {
+    // hook 必须在早返回之前调用
+    const t = useTranslations("storyboardR2V");
     if (cfg.type === "fixed") {
         return (
             <span className="font-mono text-body-sm tabular-nums text-text-secondary">
-                {cfg.value}s <span className="text-text-muted">(fixed)</span>
+                {cfg.value}s <span className="text-text-muted">{t("paramDurationFixed")}</span>
             </span>
         );
     }
@@ -556,7 +558,7 @@ function DurationControl({
                 step={cfg.step}
                 value={value}
                 onChange={(e) => onChange(parseInt(e.target.value, 10))}
-                aria-label="Duration in seconds (drag to adjust)"
+                aria-label={t("paramDurationAria")}
                 className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-elevated accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
             />
             <div className="flex shrink-0 items-center gap-0.5">

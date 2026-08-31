@@ -15,9 +15,18 @@
       "pixverse/pixverse-v6-video": "pixverse/pixverse/pixverse-v6-video#i2v",
       "qwen-image-2.0": "qwen/qwen-image-2.0#image",
       "qwen-image-2.0-pro": "qwen/qwen-image-2.0-pro#image",
+      "seedance-2.0-fast-i2v": "seedance/seedance-2.0-fast-video#i2v",
+      "seedance-2.0-fast-r2v": "seedance/seedance-2.0-fast-video#r2v",
+      "seedance-2.0-fast-t2v": "seedance/seedance-2.0-fast-video#t2v",
       "seedance-2.0-i2v": "seedance/seedance-2.0-video#i2v",
       "seedance-2.0-r2v": "seedance/seedance-2.0-video#r2v",
       "seedance-2.0-t2v": "seedance/seedance-2.0-video#t2v",
+      "seedance-2.5-i2v": "seedance/seedance-2.5-video#i2v",
+      "seedance-2.5-r2v": "seedance/seedance-2.5-video#r2v",
+      "seedance-2.5-t2v": "seedance/seedance-2.5-video#t2v",
+      "vidu/vidu-q3-fast-image": "vidu/vidu/vidu-q3-fast-image#image",
+      "vidu/vidu-q3-lite-image": "vidu/vidu/vidu-q3-lite-image#image",
+      "viduq3-drama-r2v": "vidu/viduq3-drama-video#r2v",
       "viduq3-pro-i2v": "vidu/viduq3-pro-video#i2v",
       "viduq3-pro-r2v": "vidu/viduq3-pro-video#r2v",
       "viduq3-turbo-i2v": "vidu/viduq3-turbo-video#i2v",
@@ -288,8 +297,11 @@
       }
     },
     "seedance": {
-      "backend_env_key": null,
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
       "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
         ]
@@ -303,9 +315,15 @@
       },
       "family": "seedance",
       "models": [
+        "seedance-2.0-fast-i2v",
+        "seedance-2.0-fast-r2v",
+        "seedance-2.0-fast-t2v",
         "seedance-2.0-i2v",
         "seedance-2.0-r2v",
-        "seedance-2.0-t2v"
+        "seedance-2.0-t2v",
+        "seedance-2.5-i2v",
+        "seedance-2.5-r2v",
+        "seedance-2.5-t2v"
       ],
       "provider": "mulerouter",
       "routing_prefixes": [
@@ -313,7 +331,8 @@
         "seedance/seedance-"
       ],
       "supported_backends": [
-        "mulerouter"
+        "mulerouter",
+        "byteplus"
       ],
       "supported_modalities": [
         "t2v",
@@ -325,6 +344,7 @@
           "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
           "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
@@ -351,6 +371,9 @@
       },
       "family": "vidu",
       "models": [
+        "vidu/vidu-q3-fast-image",
+        "vidu/vidu-q3-lite-image",
+        "viduq3-drama-r2v",
         "viduq3-pro-i2v",
         "viduq3-pro-r2v",
         "viduq3-turbo-i2v",
@@ -368,7 +391,9 @@
       "supported_modalities": [
         "t2v",
         "i2v",
-        "r2v"
+        "r2v",
+        "t2i",
+        "i2i"
       ],
       "transport": {
         "audio_input_mode": {
@@ -1093,9 +1118,79 @@
         }
       }
     },
-    "seedance/seedance-2.0-video": {
-      "backend_env_key": null,
+    "seedance/seedance-2.0-fast-video": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
       "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
+        "mulerouter": [
+          "MULEROUTER_API_KEY"
+        ]
+      },
+      "default_backend": "mulerouter",
+      "description": "ByteDance Seedance 2.0 Fast — lower latency variant of the 2.0 endpoints",
+      "display_name": "Seedance 2.0 Fast",
+      "docs": {
+        "context_hub_doc_ids": [
+          "mulerouter/seedance-2.0"
+        ],
+        "official_snapshot_ids": [
+          "mulerouter/seedance-2.0/2026-06-03"
+        ]
+      },
+      "family": "seedance",
+      "id": "seedance/seedance-2.0-fast-video",
+      "legacy_model_ids": [
+        "seedance-2.0-fast-i2v",
+        "seedance-2.0-fast-r2v",
+        "seedance-2.0-fast-t2v"
+      ],
+      "modes": [
+        "seedance/seedance-2.0-fast-video#i2v",
+        "seedance/seedance-2.0-fast-video#r2v",
+        "seedance/seedance-2.0-fast-video#t2v"
+      ],
+      "provider": "mulerouter",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "seedance-2.0-",
+        "seedance/seedance-"
+      ],
+      "runtime": {
+        "mulerouter": {
+          "gateway": "mulerouter"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "mulerouter",
+        "byteplus"
+      ],
+      "supported_modalities": [
+        "t2v",
+        "i2v",
+        "r2v"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "mulerouter": "mulerouter_audio_url"
+        },
+        "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
+          "mulerouter": "mulerouter_base64_image"
+        },
+        "reference_video_input_mode": {
+          "mulerouter": "mulerouter_video_url"
+        }
+      }
+    },
+    "seedance/seedance-2.0-video": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
         ]
@@ -1136,7 +1231,8 @@
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter"
+        "mulerouter",
+        "byteplus"
       ],
       "supported_modalities": [
         "t2v",
@@ -1148,10 +1244,281 @@
           "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
           "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
           "mulerouter": "mulerouter_video_url"
+        }
+      }
+    },
+    "seedance/seedance-2.5-video": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
+        "mulerouter": [
+          "MULEROUTER_API_KEY"
+        ]
+      },
+      "default_backend": "mulerouter",
+      "description": "ByteDance Seedance 2.5 — native 30s takes, up to 4K, multimodal references",
+      "display_name": "Seedance 2.5",
+      "docs": {
+        "context_hub_doc_ids": [
+          "byteplus/modelark-seedance-2.5"
+        ],
+        "official_snapshot_ids": [
+          "mulerouter/seedance-2.0/2026-06-03"
+        ]
+      },
+      "family": "seedance",
+      "id": "seedance/seedance-2.5-video",
+      "legacy_model_ids": [
+        "seedance-2.5-i2v",
+        "seedance-2.5-r2v",
+        "seedance-2.5-t2v"
+      ],
+      "modes": [
+        "seedance/seedance-2.5-video#i2v",
+        "seedance/seedance-2.5-video#r2v",
+        "seedance/seedance-2.5-video#t2v"
+      ],
+      "provider": "mulerouter",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "seedance-2.0-",
+        "seedance/seedance-"
+      ],
+      "runtime": {
+        "byteplus": {
+          "gateway": "byteplus"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "mulerouter",
+        "byteplus"
+      ],
+      "supported_modalities": [
+        "t2v",
+        "i2v",
+        "r2v"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "mulerouter": "mulerouter_audio_url"
+        },
+        "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
+          "mulerouter": "mulerouter_base64_image"
+        },
+        "reference_video_input_mode": {
+          "mulerouter": "mulerouter_video_url"
+        }
+      }
+    },
+    "vidu/vidu/vidu-q3-fast-image": {
+      "backend_env_key": "VIDU_PROVIDER_MODE",
+      "credential_sources": {
+        "dashscope": [
+          "DASHSCOPE_API_KEY"
+        ],
+        "vendor": [
+          "VIDU_API_KEY"
+        ]
+      },
+      "default_backend": "dashscope",
+      "description": "Vidu Q3 Fast — higher quality image generation with 1K/2K/4K output. Vendor-only: requires VIDU_PROVIDER_MODE=vendor.",
+      "display_name": "Vidu Q3 Fast Image",
+      "docs": {
+        "context_hub_doc_ids": [
+          "vidu/vendor-api"
+        ],
+        "official_snapshot_ids": [
+          "vidu/2026-04-25"
+        ]
+      },
+      "family": "vidu",
+      "id": "vidu/vidu/vidu-q3-fast-image",
+      "legacy_model_ids": [
+        "vidu/vidu-q3-fast-image"
+      ],
+      "modes": [
+        "vidu/vidu/vidu-q3-fast-image#image"
+      ],
+      "provider": "vidu",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "vidu",
+        "vidu/vidu"
+      ],
+      "runtime": {
+        "vendor": {
+          "api_model_id": "q3-fast",
+          "gateway": "vidu"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "dashscope",
+        "vendor"
+      ],
+      "supported_modalities": [
+        "t2v",
+        "i2v",
+        "r2v",
+        "t2i",
+        "i2i"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_audio_url"
+        },
+        "image_input_mode": {
+          "dashscope": "dashscope_image_to_video",
+          "vendor": "vidu_vendor_image_url"
+        },
+        "reference_video_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_video_url"
+        }
+      }
+    },
+    "vidu/vidu/vidu-q3-lite-image": {
+      "backend_env_key": "VIDU_PROVIDER_MODE",
+      "credential_sources": {
+        "dashscope": [
+          "DASHSCOPE_API_KEY"
+        ],
+        "vendor": [
+          "VIDU_API_KEY"
+        ]
+      },
+      "default_backend": "dashscope",
+      "description": "Vidu Q3 Lite — cheapest per-call image generation (1K only, 8 credits/image). Vendor-only: requires VIDU_PROVIDER_MODE=vendor.",
+      "display_name": "Vidu Q3 Lite Image",
+      "docs": {
+        "context_hub_doc_ids": [
+          "vidu/vendor-api"
+        ],
+        "official_snapshot_ids": [
+          "vidu/2026-04-25"
+        ]
+      },
+      "family": "vidu",
+      "id": "vidu/vidu/vidu-q3-lite-image",
+      "legacy_model_ids": [
+        "vidu/vidu-q3-lite-image"
+      ],
+      "modes": [
+        "vidu/vidu/vidu-q3-lite-image#image"
+      ],
+      "provider": "vidu",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "vidu",
+        "vidu/vidu"
+      ],
+      "runtime": {
+        "vendor": {
+          "api_model_id": "q3-lite",
+          "gateway": "vidu"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "dashscope",
+        "vendor"
+      ],
+      "supported_modalities": [
+        "t2v",
+        "i2v",
+        "r2v",
+        "t2i",
+        "i2i"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_audio_url"
+        },
+        "image_input_mode": {
+          "dashscope": "dashscope_image_to_video",
+          "vendor": "vidu_vendor_image_url"
+        },
+        "reference_video_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_video_url"
+        }
+      }
+    },
+    "vidu/viduq3-drama-video": {
+      "backend_env_key": "VIDU_PROVIDER_MODE",
+      "credential_sources": {
+        "dashscope": [
+          "DASHSCOPE_API_KEY"
+        ],
+        "vendor": [
+          "VIDU_API_KEY"
+        ]
+      },
+      "default_backend": "dashscope",
+      "description": "Vidu Q3 Drama — reference-to-video tuned for short-form drama, 9:16 by default. Requires VIDU_PROVIDER_MODE=vendor; Bailian does not proxy this model.",
+      "display_name": "Vidu Q3 Drama",
+      "docs": {
+        "context_hub_doc_ids": [
+          "vidu/vendor-api"
+        ],
+        "official_snapshot_ids": [
+          "vidu/2026-04-25"
+        ]
+      },
+      "family": "vidu",
+      "id": "vidu/viduq3-drama-video",
+      "legacy_model_ids": [
+        "viduq3-drama-r2v"
+      ],
+      "modes": [
+        "vidu/viduq3-drama-video#r2v"
+      ],
+      "provider": "vidu",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "vidu",
+        "vidu/vidu"
+      ],
+      "runtime": {
+        "vendor": {
+          "gateway": "vidu"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "dashscope",
+        "vendor"
+      ],
+      "supported_modalities": [
+        "t2v",
+        "i2v",
+        "r2v",
+        "t2i",
+        "i2i"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_audio_url"
+        },
+        "image_input_mode": {
+          "dashscope": "dashscope_image_to_video",
+          "vendor": "vidu_vendor_image_url"
+        },
+        "reference_video_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_video_url"
         }
       }
     },
@@ -1209,7 +1576,9 @@
       "supported_modalities": [
         "t2v",
         "i2v",
-        "r2v"
+        "r2v",
+        "t2i",
+        "i2i"
       ],
       "transport": {
         "audio_input_mode": {
@@ -1280,7 +1649,9 @@
       "supported_modalities": [
         "t2v",
         "i2v",
-        "r2v"
+        "r2v",
+        "t2i",
+        "i2i"
       ],
       "transport": {
         "audio_input_mode": {
@@ -3281,12 +3652,283 @@
         ]
       }
     },
-    "seedance-2.0-i2v": {
-      "backend_env_key": null,
+    "seedance-2.0-fast-i2v": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
       "capabilities": [
         "i2v"
       ],
       "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
+        "mulerouter": [
+          "MULEROUTER_API_KEY"
+        ]
+      },
+      "default_backend": "mulerouter",
+      "description": "Image-to-video generation",
+      "display_name": "Seedance 2.0 Fast I2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "mulerouter/seedance-2.0"
+        ],
+        "official_snapshot_ids": [
+          "mulerouter/seedance-2.0/2026-06-03"
+        ]
+      },
+      "duration": {
+        "default": 5,
+        "max": 15,
+        "min": 4,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "seedance",
+      "id": "seedance-2.0-fast-i2v",
+      "inputs": {
+        "reference_images": {
+          "max": 1,
+          "reference_type": "image"
+        }
+      },
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "1080p",
+          "options": [
+            "480p",
+            "720p",
+            "1080p"
+          ]
+        },
+        "seed": true,
+        "watermark": true
+      },
+      "provider": "mulerouter",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "seedance-2.0-",
+        "seedance/seedance-"
+      ],
+      "status": "active",
+      "supported_backends": [
+        "mulerouter",
+        "byteplus"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "mulerouter": "mulerouter_audio_url"
+        },
+        "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
+          "mulerouter": "mulerouter_base64_image"
+        },
+        "reference_video_input_mode": {
+          "mulerouter": "mulerouter_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 91,
+        "recommended": false,
+        "selection_group": "i2v",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "video_sidebar",
+          "global_settings"
+        ]
+      }
+    },
+    "seedance-2.0-fast-r2v": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "capabilities": [
+        "r2v"
+      ],
+      "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
+        "mulerouter": [
+          "MULEROUTER_API_KEY"
+        ]
+      },
+      "default_backend": "mulerouter",
+      "description": "Reference-to-video with multi-image input",
+      "display_name": "Seedance 2.0 Fast R2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "mulerouter/seedance-2.0"
+        ],
+        "official_snapshot_ids": [
+          "mulerouter/seedance-2.0/2026-06-03"
+        ]
+      },
+      "duration": {
+        "default": 5,
+        "max": 15,
+        "min": 4,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "seedance",
+      "id": "seedance-2.0-fast-r2v",
+      "inputs": {
+        "reference_images": {
+          "max": 9,
+          "reference_type": "image"
+        }
+      },
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "1080p",
+          "options": [
+            "480p",
+            "720p",
+            "1080p"
+          ]
+        },
+        "seed": true,
+        "watermark": true
+      },
+      "provider": "mulerouter",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "seedance-2.0-",
+        "seedance/seedance-"
+      ],
+      "status": "active",
+      "supported_backends": [
+        "mulerouter",
+        "byteplus"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "mulerouter": "mulerouter_audio_url"
+        },
+        "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
+          "mulerouter": "mulerouter_base64_image"
+        },
+        "reference_video_input_mode": {
+          "mulerouter": "mulerouter_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 81,
+        "recommended": false,
+        "selection_group": "r2v",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "video_sidebar",
+          "global_settings"
+        ]
+      }
+    },
+    "seedance-2.0-fast-t2v": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "capabilities": [
+        "t2v"
+      ],
+      "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
+        "mulerouter": [
+          "MULEROUTER_API_KEY"
+        ]
+      },
+      "default_backend": "mulerouter",
+      "description": "Text-to-video generation",
+      "display_name": "Seedance 2.0 Fast T2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "mulerouter/seedance-2.0"
+        ],
+        "official_snapshot_ids": [
+          "mulerouter/seedance-2.0/2026-06-03"
+        ]
+      },
+      "duration": {
+        "default": 5,
+        "max": 15,
+        "min": 4,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "seedance",
+      "id": "seedance-2.0-fast-t2v",
+      "inputs": {},
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "1080p",
+          "options": [
+            "480p",
+            "720p",
+            "1080p"
+          ]
+        },
+        "seed": true,
+        "watermark": true
+      },
+      "provider": "mulerouter",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "seedance-2.0-",
+        "seedance/seedance-"
+      ],
+      "status": "active",
+      "supported_backends": [
+        "mulerouter",
+        "byteplus"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "mulerouter": "mulerouter_audio_url"
+        },
+        "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
+          "mulerouter": "mulerouter_base64_image"
+        },
+        "reference_video_input_mode": {
+          "mulerouter": "mulerouter_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 86,
+        "recommended": false,
+        "selection_group": "t2v",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "video_sidebar",
+          "global_settings"
+        ]
+      }
+    },
+    "seedance-2.0-i2v": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "capabilities": [
+        "i2v"
+      ],
+      "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
         ]
@@ -3323,6 +3965,7 @@
         "resolution": {
           "default": "1080p",
           "options": [
+            "480p",
             "720p",
             "1080p"
           ]
@@ -3338,13 +3981,15 @@
       ],
       "status": "active",
       "supported_backends": [
-        "mulerouter"
+        "mulerouter",
+        "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
           "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
           "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
@@ -3367,11 +4012,14 @@
       }
     },
     "seedance-2.0-r2v": {
-      "backend_env_key": null,
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
       "capabilities": [
         "r2v"
       ],
       "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
         ]
@@ -3408,6 +4056,7 @@
         "resolution": {
           "default": "1080p",
           "options": [
+            "480p",
             "720p",
             "1080p"
           ]
@@ -3423,13 +4072,15 @@
       ],
       "status": "active",
       "supported_backends": [
-        "mulerouter"
+        "mulerouter",
+        "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
           "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
           "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
@@ -3452,11 +4103,14 @@
       }
     },
     "seedance-2.0-t2v": {
-      "backend_env_key": null,
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
       "capabilities": [
         "t2v"
       ],
       "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
         ]
@@ -3488,6 +4142,7 @@
         "resolution": {
           "default": "1080p",
           "options": [
+            "480p",
             "720p",
             "1080p"
           ]
@@ -3503,13 +4158,15 @@
       ],
       "status": "active",
       "supported_backends": [
-        "mulerouter"
+        "mulerouter",
+        "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
           "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
           "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
@@ -3523,6 +4180,554 @@
         "order": 85,
         "recommended": false,
         "selection_group": "t2v",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "video_sidebar",
+          "global_settings"
+        ]
+      }
+    },
+    "seedance-2.5-i2v": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "capabilities": [
+        "i2v"
+      ],
+      "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
+        "mulerouter": [
+          "MULEROUTER_API_KEY"
+        ]
+      },
+      "default_backend": "mulerouter",
+      "description": "First-frame image to video",
+      "display_name": "Seedance 2.5 I2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "byteplus/modelark-seedance-2.5"
+        ],
+        "official_snapshot_ids": [
+          "mulerouter/seedance-2.0/2026-06-03"
+        ]
+      },
+      "duration": {
+        "default": 5,
+        "max": 30,
+        "min": 4,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "seedance",
+      "id": "seedance-2.5-i2v",
+      "inputs": {
+        "reference_images": {
+          "max": 1,
+          "reference_type": "image"
+        }
+      },
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "1080p",
+          "options": [
+            "480p",
+            "720p",
+            "1080p",
+            "4k"
+          ]
+        },
+        "seed": true,
+        "watermark": true
+      },
+      "provider": "mulerouter",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "seedance-2.0-",
+        "seedance/seedance-"
+      ],
+      "status": "active",
+      "supported_backends": [
+        "mulerouter",
+        "byteplus"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "mulerouter": "mulerouter_audio_url"
+        },
+        "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
+          "mulerouter": "mulerouter_base64_image"
+        },
+        "reference_video_input_mode": {
+          "mulerouter": "mulerouter_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 95,
+        "recommended": false,
+        "selection_group": "i2v",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "video_sidebar",
+          "global_settings"
+        ]
+      }
+    },
+    "seedance-2.5-r2v": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "capabilities": [
+        "r2v"
+      ],
+      "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
+        "mulerouter": [
+          "MULEROUTER_API_KEY"
+        ]
+      },
+      "default_backend": "mulerouter",
+      "description": "Multimodal reference-to-video, up to 50 reference assets",
+      "display_name": "Seedance 2.5 R2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "byteplus/modelark-seedance-2.5"
+        ],
+        "official_snapshot_ids": [
+          "mulerouter/seedance-2.0/2026-06-03"
+        ]
+      },
+      "duration": {
+        "default": 5,
+        "max": 30,
+        "min": 4,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "seedance",
+      "id": "seedance-2.5-r2v",
+      "inputs": {
+        "reference_images": {
+          "max": 50,
+          "reference_type": "image"
+        }
+      },
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "1080p",
+          "options": [
+            "480p",
+            "720p",
+            "1080p",
+            "4k"
+          ]
+        },
+        "seed": true,
+        "watermark": true
+      },
+      "provider": "mulerouter",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "seedance-2.0-",
+        "seedance/seedance-"
+      ],
+      "status": "active",
+      "supported_backends": [
+        "mulerouter",
+        "byteplus"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "mulerouter": "mulerouter_audio_url"
+        },
+        "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
+          "mulerouter": "mulerouter_base64_image"
+        },
+        "reference_video_input_mode": {
+          "mulerouter": "mulerouter_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 95,
+        "recommended": false,
+        "selection_group": "r2v",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "video_sidebar",
+          "global_settings"
+        ]
+      }
+    },
+    "seedance-2.5-t2v": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "capabilities": [
+        "t2v"
+      ],
+      "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
+        "mulerouter": [
+          "MULEROUTER_API_KEY"
+        ]
+      },
+      "default_backend": "mulerouter",
+      "description": "Text-to-video, native long takes",
+      "display_name": "Seedance 2.5 T2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "byteplus/modelark-seedance-2.5"
+        ],
+        "official_snapshot_ids": [
+          "mulerouter/seedance-2.0/2026-06-03"
+        ]
+      },
+      "duration": {
+        "default": 5,
+        "max": 30,
+        "min": 4,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "seedance",
+      "id": "seedance-2.5-t2v",
+      "inputs": {},
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "1080p",
+          "options": [
+            "480p",
+            "720p",
+            "1080p",
+            "4k"
+          ]
+        },
+        "seed": true,
+        "watermark": true
+      },
+      "provider": "mulerouter",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "seedance-2.0-",
+        "seedance/seedance-"
+      ],
+      "status": "active",
+      "supported_backends": [
+        "mulerouter",
+        "byteplus"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "mulerouter": "mulerouter_audio_url"
+        },
+        "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
+          "mulerouter": "mulerouter_base64_image"
+        },
+        "reference_video_input_mode": {
+          "mulerouter": "mulerouter_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 95,
+        "recommended": false,
+        "selection_group": "t2v",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "video_sidebar",
+          "global_settings"
+        ]
+      }
+    },
+    "vidu/vidu-q3-fast-image": {
+      "backend_env_key": "VIDU_PROVIDER_MODE",
+      "capabilities": [
+        "t2i",
+        "i2i"
+      ],
+      "credential_sources": {
+        "dashscope": [
+          "DASHSCOPE_API_KEY"
+        ],
+        "vendor": [
+          "VIDU_API_KEY"
+        ]
+      },
+      "default_backend": "dashscope",
+      "description": "Vidu Q3 Fast — higher quality image generation with 1K/2K/4K output. Vendor-only: requires VIDU_PROVIDER_MODE=vendor.",
+      "display_name": "Vidu Q3 Fast Image",
+      "docs": {
+        "context_hub_doc_ids": [
+          "vidu/vendor-api"
+        ],
+        "official_snapshot_ids": [
+          "vidu/2026-04-25"
+        ]
+      },
+      "duration": null,
+      "family": "vidu",
+      "id": "vidu/vidu-q3-fast-image",
+      "inputs": {
+        "reference_images": {
+          "max": 7,
+          "reference_type": "image"
+        }
+      },
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "seed": false,
+        "size": {
+          "default": "768x1376",
+          "options": [
+            "1024x1024",
+            "1376x768",
+            "768x1376",
+            "1200x896",
+            "896x1200",
+            "2192x928",
+            "2048x2048",
+            "2752x1536",
+            "1536x2752",
+            "4384x1872",
+            "4800x3584",
+            "3584x4800"
+          ]
+        },
+        "watermark": false
+      },
+      "provider": "vidu",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "vidu",
+        "vidu/vidu"
+      ],
+      "status": "active",
+      "supported_backends": [
+        "dashscope",
+        "vendor"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_audio_url"
+        },
+        "image_input_mode": {
+          "dashscope": "dashscope_image_to_video",
+          "vendor": "vidu_vendor_image_url"
+        },
+        "reference_video_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 97,
+        "recommended": false,
+        "selection_group": "image",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "global_settings"
+        ]
+      }
+    },
+    "vidu/vidu-q3-lite-image": {
+      "backend_env_key": "VIDU_PROVIDER_MODE",
+      "capabilities": [
+        "t2i",
+        "i2i"
+      ],
+      "credential_sources": {
+        "dashscope": [
+          "DASHSCOPE_API_KEY"
+        ],
+        "vendor": [
+          "VIDU_API_KEY"
+        ]
+      },
+      "default_backend": "dashscope",
+      "description": "Vidu Q3 Lite — cheapest per-call image generation (1K only, 8 credits/image). Vendor-only: requires VIDU_PROVIDER_MODE=vendor.",
+      "display_name": "Vidu Q3 Lite Image",
+      "docs": {
+        "context_hub_doc_ids": [
+          "vidu/vendor-api"
+        ],
+        "official_snapshot_ids": [
+          "vidu/2026-04-25"
+        ]
+      },
+      "duration": null,
+      "family": "vidu",
+      "id": "vidu/vidu-q3-lite-image",
+      "inputs": {
+        "reference_images": {
+          "max": 7,
+          "reference_type": "image"
+        }
+      },
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "seed": false,
+        "size": {
+          "default": "768x1376",
+          "options": [
+            "1024x1024",
+            "1376x768",
+            "768x1376",
+            "1200x896",
+            "896x1200",
+            "2192x928"
+          ]
+        },
+        "watermark": false
+      },
+      "provider": "vidu",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "vidu",
+        "vidu/vidu"
+      ],
+      "status": "active",
+      "supported_backends": [
+        "dashscope",
+        "vendor"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_audio_url"
+        },
+        "image_input_mode": {
+          "dashscope": "dashscope_image_to_video",
+          "vendor": "vidu_vendor_image_url"
+        },
+        "reference_video_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 96,
+        "recommended": false,
+        "selection_group": "image",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "global_settings"
+        ]
+      }
+    },
+    "viduq3-drama-r2v": {
+      "backend_env_key": "VIDU_PROVIDER_MODE",
+      "capabilities": [
+        "r2v"
+      ],
+      "credential_sources": {
+        "dashscope": [
+          "DASHSCOPE_API_KEY"
+        ],
+        "vendor": [
+          "VIDU_API_KEY"
+        ]
+      },
+      "default_backend": "dashscope",
+      "description": "Reference-to-video for short drama, vertical 9:16 by default. Vendor-only: needs VIDU_PROVIDER_MODE=vendor + VIDU_API_KEY.",
+      "display_name": "Vidu Q3 Drama R2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "vidu/vendor-api"
+        ],
+        "official_snapshot_ids": [
+          "vidu/2026-04-25"
+        ]
+      },
+      "duration": {
+        "default": 5,
+        "max": 15,
+        "min": 2,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "vidu",
+      "id": "viduq3-drama-r2v",
+      "inputs": {
+        "reference_images": {
+          "max": 7,
+          "reference_type": "image"
+        }
+      },
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "720p",
+          "options": [
+            "540p",
+            "720p",
+            "1080p"
+          ]
+        },
+        "seed": true,
+        "watermark": true
+      },
+      "provider": "vidu",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "vidu",
+        "vidu/vidu"
+      ],
+      "status": "active",
+      "supported_backends": [
+        "dashscope",
+        "vendor"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_audio_url"
+        },
+        "image_input_mode": {
+          "dashscope": "dashscope_image_to_video",
+          "vendor": "vidu_vendor_image_url"
+        },
+        "reference_video_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_video_url"
+        }
+      },
+      "ui": {
+        "badges": [],
+        "order": 65,
+        "recommended": false,
+        "selection_group": "r2v",
         "visible_in": [
           "project_settings",
           "series_settings",
@@ -6432,12 +7637,307 @@
         ]
       }
     },
-    "seedance/seedance-2.0-video#i2v": {
-      "backend_env_key": null,
+    "seedance/seedance-2.0-fast-video#i2v": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
       "capabilities": [
         "i2v"
       ],
       "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
+        "mulerouter": [
+          "MULEROUTER_API_KEY"
+        ]
+      },
+      "default_backend": "mulerouter",
+      "description": "Image-to-video generation",
+      "display_name": "Seedance 2.0 Fast I2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "mulerouter/seedance-2.0"
+        ],
+        "official_snapshot_ids": [
+          "mulerouter/seedance-2.0/2026-06-03"
+        ]
+      },
+      "duration": {
+        "default": 5,
+        "max": 15,
+        "min": 4,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "seedance",
+      "id": "seedance/seedance-2.0-fast-video#i2v",
+      "inputs": {
+        "reference_images": {
+          "max": 1,
+          "reference_type": "image"
+        }
+      },
+      "legacy_model_id": "seedance-2.0-fast-i2v",
+      "mode": "i2v",
+      "model_line_id": "seedance/seedance-2.0-fast-video",
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "1080p",
+          "options": [
+            "480p",
+            "720p",
+            "1080p"
+          ]
+        },
+        "seed": true,
+        "watermark": true
+      },
+      "provider": "mulerouter",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "seedance-2.0-",
+        "seedance/seedance-"
+      ],
+      "runtime": {
+        "mulerouter": {
+          "gateway": "mulerouter"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "mulerouter",
+        "byteplus"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "mulerouter": "mulerouter_audio_url"
+        },
+        "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
+          "mulerouter": "mulerouter_base64_image"
+        },
+        "reference_video_input_mode": {
+          "mulerouter": "mulerouter_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 91,
+        "recommended": false,
+        "selection_group": "i2v",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "video_sidebar",
+          "global_settings"
+        ]
+      }
+    },
+    "seedance/seedance-2.0-fast-video#r2v": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "capabilities": [
+        "r2v"
+      ],
+      "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
+        "mulerouter": [
+          "MULEROUTER_API_KEY"
+        ]
+      },
+      "default_backend": "mulerouter",
+      "description": "Reference-to-video with multi-image input",
+      "display_name": "Seedance 2.0 Fast R2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "mulerouter/seedance-2.0"
+        ],
+        "official_snapshot_ids": [
+          "mulerouter/seedance-2.0/2026-06-03"
+        ]
+      },
+      "duration": {
+        "default": 5,
+        "max": 15,
+        "min": 4,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "seedance",
+      "id": "seedance/seedance-2.0-fast-video#r2v",
+      "inputs": {
+        "reference_images": {
+          "max": 9,
+          "reference_type": "image"
+        }
+      },
+      "legacy_model_id": "seedance-2.0-fast-r2v",
+      "mode": "r2v",
+      "model_line_id": "seedance/seedance-2.0-fast-video",
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "1080p",
+          "options": [
+            "480p",
+            "720p",
+            "1080p"
+          ]
+        },
+        "seed": true,
+        "watermark": true
+      },
+      "provider": "mulerouter",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "seedance-2.0-",
+        "seedance/seedance-"
+      ],
+      "runtime": {
+        "mulerouter": {
+          "gateway": "mulerouter"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "mulerouter",
+        "byteplus"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "mulerouter": "mulerouter_audio_url"
+        },
+        "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
+          "mulerouter": "mulerouter_base64_image"
+        },
+        "reference_video_input_mode": {
+          "mulerouter": "mulerouter_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 81,
+        "recommended": false,
+        "selection_group": "r2v",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "video_sidebar",
+          "global_settings"
+        ]
+      }
+    },
+    "seedance/seedance-2.0-fast-video#t2v": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "capabilities": [
+        "t2v"
+      ],
+      "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
+        "mulerouter": [
+          "MULEROUTER_API_KEY"
+        ]
+      },
+      "default_backend": "mulerouter",
+      "description": "Text-to-video generation",
+      "display_name": "Seedance 2.0 Fast T2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "mulerouter/seedance-2.0"
+        ],
+        "official_snapshot_ids": [
+          "mulerouter/seedance-2.0/2026-06-03"
+        ]
+      },
+      "duration": {
+        "default": 5,
+        "max": 15,
+        "min": 4,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "seedance",
+      "id": "seedance/seedance-2.0-fast-video#t2v",
+      "inputs": {},
+      "legacy_model_id": "seedance-2.0-fast-t2v",
+      "mode": "t2v",
+      "model_line_id": "seedance/seedance-2.0-fast-video",
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "1080p",
+          "options": [
+            "480p",
+            "720p",
+            "1080p"
+          ]
+        },
+        "seed": true,
+        "watermark": true
+      },
+      "provider": "mulerouter",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "seedance-2.0-",
+        "seedance/seedance-"
+      ],
+      "runtime": {
+        "mulerouter": {
+          "gateway": "mulerouter"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "mulerouter",
+        "byteplus"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "mulerouter": "mulerouter_audio_url"
+        },
+        "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
+          "mulerouter": "mulerouter_base64_image"
+        },
+        "reference_video_input_mode": {
+          "mulerouter": "mulerouter_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 86,
+        "recommended": false,
+        "selection_group": "t2v",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "video_sidebar",
+          "global_settings"
+        ]
+      }
+    },
+    "seedance/seedance-2.0-video#i2v": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "capabilities": [
+        "i2v"
+      ],
+      "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
         ]
@@ -6477,6 +7977,7 @@
         "resolution": {
           "default": "1080p",
           "options": [
+            "480p",
             "720p",
             "1080p"
           ]
@@ -6497,13 +7998,15 @@
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter"
+        "mulerouter",
+        "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
           "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
           "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
@@ -6526,11 +8029,14 @@
       }
     },
     "seedance/seedance-2.0-video#r2v": {
-      "backend_env_key": null,
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
       "capabilities": [
         "r2v"
       ],
       "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
         ]
@@ -6570,6 +8076,7 @@
         "resolution": {
           "default": "1080p",
           "options": [
+            "480p",
             "720p",
             "1080p"
           ]
@@ -6590,13 +8097,15 @@
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter"
+        "mulerouter",
+        "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
           "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
           "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
@@ -6619,11 +8128,14 @@
       }
     },
     "seedance/seedance-2.0-video#t2v": {
-      "backend_env_key": null,
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
       "capabilities": [
         "t2v"
       ],
       "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
         "mulerouter": [
           "MULEROUTER_API_KEY"
         ]
@@ -6658,6 +8170,7 @@
         "resolution": {
           "default": "1080p",
           "options": [
+            "480p",
             "720p",
             "1080p"
           ]
@@ -6678,13 +8191,15 @@
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter"
+        "mulerouter",
+        "byteplus"
       ],
       "transport": {
         "audio_input_mode": {
           "mulerouter": "mulerouter_audio_url"
         },
         "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
           "mulerouter": "mulerouter_base64_image"
         },
         "reference_video_input_mode": {
@@ -6698,6 +8213,608 @@
         "order": 85,
         "recommended": false,
         "selection_group": "t2v",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "video_sidebar",
+          "global_settings"
+        ]
+      }
+    },
+    "seedance/seedance-2.5-video#i2v": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "capabilities": [
+        "i2v"
+      ],
+      "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
+        "mulerouter": [
+          "MULEROUTER_API_KEY"
+        ]
+      },
+      "default_backend": "mulerouter",
+      "description": "First-frame image to video",
+      "display_name": "Seedance 2.5 I2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "byteplus/modelark-seedance-2.5"
+        ],
+        "official_snapshot_ids": [
+          "mulerouter/seedance-2.0/2026-06-03"
+        ]
+      },
+      "duration": {
+        "default": 5,
+        "max": 30,
+        "min": 4,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "seedance",
+      "id": "seedance/seedance-2.5-video#i2v",
+      "inputs": {
+        "reference_images": {
+          "max": 1,
+          "reference_type": "image"
+        }
+      },
+      "legacy_model_id": "seedance-2.5-i2v",
+      "mode": "i2v",
+      "model_line_id": "seedance/seedance-2.5-video",
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "1080p",
+          "options": [
+            "480p",
+            "720p",
+            "1080p",
+            "4k"
+          ]
+        },
+        "seed": true,
+        "watermark": true
+      },
+      "provider": "mulerouter",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "seedance-2.0-",
+        "seedance/seedance-"
+      ],
+      "runtime": {
+        "byteplus": {
+          "api_model_id": "dreamina-seedance-2-5-260628",
+          "gateway": "byteplus"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "mulerouter",
+        "byteplus"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "mulerouter": "mulerouter_audio_url"
+        },
+        "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
+          "mulerouter": "mulerouter_base64_image"
+        },
+        "reference_video_input_mode": {
+          "mulerouter": "mulerouter_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 95,
+        "recommended": false,
+        "selection_group": "i2v",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "video_sidebar",
+          "global_settings"
+        ]
+      }
+    },
+    "seedance/seedance-2.5-video#r2v": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "capabilities": [
+        "r2v"
+      ],
+      "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
+        "mulerouter": [
+          "MULEROUTER_API_KEY"
+        ]
+      },
+      "default_backend": "mulerouter",
+      "description": "Multimodal reference-to-video, up to 50 reference assets",
+      "display_name": "Seedance 2.5 R2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "byteplus/modelark-seedance-2.5"
+        ],
+        "official_snapshot_ids": [
+          "mulerouter/seedance-2.0/2026-06-03"
+        ]
+      },
+      "duration": {
+        "default": 5,
+        "max": 30,
+        "min": 4,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "seedance",
+      "id": "seedance/seedance-2.5-video#r2v",
+      "inputs": {
+        "reference_images": {
+          "max": 50,
+          "reference_type": "image"
+        }
+      },
+      "legacy_model_id": "seedance-2.5-r2v",
+      "mode": "r2v",
+      "model_line_id": "seedance/seedance-2.5-video",
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "1080p",
+          "options": [
+            "480p",
+            "720p",
+            "1080p",
+            "4k"
+          ]
+        },
+        "seed": true,
+        "watermark": true
+      },
+      "provider": "mulerouter",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "seedance-2.0-",
+        "seedance/seedance-"
+      ],
+      "runtime": {
+        "byteplus": {
+          "api_model_id": "dreamina-seedance-2-5-260628",
+          "gateway": "byteplus"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "mulerouter",
+        "byteplus"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "mulerouter": "mulerouter_audio_url"
+        },
+        "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
+          "mulerouter": "mulerouter_base64_image"
+        },
+        "reference_video_input_mode": {
+          "mulerouter": "mulerouter_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 95,
+        "recommended": false,
+        "selection_group": "r2v",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "video_sidebar",
+          "global_settings"
+        ]
+      }
+    },
+    "seedance/seedance-2.5-video#t2v": {
+      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "capabilities": [
+        "t2v"
+      ],
+      "credential_sources": {
+        "byteplus": [
+          "ARK_API_KEY"
+        ],
+        "mulerouter": [
+          "MULEROUTER_API_KEY"
+        ]
+      },
+      "default_backend": "mulerouter",
+      "description": "Text-to-video, native long takes",
+      "display_name": "Seedance 2.5 T2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "byteplus/modelark-seedance-2.5"
+        ],
+        "official_snapshot_ids": [
+          "mulerouter/seedance-2.0/2026-06-03"
+        ]
+      },
+      "duration": {
+        "default": 5,
+        "max": 30,
+        "min": 4,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "seedance",
+      "id": "seedance/seedance-2.5-video#t2v",
+      "inputs": {},
+      "legacy_model_id": "seedance-2.5-t2v",
+      "mode": "t2v",
+      "model_line_id": "seedance/seedance-2.5-video",
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "1080p",
+          "options": [
+            "480p",
+            "720p",
+            "1080p",
+            "4k"
+          ]
+        },
+        "seed": true,
+        "watermark": true
+      },
+      "provider": "mulerouter",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "seedance-2.0-",
+        "seedance/seedance-"
+      ],
+      "runtime": {
+        "byteplus": {
+          "api_model_id": "dreamina-seedance-2-5-260628",
+          "gateway": "byteplus"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "mulerouter",
+        "byteplus"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "mulerouter": "mulerouter_audio_url"
+        },
+        "image_input_mode": {
+          "byteplus": "byteplus_ark_image_url",
+          "mulerouter": "mulerouter_base64_image"
+        },
+        "reference_video_input_mode": {
+          "mulerouter": "mulerouter_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 95,
+        "recommended": false,
+        "selection_group": "t2v",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "video_sidebar",
+          "global_settings"
+        ]
+      }
+    },
+    "vidu/vidu/vidu-q3-fast-image#image": {
+      "backend_env_key": "VIDU_PROVIDER_MODE",
+      "capabilities": [
+        "t2i",
+        "i2i"
+      ],
+      "credential_sources": {
+        "dashscope": [
+          "DASHSCOPE_API_KEY"
+        ],
+        "vendor": [
+          "VIDU_API_KEY"
+        ]
+      },
+      "default_backend": "dashscope",
+      "description": "Vidu Q3 Fast — higher quality image generation with 1K/2K/4K output. Vendor-only: requires VIDU_PROVIDER_MODE=vendor.",
+      "display_name": "Vidu Q3 Fast Image",
+      "docs": {
+        "context_hub_doc_ids": [
+          "vidu/vendor-api"
+        ],
+        "official_snapshot_ids": [
+          "vidu/2026-04-25"
+        ]
+      },
+      "duration": null,
+      "family": "vidu",
+      "id": "vidu/vidu/vidu-q3-fast-image#image",
+      "inputs": {
+        "reference_images": {
+          "max": 7,
+          "reference_type": "image"
+        }
+      },
+      "legacy_model_id": "vidu/vidu-q3-fast-image",
+      "mode": "image",
+      "model_line_id": "vidu/vidu/vidu-q3-fast-image",
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "seed": false,
+        "size": {
+          "default": "768x1376",
+          "options": [
+            "1024x1024",
+            "1376x768",
+            "768x1376",
+            "1200x896",
+            "896x1200",
+            "2192x928",
+            "2048x2048",
+            "2752x1536",
+            "1536x2752",
+            "4384x1872",
+            "4800x3584",
+            "3584x4800"
+          ]
+        },
+        "watermark": false
+      },
+      "provider": "vidu",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "vidu",
+        "vidu/vidu"
+      ],
+      "runtime": {
+        "vendor": {
+          "api_model_id": "q3-fast",
+          "gateway": "vidu"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "dashscope",
+        "vendor"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_audio_url"
+        },
+        "image_input_mode": {
+          "dashscope": "dashscope_image_to_video",
+          "vendor": "vidu_vendor_image_url"
+        },
+        "reference_video_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 97,
+        "recommended": false,
+        "selection_group": "image",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "global_settings"
+        ]
+      }
+    },
+    "vidu/vidu/vidu-q3-lite-image#image": {
+      "backend_env_key": "VIDU_PROVIDER_MODE",
+      "capabilities": [
+        "t2i",
+        "i2i"
+      ],
+      "credential_sources": {
+        "dashscope": [
+          "DASHSCOPE_API_KEY"
+        ],
+        "vendor": [
+          "VIDU_API_KEY"
+        ]
+      },
+      "default_backend": "dashscope",
+      "description": "Vidu Q3 Lite — cheapest per-call image generation (1K only, 8 credits/image). Vendor-only: requires VIDU_PROVIDER_MODE=vendor.",
+      "display_name": "Vidu Q3 Lite Image",
+      "docs": {
+        "context_hub_doc_ids": [
+          "vidu/vendor-api"
+        ],
+        "official_snapshot_ids": [
+          "vidu/2026-04-25"
+        ]
+      },
+      "duration": null,
+      "family": "vidu",
+      "id": "vidu/vidu/vidu-q3-lite-image#image",
+      "inputs": {
+        "reference_images": {
+          "max": 7,
+          "reference_type": "image"
+        }
+      },
+      "legacy_model_id": "vidu/vidu-q3-lite-image",
+      "mode": "image",
+      "model_line_id": "vidu/vidu/vidu-q3-lite-image",
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "seed": false,
+        "size": {
+          "default": "768x1376",
+          "options": [
+            "1024x1024",
+            "1376x768",
+            "768x1376",
+            "1200x896",
+            "896x1200",
+            "2192x928"
+          ]
+        },
+        "watermark": false
+      },
+      "provider": "vidu",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "vidu",
+        "vidu/vidu"
+      ],
+      "runtime": {
+        "vendor": {
+          "api_model_id": "q3-lite",
+          "gateway": "vidu"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "dashscope",
+        "vendor"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_audio_url"
+        },
+        "image_input_mode": {
+          "dashscope": "dashscope_image_to_video",
+          "vendor": "vidu_vendor_image_url"
+        },
+        "reference_video_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_video_url"
+        }
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 96,
+        "recommended": false,
+        "selection_group": "image",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "global_settings"
+        ]
+      }
+    },
+    "vidu/viduq3-drama-video#r2v": {
+      "backend_env_key": "VIDU_PROVIDER_MODE",
+      "capabilities": [
+        "r2v"
+      ],
+      "credential_sources": {
+        "dashscope": [
+          "DASHSCOPE_API_KEY"
+        ],
+        "vendor": [
+          "VIDU_API_KEY"
+        ]
+      },
+      "default_backend": "dashscope",
+      "description": "Reference-to-video for short drama, vertical 9:16 by default. Vendor-only: needs VIDU_PROVIDER_MODE=vendor + VIDU_API_KEY.",
+      "display_name": "Vidu Q3 Drama R2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "vidu/vendor-api"
+        ],
+        "official_snapshot_ids": [
+          "vidu/2026-04-25"
+        ]
+      },
+      "duration": {
+        "default": 5,
+        "max": 15,
+        "min": 2,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "vidu",
+      "id": "vidu/viduq3-drama-video#r2v",
+      "inputs": {
+        "reference_images": {
+          "max": 7,
+          "reference_type": "image"
+        }
+      },
+      "legacy_model_id": "viduq3-drama-r2v",
+      "mode": "r2v",
+      "model_line_id": "vidu/viduq3-drama-video",
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "720p",
+          "options": [
+            "540p",
+            "720p",
+            "1080p"
+          ]
+        },
+        "seed": true,
+        "watermark": true
+      },
+      "provider": "vidu",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "vidu",
+        "vidu/vidu"
+      ],
+      "runtime": {
+        "vendor": {
+          "api_model_id": "viduq3-drama",
+          "gateway": "vidu"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "dashscope",
+        "vendor"
+      ],
+      "transport": {
+        "audio_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_audio_url"
+        },
+        "image_input_mode": {
+          "dashscope": "dashscope_image_to_video",
+          "vendor": "vidu_vendor_image_url"
+        },
+        "reference_video_input_mode": {
+          "dashscope": "dashscope_temp_file_url",
+          "vendor": "vidu_vendor_video_url"
+        }
+      },
+      "ui": {
+        "badges": [],
+        "order": 65,
+        "recommended": false,
+        "selection_group": "r2v",
         "visible_in": [
           "project_settings",
           "series_settings",
@@ -6891,6 +9008,7 @@
           "gateway": "dashscope"
         },
         "vendor": {
+          "api_model_id": "viduq3-mix",
           "gateway": "vidu"
         }
       },
@@ -7109,6 +9227,7 @@
           "gateway": "dashscope"
         },
         "vendor": {
+          "api_model_id": "viduq3-turbo",
           "gateway": "vidu"
         }
       },

@@ -137,6 +137,15 @@ interface ModelCatalog {
             [key: string]: unknown;
         }
     >;
+    families: Record<
+        string,
+        {
+            family: string;
+            /** backend -> env var names that can satisfy it (any one suffices). */
+            credential_sources?: Record<string, string[]>;
+            [key: string]: unknown;
+        }
+    >;
     compat: {
         legacy_model_ids: Record<string, string>;
     };
@@ -371,6 +380,72 @@ export function getMaxReferenceImages(modelId?: string | null): number {
         MODEL_CATALOG.models[resolvedModelId]?.inputs?.reference_images?.max;
 
     return typeof maxReferenceImages === 'number' ? maxReferenceImages : 3;
+}
+
+/**
+ * Reference slot budget of a model id that is already resolved for its own
+ * surface — R2V route ids in particular.
+ *
+ * Distinct from getMaxReferenceImages, which forces its input through the
+ * 'i2i' resolver and therefore answers for an image model no matter what
+ * video id you hand it. Budgets differ per vendor (wan2.7-r2v 5,
+ * viduq3 7, happyhorse 9); using the wrong ceiling silently drops
+ * references, so the fallback here is a conservative 1 rather than a guess.
+ */
+/** Env var names that can satisfy this model's provider (any one suffices).
+ *
+ * Empty for a model whose family declares no credential requirement, and for
+ * an unknown id — callers must not treat "unknown" as "blocked".
+ */
+export function modelRequiresCredentials(modelId?: string | null): string[] {
+    if (!modelId) return [];
+    const model = MODEL_CATALOG.models[modelId] ?? MODEL_CATALOG.modes?.[modelId];
+    const familyName = (model as { family?: string } | undefined)?.family;
+    if (!familyName) return [];
+    const sources = MODEL_CATALOG.families?.[familyName]?.credential_sources;
+    if (!sources) return [];
+
+    // Narrow to the backend this particular model runs on. A family can span
+    // backends — Seedance 2.0 goes through MuleRouter while 2.5 goes through
+    // BytePlus — so flattening every backend's keys would call a 2.0 model
+    // ready just because the unrelated 2.5 credential happens to be set.
+    const canonicalId = getCanonicalModeId(modelId) ?? modelId;
+    const runtime = MODEL_CATALOG.modes?.[canonicalId]?.runtime;
+    const backends = runtime ? Object.keys(runtime) : [];
+    const scoped = backends.length > 0
+        ? backends.flatMap((backend) => sources[backend] ?? [])
+        : [];
+
+    // No usable per-backend mapping (older entry, or a backend the family
+    // declares no credential for) — fall back to the family's full set rather
+    // than claiming the model needs nothing.
+    const keys = scoped.length > 0 ? scoped : Object.values(sources).flat();
+    return Array.from(new Set(keys));
+}
+
+/** Whether this model's provider is actually usable with the current config.
+ *
+ * `env` is the GET /config/env payload, which reports an unset key as an empty
+ * string (secrets come back masked, so any non-empty value counts as present).
+ * A model offered in the picker but missing its key fails at the provider only
+ * after the user has committed to the shot — this lets the UI say so up front.
+ */
+export function isModelCredentialReady(
+    modelId: string | null | undefined,
+    env: Record<string, unknown> | null | undefined,
+): boolean {
+    const required = modelRequiresCredentials(modelId);
+    if (required.length === 0) return true;
+    return required.some((key) => {
+        const value = env?.[key];
+        return typeof value === 'string' ? value.trim().length > 0 : Boolean(value);
+    });
+}
+
+export function getReferenceSlotCapacity(modelId?: string | null): number {
+    if (!modelId) return 1;
+    const max = MODEL_CATALOG.models[modelId]?.inputs?.reference_images?.max;
+    return typeof max === 'number' ? max : 1;
 }
 
 export const PROJECT_T2I_MODELS = getVisibleModels('t2i', 'project_settings').map(toSelectableModel);

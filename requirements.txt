@@ -36,6 +36,8 @@ numpy>=1.24.0
 # "我配了阿里云 key 为什么还要 OpenAI"。
 openai>=1.0.0
 
-# Optional Dependencies
-# Uncomment if needed:
-# pillow>=10.0.0
+# 图像格式转码。Vidu 生图接口无论请求什么都只返回 JPEG（`format` 字段会被
+# 静默忽略，已对线上 API 验证过），而本仓库所有生图调用方都按 .png 构造路径
+# 并把该路径直接存进数据模型，所以 Vidu adapter 必须把字节转码成调用方要的
+# 格式，见 src/models/vidu.py 的 _download_vidu_image。
+pillow>=10.0.0

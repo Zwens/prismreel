@@ -23,13 +23,21 @@ import { Users, MapPin, Box, AlertTriangle, Sparkles, Plus, Upload, X, Loader2, 
 import { useTranslations } from "next-intl";
 import { useProjectStore } from "@/store/projectStore";
 import { api } from "@/lib/api";
+import { toast } from "@/store/toastStore";
 import { getAssetUrl } from "@/lib/utils";
 import { useLightbox } from "@/components/shared/preview/LightboxProvider";
 import StepPageHeader, { StepPill } from "@/components/shared/StepPageHeader";
 import PreviewImage from "@/components/shared/preview/PreviewImage";
 import WorkflowActionButton from "@/components/shared/WorkflowActionButton";
 import VoicePickerModal from "./cast/VoicePickerModal";
-import CastWorkbenchModal, { activePolls } from "./cast/CastWorkbenchModal";
+import CastWorkbenchModal, { activePolls, buildTemplate, getTemplateNegative } from "./cast/CastWorkbenchModal";
+import { submitAssetGeneration } from "@/lib/assetGenerationTask";
+import {
+    BATCH_CONCURRENCY,
+    BATCH_VARIANT_COUNT,
+    pickPendingAssets,
+    runWithConcurrencyLimit,
+} from "@/lib/batchGeneration";
 
 type AssetKind = "character" | "scene" | "prop";
 
@@ -75,7 +83,12 @@ function resolvePropImage(p: any): string | undefined {
 export default function Cast() {
     const tStep = useTranslations("stepHeader");
     const t = useTranslations("cast");
+    // Batch generation reuses the workbench's submit path, which reports
+    // progress and errors through the castWorkbench toast strings.
+    const tw = useTranslations("castWorkbench");
     const currentProject = useProjectStore((state) => state.currentProject);
+    const currentSeries = useProjectStore((state) => state.currentSeries);
+    const updateProject = useProjectStore((state) => state.updateProject);
 
     // R2V v2 Phase 5 — add new asset modal (placeholder for full
     // generation flow which lands in a follow-up patch). For now this
@@ -167,11 +180,101 @@ export default function Cast() {
 
     const totalCast = characters.length + scenes.length + props.length;
 
+    /* 「一键生成」— run every pending asset through the same submit path the
+       workbench modal uses, with the modal's default params. Already-generated
+       assets are skipped so a batch never overwrites a kept result. */
+    const pendingAssets = useMemo(
+        () => pickPendingAssets([...characters, ...scenes, ...props]),
+        [characters, scenes, props],
+    );
+    const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null);
+
+    const handleBatchGenerate = async () => {
+        if (!currentProject || batchProgress || pendingAssets.length === 0) return;
+
+        // One refresh for the whole batch — the store can hold entities that
+        // were deleted server-side, which would 404 on submit.
+        let project = currentProject;
+        try {
+            project = await api.getProject(currentProject.id);
+            updateProject(currentProject.id, project);
+        } catch {
+            // Refresh failed — proceed with cached data; per-asset failures
+            // are reported in the summary toast.
+        }
+
+        const artDirection = project.art_direction ?? currentSeries?.art_direction;
+        const styleConfig = artDirection?.style_config;
+        const stylePositive = styleConfig?.positive_prompt || "";
+        const styleNegative = styleConfig?.negative_prompt || "";
+
+        const pools: Record<AssetKind, any[]> = {
+            character: project.characters ?? [],
+            scene: project.scenes ?? [],
+            prop: project.props ?? [],
+        };
+
+        const targets = pendingAssets.filter((item) =>
+            pools[item.kind].some((e: any) => e.id === item.id),
+        );
+        if (targets.length === 0) return;
+
+        let done = 0;
+        setBatchProgress({ done: 0, total: targets.length });
+
+        const factories = targets.map((item) => async () => {
+            const entity = pools[item.kind].find((e: any) => e.id === item.id);
+            try {
+                await submitAssetGeneration({
+                    projectId: project.id,
+                    entityId: item.id,
+                    kind: item.kind,
+                    prompt: buildTemplate(item.kind, entity),
+                    stylePreset: project.style_preset || "realistic",
+                    stylePositive,
+                    negativePrompt: [styleNegative, getTemplateNegative(item.kind)]
+                        .filter(Boolean).join(", "),
+                    applyStyle: true,
+                    batchSize: BATCH_VARIANT_COUNT,
+                    model: project.model_settings?.t2i_model,
+                    aspectRatio: undefined,
+                    t: tw,
+                    getStore: () => ({
+                        updateProject: useProjectStore.getState().updateProject,
+                        addGeneratingTask: useProjectStore.getState().addGeneratingTask,
+                        removeGeneratingTask: useProjectStore.getState().removeGeneratingTask,
+                    }),
+                });
+            } finally {
+                done += 1;
+                setBatchProgress({ done, total: targets.length });
+            }
+        });
+
+        try {
+            const result = await runWithConcurrencyLimit(factories, BATCH_CONCURRENCY);
+            if (result.failed === 0) {
+                toast.success(t("batchDoneAll"), {
+                    body: t("batchDoneBody", { succeeded: result.succeeded }),
+                });
+            } else {
+                toast.error(t("batchDonePartial"), {
+                    body: t("batchDonePartialBody", {
+                        succeeded: result.succeeded,
+                        failed: result.failed,
+                    }),
+                });
+            }
+        } finally {
+            setBatchProgress(null);
+        }
+    };
+
     return (
         <div className="flex h-full w-full flex-col overflow-hidden">
             <StepPageHeader
                 stepNumber={3}
-                englishName="CAST"
+                sectionName={tStep("castSection")}
                 title={tStep("castTitle")}
                 subtitle={tStep("castSubtitle")}
                 pills={totalCast > 0 ? (
@@ -182,6 +285,29 @@ export default function Cast() {
                             value={(currentProject?.characters ?? []).filter((c: any) => c.voice_id).length}
                         />
                     </>
+                ) : null}
+                trailing={pendingAssets.length > 0 || batchProgress ? (
+                    <button
+                        onClick={() => void handleBatchGenerate()}
+                        disabled={!!batchProgress}
+                        aria-label={t("batchGenerateAria")}
+                        className="inline-flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3.5 py-2 text-[0.8125rem] font-medium text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        {batchProgress ? (
+                            <>
+                                <Loader2 size={14} className="animate-spin" />
+                                {t("batchRunning", { done: batchProgress.done, total: batchProgress.total })}
+                            </>
+                        ) : (
+                            <>
+                                <Wand2 size={14} />
+                                {t("batchGenerate")}
+                                <span className="font-mono text-[0.6875rem] text-primary/70">
+                                    {pendingAssets.length}
+                                </span>
+                            </>
+                        )}
+                    </button>
                 ) : null}
             />
 
@@ -711,7 +837,11 @@ function CastCard({ item, onOpenWorkbench }: { item: CastItem; onOpenWorkbench?:
             // Backend returns the updated script - sync to store
             updateProject(currentProject.id, updated);
         } catch (e) {
+            // Swallowing this left the card reading "未绑定音色" with no
+            // hint that anything went wrong — the user just re-picked
+            // the same voice over and over.
             console.error("Failed to bind voice:", e);
+            toast.error(t("voiceBindFailed"));
         }
     };
 

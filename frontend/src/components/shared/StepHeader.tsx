@@ -19,6 +19,7 @@
  */
 import type { ReactNode } from "react";
 import clsx from "clsx";
+import { useLocale } from "next-intl";
 
 export interface StepHeaderProps {
     /** 1-based 当前步骤号；驱动 ghost number / eyebrow / progress current 位置。 */
@@ -28,8 +29,8 @@ export interface StepHeaderProps {
     /** 左侧圆形 chip 里的 icon —— 调用方传 lucide icon，size + stroke 由 chip
      *  样式约束（14px / stroke-1.5），所以 host 直接传 `<Palette />` 即可。 */
     icon: ReactNode;
-    /** 英文 eyebrow 名称（如 "Script" / "Style" / "Storyboard" / "Assembly"）。 */
-    englishName: string;
+    /** 已本地化的 eyebrow 名称（如 "剧本" / "风格定调" / "分镜"）。 */
+    sectionName: string;
     /** 中文标题（如 "脚本编辑器" / "风格定调" / "故事板" / "时间线组装"）。 */
     title: string;
     /** 中文副标题（一行点睛说明该 step 在做什么）。 */
@@ -44,13 +45,14 @@ export default function StepHeader({
     stepNumber,
     totalSteps = 4,
     icon,
-    englishName,
+    sectionName,
     title,
     subtitle,
     trailing,
     className,
 }: StepHeaderProps) {
     const stepStr = String(stepNumber).padStart(2, "0");
+    const isCJK = useLocale() === "zh";
 
     // Progress bar fill 计算：当前 step 之前的所有 segments 完整填满，
     // 当前 step 用 current node。totalSteps=4 时，stepNumber=2 → fill 1/3 段。
@@ -93,11 +95,15 @@ export default function StepHeader({
 
                 {/* Title block */}
                 <div className="flex min-w-0 flex-1 flex-col gap-[2px]">
-                    {/* Eyebrow — 英文 chrome：01 — SCRIPT */}
-                    <span className="mb-[1px] inline-flex items-center gap-2 font-mono text-[0.59375rem] font-normal uppercase leading-tight tracking-[0.2em] text-text-muted">
+                    {/* Eyebrow — 01 — 剧本 / 01 — SCRIPT。中文收紧字距并取消
+                        uppercase：0.2em 字距会把中文词拆散。 */}
+                    <span className={clsx(
+                        "mb-[1px] inline-flex items-center gap-2 font-mono text-[0.59375rem] font-normal leading-tight text-text-muted",
+                        isCJK ? "tracking-[0.08em]" : "uppercase tracking-[0.2em]",
+                    )}>
                         <span className="font-medium text-primary">{stepStr}</span>
                         <span aria-hidden="true" className="h-px w-3 bg-glass-border" />
-                        <span>{englishName}</span>
+                        <span>{sectionName}</span>
                     </span>
                     {/* 中文标题 — Inter Medium 16px (PrismReel display token 上限) */}
                     <span

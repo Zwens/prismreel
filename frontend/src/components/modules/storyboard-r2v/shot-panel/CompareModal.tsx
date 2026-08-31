@@ -16,6 +16,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { Play, Pause, X, Volume2, VolumeX, Lock, Unlock } from "lucide-react";
 import type { VideoTask } from "@/lib/api";
 
@@ -26,6 +27,7 @@ interface CompareModalProps {
 }
 
 export default function CompareModal({ tasks, onClose, resolveUrl }: CompareModalProps) {
+    const t = useTranslations("storyboardR2V");
     const display = (u?: string | null) => (u && resolveUrl ? resolveUrl(u) : u ?? undefined);
     const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
     const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -166,7 +168,7 @@ export default function CompareModal({ tasks, onClose, resolveUrl }: CompareModa
                 ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
-                aria-label="Compare candidates"
+                aria-label={t("compareAria")}
                 onKeyDown={handleTrapTab}
                 className="fixed left-1/2 top-1/2 z-[61] flex h-[88vh] w-[min(1200px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[12px] border border-glass-border bg-surface shadow-[0_24px_60px_-22px_rgba(0,0,0,0.9)] motion-safe:animate-[compareModalIn_240ms_cubic-bezier(0.22,1,0.36,1)_both]"
             >
@@ -194,7 +196,7 @@ export default function CompareModal({ tasks, onClose, resolveUrl }: CompareModa
                         <button
                             type="button"
                             onClick={cycleSolo}
-                            title="Cycle solo audio (S)"
+                            title={t("cycleSoloAudio")}
                             className="btn-tip inline-flex h-8 min-w-[78px] items-center justify-center gap-1 rounded px-2 font-mono text-chrome-sm font-medium uppercase text-text-secondary transition-colors duration-fast ease-out-quart hover:bg-hover-bg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
                         >
                             {soloIndex === null ? (
@@ -208,7 +210,7 @@ export default function CompareModal({ tasks, onClose, resolveUrl }: CompareModa
                             ref={closeBtnRef}
                             type="button"
                             onClick={onClose}
-                            aria-label="Close"
+                            aria-label={t("compareClose")}
                             className="-m-1 grid h-9 w-9 place-items-center rounded text-text-muted transition-colors duration-fast ease-out-quart hover:bg-hover-bg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
                         >
                             <X size={14} aria-hidden="true" />
@@ -244,7 +246,7 @@ export default function CompareModal({ tasks, onClose, resolveUrl }: CompareModa
                                     <span className="text-text-secondary">·</span>
                                     <span className="text-foreground">{task.model || "?"}</span>
                                     {task.is_starred ? (
-                                        <span className="text-status-starred-fg" aria-label="Starred">★</span>
+                                        <span className="text-status-starred-fg" aria-label={t("starredAria")}>★</span>
                                     ) : null}
                                 </div>
                                 {task.label ? (
@@ -274,7 +276,7 @@ export default function CompareModal({ tasks, onClose, resolveUrl }: CompareModa
                             max={1000}
                             value={Math.round(progress * 1000)}
                             onChange={(e) => seekTo(parseInt(e.target.value, 10) / 1000)}
-                            aria-label="Playback position"
+                            aria-label={t("playbackPosAria")}
                             className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-elevated accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
                         />
                     ) : (

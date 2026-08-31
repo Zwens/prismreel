@@ -173,7 +173,7 @@ export default function StoryboardComposer() {
         // Find the previous frame's selected video
         const prevFrame = currentProject.frames[frameIndex - 1];
         if (!prevFrame.selected_video_id) {
-            alert("Previous frame has no selected video.");
+            alert(t("prevFrameNoVideo"));
             return;
         }
 
@@ -181,7 +181,7 @@ export default function StoryboardComposer() {
             (t: any) => t.id === prevFrame.selected_video_id && t.status === "completed"
         );
         if (!prevVideo) {
-            alert("Previous frame's video is not completed yet.");
+            alert(t("prevFrameVideoPending"));
             return;
         }
 
@@ -320,7 +320,7 @@ export default function StoryboardComposer() {
 
         } catch (error) {
             console.error("Render failed:", error);
-            alert("Render failed. See console for details.");
+            alert(t("renderFailed"));
         } finally {
             removeRenderingFrame(frame.id);
         }
@@ -332,7 +332,7 @@ export default function StoryboardComposer() {
                 stepNumber={4}
                 totalSteps={6}
                 icon={<Layout />}
-                englishName="Storyboard Composer"
+                sectionName={tStep("storyboardComposerSection")}
                 title={tStep("storyboardComposerTitle")}
                 subtitle={tStep("storyboardComposerSubtitle")}
                 trailing={(
@@ -441,7 +441,7 @@ export default function StoryboardComposer() {
                                                     {renderingFrames.has(frame.id) ? (
                                                         <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 rounded-lg">
                                                             <Loader2 size={14} className="animate-spin text-white" />
-                                                            <span className="text-xs text-foreground">Generating...</span>
+                                                            <span className="text-xs text-foreground">{t("generating")}</span>
                                                         </div>
                                                     ) : (
                                                         <>
@@ -642,6 +642,7 @@ export default function StoryboardComposer() {
 }
 
 function CreateFrameDialog({ onClose, onCreate, scenes }: { onClose: () => void; onCreate: (data: any) => void | Promise<void>; scenes: any[] }) {
+    const t = useTranslations("storyboard");
     const [action, setAction] = useState("");
     const [dialogue, setDialogue] = useState("");
     const [sceneId, setSceneId] = useState(scenes[0]?.id || "");
@@ -649,11 +650,11 @@ function CreateFrameDialog({ onClose, onCreate, scenes }: { onClose: () => void;
 
     const handleSubmit = async () => {
         if (!action.trim()) {
-            alert("Action description is required");
+            alert(t("actionRequired"));
             return;
         }
         if (!sceneId && scenes.length > 0) {
-            alert("Please select a scene");
+            alert(t("sceneRequired"));
             return;
         }
 
@@ -681,7 +682,7 @@ function CreateFrameDialog({ onClose, onCreate, scenes }: { onClose: () => void;
                 <div className="p-6 border-b border-glass-border flex justify-between items-center bg-surface">
                     <div className="flex items-center gap-3">
                         <Plus className="text-primary" size={20} />
-                        <h2 className="text-lg font-bold text-foreground">Add New Frame</h2>
+                        <h2 className="text-lg font-bold text-foreground">{t("addNewFrame")}</h2>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-hover-bg rounded-lg transition-colors">
                         <X size={20} className="text-text-secondary" />
@@ -690,34 +691,34 @@ function CreateFrameDialog({ onClose, onCreate, scenes }: { onClose: () => void;
 
                 <div className="p-6 space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-2">Scene</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-2">{t("sceneLabel")}</label>
                         <select
                             value={sceneId}
                             onChange={(e) => setSceneId(e.target.value)}
                             className="w-full px-4 py-3 bg-input-bg border border-glass-border rounded-lg text-foreground focus:border-primary/50 focus:outline-none appearance-none"
                         >
-                            <option value="" disabled>Select a scene</option>
+                            <option value="" disabled>{t("selectScene")}</option>
                             {scenes.map((s: any) => (
                                 <option key={s.id} value={s.id}>{s.name}</option>
                             ))}
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-2">Action Description *</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-2">{t("actionLabel")}</label>
                         <textarea
                             value={action}
                             onChange={(e) => setAction(e.target.value)}
-                            placeholder="What is happening in this frame?"
+                            placeholder={t("actionPlaceholder")}
                             rows={3}
                             className="w-full px-4 py-3 bg-input-bg border border-glass-border rounded-lg text-foreground placeholder-text-muted focus:border-primary/50 focus:outline-none resize-none"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-2">Dialogue (Optional)</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-2">{t("dialogueLabel")}</label>
                         <textarea
                             value={dialogue}
                             onChange={(e) => setDialogue(e.target.value)}
-                            placeholder="Character dialogue..."
+                            placeholder={t("dialoguePlaceholder")}
                             rows={2}
                             className="w-full px-4 py-3 bg-input-bg border border-glass-border rounded-lg text-foreground placeholder-text-muted focus:border-primary/50 focus:outline-none resize-none"
                         />
@@ -746,6 +747,7 @@ function CreateFrameDialog({ onClose, onCreate, scenes }: { onClose: () => void;
 }
 
 function ImageWithRetry({ src, alt, className, onClick }: { src: string, alt: string, className?: string, onClick?: (e: React.MouseEvent) => void }) {
+    const t = useTranslations("storyboard");
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
@@ -800,7 +802,7 @@ function ImageWithRetry({ src, alt, className, onClick }: { src: string, alt: st
             />
             {error && retryCount >= 10 && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-500/10 backdrop-blur-sm z-20 p-2 text-center">
-                    <span className="text-xs text-red-400 font-bold">Failed to load</span>
+                    <span className="text-xs text-red-400 font-bold">{t("failedToLoad")}</span>
                     <span className="text-[0.625rem] text-red-400/70 break-all">{src}</span>
                 </div>
             )}

@@ -46,6 +46,16 @@ def _normalized_oss_base_path(oss_base_path: Optional[str] = None) -> str:
     return str(value).strip().strip("'\"/ ")
 
 
+def _as_relative_posix(raw: str) -> str:
+    """Strip leading separators and normalize Windows backslashes to '/'.
+
+    Relative refs persisted on Windows arrive as 'assets\\props\\x.png'
+    (os.path.join output). Every prefix table here is POSIX-shaped, so the
+    separator has to be normalized before any prefix comparison.
+    """
+    return raw.replace("\\", "/").lstrip("/")
+
+
 def classify_media_ref(
     value: str,
     *,
@@ -73,7 +83,7 @@ def classify_media_ref(
     if os.path.isabs(raw):
         return MEDIA_REF_LOCAL_PATH if _is_under(Path(raw), output_root) else MEDIA_REF_UNKNOWN
 
-    relative = raw.lstrip("/")
+    relative = _as_relative_posix(raw)
     if relative.startswith(LOCAL_MEDIA_PREFIXES):
         return MEDIA_REF_LOCAL_PATH
 
@@ -99,7 +109,7 @@ def resolve_local_media_path(value: str, *, project_root: Optional[str] = None) 
         abs_path = Path(raw).resolve()
         return str(abs_path) if _is_under(abs_path, output_root) else None
 
-    relative = raw.lstrip("/")
+    relative = _as_relative_posix(raw)
     if relative.startswith("output/"):
         relative = relative[len("output/") :]
     elif relative.startswith("outputs/"):
@@ -107,6 +117,19 @@ def resolve_local_media_path(value: str, *, project_root: Optional[str] = None) 
 
     abs_path = (output_root / relative).resolve()
     return str(abs_path) if _is_under(abs_path, output_root) else None
+
+
+def to_project_media_ref(abs_path: str, *, root: str = "output") -> str:
+    """Relative, POSIX-separated ref for a file we just wrote under output/.
+
+    Every ref persisted into project state goes through here. os.path.relpath
+    alone yields 'assets\\scenes\\x.png' on Windows, and those refs then
+    travel into OSS object keys, provider request payloads and project files
+    shared across machines — none of which treat a backslash as a separator.
+    Readers normalize defensively too, but the stored form should be correct
+    to begin with.
+    """
+    return os.path.relpath(abs_path, root).replace(os.sep, "/").replace("\\", "/")
 
 
 def is_remote_media_ref(value: str) -> bool:

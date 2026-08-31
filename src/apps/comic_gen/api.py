@@ -1130,6 +1130,10 @@ class EnvConfig(ProviderRoutingConfig):
     KLING_SECRET_KEY: Optional[str] = None
     VIDU_API_KEY: Optional[str] = None
     MULEROUTER_API_KEY: Optional[str] = None
+    # BytePlus ModelArk / Volcano Ark — Seedance 2.5 runs here.
+    ARK_API_KEY: Optional[str] = None
+    ARK_REGION: Optional[str] = None
+    ARK_BASE_URL: Optional[str] = None
     endpoint_overrides: Dict[str, str] = Field(default_factory=dict)
 
 
@@ -1322,24 +1326,22 @@ def update_env_config(config: EnvConfig):
 
 
 
-@app.get("/projects/{script_id}")
-def get_project(script_id: str):
-    """Retrieves a project by ID. When the project belongs to a
-    Series, the response merges series-shared characters / scenes /
-    props on top of the episode-local lists. Each item carries a
-    `source` field ("episode" | "series" | "global") so the frontend can
-    visually distinguish where the asset lives and route writes
-    appropriately (per A2 design decision — shared writes default to
-    the series side; local writes stay episode-side; the helper
-    `_find_asset_with_source` in pipeline routes mutations correctly).
+def merged_project_payload(script) -> dict:
+    """Episode payload with series-shared and global-library assets
+    merged in. Each item carries a `source` field ("episode" | "series"
+    | "global") so the frontend can visually distinguish where the asset
+    lives and route writes appropriately (per A2 design decision —
+    shared writes default to the series side; local writes stay
+    episode-side; the helper `_find_asset_with_source` in pipeline
+    routes mutations correctly).
 
-    Response model dropped from `Script` because the `source` field
-    is a presentation-layer concern (never persisted, derived from
-    container membership at read time)."""
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
+    Every endpoint whose response the frontend feeds back into its
+    project store must go through this — the store shallow-merges the
+    response, so handing back a raw episode Script blanks the cast list
+    for any episode whose assets live series-side.
 
+    `source` is a presentation-layer concern: derived from container
+    membership at read time, never persisted."""
     payload = script.model_dump()
 
     # Episode-local entries always carry source="episode".
@@ -1401,7 +1403,20 @@ def get_project(script_id: str):
                 d = pr.model_dump()
                 d["source"] = "global"
                 payload["props"].append(d)
-    return signed_response(payload)
+    return payload
+
+
+@app.get("/projects/{script_id}")
+def get_project(script_id: str):
+    """Retrieves a project by ID, with series-shared and global assets
+    merged in (see merged_project_payload).
+
+    Response model dropped from `Script` because of the added `source`
+    field."""
+    script = pipeline.get_script(script_id)
+    if not script:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return signed_response(merged_project_payload(script))
 
 
 
@@ -2716,14 +2731,22 @@ class BindVoiceRequest(BaseModel):
     voice_name: str
 
 
-@app.post("/projects/{script_id}/characters/{char_id}/voice", response_model=Script)
+@app.post("/projects/{script_id}/characters/{char_id}/voice")
 def bind_voice(script_id: str, char_id: str, request: BindVoiceRequest):
-    """Binds a voice to a character."""
+    """Binds a voice to a character.
+
+    Works on series-shared characters too, so the response goes through
+    merged_project_payload — the frontend merges it straight into its
+    project store and would otherwise lose the shared cast. Response
+    model dropped from `Script` for the same `source` field reason as
+    GET /projects/{id}."""
     try:
         updated_script = pipeline.bind_voice(script_id, char_id, request.voice_id, request.voice_name)
-        return signed_response(updated_script)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    return signed_response(merged_project_payload(updated_script))
 
 
 class UpdateVoiceParamsRequest(BaseModel):
@@ -3308,8 +3331,6 @@ def generate_dialogue_audio_batch(script_id: str):
         script = pipeline.get_script(script_id)
         if not script:
             raise HTTPException(status_code=404, detail="Script not found")
-        char_lookup = {c.id: c for c in script.characters}
-        char_name_lookup = {c.name.strip().lower(): c for c in script.characters}
         generated = 0
         skipped = 0
         failed = 0
@@ -3321,27 +3342,9 @@ def generate_dialogue_audio_batch(script_id: str):
             )
             if not dialogue_text:
                 continue
-            speaker = None
-            if frame.character_ids:
-                speaker = char_lookup.get(frame.character_ids[0])
-            speaker_name = frame.speaker or (
-                frame.dialogue_structured.speaker if frame.dialogue_structured else None
-            )
-            if not speaker and speaker_name:
-                key = speaker_name.strip().lower()
-                speaker = char_name_lookup.get(key)
-                if not speaker:
-                    for name, char in char_name_lookup.items():
-                        if key in name or name in key:
-                            speaker = char
-                            break
-            if not speaker:
-                # Last resort: frames authored for R2V carry no character_ids and no
-                # speaker name, but embed [characterN:name] reference tags in the
-                # action description. Resolve the speaker from the first such tag.
-                tag_match = re.search(r'\[character\d*:([^\]]+)\]', frame.action_description or "")
-                if tag_match:
-                    speaker = char_name_lookup.get(tag_match.group(1).strip().lower())
+            # Shares one resolver with the single-frame path so both agree on
+            # where a character may live (episode / series / global library).
+            speaker = pipeline.resolve_dialogue_speaker(script, frame)
             if not speaker or not speaker.voice_id:
                 no_voice += 1
                 continue
@@ -3350,10 +3353,22 @@ def generate_dialogue_audio_batch(script_id: str):
                 continue
             try:
                 pipeline.generate_dialogue_line(script_id, frame.id)
-                generated += 1
             except Exception as exc:
                 logger.error(f"[batch_dialogue_audio] frame={frame.id} error={exc}")
                 failed += 1
+                continue
+            # A TTS failure does not raise — generate_dialogue records it on
+            # the frame so the single-frame endpoint can answer 200 and let
+            # the UI show the error inline. "No exception" is therefore not
+            # proof of success; the frame's own outcome is.
+            if frame.audio_error or not frame.audio_url:
+                logger.error(
+                    f"[batch_dialogue_audio] frame={frame.id} "
+                    f"audio_error={frame.audio_error!r}"
+                )
+                failed += 1
+            else:
+                generated += 1
         logger.info(f"[batch_dialogue_audio] script={script_id} generated={generated} skipped={skipped} failed={failed} no_voice={no_voice}")
         script = pipeline.get_script(script_id)
         response_data = script.model_dump() if hasattr(script, 'model_dump') else script.dict()
@@ -3411,6 +3426,10 @@ class UpdateFrameRequest(BaseModel):
     frame_id: str
     image_prompt: Optional[str] = None
     action_description: Optional[str] = None
+    # The storyboard reads a shot's prompt from visual_description when the
+    # frame has been refined, so edits to such a frame have to be writable
+    # here — otherwise they land in action_description and stay shadowed.
+    visual_description: Optional[str] = None
     dialogue: Optional[str] = None
     camera_angle: Optional[str] = None
     scene_id: Optional[str] = None
@@ -3429,6 +3448,7 @@ def update_frame(script_id: str, request: UpdateFrameRequest):
             request.frame_id,
             image_prompt=request.image_prompt,
             action_description=request.action_description,
+            visual_description=request.visual_description,
             dialogue=request.dialogue,
             camera_angle=request.camera_angle,
             scene_id=request.scene_id,
@@ -4114,6 +4134,7 @@ SECRET_FIELDS = {
     "KLING_SECRET_KEY",
     "VIDU_API_KEY",
     "MULEROUTER_API_KEY",
+    "ARK_API_KEY",
 }
 
 # Bullet sentinel: never appears in a real key, so the save path can detect an
@@ -4165,7 +4186,10 @@ def get_env_config():
             "KLING_SECRET_KEY": _mask_secret(os.getenv("KLING_SECRET_KEY")),
             "VIDU_API_KEY": _mask_secret(os.getenv("VIDU_API_KEY")),
             "MULEROUTER_API_KEY": _mask_secret(os.getenv("MULEROUTER_API_KEY")),
+            "ARK_API_KEY": _mask_secret(os.getenv("ARK_API_KEY")),
             # Non-secret config.
+            "ARK_REGION": os.getenv("ARK_REGION", ""),
+            "ARK_BASE_URL": os.getenv("ARK_BASE_URL", ""),
             "OSS_BUCKET_NAME": os.getenv("OSS_BUCKET_NAME", ""),
             "OSS_ENDPOINT": os.getenv("OSS_ENDPOINT", ""),
             "OSS_BASE_PATH": os.getenv("OSS_BASE_PATH", ""),

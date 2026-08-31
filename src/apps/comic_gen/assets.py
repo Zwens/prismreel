@@ -4,8 +4,9 @@ import time
 from typing import Dict, Any, List
 from urllib.parse import quote
 from .models import Character, Scene, Prop, GenerationStatus, ImageAsset, ImageVariant, MAX_VARIANTS_PER_ASSET
-from ...models.image import WanxImageModel, ImageGenModel
+from ...models.image import WanxImageModel, ImageGenModel, resolve_image_adapter
 from ...utils import get_logger
+from ...utils.media_refs import to_project_media_ref
 from ...utils.oss_utils import is_object_key
 
 logger = get_logger(__name__)
@@ -50,17 +51,11 @@ class AssetGenerator:
     def __init__(self, config: Dict[str, Any] = None):
         self.config = config or {}
         self.model = WanxImageModel(self.config.get('model', {}))
-        self._mulerouter_image_model = None
         self.output_dir = self.config.get('output_dir', 'output/assets')
 
     def _get_model_for(self, model_name: str) -> "ImageGenModel":
         """Route to the correct image adapter based on model name."""
-        if model_name and model_name.startswith("gpt-image"):
-            if self._mulerouter_image_model is None:
-                from ...models.mulerouter import MuleRouterImageModel
-                self._mulerouter_image_model = MuleRouterImageModel({})
-            return self._mulerouter_image_model
-        return self.model
+        return resolve_image_adapter(model_name, self.model)
 
     def generate_character(self, character: Character, generation_type: str = "all", prompt: str = "", positive_prompt: str = None, negative_prompt: str = "", batch_size: int = 1, model_name: str = None, i2i_model_name: str = None, size: str = None) -> Character:
         """
@@ -99,7 +94,7 @@ class AssetGenerator:
                             size=effective_size
                         )
 
-                        rel_path = os.path.relpath(sheet_path, "output")
+                        rel_path = to_project_media_ref(sheet_path)
 
                         if not character.reference_sheet:
                             from .models import AssetUnit
@@ -231,7 +226,7 @@ class AssetGenerator:
                         
                         self._get_model_for(effective_model_name).generate(effective_generation_prompt, fullbody_path, ref_image_path=ref_image_path, negative_prompt=negative_prompt, model_name=effective_model_name, size=effective_size)
                         
-                        rel_fullbody_path = os.path.relpath(fullbody_path, "output")
+                        rel_fullbody_path = to_project_media_ref(fullbody_path)
                         
                         # Store in ImageAsset
                         if not character.full_body_asset:
@@ -378,7 +373,7 @@ class AssetGenerator:
                         
                         self._get_model_for(i2i_model_name).generate(generation_prompt, sheet_path, ref_image_path=fullbody_path, negative_prompt=sheet_negative, ref_strength=0.8, model_name=i2i_model_name)
                         
-                        rel_sheet_path = os.path.relpath(sheet_path, "output")
+                        rel_sheet_path = to_project_media_ref(sheet_path)
                         
                         if not character.three_view_asset:
                             from .models import ImageAsset
@@ -456,7 +451,7 @@ class AssetGenerator:
                         
                         self._get_model_for(i2i_model_name).generate(generation_prompt, avatar_path, ref_image_path=fullbody_path, negative_prompt=negative_prompt, ref_strength=0.8, model_name=i2i_model_name)
                         
-                        rel_avatar_path = os.path.relpath(avatar_path, "output")
+                        rel_avatar_path = to_project_media_ref(avatar_path)
                         
                         if not character.headshot_asset:
                             from .models import ImageAsset
@@ -548,7 +543,7 @@ class AssetGenerator:
                 
                 image_path, _ = self._get_model_for(model_name).generate(prompt, output_path, negative_prompt=negative_prompt, model_name=model_name, size=effective_size)
                 
-                rel_path = os.path.relpath(output_path, "output")
+                rel_path = to_project_media_ref(output_path)
                 
                 if not scene.image_asset:
                     from .models import ImageAsset
@@ -610,7 +605,7 @@ class AssetGenerator:
                 
                 image_path, _ = self._get_model_for(model_name).generate(prompt, output_path, negative_prompt=negative_prompt, model_name=model_name, size=effective_size)
                 
-                rel_path = os.path.relpath(output_path, "output")
+                rel_path = to_project_media_ref(output_path)
                 
                 if not prop.image_asset:
                     from .models import ImageAsset

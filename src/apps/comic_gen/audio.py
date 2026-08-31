@@ -6,6 +6,7 @@ import hashlib
 from typing import Dict, Any, List, Optional
 from .models import StoryboardFrame, Character, GenerationStatus
 from ...utils import get_logger
+from ...utils.media_refs import to_project_media_ref
 from ...audio.tts import TTSProcessor
 
 logger = get_logger(__name__)
@@ -279,7 +280,7 @@ class AudioGenerator:
                 family_override=family_override,
             )
 
-            rel_path = os.path.relpath(output_path, "output")
+            rel_path = to_project_media_ref(output_path)
             frame.audio_url = rel_path
             frame.audio_error = None
             frame.status = GenerationStatus.COMPLETED
@@ -319,7 +320,7 @@ class AudioGenerator:
                 f.write(b'dummy sfx content')
                 
             # Store relative path for frontend serving
-            rel_path = os.path.relpath(output_path, "output")
+            rel_path = to_project_media_ref(output_path)
             frame.sfx_url = rel_path
             frame.status = GenerationStatus.COMPLETED
             
@@ -344,7 +345,7 @@ class AudioGenerator:
         with open(output_path, 'wb') as f:
             f.write(b'dummy v2a sfx content')
             
-        frame.sfx_url = os.path.relpath(output_path, "output")
+        frame.sfx_url = to_project_media_ref(output_path)
         return frame
 
     def generate_bgm(self, frame: StoryboardFrame) -> StoryboardFrame:
@@ -359,5 +360,5 @@ class AudioGenerator:
         with open(output_path, 'wb') as f:
             f.write(b'dummy bgm content')
             
-        frame.bgm_url = os.path.relpath(output_path, "output")
+        frame.bgm_url = to_project_media_ref(output_path)
         return frame

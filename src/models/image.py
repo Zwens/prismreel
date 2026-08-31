@@ -17,6 +17,86 @@ from ..utils.provider_registry import resolve_provider_backend
 
 logger = get_logger(__name__)
 
+
+# Provider error codes that need an actionable explanation rather than the raw
+# English message — these are account-side problems the user must fix in a
+# console, and retrying will never help.
+_ACTIONABLE_PROVIDER_ERRORS = (
+    (
+        "AllocationQuota.FreeTierOnly",
+        "阿里云百炼免费额度已用完，且账号开启了「仅使用免费额度」模式。"
+        "请前往百炼控制台 https://bailian.console.aliyun.com/ 充值，"
+        "或关闭「仅使用免费额度」开关以转为按量付费。",
+    ),
+    (
+        "AllocationQuota",
+        "阿里云百炼额度不足。请前往百炼控制台 https://bailian.console.aliyun.com/ 充值后重试。",
+    ),
+    (
+        "InvalidApiKey",
+        "DASHSCOPE_API_KEY 无效或已失效。请在设置页重新填写。",
+    ),
+    (
+        "Arrearage",
+        "阿里云账号已欠费，模型调用被拒绝。请前往阿里云控制台结清欠款。",
+    ),
+    (
+        "Throttling",
+        "阿里云百炼调用频率超限，请稍后重试或降低并发。",
+    ),
+)
+
+
+def explain_provider_error(status_code: int, body_text: str) -> str:
+    """Turn a provider error body into an actionable, user-facing message.
+
+    Falls back to the provider's own message when we have no specific advice,
+    so nothing is ever swallowed.
+    """
+    code = ""
+    message = ""
+    try:
+        import json as _json
+        data = _json.loads(body_text) if body_text else {}
+        if isinstance(data, dict):
+            code = str(data.get("code") or "")
+            message = str(data.get("message") or "")
+    except (ValueError, TypeError):
+        pass
+
+    for prefix, hint in _ACTIONABLE_PROVIDER_ERRORS:
+        if code.startswith(prefix):
+            return f"{hint}（HTTP {status_code} {code}）"
+
+    detail = message or (body_text or "")[:300]
+    return f"HTTP {status_code}: {detail}" if detail else f"HTTP {status_code}"
+
+
+def _post_with_connection_retry(url: str, *, max_retries: int = 4, **kwargs) -> requests.Response:
+    """POST with exponential backoff on transient connection failures.
+
+    The link to DashScope can be reset mid-TLS-handshake (WinError 10054); a
+    single blip used to fail an entire character generation. Only
+    ConnectionError is retried — not ReadTimeout, since a timeout may mean the
+    request did reach the server and retrying would create a duplicate task.
+    """
+    last_exc = None
+    for attempt in range(max_retries):
+        try:
+            return requests.post(url, **kwargs)
+        except requests.exceptions.ConnectionError as exc:
+            last_exc = exc
+            if attempt == max_retries - 1:
+                break
+            wait = min(2 ** attempt * 2, 20)
+            logger.warning(
+                f"Connection error posting to {url} ({exc}); "
+                f"retrying in {wait}s (attempt {attempt + 1}/{max_retries})"
+            )
+            time.sleep(wait)
+    raise last_exc
+
+
 class ImageGenModel(ABC):
     """Abstract base class for image generation models."""
     
@@ -109,8 +189,22 @@ class WanxImageModel(ImageGenModel):
             elif final_model_name == 'wan2.6-image':
                 # wan2.6-image for I2I (requires reference images)
                 image_url = self._generate_wan26_image_http(prompt, size, n, negative_prompt, all_ref_paths)
-            elif final_model_name.startswith('wan2.7-image') or final_model_name.startswith('qwen-image'):
-                # Wan2.7-image / Qwen-image via DashScope async HTTP API
+            elif final_model_name.startswith('qwen-image'):
+                # qwen-image is served synchronously from a different endpoint
+                # than wan2.7-image — see _generate_qwen_image_sync.
+                image_url = self._generate_qwen_image_sync(
+                    prompt=prompt,
+                    model_name=final_model_name,
+                    size=size,
+                    n=n,
+                    negative_prompt=negative_prompt,
+                    ref_image_paths=all_ref_paths,
+                    seed=kwargs.pop('seed', None),
+                    prompt_extend=kwargs.pop('prompt_extend', True),
+                    watermark=kwargs.pop('watermark', False),
+                )
+            elif final_model_name.startswith('wan2.7-image'):
+                # Wan2.7-image via DashScope async HTTP API
                 image_url = self._generate_dashscope_image_http(
                     prompt=prompt,
                     model_name=final_model_name,
@@ -143,29 +237,24 @@ class WanxImageModel(ImageGenModel):
             logger.error(traceback.format_exc())
             raise
 
-    def _generate_dashscope_image_http(
+    def _build_image_payload(
         self,
+        *,
         prompt: str,
         model_name: str,
-        size: str = "1280*1280",
-        n: int = 1,
+        size: str,
+        n: int,
         negative_prompt: str = None,
         ref_image_paths: list = None,
         seed: int = None,
         prompt_extend: bool = True,
         watermark: bool = False,
-    ) -> str:
-        """Generate image using Wan2.7-image / Qwen-image via DashScope async HTTP API."""
-        base = get_provider_base_url("DASHSCOPE")
-        create_url = f"{base}/api/v1/services/aigc/image-generation/generation"
+    ) -> Dict[str, Any]:
+        """Build the shared multimodal request body.
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-            "X-DashScope-Async": "enable",
-        }
-
-        # Build content array with optional reference images and prompt text
+        wan2.7-image and qwen-image take an identical payload; only the endpoint
+        and the sync/async transport differ between them.
+        """
         content = []
         if ref_image_paths:
             for path in ref_image_paths[:9]:
@@ -197,19 +286,118 @@ class WanxImageModel(ImageGenModel):
         if seed:
             payload["parameters"]["seed"] = seed
 
+        return payload
+
+    def _generate_qwen_image_sync(
+        self,
+        prompt: str,
+        model_name: str,
+        size: str = "1280*1280",
+        n: int = 1,
+        negative_prompt: str = None,
+        ref_image_paths: list = None,
+        seed: int = None,
+        prompt_extend: bool = True,
+        watermark: bool = False,
+    ) -> str:
+        """Generate an image with the qwen-image family.
+
+        Unlike wan2.7-image, qwen-image is served from multimodal-generation and
+        rejects the async header ("current user api does not support asynchronous
+        calls"); calling it on the async image-generation endpoint fails with
+        "url error". It answers synchronously with the image URL, so there is no
+        task to poll. Verified against the live API on 2026-08-01.
+        """
+        base = get_provider_base_url("DASHSCOPE")
+        create_url = f"{base}/api/v1/services/aigc/multimodal-generation/generation"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+        }
+
+        payload = self._build_image_payload(
+            prompt=prompt,
+            model_name=model_name,
+            size=size,
+            n=n,
+            negative_prompt=negative_prompt,
+            ref_image_paths=ref_image_paths,
+            seed=seed,
+            prompt_extend=prompt_extend,
+            watermark=watermark,
+        )
+
+        logger.info(f"Calling {model_name} HTTP API (sync)...")
+        # Image synthesis takes tens of seconds and returns in one shot, so the
+        # read timeout has to cover the whole generation, not just a handshake.
+        response = _post_with_connection_retry(
+            create_url, headers=headers, json=payload, timeout=300
+        )
+
+        logger.info(f"Sync generation response status: {response.status_code}")
+        if response.status_code != 200:
+            raise RuntimeError(
+                f"{model_name} 调用失败 — {explain_provider_error(response.status_code, response.text)}"
+            )
+
+        result = response.json()
+        choices = result.get("output", {}).get("choices", [])
+        if not choices:
+            raise RuntimeError(f"No choices in {model_name} response: {result}")
+
+        for item in choices[0].get("message", {}).get("content", []):
+            if isinstance(item, dict) and item.get("image"):
+                return item["image"]
+
+        raise RuntimeError(f"No image in {model_name} response: {result}")
+
+    def _generate_dashscope_image_http(
+        self,
+        prompt: str,
+        model_name: str,
+        size: str = "1280*1280",
+        n: int = 1,
+        negative_prompt: str = None,
+        ref_image_paths: list = None,
+        seed: int = None,
+        prompt_extend: bool = True,
+        watermark: bool = False,
+    ) -> str:
+        """Generate image using Wan2.7-image / Qwen-image via DashScope async HTTP API."""
+        base = get_provider_base_url("DASHSCOPE")
+        create_url = f"{base}/api/v1/services/aigc/image-generation/generation"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+            "X-DashScope-Async": "enable",
+        }
+
+        payload = self._build_image_payload(
+            prompt=prompt,
+            model_name=model_name,
+            size=size,
+            n=n,
+            negative_prompt=negative_prompt,
+            ref_image_paths=ref_image_paths,
+            seed=seed,
+            prompt_extend=prompt_extend,
+            watermark=watermark,
+        )
+
         logger.info(f"Calling {model_name} HTTP API (async)...")
         logger.info(f"Payload: {payload}")
 
         # Step 1: Create task
-        response = requests.post(create_url, headers=headers, json=payload, timeout=120)
+        response = _post_with_connection_retry(create_url, headers=headers, json=payload, timeout=120)
 
         logger.info(f"Create task response status: {response.status_code}")
         logger.info(f"Create task response body: {response.text[:500]}")
 
         if response.status_code != 200:
-            error_data = response.json() if response.text else {}
-            error_msg = error_data.get('message', response.text)
-            raise RuntimeError(f"{model_name} task creation failed: {error_msg}")
+            raise RuntimeError(
+                f"{model_name} 调用失败 — {explain_provider_error(response.status_code, response.text)}"
+            )
 
         result = response.json()
         task_id = result.get('output', {}).get('task_id')
@@ -232,7 +420,13 @@ class WanxImageModel(ImageGenModel):
             time.sleep(poll_interval)
             elapsed += poll_interval
 
-            poll_response = requests.get(poll_url, headers=poll_headers, timeout=30)
+            # The task is already created and billed, so a dropped connection
+            # must not discard it — keep polling until max_wait_time.
+            try:
+                poll_response = requests.get(poll_url, headers=poll_headers, timeout=30)
+            except requests.RequestException as exc:
+                logger.warning(f"Poll request failed ({exc}); retrying (task {task_id})")
+                continue
 
             if poll_response.status_code != 200:
                 logger.warning(f"Poll request failed: {poll_response.status_code}")
@@ -403,15 +597,15 @@ class WanxImageModel(ImageGenModel):
         logger.info(f"Payload: {payload}")
         
         # Step 1: Create task
-        response = requests.post(create_url, headers=headers, json=payload, timeout=120)  # 2 minutes for task creation
+        response = _post_with_connection_retry(create_url, headers=headers, json=payload, timeout=120)  # 2 minutes for task creation
         
         logger.info(f"Create task response status: {response.status_code}")
         logger.info(f"Create task response body: {response.text[:500]}")
         
         if response.status_code != 200:
-            error_data = response.json() if response.text else {}
-            error_msg = error_data.get('message', response.text)
-            raise RuntimeError(f"Wan 2.6 Image task creation failed: {error_msg}")
+            raise RuntimeError(
+                f"Wan 2.6 Image 调用失败 — {explain_provider_error(response.status_code, response.text)}"
+            )
         
         result = response.json()
         task_id = result.get('output', {}).get('task_id')
@@ -673,3 +867,55 @@ class WanxImageModel(ImageGenModel):
             if os.path.exists(temp_path):
                 os.remove(temp_path)
             raise
+
+
+# ---------------------------------------------------------------------------
+# Provider routing for image generation
+# ---------------------------------------------------------------------------
+
+# Adapters are stateless and cheap to keep around, so one instance per provider
+# is shared across the asset / storyboard / playground call sites.
+_IMAGE_ADAPTER_CACHE: Dict[str, ImageGenModel] = {}
+
+
+def _image_provider_for(model_name: str) -> str:
+    """Which provider serves this image model id, or '' for the default one."""
+    name = (model_name or "").strip().lower()
+    if not name:
+        return ""
+    if name.startswith("gpt-image"):
+        return "mulerouter"
+    # Imported lazily: src.models.vidu imports ImageGenModel from this module.
+    from .vidu import is_vidu_image_model
+    if is_vidu_image_model(name):
+        return "vidu"
+    return ""
+
+
+def resolve_image_adapter(model_name: str, default_adapter: ImageGenModel = None) -> ImageGenModel:
+    """Route a catalog image model id to the adapter that can actually run it.
+
+    Every image entry point (assets, storyboard, playground) shares this so a
+    new image provider is one branch here instead of one branch per call site.
+    Anything unrecognized falls through to ``default_adapter`` (DashScope/Wanx),
+    preserving the previous behavior for wan / qwen-image ids.
+    """
+    provider = _image_provider_for(model_name)
+    if not provider:
+        return default_adapter
+
+    cached = _IMAGE_ADAPTER_CACHE.get(provider)
+    if cached is not None:
+        return cached
+
+    if provider == "mulerouter":
+        from .mulerouter import MuleRouterImageModel
+        cached = MuleRouterImageModel({})
+    elif provider == "vidu":
+        from .vidu import ViduImageModel
+        cached = ViduImageModel({})
+    else:  # pragma: no cover - _image_provider_for only returns the above
+        return default_adapter
+
+    _IMAGE_ADAPTER_CACHE[provider] = cached
+    return cached

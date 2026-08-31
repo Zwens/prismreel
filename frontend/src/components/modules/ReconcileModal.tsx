@@ -162,7 +162,7 @@ export default function ReconcileModal({ isOpen, scriptId, onClose, onApplied }:
                             </div>
                             <button
                                 onClick={onClose}
-                                aria-label="Close"
+                                aria-label={t("close")}
                                 className="p-2 hover:bg-hover-bg rounded-lg text-text-muted hover:text-foreground transition-colors"
                             >
                                 <X size={16} />

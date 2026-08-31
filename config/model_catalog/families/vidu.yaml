@@ -18,6 +18,8 @@ supported_modalities:
   - t2v
   - i2v
   - r2v
+  - t2i
+  - i2i
 transport:
   image_input_mode:
     dashscope: dashscope_image_to_video
@@ -91,6 +93,8 @@ models:
         runtime:
           dashscope:
             api_model_id: vidu/viduq3-mix_reference2video
+          vendor:
+            api_model_id: viduq3-mix
         ui:
           selection_group: r2v
           visible_in: [project_settings, series_settings, video_sidebar, global_settings]
@@ -172,6 +176,8 @@ models:
         runtime:
           dashscope:
             api_model_id: vidu/viduq3-turbo_reference2video
+          vendor:
+            api_model_id: viduq3-turbo
         ui:
           selection_group: r2v
           visible_in: [project_settings, series_settings, video_sidebar, global_settings]
@@ -194,3 +200,118 @@ models:
           reference_images:
             max: 7
             reference_type: image
+
+  # Vendor-only: Bailian does not proxy this model, so it has no dashscope
+  # runtime. Requires VIDU_PROVIDER_MODE=vendor + VIDU_API_KEY.
+  - id: vidu/viduq3-drama-video
+    display_name: Vidu Q3 Drama
+    description: "Vidu Q3 Drama — reference-to-video tuned for short-form drama, 9:16 by default. Requires VIDU_PROVIDER_MODE=vendor; Bailian does not proxy this model."
+    status: active
+    release_stage: stable
+    runtime:
+      vendor:
+        gateway: vidu
+    docs:
+      context_hub_doc_ids:
+        - vidu/vendor-api
+    modes:
+      r2v:
+        legacy_id: viduq3-drama-r2v
+        display_name: Vidu Q3 Drama R2V
+        description: "Reference-to-video for short drama, vertical 9:16 by default. Vendor-only: needs VIDU_PROVIDER_MODE=vendor + VIDU_API_KEY."
+        capabilities: [r2v]
+        runtime:
+          vendor:
+            api_model_id: viduq3-drama
+        ui:
+          selection_group: r2v
+          visible_in: [project_settings, series_settings, video_sidebar, global_settings]
+          order: 65
+        # Verified against the live API: it rejects anything outside 2-15 with
+        # "duration only support between 2 to 15".
+        duration:
+          type: slider
+          min: 2
+          max: 15
+          step: 1
+          default: 5
+        params:
+          resolution:
+            options: [540p, 720p, 1080p]
+            default: 720p
+          seed: true
+          negativePrompt: false
+          promptExtend: false
+          watermark: true
+        inputs:
+          reference_images:
+            max: 7
+            reference_type: image
+
+  # --- Image generation (Vidu-Q series, O-protocol sync endpoint) ---
+  # POST /ent/v2/open/reference2image — synchronous, returns the image URL
+  # directly (no task polling, unlike every Vidu video endpoint).
+  # Vendor-only: Bailian does not proxy Vidu image generation, so these models
+  # require VIDU_PROVIDER_MODE=vendor + VIDU_API_KEY regardless of the family
+  # default backend. See docs/api-reference/vidu-reference2image.md.
+  - id: vidu/vidu-q3-lite-image
+    display_name: Vidu Q3 Lite Image
+    description: "Vidu Q3 Lite — cheapest per-call image generation (1K only, 8 credits/image). Vendor-only: requires VIDU_PROVIDER_MODE=vendor."
+    status: active
+    release_stage: stable
+    capabilities: [t2i, i2i]
+    runtime:
+      vendor:
+        gateway: vidu
+        api_model_id: q3-lite
+    docs:
+      context_hub_doc_ids:
+        - vidu/vendor-api
+    ui:
+      selection_group: image
+      visible_in: [project_settings, series_settings, global_settings]
+      order: 96
+      badges: [new]
+    params:
+      size:
+        options: ["1024x1024", "1376x768", "768x1376", "1200x896", "896x1200", "2192x928"]
+        default: "768x1376"
+      negativePrompt: false
+      seed: false
+      promptExtend: false
+      watermark: false
+    inputs:
+      reference_images:
+        max: 7
+        reference_type: image
+
+  - id: vidu/vidu-q3-fast-image
+    display_name: Vidu Q3 Fast Image
+    description: "Vidu Q3 Fast — higher quality image generation with 1K/2K/4K output. Vendor-only: requires VIDU_PROVIDER_MODE=vendor."
+    status: active
+    release_stage: stable
+    capabilities: [t2i, i2i]
+    runtime:
+      vendor:
+        gateway: vidu
+        api_model_id: q3-fast
+    docs:
+      context_hub_doc_ids:
+        - vidu/vendor-api
+    ui:
+      selection_group: image
+      visible_in: [project_settings, series_settings, global_settings]
+      order: 97
+      badges: [new]
+    params:
+      size:
+        options: ["1024x1024", "1376x768", "768x1376", "1200x896", "896x1200", "2192x928", "2048x2048", "2752x1536", "1536x2752", "4384x1872", "4800x3584", "3584x4800"]
+        default: "768x1376"
+      negativePrompt: false
+      seed: false
+      promptExtend: false
+      watermark: false
+    inputs:
+      reference_images:
+        max: 7
+        reference_type: image

@@ -182,7 +182,7 @@ export default function ConsistencyVault() {
             updateProject(currentProject.id, updatedProject);
         } catch (error) {
             console.error("Failed to delete asset:", error);
-            alert("Failed to delete asset");
+            alert(tv("deleteAssetFailed"));
         }
     };
 
@@ -204,7 +204,7 @@ export default function ConsistencyVault() {
             setIsCreateDialogOpen(false);
         } catch (error) {
             console.error("Failed to create asset:", error);
-            alert("Failed to create asset");
+            alert(tv("createAssetFailed"));
         }
     };
 
@@ -303,7 +303,7 @@ export default function ConsistencyVault() {
 
     const handleDeleteVideo = async (assetId: string, type: string, videoId: string) => {
         if (!currentProject) return;
-        if (!confirm("Are you sure you want to delete this video? This action cannot be undone.")) return;
+        if (!confirm(tv("confirmDeleteVideo"))) return;
 
         try {
             await api.deleteAssetVideo(currentProject.id, type, assetId, videoId);
@@ -311,7 +311,7 @@ export default function ConsistencyVault() {
             updateProject(currentProject.id, updatedProject);
         } catch (error: any) {
             console.error("Failed to delete video:", error);
-            alert(`Failed to delete video: ${error.message}`);
+            alert(tv("deleteVideoFailed", { error: error.message }));
         }
     };
 
@@ -364,7 +364,7 @@ export default function ConsistencyVault() {
                 stepNumber={3}
                 totalSteps={6}
                 icon={<Users />}
-                englishName="Asset Library"
+                sectionName={tStep("vaultSection")}
                 title={tStep("vaultTitle")}
                 subtitle={tStep("vaultSubtitle")}
             />
@@ -375,21 +375,21 @@ export default function ConsistencyVault() {
                         active={activeTab === "character"}
                         onClick={() => setActiveTab("character")}
                         icon={<User size={14} />}
-                        label="Characters"
+                        label={tv("characters")}
                         count={currentProject?.characters?.length || 0}
                     />
                     <TabButton
                         active={activeTab === "scene"}
                         onClick={() => setActiveTab("scene")}
                         icon={<MapPin size={14} />}
-                        label="Scenes"
+                        label={tv("scenes")}
                         count={currentProject?.scenes?.length || 0}
                     />
                     <TabButton
                         active={activeTab === "prop"}
                         onClick={() => setActiveTab("prop")}
                         icon={<Box size={14} />}
-                        label="Props"
+                        label={tv("props")}
                         count={currentProject?.props?.length || 0}
                     />
                 </div>
@@ -457,7 +457,9 @@ export default function ConsistencyVault() {
                         >
                             <div className="flex flex-col items-center gap-3 text-text-secondary group-hover:text-primary transition-colors">
                                 <Plus size={40} />
-                                <span className="text-sm font-medium">Add {activeTab}</span>
+                                <span className="text-sm font-medium">
+                                    {tv(activeTab === "character" ? "addCharacter" : activeTab === "scene" ? "addScene" : "addProp")}
+                                </span>
                             </div>
                         </motion.div>
                     </div>
@@ -537,6 +539,8 @@ export default function ConsistencyVault() {
 }
 
 function CharacterDetailModal({ asset, type, onClose, onUpdateDescription, onGenerate, isGenerating, stylePrompt = "", styleNegativePrompt = "", onGenerateVideo, onDeleteVideo, isGeneratingVideo }: any) {
+    const tv = useTranslations("vault");
+    const tc = useTranslations("common");
     const [description, setDescription] = useState(asset.description);
     const [isEditing, setIsEditing] = useState(false);
     const currentProject = useProjectStore((state) => state.currentProject);
@@ -662,10 +666,10 @@ function CharacterDetailModal({ asset, type, onClose, onUpdateDescription, onGen
                         {/* Description */}
                         <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                                <label className="text-sm font-bold text-text-secondary uppercase">Description</label>
+                                <label className="text-sm font-bold text-text-secondary uppercase">{tv("descriptionLabel")}</label>
                                 {!isEditing && (
                                     <button onClick={() => setIsEditing(true)} className="text-xs text-primary hover:underline">
-                                        Edit
+                                        {tc("edit")}
                                     </button>
                                 )}
                             </div>
@@ -677,8 +681,8 @@ function CharacterDetailModal({ asset, type, onClose, onUpdateDescription, onGen
                                         className="w-full h-32 bg-input-bg border border-glass-border rounded-lg p-3 text-sm text-text-secondary resize-none focus:border-primary focus:outline-none"
                                     />
                                     <div className="flex justify-end gap-2">
-                                        <button onClick={() => { setIsEditing(false); setDescription(asset.description); }} className="px-3 py-1.5 text-xs text-text-secondary hover:text-foreground">Cancel</button>
-                                        <button onClick={handleSave} className="px-3 py-1.5 bg-primary text-white text-xs rounded hover:bg-primary/90">Save Description</button>
+                                        <button onClick={() => { setIsEditing(false); setDescription(asset.description); }} className="px-3 py-1.5 text-xs text-text-secondary hover:text-foreground">{tc("cancel")}</button>
+                                        <button onClick={handleSave} className="px-3 py-1.5 bg-primary text-white text-xs rounded hover:bg-primary/90">{tv("saveDescription")}</button>
                                     </div>
                                 </div>
                             ) : (
@@ -691,12 +695,12 @@ function CharacterDetailModal({ asset, type, onClose, onUpdateDescription, onGen
                         {/* Video Prompt (Only visible in Video Tab) */}
                         {activeTab === "video" && (
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-text-secondary uppercase">Video Prompt</label>
+                                <label className="text-sm font-bold text-text-secondary uppercase">{tv("videoPromptLabel")}</label>
                                 <textarea
                                     value={videoPrompt}
                                     onChange={(e) => setVideoPrompt(e.target.value)}
                                     className="w-full h-24 bg-input-bg border border-glass-border rounded-lg p-3 text-sm text-text-secondary resize-none focus:border-primary focus:outline-none"
-                                    placeholder="Describe the motion..."
+                                    placeholder={tv("videoPromptPlaceholder")}
                                 />
                             </div>
                         )}
@@ -704,7 +708,7 @@ function CharacterDetailModal({ asset, type, onClose, onUpdateDescription, onGen
                         {/* Style Control (Only visible in Image Tab) */}
                         {activeTab === "image" && (
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-text-secondary uppercase">Style Settings</label>
+                                <label className="text-sm font-bold text-text-secondary uppercase">{tv("styleSettings")}</label>
                                 <div className="bg-glass rounded-lg p-3 border border-border-subtle">
                                     <div className="flex items-center gap-2 mb-2">
                                         <input
@@ -715,13 +719,13 @@ function CharacterDetailModal({ asset, type, onClose, onUpdateDescription, onGen
                                             className="rounded border-gray-600 bg-gray-700 text-primary focus:ring-primary"
                                         />
                                         <label htmlFor="applyStyleModal" className="text-sm font-bold text-text-secondary cursor-pointer select-none">
-                                            Apply Art Direction Style
+                                            {tv("applyArtStyle")}
                                         </label>
                                     </div>
 
                                     {stylePrompt && (
                                         <div className="text-xs text-text-muted font-mono bg-surface p-2 rounded border border-border-subtle">
-                                            <span className="text-primary font-bold">Style:</span> {stylePrompt}
+                                            <span className="text-primary font-bold">{tv("styleTag")}</span> {stylePrompt}
                                         </div>
                                     )}
                                 </div>
@@ -735,7 +739,7 @@ function CharacterDetailModal({ asset, type, onClose, onUpdateDescription, onGen
                                     onClick={() => setShowAdvanced(!showAdvanced)}
                                     className="flex items-center gap-2 text-xs font-bold text-text-muted hover:text-foreground transition-colors uppercase"
                                 >
-                                    <span>Advanced Settings (Negative Prompt)</span>
+                                    <span>{tv("advancedSettings")}</span>
                                     <ChevronRight size={12} className={`transform transition-transform ${showAdvanced ? 'rotate-90' : ''}`} />
                                 </button>
 
@@ -751,7 +755,7 @@ function CharacterDetailModal({ asset, type, onClose, onUpdateDescription, onGen
                                                 value={negativePrompt}
                                                 onChange={(e) => setNegativePrompt(e.target.value)}
                                                 className="w-full h-24 bg-input-bg border border-glass-border rounded-lg p-3 text-xs text-text-secondary resize-none focus:outline-none focus:border-primary/50 font-mono"
-                                                placeholder="Enter negative prompt..."
+                                                placeholder={tv("negativePromptPlaceholder")}
                                             />
                                         </motion.div>
                                     )}
@@ -797,6 +801,7 @@ function TabButton({ active, onClick, icon, label, count }: any) {
 }
 
 function ImageWithRetry({ src, alt, className }: { src: string, alt: string, className?: string }) {
+    const tv = useTranslations("vault");
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
@@ -840,7 +845,7 @@ function ImageWithRetry({ src, alt, className }: { src: string, alt: string, cla
             />
             {error && retryCount >= 10 && (
                 <div className="absolute inset-0 flex items-center justify-center bg-red-500/10 backdrop-blur-sm z-20">
-                    <span className="text-xs text-red-400 font-bold">Failed to load</span>
+                    <span className="text-xs text-red-400 font-bold">{tv("failedToLoad")}</span>
                 </div>
             )}
         </div>
@@ -868,7 +873,7 @@ function AssetCard({ asset, type, isGenerating, onGenerate, onToggleLock, onClic
             updateProject(currentProject.id, updatedProject);
         } catch (error) {
             console.error("Failed to upload asset image:", error);
-            alert("Failed to upload image");
+            alert(tv("uploadImageFailed"));
         }
     };
 
@@ -903,7 +908,7 @@ function AssetCard({ asset, type, isGenerating, onGenerate, onToggleLock, onClic
             {isGenerating && (
                 <div className="absolute inset-0 z-20 bg-overlay backdrop-blur-sm flex items-center justify-center flex-col gap-2">
                     <RefreshCw className="animate-spin text-primary" size={32} />
-                    <span className="text-xs font-mono text-primary">Generating...</span>
+                    <span className="text-xs font-mono text-primary">{tv("generating")}</span>
                 </div>
             )}
 
@@ -915,7 +920,7 @@ function AssetCard({ asset, type, isGenerating, onGenerate, onToggleLock, onClic
                         onDelete();
                     }}
                     className="p-2 rounded-full backdrop-blur-md bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-colors"
-                    title="Delete"
+                    title={tv("deleteAsset")}
                 >
                     <Trash2 size={14} />
                 </button>
@@ -953,7 +958,7 @@ function AssetCard({ asset, type, isGenerating, onGenerate, onToggleLock, onClic
                         size="sm"
                         className="flex-1"
                     >
-                        {isGenerating ? "Generating..." : "Generate"}
+                        {isGenerating ? tv("generating") : tv("generate")}
                     </WorkflowActionButton>
                     <button
                         onClick={(e) => {
@@ -974,13 +979,15 @@ function AssetCard({ asset, type, isGenerating, onGenerate, onToggleLock, onClic
 
 
 function CreateAssetDialog({ type, onClose, onCreate }: { type: string; onClose: () => void; onCreate: (data: { name: string; description: string }) => void }) {
+    const tv = useTranslations("vault");
+    const tc = useTranslations("common");
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async () => {
         if (!name.trim()) {
-            alert("Name is required");
+            alert(tv("nameRequired"));
             return;
         }
         setIsSubmitting(true);
@@ -991,7 +998,8 @@ function CreateAssetDialog({ type, onClose, onCreate }: { type: string; onClose:
         }
     };
 
-    const typeLabel = type === "character" ? "Character" : type === "scene" ? "Scene" : "Prop";
+    // 单数类型名，用于「新建{type}」「输入{type}名称」等插值文案。
+    const typeLabel = tv(type === "character" ? "typeCharacter" : type === "scene" ? "typeScene" : "typeProp");
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay backdrop-blur-sm p-8">
@@ -1004,7 +1012,7 @@ function CreateAssetDialog({ type, onClose, onCreate }: { type: string; onClose:
                 <div className="p-6 border-b border-glass-border flex justify-between items-center bg-surface">
                     <div className="flex items-center gap-3">
                         <Plus className="text-primary" size={20} />
-                        <h2 className="text-lg font-bold text-foreground">Create New {typeLabel}</h2>
+                        <h2 className="text-lg font-bold text-foreground">{tv("createNew", { type: typeLabel })}</h2>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-hover-bg rounded-lg transition-colors">
                         <X size={20} className="text-text-secondary" />
@@ -1013,21 +1021,21 @@ function CreateAssetDialog({ type, onClose, onCreate }: { type: string; onClose:
 
                 <div className="p-6 space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-2">Name *</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-2">{tv("nameLabel")}</label>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder={`Enter ${type} name`}
+                            placeholder={tv("namePlaceholder", { type: typeLabel })}
                             className="w-full px-4 py-3 bg-input-bg border border-glass-border rounded-lg text-foreground placeholder-text-muted focus:border-primary/50 focus:outline-none"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-2">Description</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-2">{tv("descriptionLabel")}</label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder={`Describe the ${type}...`}
+                            placeholder={tv("descriptionPlaceholder", { type: typeLabel })}
                             rows={4}
                             className="w-full px-4 py-3 bg-input-bg border border-glass-border rounded-lg text-foreground placeholder-text-muted focus:border-primary/50 focus:outline-none resize-none"
                         />
@@ -1039,7 +1047,7 @@ function CreateAssetDialog({ type, onClose, onCreate }: { type: string; onClose:
                         onClick={onClose}
                         className="px-6 py-2 bg-glass hover:bg-hover-bg text-foreground rounded-lg transition-colors"
                     >
-                        Cancel
+                        {tc("cancel")}
                     </button>
                     <button
                         onClick={handleSubmit}
@@ -1047,7 +1055,7 @@ function CreateAssetDialog({ type, onClose, onCreate }: { type: string; onClose:
                         className="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                         {isSubmitting && <RefreshCw size={16} className="animate-spin" />}
-                        Create {typeLabel}
+                        {tv("createAction", { type: typeLabel })}
                     </button>
                 </div>
             </motion.div>

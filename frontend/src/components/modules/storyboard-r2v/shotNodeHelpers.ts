@@ -171,6 +171,24 @@ export function appendVideoTaskId(
  *
  *  `defaultTabMode` lets callers override the fallback ("direct_r2v")
  *  when they have more context (e.g. project-level i2v default). */
+/** Which frame field holds this shot's prompt.
+ *
+ * A frame that has been refined carries the polished text in
+ * `visual_description`; an unrefined one only has `action_description`.
+ * Reader and writer MUST agree — reading `visual_description` while
+ * persisting to `action_description` made every edit (reference tags,
+ * hand-typed prompts) disappear on reload for refined frames, because the
+ * write landed in the shadowed field. Both sides call this.
+ */
+export function shotPromptField(frame: any): "visual_description" | "action_description" {
+    return frame?.visual_description ? "visual_description" : "action_description";
+}
+
+/** This shot's prompt, read from whichever field owns it. */
+export function readShotPrompt(frame: any): string {
+    return frame?.[shotPromptField(frame)] || "";
+}
+
 export function frameToShotNode(
     frame: any,
     videoTasks: any[],
@@ -200,7 +218,7 @@ export function frameToShotNode(
 
     return migrateShotNode({
         id: frame.id,
-        prompt: frame.visual_description || frame.action_description || "",
+        prompt: readShotPrompt(frame),
         tabMode: (frame.workbench_tab_mode as "t2i_i2v" | "direct_r2v" | undefined) ?? defaultTabMode,
         videoUrl,
         videoStatus,

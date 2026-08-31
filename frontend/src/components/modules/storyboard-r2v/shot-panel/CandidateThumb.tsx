@@ -12,6 +12,7 @@
  * Always shows status; PendingTaskAffordance handles stuck > 60s.
  */
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2, Star, AlertCircle, Check, Pencil, Pin } from "lucide-react";
 import { PendingTaskAffordance } from "@/components/shared/PendingTaskAffordance";
 import PreviewVideo from "@/components/shared/preview/PreviewVideo";
@@ -53,6 +54,7 @@ export default function CandidateThumb({
     onCancel,
     onRetry,
 }: CandidateThumbProps) {
+    const t = useTranslations("storyboardR2V");
     const status = task.status;
     const isProcessing = status === "pending" || status === "processing";
     const isFailed = status === "failed";
@@ -253,7 +255,7 @@ export default function CandidateThumb({
                             setLabelDraft(task.label ?? "");
                         }
                     }}
-                    placeholder="short note"
+                    placeholder={t("candidateNotePlaceholder")}
                     className="rounded border border-primary/55 bg-black/30 px-1.5 py-[3px] font-mono text-chrome text-foreground placeholder:text-text-muted outline-none focus-visible:ring-2 focus-visible:ring-primary/45"
                 />
             ) : (

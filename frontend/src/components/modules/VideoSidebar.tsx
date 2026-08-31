@@ -261,7 +261,7 @@ export default function VideoSidebar({ tasks, onRemix, params, setParams }: Vide
                                                     : "bg-glass border-transparent text-text-secondary hover:bg-hover-bg"
                                                     } ${!params.promptExtend ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
-                                                <span className="font-medium">Single</span>
+                                                <span className="font-medium">{tm("shotSingle")}</span>
                                                 <span className="text-[0.625rem] text-text-muted">{tm("singleShot")}</span>
                                             </button>
                                             <button
@@ -272,7 +272,7 @@ export default function VideoSidebar({ tasks, onRemix, params, setParams }: Vide
                                                     : "bg-glass border-transparent text-text-secondary hover:bg-hover-bg"
                                                     } ${!params.promptExtend ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
-                                                <span className="font-medium">Multi</span>
+                                                <span className="font-medium">{tm("shotMulti")}</span>
                                                 <span className="text-[0.625rem] text-text-muted">{tm("multiShot")}</span>
                                             </button>
                                         </div>
@@ -540,7 +540,7 @@ export default function VideoSidebar({ tasks, onRemix, params, setParams }: Vide
                                                     <textarea
                                                         value={params.negativePrompt || ""}
                                                         onChange={(e) => updateParam("negativePrompt", e.target.value)}
-                                                        placeholder="Low quality, blurry, distorted..."
+                                                        placeholder={tm("negativePromptPlaceholder")}
                                                         className="w-full h-20 bg-glass border border-glass-border rounded-lg p-2 text-xs text-foreground focus:border-purple-500 focus:outline-none resize-none"
                                                     />
                                                 </motion.div>
@@ -568,13 +568,13 @@ export default function VideoSidebar({ tasks, onRemix, params, setParams }: Vide
                                                 type="number"
                                                 value={params.seed ?? ""}
                                                 onChange={(e) => updateParam("seed", e.target.value ? parseInt(e.target.value) : undefined)}
-                                                placeholder="Random (-1)"
+                                                placeholder={tm("seedPlaceholder")}
                                                 className="w-full bg-glass border border-glass-border rounded-lg py-1.5 pl-2 pr-8 text-xs text-foreground focus:border-orange-500 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none"
                                             />
                                             <button
                                                 onClick={() => updateParam("seed", Math.floor(Math.random() * 2147483647))}
                                                 className="absolute right-2 top-1.5 text-text-muted hover:text-foreground"
-                                                title="Randomize"
+                                                title={tm("randomizeSeed")}
                                             >
                                                 <RefreshCw size={12} />
                                             </button>

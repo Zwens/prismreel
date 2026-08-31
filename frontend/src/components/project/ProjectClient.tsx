@@ -32,13 +32,15 @@ const CreativeCanvas = dynamic(() => import("@/components/canvas/CreativeCanvas"
 //   - Mix    → Assembly Mix phase tab (PR-3k)
 //   - Export → Assembly Export phase tab (PR-3k)
 // Both legacy and unified projects now share the 6-step shape.
+// 步骤名称走 i18n（pipeline.nav*），序号在渲染时按顺序生成 —— freeform
+// 模式跳过 Script 后无需再用正则改写 label。
 const LEGACY_STEPS = [
-    { id: "script", label: "1. Script", icon: BookOpen },
-    { id: "art_direction", label: "2. Art Direction", icon: Palette },
-    { id: "assets", label: "3. Assets", icon: Users },
-    { id: "storyboard", label: "4. Storyboard", icon: Layout },
-    { id: "motion", label: "5. Motion", icon: Video },
-    { id: "assembly", label: "6. Assembly", icon: Film },
+    { id: "script", nameKey: "navScript", icon: BookOpen },
+    { id: "art_direction", nameKey: "navArtDirection", icon: Palette },
+    { id: "assets", nameKey: "navAssets", icon: Users },
+    { id: "storyboard", nameKey: "navStoryboard", icon: Layout },
+    { id: "motion", nameKey: "navMotion", icon: Video },
+    { id: "assembly", nameKey: "navAssembly", icon: Film },
 ];
 
 // PR-3f (r2v-workflow-v3) — Unified workflow: 5 steps including Cast.
@@ -48,11 +50,11 @@ const LEGACY_STEPS = [
 // Legacy `assets` step is dropped — Cast supersedes ConsistencyVault
 // for unified projects (ConsistencyVault stays only for legacy workflow).
 const UNIFIED_STEPS = [
-    { id: "script", label: "1. Script", icon: BookOpen },
-    { id: "art_direction", label: "2. Art Direction", icon: Palette },
-    { id: "cast", label: "3. Cast", icon: Users },
-    { id: "storyboard_r2v", label: "4. Storyboard", icon: Clapperboard },
-    { id: "assembly", label: "5. Assembly", icon: Film },
+    { id: "script", nameKey: "navScript", icon: BookOpen },
+    { id: "art_direction", nameKey: "navArtDirection", icon: Palette },
+    { id: "cast", nameKey: "navCast", icon: Users },
+    { id: "storyboard_r2v", nameKey: "navStoryboard", icon: Clapperboard },
+    { id: "assembly", nameKey: "navAssembly", icon: Film },
 ];
 
 export default function ProjectClient({ id, breadcrumbSegments }: { id: string; breadcrumbSegments?: BreadcrumbSegment[] }) {
@@ -92,10 +94,8 @@ export default function ProjectClient({ id, breadcrumbSegments }: { id: string; 
             base = LEGACY_STEPS;
         } else if (seriesContentMode === "freeform") {
             // Phase 6 — freeform mode: skip Script step, episodes start at
-            // Style. Re-number labels accordingly.
-            base = UNIFIED_STEPS
-                .filter(s => s.id !== "script")
-                .map((s, i) => ({ ...s, label: s.label.replace(/^\d+\./, `${i + 1}.`) }));
+            // Style. Numbering follows from array order below.
+            base = UNIFIED_STEPS.filter(s => s.id !== "script");
         } else {
             // Scripted unified flow: Cast is always present (per-episode view
             // of frame-referenced assets). Series-level shared assets are
@@ -136,7 +136,11 @@ export default function ProjectClient({ id, breadcrumbSegments }: { id: string; 
                     return {};
             }
         };
-        return base.map(s => ({ ...s, ...statusFor(s.id) }));
+        return base.map(({ nameKey, ...s }, i) => ({
+            ...s,
+            label: `${i + 1}. ${tp(nameKey)}`,
+            ...statusFor(s.id),
+        }));
     }, [currentProject, seriesContentMode, tp]);
 
     const handleBackToHome = () => {
@@ -193,14 +197,14 @@ export default function ProjectClient({ id, breadcrumbSegments }: { id: string; 
             <button
                 onClick={() => setPromptConfigOpen(true)}
                 className="p-2 hover:bg-hover-bg rounded-lg transition-colors group"
-                title="Prompt Configuration"
+                title={t("promptConfigTitle")}
             >
                 <MessageSquareCode size={16} className="text-text-secondary group-hover:text-purple-400 transition-colors" />
             </button>
             <button
                 onClick={() => setModelSettingsOpen(true)}
                 className="p-2 hover:bg-hover-bg rounded-lg transition-colors group"
-                title="Model Settings"
+                title={t("modelSettingsTitle")}
             >
                 <Settings size={16} className="text-text-secondary group-hover:text-foreground transition-colors" />
             </button>

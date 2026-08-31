@@ -47,6 +47,8 @@ type EnvConfig = EnvConfigPayload & {
   KLING_SECRET_KEY: string;
   VIDU_API_KEY: string;
   MULEROUTER_API_KEY: string;
+  ARK_API_KEY: string;
+  ARK_REGION: string;
   MULERUN_CLI_LOGGED_IN?: boolean;
   endpoint_overrides: Record<string, string>;
 };
@@ -73,6 +75,8 @@ const DEFAULT_CONFIG: EnvConfig = {
   KLING_SECRET_KEY: "",
   VIDU_API_KEY: "",
   MULEROUTER_API_KEY: "",
+  ARK_API_KEY: "",
+  ARK_REGION: "",
   endpoint_overrides: {},
 };
 
@@ -435,7 +439,7 @@ export default function SettingsPage() {
   const renderGeneral = () => (
     <Section id="general" title={t("secGeneralTitle")}>
       <FormRow label={t("language")} hint={t("languageDesc")}>
-        <FieldLabel>LANGUAGE</FieldLabel>
+        <FieldLabel>{t("languageFieldLabel")}</FieldLabel>
         <ModeSegment
           value={locale}
           onChange={(v) => setLocale(v as Locale)}
@@ -574,7 +578,7 @@ export default function SettingsPage() {
       <FormRow label={t("storyboardAspectLabel")} hint={t("storyboardAspectHint")}>
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
           <Layout size={15} className="text-primary" />
-          <span>Storyboard Aspect Ratio</span>
+          <span>{t("storyboardAspectRatio")}</span>
         </div>
         {aspectButtons("storyboard_aspect_ratio")}
       </FormRow>
@@ -583,7 +587,7 @@ export default function SettingsPage() {
       <FormRow label={t("i2vModelLabel")} hint={t("i2vModelHint")}>
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
           <Video size={15} className="text-purple-400" />
-          <span>Image-to-Video</span>
+          <span>{t("imageToVideo")}</span>
         </div>
         <GroupedModelGrid
           models={GLOBAL_I2V_MODELS}
@@ -596,7 +600,7 @@ export default function SettingsPage() {
       <FormRow label={t("r2vModelLabel")} hint={t("r2vModelHint")}>
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
           <Video size={15} className="text-purple-400" />
-          <span>Reference-to-Video</span>
+          <span>{t("referenceToVideo")}</span>
         </div>
         <GroupedModelGrid
           models={GLOBAL_R2V_MODELS}
@@ -704,11 +708,11 @@ export default function SettingsPage() {
               <div className="space-y-3 mt-3">
                 <div>
                   <FieldLabel>KLING_ACCESS_KEY *</FieldLabel>
-                  <KeyField value={config.KLING_ACCESS_KEY} onChange={(v) => handleChange("KLING_ACCESS_KEY", v)} placeholder="Kling Access Key" />
+                  <KeyField value={config.KLING_ACCESS_KEY} onChange={(v) => handleChange("KLING_ACCESS_KEY", v)} placeholder={t("klingAccessKeyPlaceholder")} />
                 </div>
                 <div>
                   <FieldLabel>KLING_SECRET_KEY *</FieldLabel>
-                  <KeyField value={config.KLING_SECRET_KEY} onChange={(v) => handleChange("KLING_SECRET_KEY", v)} placeholder="Kling Secret Key" />
+                  <KeyField value={config.KLING_SECRET_KEY} onChange={(v) => handleChange("KLING_SECRET_KEY", v)} placeholder={t("klingSecretKeyPlaceholder")} />
                 </div>
               </div>
             )}
@@ -726,7 +730,7 @@ export default function SettingsPage() {
             {config.VIDU_PROVIDER_MODE === "vendor" && (
               <div className="mt-3">
                 <FieldLabel>VIDU_API_KEY *</FieldLabel>
-                <KeyField value={config.VIDU_API_KEY} onChange={(v) => handleChange("VIDU_API_KEY", v)} placeholder="Vidu API Key" />
+                <KeyField value={config.VIDU_API_KEY} onChange={(v) => handleChange("VIDU_API_KEY", v)} placeholder={t("viduApiKeyPlaceholder")} />
               </div>
             )}
           </FormRow>
@@ -825,6 +829,43 @@ export default function SettingsPage() {
                 <p className="text-[0.6875rem] text-text-muted mt-1">{t("mulerunKeyHint")}</p>
               </div>
             </details>
+          </FormRow>
+
+          {/* BytePlus / Volcano Ark — Seedance 2.5 does not run on the
+              MuleRouter gateway, so it needs its own credential. */}
+          <FormRow label={t("arkLabel")} hint={t("arkHint")}>
+            <FieldLabel>ARK_API_KEY</FieldLabel>
+            <KeyField
+              value={config.ARK_API_KEY}
+              onChange={(v) => setConfig((c) => ({ ...c, ARK_API_KEY: v }))}
+              placeholder="ark-..."
+            />
+            <div className="mt-3">
+              <FieldLabel>{t("arkRegionLabel")}</FieldLabel>
+              <div className="flex gap-2">
+                {([
+                  { id: "intl", label: t("arkRegionIntl") },
+                  { id: "cn", label: t("arkRegionCn") },
+                ] as const).map((opt) => {
+                  const active = (config.ARK_REGION || "intl") === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setConfig((c) => ({ ...c, ARK_REGION: opt.id }))}
+                      className={`px-3 py-1.5 rounded-md text-xs transition-colors ${
+                        active
+                          ? "bg-primary text-black font-medium"
+                          : "bg-glass text-text-secondary hover:text-foreground"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[0.6875rem] text-text-muted mt-1.5">{t("arkRegionHint")}</p>
+            </div>
           </FormRow>
 
           <FormRow label={t("advancedEndpointsLabel")} hint={t("advancedEndpointsHint")}>
@@ -926,7 +967,7 @@ export default function SettingsPage() {
         />
       </FormRow>
 
-      <FormRow label="Endpoint" hint={t("endpointHint")}>
+      <FormRow label={t("endpointLabel")} hint={t("endpointHint")}>
         <FieldLabel>OSS_ENDPOINT</FieldLabel>
         <input
           type="text"
@@ -937,7 +978,7 @@ export default function SettingsPage() {
         />
       </FormRow>
 
-      <FormRow label="Base Path" hint={t("basePathHint")}>
+      <FormRow label={t("basePathLabel")} hint={t("basePathHint")}>
         <FieldLabel>OSS_BASE_PATH</FieldLabel>
         <input
           type="text"

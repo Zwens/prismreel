@@ -387,7 +387,7 @@ export default function ArtDirection() {
         <div className="flex flex-col h-full w-full overflow-hidden">
             <StepPageHeader
                 stepNumber={2}
-                englishName="STYLE"
+                sectionName={tStep("styleSection")}
                 title={tStep("styleTitle")}
                 subtitle={tStep("styleSubtitle")}
                 pills={projectStyle?.name ? (
@@ -671,7 +671,7 @@ export default function ArtDirection() {
                             </div>
                             <button
                                 onClick={cancelOverrideConfirm}
-                                aria-label="Close"
+                                aria-label={ta("close")}
                                 className="p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-foreground transition-colors"
                             >
                                 <X size={15} />

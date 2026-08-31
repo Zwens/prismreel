@@ -33,6 +33,22 @@ SEEDANCE_API_PATHS = {
     "r2v-fast": "/vendors/bytedance/v1/seedance-2.0-fast/reference-to-video/generation",
 }
 
+def resolve_seedance_endpoint(mode: str, model_name: Optional[str]) -> str:
+    """Endpoint path for a Seedance mode, honouring the `-fast` variant.
+
+    Derived from the model id on every call rather than stored on the
+    instance: the pipeline caches one MuleRouterVideoModel and reuses it for
+    every shot, so instance state would let one shot's variant leak into the
+    next. Anything that doesn't name the fast variant resolves to standard —
+    fast bills differently, so it is never the fallback.
+
+    Accepts both the legacy flat id (`seedance-2.0-fast-t2v`) and the
+    canonical mode id (`seedance/seedance-2.0-fast-video#t2v`).
+    """
+    suffix = "-fast" if model_name and "seedance-2.0-fast" in model_name else ""
+    return SEEDANCE_API_PATHS[f"{mode}{suffix}"]
+
+
 GPT_IMAGE_API_PATHS = {
     "generation": "/vendors/openai/v1/gpt-image-2/generation",
     "edit": "/vendors/openai/v1/gpt-image-2/edit",
@@ -331,7 +347,8 @@ class MuleRouterVideoModel(VideoGenModel):
         is_r2v = generation_mode == "r2v" or bool(ref_image_urls)
         is_i2v = bool(img_url or img_path) and not is_r2v
 
-        speed = "-fast" if self.use_fast else ""
+        model_name = kwargs.get("model_name") or (self.use_fast and "seedance-2.0-fast") or None
+        speed = "-fast" if model_name and "seedance-2.0-fast" in model_name else ""
         model_base = f"bytedance/seedance-2.0{speed}"
 
         if is_r2v:
@@ -390,18 +407,19 @@ class MuleRouterVideoModel(VideoGenModel):
         is_r2v = generation_mode == "r2v" or bool(ref_image_urls)
         is_i2v = bool(img_url or img_path) and not is_r2v
 
-        suffix = "-fast" if self.use_fast else ""
+        # Variant comes from the model id per call — see resolve_seedance_endpoint.
+        model_name = kwargs.get("model_name") or (self.use_fast and "seedance-2.0-fast") or None
 
         if is_r2v:
-            api_path = SEEDANCE_API_PATHS[f"r2v{suffix}"]
+            api_path = resolve_seedance_endpoint("r2v", model_name)
             body = self._build_r2v_body(prompt, img_url, img_path, ref_image_urls,
                                         duration, resolution, aspect_ratio, seed, watermark)
         elif is_i2v:
-            api_path = SEEDANCE_API_PATHS[f"i2v{suffix}"]
+            api_path = resolve_seedance_endpoint("i2v", model_name)
             body = self._build_i2v_body(prompt, img_url, img_path,
                                         duration, resolution, aspect_ratio, seed, watermark)
         else:
-            api_path = SEEDANCE_API_PATHS[f"t2v{suffix}"]
+            api_path = resolve_seedance_endpoint("t2v", model_name)
             body = self._build_t2v_body(prompt, duration, resolution, aspect_ratio, seed, watermark)
 
         task_id = _submit_task(base_url, api_path, body)
@@ -460,9 +478,12 @@ class MuleRouterVideoModel(VideoGenModel):
                 images.append(resolved)
         if not images:
             raise ValueError("Seedance R2V requires at least one reference image")
+        # The gateway validates on `images` (or `videos`); `reference_images`
+        # is ignored outright, so every R2V call failed parameter validation
+        # before auth even ran. Verified against the live endpoint 2026-08-30.
         body: Dict[str, Any] = {
             "prompt": prompt,
-            "reference_images": images,
+            "images": images,
             "duration": duration,
             "aspect_ratio": aspect_ratio,
             "watermark": watermark,

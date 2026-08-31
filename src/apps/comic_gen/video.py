@@ -3,6 +3,7 @@ from typing import Dict, Any
 from .models import StoryboardFrame, GenerationStatus
 from ...models.wanx import WanxModel
 from ...utils import get_logger
+from ...utils.media_refs import to_project_media_ref
 
 logger = get_logger(__name__)
 
@@ -51,7 +52,7 @@ class VideoGenerator:
             )
             
             # Upload to OSS if configured
-            video_url = os.path.relpath(output_path, "output")
+            video_url = to_project_media_ref(output_path)
             try:
                 from ...utils.oss_utils import OSSImageUploader
                 uploader = OSSImageUploader()
@@ -102,7 +103,7 @@ class VideoGenerator:
              # We need to resolve it to an absolute path
              # In this project, image_url is usually relative to 'output' or project root?
              # assets.py stores "characters/xxx.png" (relative to output dir usually, but let's check)
-             # Wait, assets.py stores `rel_sheet_path = os.path.relpath(sheet_path, "output")`
+             # Wait, assets.py stores `rel_sheet_path = to_project_media_ref(sheet_path)`
              # So it is "characters/xxx.png".
              # We need to prepend the output directory.
              
@@ -126,7 +127,7 @@ class VideoGenerator:
             )
             
             # Store relative path for frontend serving
-            rel_path = os.path.relpath(output_path, "output")
+            rel_path = to_project_media_ref(output_path)
             frame.video_url = rel_path
             frame.status = GenerationStatus.COMPLETED
             

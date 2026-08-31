@@ -42,6 +42,7 @@ class PlaygroundService:
         self._vidu_model = None
         self._mulerouter_video_model = None
         self._mulerouter_image_model = None
+        self._vidu_image_model = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -178,6 +179,10 @@ class PlaygroundService:
     # ------------------------------------------------------------------
 
     def _process_image_generation(self, gen: PlaygroundGeneration) -> None:
+        # Imported here, like every other adapter in this module, so importing
+        # the service does not drag in the heavy model dependencies.
+        from ...models.vidu import is_vidu_image_model
+
         os.makedirs(IMAGE_OUTPUT_DIR, exist_ok=True)
 
         model_lower = gen.model_id.lower()
@@ -191,6 +196,8 @@ class PlaygroundService:
             try:
                 if model_lower.startswith("gpt-image"):
                     self._generate_image_mulerouter(gen, out_path, idx)
+                elif is_vidu_image_model(model_lower):
+                    self._generate_image_vidu(gen, out_path, idx)
                 else:
                     self._generate_image_wanx(gen, out_path, idx)
 
@@ -232,6 +239,29 @@ class PlaygroundService:
             kwargs["ref_image_paths"] = ref_paths
 
         self._wanx_image_model.generate(
+            prompt=gen.prompt,
+            output_path=out_path,
+            **kwargs,
+        )
+
+    def _generate_image_vidu(self, gen: PlaygroundGeneration, out_path: str, _idx: int) -> None:
+        """Delegate to :class:`ViduImageModel` (Vidu-Q sync image endpoint)."""
+        from ...models.vidu import ViduImageModel
+
+        if self._vidu_image_model is None:
+            self._vidu_image_model = ViduImageModel({})
+
+        params = gen.parameters
+        kwargs = {
+            "model_name": gen.model_id,
+            "size": params.get("size"),
+        }
+
+        # i2i: attach reference images
+        if gen.mode == PlaygroundMode.I2I and gen.input_media:
+            kwargs["ref_image_paths"] = list(gen.input_media)
+
+        self._vidu_image_model.generate(
             prompt=gen.prompt,
             output_path=out_path,
             **kwargs,

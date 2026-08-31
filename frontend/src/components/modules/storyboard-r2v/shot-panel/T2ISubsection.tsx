@@ -644,6 +644,7 @@ function ThumbButton({
     active, url, onClick, showRemove, onRemove,
     hovered, onHover, badge, ariaLabel, title,
 }: ThumbButtonProps) {
+    const t = useTranslations("storyboardR2V");
     return (
         <button
             type="button"
@@ -679,7 +680,7 @@ function ThumbButton({
                 <span
                     aria-hidden="true"
                     className="pointer-events-none absolute left-0.5 top-0.5 grid h-4 w-4 place-items-center rounded bg-black/65 text-text-secondary"
-                    title="From Storyboard stage"
+                    title={t("fromStoryboardStage")}
                 >
                     <Pin size={9} aria-hidden="true" />
                 </span>
@@ -688,8 +689,8 @@ function ThumbButton({
                 <span
                     role="button"
                     tabIndex={0}
-                    aria-label="Delete candidate"
-                    title="Delete"
+                    aria-label={t("deleteCandidateAria")}
+                    title={t("deleteCandidate")}
                     onClick={(e) => { e.stopPropagation(); onRemove(); }}
                     onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
@@ -724,6 +725,7 @@ interface SinglePreviewProps {
 }
 
 function SinglePreview({ url, isStoryboard, onRemove, storyboardBadgeText }: SinglePreviewProps) {
+    const t = useTranslations("storyboardR2V");
     const [hovered, setHovered] = useState(false);
     return (
         <div
@@ -745,8 +747,8 @@ function SinglePreview({ url, isStoryboard, onRemove, storyboardBadgeText }: Sin
                 <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                    aria-label="Delete candidate"
-                    title="Delete"
+                    aria-label={t("deleteCandidateAria")}
+                    title={t("deleteCandidate")}
                     className="absolute left-1 top-1 grid h-6 w-6 cursor-pointer place-items-center rounded-full bg-black/75 text-foreground transition-colors duration-fast ease-out-quart hover:bg-status-failed-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-failed-border"
                 >
                     <X size={11} aria-hidden="true" />
@@ -771,6 +773,7 @@ interface ActivePreviewProps {
 function ActivePreview({
     activeUrl, isStoryboard, generating, inFlightTaskId, inFlightStatus,
 }: ActivePreviewProps) {
+    const t = useTranslations("storyboardR2V");
     return (
         <div className="mt-2 flex items-start gap-2.5 motion-safe:animate-[shotPanelIn_180ms_cubic-bezier(0.22,1,0.36,1)_both]">
             <div className="relative h-[100px] w-[140px] shrink-0 overflow-hidden rounded-md border border-glass-border bg-black/40">
@@ -788,7 +791,7 @@ function ActivePreview({
                 {isStoryboard ? (
                     <span
                         className="pointer-events-none absolute left-1 top-1 inline-flex items-center gap-1 rounded bg-black/65 px-1.5 py-0.5 font-mono text-[0.625rem] font-medium uppercase text-text-secondary"
-                        title="From Storyboard stage"
+                        title={t("fromStoryboardStage")}
                     >
                         <Pin size={9} aria-hidden="true" />
                         storyboard

@@ -620,7 +620,7 @@ function CustomVoiceList({
                                     <div className="flex shrink-0 items-center gap-1">
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onPreview(cv); }}
-                                            aria-label="Play preview"
+                                            aria-label={t("playPreviewAria")}
                                             className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition-colors ${
                                                 isPlaying
                                                     ? "border-primary bg-primary/15 text-primary"
@@ -631,7 +631,7 @@ function CustomVoiceList({
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onDelete(cv.id); }}
-                                            aria-label="Delete custom voice"
+                                            aria-label={t("deleteVoiceAria")}
                                             className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-glass-border bg-black/30 text-text-muted hover:border-danger/40 hover:bg-danger/10 hover:text-danger transition-colors"
                                         >
                                             <Trash2 size={11} />

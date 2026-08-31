@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { Check } from 'lucide-react';
+import { AlertTriangle, Check } from 'lucide-react';
 import rawCatalog from '@/generated/modelCatalog.json';
 import type { I2VModelConfig, SelectableModelOption } from '@/lib/modelCatalog';
+import { isModelCredentialReady, modelRequiresCredentials } from '@/lib/modelCatalog';
 
 // ---------------------------------------------------------------------------
 // Family display names — fall back to the raw key when the catalog entry
@@ -69,6 +70,10 @@ interface GroupedModelGridProps {
     columns?: 2 | 3;
     /** Optional className applied to the root wrapper. */
     className?: string;
+    /** GET /config/env payload. When supplied, models whose provider has no
+     *  key configured are dimmed and badged instead of silently failing at
+     *  generation time. Omit to disable the check entirely. */
+    envConfig?: Record<string, unknown> | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -118,6 +123,37 @@ function buildGroups(models: GroupableModel[]): FamilyGroup[] {
 // Component
 // ---------------------------------------------------------------------------
 
+/* Provider credentials are runtime state, not catalog data, so the grid reads
+ * them itself: six call sites render this component and they would otherwise
+ * each have to fetch and thread the same payload, with six chances to forget.
+ * Fetched once per page load and shared. */
+let envConfigCache: Record<string, unknown> | null = null;
+let envConfigPromise: Promise<Record<string, unknown> | null> | null = null;
+
+function useSharedEnvConfig(override?: Record<string, unknown> | null) {
+    const [fetched, setFetched] = React.useState<Record<string, unknown> | null>(envConfigCache);
+
+    React.useEffect(() => {
+        if (override !== undefined || envConfigCache) return;
+        if (!envConfigPromise) {
+            envConfigPromise = import('@/lib/api')
+                .then(({ api }) => api.getEnvConfig())
+                .then((cfg) => {
+                    envConfigCache = cfg as unknown as Record<string, unknown>;
+                    return envConfigCache;
+                })
+                // A failed probe must not mark every model unusable — fall back
+                // to "no opinion" so the grid renders exactly as it did before.
+                .catch(() => null);
+        }
+        let alive = true;
+        envConfigPromise.then((cfg) => { if (alive && cfg) setFetched(cfg); });
+        return () => { alive = false; };
+    }, [override]);
+
+    return override !== undefined ? override : fetched;
+}
+
 export default function GroupedModelGrid({
     models,
     selectedId,
@@ -125,7 +161,9 @@ export default function GroupedModelGrid({
     accent = 'green',
     columns = 2,
     className,
+    envConfig: envConfigProp,
 }: GroupedModelGridProps) {
+    const envConfig = useSharedEnvConfig(envConfigProp);
     const groups = useMemo(() => buildGroups(models), [models]);
     const accentClasses = ACCENT_CLASSES[accent];
 
@@ -147,15 +185,25 @@ export default function GroupedModelGrid({
                     <div className={`grid ${gridCols} gap-2`}>
                         {group.models.map((model) => {
                             const isSelected = model.id === selectedId;
+                            // A model whose provider has no key configured still
+                            // renders — hiding it would hide the reason — but it
+                            // says so, instead of failing after the user commits.
+                            const missingKeys = envConfig
+                                ? (isModelCredentialReady(model.id, envConfig)
+                                    ? []
+                                    : modelRequiresCredentials(model.id))
+                                : [];
+                            const needsKey = missingKeys.length > 0;
                             return (
                                 <button
                                     key={model.id}
                                     onClick={() => onSelect(model.id)}
+                                    title={needsKey ? `需要配置 ${missingKeys.join(' 或 ')}` : undefined}
                                     className={`relative flex flex-col items-start p-3.5 rounded-lg border transition-all text-left ${
                                         isSelected
                                             ? accentClasses.selected
                                             : 'border-glass-border bg-glass hover:-translate-y-0.5 hover:border-primary/40'
-                                    }`}
+                                    } ${needsKey && !isSelected ? 'opacity-55' : ''}`}
                                 >
                                     {isSelected && (
                                         <div className="absolute top-2 right-2">
@@ -168,9 +216,15 @@ export default function GroupedModelGrid({
                                     <span className="text-[0.8125rem] text-text-secondary mt-0.5 leading-relaxed">
                                         {model.description}
                                     </span>
-                                    {model.badges && model.badges.length > 0 && (
-                                        <div className="flex gap-1 mt-1.5">
-                                            {model.badges.map((badge) => (
+                                    {((model.badges && model.badges.length > 0) || needsKey) && (
+                                        <div className="flex flex-wrap gap-1 mt-1.5">
+                                            {needsKey && (
+                                                <span className="inline-flex items-center gap-1 text-[0.625rem] px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-400">
+                                                    <AlertTriangle size={9} />
+                                                    未配置密钥
+                                                </span>
+                                            )}
+                                            {model.badges?.map((badge) => (
                                                 <span
                                                     key={badge}
                                                     className="text-[0.625rem] px-1.5 py-0.5 rounded bg-elevated text-text-secondary"

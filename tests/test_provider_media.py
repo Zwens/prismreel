@@ -151,6 +151,29 @@ def test_vendor_vidu_image_local_requires_url_capability(tmp_path):
         )
 
 
+def test_vendor_url_mode_error_names_the_ref_and_its_classification(tmp_path):
+    """An unresolvable ref must say which ref, and how it was classified.
+
+    The bare "configure OSS" wording sent debugging down the wrong path when
+    OSS was in fact configured and the ref itself was the unrecognized part.
+    """
+    uploader = FakeUploader(configured=True)
+
+    with pytest.raises(ValueError) as excinfo:
+        resolve_media_input(
+            "totally-unknown-shape.png",
+            model_name="vidu-q3",
+            backend="vendor",
+            modality="image",
+            uploader=uploader,
+            project_root=str(tmp_path),
+        )
+
+    message = str(excinfo.value)
+    assert "totally-unknown-shape.png" in message
+    assert "unknown" in message
+
+
 def test_vendor_vidu_image_local_with_oss_uses_signed_url(tmp_path):
     _write_output_png(tmp_path, "uploads/ref.png")
     uploader = FakeUploader(configured=True)

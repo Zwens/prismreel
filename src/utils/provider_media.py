@@ -239,7 +239,9 @@ def _resolve_vendor_url_mode(
 
     raise ValueError(
         f"{provider_label} vendor {modality} input requires a URL-compatible media source. "
-        "Configure OSS for local/object-key references, or switch provider mode to dashscope."
+        f"Got ref '{ref}' classified as '{ref_type}'"
+        + (f" (local path: {local_path})" if local_path else "")
+        + ". Configure OSS for local/object-key references, or switch provider mode to dashscope."
     )
 
 

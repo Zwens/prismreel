@@ -232,7 +232,7 @@ export default function DetailPanel({
           ) : (
             <div className="flex flex-col items-center gap-2 text-text-muted">
               <Video className="w-12 h-12" />
-              <span className="font-mono text-xs">No media</span>
+              <span className="font-mono text-xs">{t("noMedia")}</span>
             </div>
           )}
 

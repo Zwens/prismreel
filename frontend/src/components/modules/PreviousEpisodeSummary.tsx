@@ -166,7 +166,7 @@ export default function PreviousEpisodeSummary({ scriptId }: PreviousEpisodeSumm
                     <div className="px-5 py-5 space-y-5">
                         {/* Previous episode meta */}
                         <div className="flex items-center gap-2 text-[0.6875rem] font-mono uppercase tracking-[0.16em] text-text-muted">
-                            <span className="text-primary">PREV</span>
+                            <span className="text-primary">{t("prevBadge")}</span>
                             <span aria-hidden="true" className="h-px w-2 bg-glass-border" />
                             <span className="truncate text-text-secondary">{data.previous_episode_title || data.previous_episode_id}</span>
                         </div>

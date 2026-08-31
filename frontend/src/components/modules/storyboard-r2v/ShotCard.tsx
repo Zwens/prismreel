@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import AssetChipBar from "./AssetChipBar";
+import { resolveAssetByTagName } from "@/lib/assetTags";
 import PromptExpandModal from "./PromptExpandModal";
 import PolishPanel from "./PolishPanel";
 import FieldTagChip, { AddFieldButton, type FieldType } from "./FieldTagChip";
@@ -493,6 +494,21 @@ export default function ShotCard({
         );
     }
 
+    /* Names this shot's prompt already tags. Resolved through the same fuzzy
+     * lookup R2V uses at generation time, so a chip lights up exactly when
+     * that asset will actually be sent as a reference — an exact-string check
+     * would leave chips dark for the shortened labels the LLM writes. */
+    const referencedAssetNames = useMemo(() => {
+        const names: string[] = [];
+        const tagRe = /\[character\d+:([^\]]+)\]/g;
+        let m: RegExpExecArray | null;
+        while ((m = tagRe.exec(shot.prompt)) !== null) {
+            const asset: any = resolveAssetByTagName(m[1], [characters, scenes, props]);
+            if (asset?.name) names.push(asset.name);
+        }
+        return names;
+    }, [shot.prompt, characters, scenes, props]);
+
     const handleInsertAssetFromChip = (_type: string, name: string) => {
         const currentPrompt = shot.prompt;
         // Each unique character gets one fixed slot number throughout this
@@ -568,7 +584,7 @@ export default function ShotCard({
                             {String(index + 1).padStart(2, "0")}
                         </div>
                         <div className="font-mono text-[0.6875rem] uppercase tracking-[0.08em] text-text-muted leading-tight">
-                            <span>SHOT</span>
+                            <span>{t("shotBadge")}</span>
                             {shot.shotSize ? (
                                 <span className="ml-1.5 text-text-secondary font-medium">· {shot.shotSize}</span>
                             ) : null}
@@ -882,6 +898,7 @@ export default function ShotCard({
                             scenes={scenes}
                             props={props}
                             onInsertAsset={handleInsertAssetFromChip}
+                            referencedNames={referencedAssetNames}
                         />
                     </div>
                 </div>
