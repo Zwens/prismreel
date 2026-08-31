@@ -41,6 +41,7 @@ class PlaygroundService:
         self._kling_model = None
         self._vidu_model = None
         self._mulerouter_video_model = None
+        self._byteplus_video_model = None
         self._mulerouter_image_model = None
         self._vidu_image_model = None
 
@@ -307,7 +308,7 @@ class PlaygroundService:
 
             try:
                 if model_lower.startswith("seedance"):
-                    self._generate_video_mulerouter(gen, out_path)
+                    self._generate_video_seedance(gen, out_path)
                 elif model_lower.startswith("kling"):
                     self._generate_video_kling(gen, out_path)
                 elif model_lower.startswith("vidu") or model_lower.startswith("viduq"):
@@ -373,13 +374,14 @@ class PlaygroundService:
             **kwargs,
         )
 
-    def _generate_video_mulerouter(self, gen: PlaygroundGeneration, out_path: str) -> None:
-        """Delegate to :class:`MuleRouterVideoModel` (Seedance 2.0)."""
-        from ...models.mulerouter import MuleRouterVideoModel
+    def _generate_video_seedance(self, gen: PlaygroundGeneration, out_path: str) -> None:
+        """Delegate Seedance to its gateway: 2.0 on MuleRouter, 2.5 on Ark.
 
-        if self._mulerouter_video_model is None:
-            self._mulerouter_video_model = MuleRouterVideoModel({})
-
+        Playground used to send the whole family to MuleRouter, but 2.5 has
+        never been on that gateway (every seedance-2.5 path 404s there), so
+        picking 2.5 here failed at the provider every time. The split mirrors
+        the one the comic pipeline already makes.
+        """
         params = gen.parameters
         img_path, img_url = self._resolve_first_input_media(gen)
 
@@ -389,6 +391,10 @@ class PlaygroundService:
             "aspect_ratio": params.get("aspect_ratio", "16:9"),
             "seed": params.get("seed"),
             "watermark": params.get("watermark", False),
+            # Both adapters derive the wire model id (2.0 vs 2.0-fast vs 2.5)
+            # from this. Playground never sent it, so every fast-variant run
+            # here silently billed and rendered as the standard variant.
+            "model_name": gen.model_id,
         }
 
         # r2v: reference images
@@ -396,7 +402,23 @@ class PlaygroundService:
             kwargs["generation_mode"] = "r2v"
             kwargs["ref_image_urls"] = list(gen.input_media)
 
-        self._mulerouter_video_model.generate(
+        # Substring, not prefix: playground can hold either the flat id
+        # (seedance-2.5-t2v) or the canonical one
+        # (seedance/seedance-2.5-video#t2v).
+        if "seedance-2.5" in gen.model_id.lower():
+            from ...models.byteplus import BytePlusVideoModel
+
+            if self._byteplus_video_model is None:
+                self._byteplus_video_model = BytePlusVideoModel({})
+            model = self._byteplus_video_model
+        else:
+            from ...models.mulerouter import MuleRouterVideoModel
+
+            if self._mulerouter_video_model is None:
+                self._mulerouter_video_model = MuleRouterVideoModel({})
+            model = self._mulerouter_video_model
+
+        model.generate(
             prompt=gen.prompt,
             output_path=out_path,
             img_url=img_url,
