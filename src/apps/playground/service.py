@@ -41,6 +41,8 @@ class PlaygroundService:
         self._kling_model = None
         self._vidu_model = None
         self._mulerouter_video_model = None
+        self._seevio_video_model = None
+        self._byteplus_video_model = None
         self._mulerouter_image_model = None
         self._vidu_image_model = None
 
@@ -307,7 +309,7 @@ class PlaygroundService:
 
             try:
                 if model_lower.startswith("seedance"):
-                    self._generate_video_mulerouter(gen, out_path)
+                    self._generate_video_seedance(gen, out_path)
                 elif model_lower.startswith("kling"):
                     self._generate_video_kling(gen, out_path)
                 elif model_lower.startswith("vidu") or model_lower.startswith("viduq"):
@@ -373,12 +375,20 @@ class PlaygroundService:
             **kwargs,
         )
 
-    def _generate_video_mulerouter(self, gen: PlaygroundGeneration, out_path: str) -> None:
-        """Delegate to :class:`MuleRouterVideoModel` (Seedance 2.0)."""
-        from ...models.mulerouter import MuleRouterVideoModel
+    def _generate_video_seedance(self, gen: PlaygroundGeneration, out_path: str) -> None:
+        """Delegate Seedance to whichever gateway the catalog routes it to.
 
-        if self._mulerouter_video_model is None:
-            self._mulerouter_video_model = MuleRouterVideoModel({})
+        Default is Seevio (this project's sk_live_ keys); MuleRouter and Ark
+        direct stay reachable through SEEDANCE_PROVIDER_MODE. The backend is
+        resolved per call rather than cached so flipping the env var takes
+        effect without a restart.
+        """
+        from ...utils.provider_registry import resolve_provider_backend
+
+        try:
+            backend = resolve_provider_backend(gen.model_id)
+        except (KeyError, ValueError):
+            backend = "seevio"
 
         params = gen.parameters
         img_path, img_url = self._resolve_first_input_media(gen)
@@ -389,6 +399,9 @@ class PlaygroundService:
             "aspect_ratio": params.get("aspect_ratio", "16:9"),
             "seed": params.get("seed"),
             "watermark": params.get("watermark", False),
+            # Every Seedance gateway derives its wire model id (2.0 vs 2.0-fast
+            # vs 2.5) from this, so it has to travel with the request.
+            "model_name": gen.model_id,
         }
 
         # r2v: reference images
@@ -396,7 +409,26 @@ class PlaygroundService:
             kwargs["generation_mode"] = "r2v"
             kwargs["ref_image_urls"] = list(gen.input_media)
 
-        self._mulerouter_video_model.generate(
+        if backend == "mulerouter":
+            from ...models.mulerouter import MuleRouterVideoModel
+
+            if self._mulerouter_video_model is None:
+                self._mulerouter_video_model = MuleRouterVideoModel({})
+            model = self._mulerouter_video_model
+        elif backend == "byteplus":
+            from ...models.byteplus import BytePlusVideoModel
+
+            if self._byteplus_video_model is None:
+                self._byteplus_video_model = BytePlusVideoModel({})
+            model = self._byteplus_video_model
+        else:
+            from ...models.seevio import SeevioVideoModel
+
+            if self._seevio_video_model is None:
+                self._seevio_video_model = SeevioVideoModel({})
+            model = self._seevio_video_model
+
+        model.generate(
             prompt=gen.prompt,
             output_path=out_path,
             img_url=img_url,

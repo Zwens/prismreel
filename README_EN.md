@@ -53,7 +53,7 @@ PrismReel currently includes two core modules:
 ### 🎨 Playground — Standalone Generation Workbench
 
 - **6 Generation Modes** — Image, Text-to-Video, Image-to-Video, Reference-to-Video, Video Editing
-- **10+ AI Models** — GPT-Image-2, Wan 2.7, Seedance 2.0, Kling V3, Vidu Q3, HappyHorse, etc.
+- **10+ AI Models** — GPT-Image-2, Wan 2.7, Seedance 2.0/2.5, Kling V3, Vidu Q3, HappyHorse, etc.
 - **Dynamic Parameters** — Per-model parameter configuration (size/resolution/duration/quality)
 - **Concurrent Tasks** — Multiple tasks execute simultaneously with real-time status tracking
 - **Prompt Templates** — Save/reuse/favorite/history
@@ -98,7 +98,7 @@ PrismReel currently includes two core modules:
 | **DashScope** | Kling V3 | I2V, R2V |
 | **DashScope** | Vidu Q3 Pro / Turbo | I2V, R2V |
 | **DashScope** | PixVerse V6 / C1 | I2V, R2V |
-| **MuleRun** | Seedance 2.0 | T2V, I2V, R2V |
+| **Seevio** | Seedance 2.0 / 2.0 Fast / 2.5 | T2V, I2V, R2V |
 | **MuleRun** | GPT-Image-2 | T2I, I2I (up to 4K) |
 | **Kling Direct** | Kling V3 | I2V, R2V |
 | **Vidu Direct** | Vidu Q3 Pro / Turbo | I2V, R2V |
@@ -156,7 +156,8 @@ PrismReel uses a **local-first** architecture. The minimal setup requires only o
 | Mode | Required | Available Capabilities |
 |------|----------|----------------------|
 | **Basic** | `DASHSCOPE_API_KEY` | Wan/Qwen/HappyHorse/PixVerse/Kling(proxy)/Vidu(proxy) + TTS |
-| **+ MuleRun** | + `mulerun login` or `MULEROUTER_API_KEY` | + Seedance 2.0 + GPT-Image-2 |
+| **+ Seevio** | + `SEEVIO_API_KEY` (I2V/R2V also need OSS) | + Seedance 2.0 / 2.0 Fast / 2.5 |
+| **+ MuleRun** | + `mulerun login` or `MULEROUTER_API_KEY` | + GPT-Image-2 |
 | **+ Kling Direct** | + `KLING_ACCESS_KEY` + `KLING_SECRET_KEY` | Kling direct connection |
 | **+ Vidu Direct** | + `VIDU_API_KEY` | Vidu direct connection |
 | **+ OSS** | + Alibaba Cloud OSS credentials | Cloud media mirror + signed URLs |

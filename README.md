@@ -53,7 +53,7 @@ PrismReel 目前包含两个核心模块：
 ### 🎨 Playground — 独立生成工具台
 
 - **6 种生成模式** — 图像生成、文生视频、图生视频、参考生视频、视频编辑
-- **10+ AI 模型** — GPT-Image-2、Wan 2.7、Seedance 2.0、Kling V3、Vidu Q3、HappyHorse 等
+- **10+ AI 模型** — GPT-Image-2、Wan 2.7、Seedance 2.0/2.5、Kling V3、Vidu Q3、HappyHorse 等
 - **动态参数** — 每个模型独立参数（尺寸/分辨率/时长/画质）
 - **并发任务** — 多任务同时执行，实时状态追踪
 - **Prompt 模板** — 收藏/复用/历史记录
@@ -98,7 +98,7 @@ PrismReel 目前包含两个核心模块：
 | **DashScope** | Kling V3 | I2V, R2V |
 | **DashScope** | Vidu Q3 Pro / Turbo | I2V, R2V |
 | **DashScope** | PixVerse V6 / C1 | I2V, R2V |
-| **MuleRun** | Seedance 2.0 | T2V, I2V, R2V |
+| **Seevio** | Seedance 2.0 / 2.0 Fast / 2.5 | T2V, I2V, R2V |
 | **MuleRun** | GPT-Image-2 | T2I, I2I (含 4K) |
 | **Kling 原厂** | Kling V3 | I2V, R2V |
 | **Vidu 原厂** | Vidu Q3 Pro / Turbo | I2V, R2V |
@@ -156,7 +156,8 @@ PrismReel 采用 **本地优先** 的架构，最简配置只需一个 API Key�
 | 模式 | 必填 | 可用能力 |
 |------|------|----------|
 | **基础** | `DASHSCOPE_API_KEY` | Wan/Qwen/HappyHorse/PixVerse/Kling(代理)/Vidu(代理) + TTS |
-| **+ MuleRun** | + `mulerun login` 或 `MULEROUTER_API_KEY` | + Seedance 2.0 + GPT-Image-2 |
+| **+ Seevio** | + `SEEVIO_API_KEY`（I2V/R2V 还需 OSS） | + Seedance 2.0 / 2.0 Fast / 2.5 |
+| **+ MuleRun** | + `mulerun login` 或 `MULEROUTER_API_KEY` | + GPT-Image-2 |
 | **+ Kling 原厂** | + `KLING_ACCESS_KEY` + `KLING_SECRET_KEY` | Kling 直连 |
 | **+ Vidu 原厂** | + `VIDU_API_KEY` | Vidu 直连 |
 | **+ OSS** | + 阿里云 OSS 凭证 | 云端媒体镜像 + 签名 URL |

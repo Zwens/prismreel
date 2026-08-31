@@ -26,6 +26,7 @@ type EnvConfig = EnvConfigPayload & {
   KLING_SECRET_KEY: string;
   VIDU_API_KEY: string;
   MULEROUTER_API_KEY: string;
+  SEEVIO_API_KEY: string;
   ARK_API_KEY: string;
   ARK_REGION: string;
   MULERUN_CLI_LOGGED_IN?: boolean;
@@ -37,6 +38,7 @@ const ENDPOINT_PROVIDERS = [
   { key: "KLING_BASE_URL", label: "Kling", placeholder: "https://api-beijing.klingai.com/v1" },
   { key: "VIDU_BASE_URL", label: "Vidu", placeholder: "https://api.vidu.cn/ent/v2" },
   { key: "MULEROUTER_BASE_URL", label: "MuleRouter", placeholder: "https://api.mulerouter.ai" },
+  { key: "SEEVIO_BASE_URL", label: "Seevio", placeholder: "https://api.seevio.ai" },
 ];
 
 const DEFAULT_CONFIG: EnvConfig = {
@@ -53,6 +55,7 @@ const DEFAULT_CONFIG: EnvConfig = {
   KLING_SECRET_KEY: "",
   VIDU_API_KEY: "",
   MULEROUTER_API_KEY: "",
+  SEEVIO_API_KEY: "",
   ARK_API_KEY: "",
   ARK_REGION: "",
   endpoint_overrides: {},
@@ -433,10 +436,31 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                   </div>
                 </div>
 
+                {/* Seevio — default gateway for the whole Seedance family. */}
+                <div className="space-y-3 pt-4 border-t border-glass-border">
+                  <h4 className="text-sm font-medium text-text-secondary">Seevio</h4>
+                  <p className="text-xs text-text-secondary/60">
+                    Seedance 默认通道（2.0 / 2.0-fast / 2.5）。密钥由 seevio.ai 签发，与火山方舟官网直连的密钥不通用。
+                  </p>
+                  <div>
+                    <label className="block text-xs text-text-secondary mb-1">{t("apiKeyLabel")}</label>
+                    <input
+                      type="password"
+                      value={config.SEEVIO_API_KEY}
+                      onChange={(e) => handleChange("SEEVIO_API_KEY", e.target.value)}
+                      placeholder="sk_live_..."
+                      className={inputClass}
+                    />
+                    <p className="text-[0.6875rem] text-text-secondary/60 mt-1">
+                      图生视频 / 参考生视频还需配好 OSS —— Seevio 只接受公网可访问的图片 URL。
+                    </p>
+                  </div>
+                </div>
+
                 {/* MuleRun / MuleRouter */}
                 <div className="space-y-3 pt-4 border-t border-glass-border">
                   <h4 className="text-sm font-medium text-text-secondary">MuleRun / MuleRouter</h4>
-                  <p className="text-xs text-text-secondary/60">用于 Seedance 2.0 视频生成和 GPT-Image-2 图片生成</p>
+                  <p className="text-xs text-text-secondary/60">GPT-Image-2 图片生成必需；Seedance 2.0 的备用通道</p>
                   <div>
                     <label className="block text-xs text-text-secondary mb-1">{t("apiKeyLabel")}</label>
                     <input

@@ -93,6 +93,7 @@ class ComicGenPipeline:
         self._vidu_model = None
         self._mulerouter_video_model = None
         self._byteplus_video_model = None
+        self._seevio_video_model = None
 
         # Pre-download Demucs model in background so first dub request is fast
         self._demucs_ready = threading.Event()
@@ -3322,15 +3323,34 @@ class ComicGenPipeline:
                 or model_name_lower.startswith("viduq3")
                 or model_name_lower.startswith("vidu/vidu")
             )
-            use_mulerouter = backend == "mulerouter" and (
-                model_name_lower.startswith("seedance")
-            )
-            # Seedance 2.5 is not on the MuleRouter gateway (probed 2026-08-30:
-            # every seedance-2.5 path 404s while 2.0 answers) — it is reached
-            # through BytePlus / Volcano Ark instead.
-            use_byteplus = backend == "byteplus" or model_name_lower.startswith("seedance-2.5")
+            is_seedance = model_name_lower.startswith("seedance")
+            use_mulerouter = backend == "mulerouter" and is_seedance
+            # Seedance now defaults to the Seevio aggregator, which is where
+            # this project's sk_live_ keys come from. MuleRouter (2.0 only) and
+            # Ark direct (2.5 only) stay reachable via SEEDANCE_PROVIDER_MODE
+            # for anyone holding those credentials instead.
+            use_seevio = backend == "seevio" and is_seedance
+            use_byteplus = backend == "byteplus" and is_seedance
 
-            if use_byteplus:
+            if use_seevio:
+                if self._seevio_video_model is None:
+                    from ...models.seevio import SeevioVideoModel
+                    self._seevio_video_model = SeevioVideoModel({})
+                video_path, _ = self._seevio_video_model.generate(
+                    prompt=task.prompt,
+                    output_path=output_path,
+                    img_url=img_url,
+                    img_path=img_path,
+                    duration=task.duration,
+                    resolution=task.resolution,
+                    aspect_ratio=task.ratio or "16:9",
+                    seed=task.seed,
+                    watermark=bool(task.watermark) if task.watermark is not None else False,
+                    generation_mode=task.generation_mode,
+                    ref_image_urls=task.reference_image_urls if task.generation_mode == "r2v" else None,
+                    model_name=task.model,
+                )
+            elif use_byteplus:
                 if self._byteplus_video_model is None:
                     from ...models.byteplus import BytePlusVideoModel
                     self._byteplus_video_model = BytePlusVideoModel({})

@@ -301,11 +301,17 @@ def resolve_media_input(
         mode.startswith("vidu_vendor_")
         or mode.startswith("kling_vendor_")
         or mode.startswith("pixverse_vendor_")
+        # Seevio documents image_urls/video_urls/audio_urls as "publicly
+        # reachable URLs" and ships no upload endpoint, so it needs exactly the
+        # same upload-then-sign treatment as the vendor URL providers.
+        or mode.startswith("seevio_")
     ):
         if mode.startswith("vidu_vendor_"):
             provider_label = "Vidu"
         elif mode.startswith("kling_vendor_"):
             provider_label = "Kling"
+        elif mode.startswith("seevio_"):
+            provider_label = "Seevio"
         else:
             provider_label = "Pixverse"
         return _resolve_vendor_url_mode(
