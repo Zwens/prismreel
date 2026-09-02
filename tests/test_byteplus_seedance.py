@@ -128,5 +128,8 @@ def test_model_id_comes_from_the_call_not_the_instance(model):
     assert model.resolve_model_id("seedance-2.5-r2v") == "dreamina-seedance-2-5-260628"
 
 
-def test_unknown_model_id_passes_through_untouched(model):
-    assert model.resolve_model_id("some-future-id") == "some-future-id"
+def test_unknown_model_id_returns_none(model):
+    """Unrecognised ids must not be guessed at — see
+    tests/test_seedance_variant_routing.py for the full resolution contract
+    (resolve_ark_model_id), which this instance method now delegates to."""
+    assert model.resolve_model_id("some-future-id") is None

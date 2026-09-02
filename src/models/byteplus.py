@@ -37,8 +37,20 @@ ARK_HOSTS = {
 
 DEFAULT_TASKS_PATH = "/contents/generations/tasks"
 
-# Catalog ids -> the id Ark expects on the wire.
+# Catalog ids -> the id Ark expects on the wire. Both the flat legacy id
+# (seedance-2.0-fast-t2v) and the catalog canonical id
+# (seedance/seedance-2.0-fast-video#t2v) have to resolve, because playground
+# holds the former and the comic pipeline holds the latter.
 ARK_MODEL_IDS = {
+    "seedance-2.0-t2v": "dreamina-seedance-2-0-260128",
+    "seedance-2.0-i2v": "dreamina-seedance-2-0-260128",
+    "seedance-2.0-r2v": "dreamina-seedance-2-0-260128",
+    "seedance-2.0-fast-t2v": "dreamina-seedance-2-0-fast-260128",
+    "seedance-2.0-fast-i2v": "dreamina-seedance-2-0-fast-260128",
+    "seedance-2.0-fast-r2v": "dreamina-seedance-2-0-fast-260128",
+    "seedance-2.0-mini-t2v": "dreamina-seedance-2-0-mini-260615",
+    "seedance-2.0-mini-i2v": "dreamina-seedance-2-0-mini-260615",
+    "seedance-2.0-mini-r2v": "dreamina-seedance-2-0-mini-260615",
     "seedance-2.5-t2v": "dreamina-seedance-2-5-260628",
     "seedance-2.5-i2v": "dreamina-seedance-2-5-260628",
     "seedance-2.5-r2v": "dreamina-seedance-2-5-260628",
@@ -46,6 +58,35 @@ ARK_MODEL_IDS = {
 
 POLL_INTERVAL = 5
 MAX_WAIT = 1800
+
+
+def resolve_ark_model_id(model_name: Optional[str]) -> Optional[str]:
+    """Map a catalog id to the wire model id Ark expects.
+
+    Pure by design: the model instance is cached and shared across tasks, so
+    resolving into instance state would let one shot's variant leak into the
+    next. Returns None for anything unrecognised rather than defaulting to the
+    standard variant — fast and mini bill differently, so a silent fallback
+    would misbill instead of failing loudly.
+    """
+    if not model_name:
+        return None
+
+    flat = model_name.strip().lower()
+    if flat in ARK_MODEL_IDS:
+        return ARK_MODEL_IDS[flat]
+
+    # Canonical form: seedance/seedance-2.0-fast-video#t2v
+    if "#" in flat:
+        family_part, _, mode = flat.partition("#")
+        base = family_part.rsplit("/", 1)[-1]
+        if base.endswith("-video"):
+            base = base[: -len("-video")]
+        candidate = f"{base}-{mode}"
+        if candidate in ARK_MODEL_IDS:
+            return ARK_MODEL_IDS[candidate]
+
+    return None
 
 
 def resolve_ark_base_url() -> str:
@@ -101,12 +142,7 @@ class BytePlusVideoModel(VideoGenModel):
     # -- helpers ---------------------------------------------------------
 
     def resolve_model_id(self, model_name: Optional[str]) -> Optional[str]:
-        """Map a catalog id to the wire id. Unknown ids pass through so a newly
-        released model can be used by pinning its id in project settings
-        without a code change."""
-        if not model_name:
-            return None
-        return ARK_MODEL_IDS.get(model_name, model_name)
+        return resolve_ark_model_id(model_name)
 
     def _headers(self) -> Dict[str, str]:
         api_key = os.getenv("ARK_API_KEY")

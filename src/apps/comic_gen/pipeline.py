@@ -91,7 +91,6 @@ class ComicGenPipeline:
         # Cached model instances (lazily initialized)
         self._kling_model = None
         self._vidu_model = None
-        self._mulerouter_video_model = None
         self._byteplus_video_model = None
 
         # Pre-download Demucs model in background so first dub request is fast
@@ -3322,13 +3321,9 @@ class ComicGenPipeline:
                 or model_name_lower.startswith("viduq3")
                 or model_name_lower.startswith("vidu/vidu")
             )
-            use_mulerouter = backend == "mulerouter" and (
-                model_name_lower.startswith("seedance")
-            )
-            # Seedance 2.5 is not on the MuleRouter gateway (probed 2026-08-30:
-            # every seedance-2.5 path 404s while 2.0 answers) — it is reached
-            # through BytePlus / Volcano Ark instead.
-            use_byteplus = backend == "byteplus" or model_name_lower.startswith("seedance-2.5")
+            # Seedance runs entirely on BytePlus Ark; the MuleRouter gateway
+            # this family used to share has been removed.
+            use_byteplus = backend == "byteplus" or model_name_lower.startswith("seedance")
 
             if use_byteplus:
                 if self._byteplus_video_model is None:
@@ -3346,26 +3341,6 @@ class ComicGenPipeline:
                     watermark=bool(task.watermark) if task.watermark is not None else False,
                     generation_mode=task.generation_mode,
                     ref_image_urls=task.reference_image_urls if task.generation_mode == "r2v" else None,
-                    model_name=task.model,
-                )
-            elif use_mulerouter:
-                if self._mulerouter_video_model is None:
-                    from ...models.mulerouter import MuleRouterVideoModel
-                    self._mulerouter_video_model = MuleRouterVideoModel({})
-                video_path, _ = self._mulerouter_video_model.generate(
-                    prompt=task.prompt,
-                    output_path=output_path,
-                    img_url=img_url,
-                    img_path=img_path,
-                    duration=task.duration,
-                    resolution=task.resolution,
-                    aspect_ratio=task.ratio or "16:9",
-                    seed=task.seed,
-                    watermark=bool(task.watermark) if task.watermark is not None else False,
-                    generation_mode=task.generation_mode,
-                    ref_image_urls=task.reference_image_urls if task.generation_mode == "r2v" else None,
-                    # The instance is cached across shots, so the fast/standard
-                    # variant has to travel with the request, not the object.
                     model_name=task.model,
                 )
             elif use_vendor_kling:

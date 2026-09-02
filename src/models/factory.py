@@ -15,8 +15,5 @@ class ModelFactory:
         elif model_name in ('vidu', 'viduq3-pro', 'viduq3-turbo'):
             from .vidu import ViduModel
             return ViduModel(config.get('model') or {})
-        elif model_name in ('seedance', 'seedance-2.0'):
-            from .mulerouter import MuleRouterVideoModel
-            return MuleRouterVideoModel(config.get('model') or {})
         else:
             raise ValueError(f"Unknown model: {model_name}")

@@ -1,7 +1,7 @@
 """Playground service layer -- orchestrates AI generation by delegating to existing model adapters.
 
 Routes based on model_id to the appropriate adapter (WanxModel, KlingModel,
-ViduModel, MuleRouterVideoModel/ImageModel, WanxImageModel).  Mirrors the
+ViduModel, BytePlusVideoModel, WanxImageModel).  Mirrors the
 routing logic in ``src/apps/comic_gen/pipeline.py:process_video_task()``.
 """
 
@@ -40,7 +40,6 @@ class PlaygroundService:
         self._wanx_image_model = None
         self._kling_model = None
         self._vidu_model = None
-        self._mulerouter_video_model = None
         self._byteplus_video_model = None
         self._mulerouter_image_model = None
         self._vidu_image_model = None
@@ -375,25 +374,23 @@ class PlaygroundService:
         )
 
     def _generate_video_seedance(self, gen: PlaygroundGeneration, out_path: str) -> None:
-        """Delegate Seedance to its gateway: 2.0 on MuleRouter, 2.5 on Ark.
+        """Seedance runs entirely on BytePlus Ark.
 
-        Playground used to send the whole family to MuleRouter, but 2.5 has
-        never been on that gateway (every seedance-2.5 path 404s there), so
-        picking 2.5 here failed at the provider every time. The split mirrors
-        the one the comic pipeline already makes.
+        The family used to straddle two gateways; MuleRouter is gone, so there
+        is a single path now.
         """
         params = gen.parameters
         img_path, img_url = self._resolve_first_input_media(gen)
 
         kwargs = {
             "duration": params.get("duration", 5),
-            "resolution": params.get("resolution", "1080p"),
-            "aspect_ratio": params.get("aspect_ratio", "16:9"),
+            "resolution": params.get("resolution", "720p"),
+            "aspect_ratio": params.get("aspect_ratio", "adaptive"),
             "seed": params.get("seed"),
             "watermark": params.get("watermark", False),
-            # Both adapters derive the wire model id (2.0 vs 2.0-fast vs 2.5)
-            # from this. Playground never sent it, so every fast-variant run
-            # here silently billed and rendered as the standard variant.
+            # The adapter derives the wire model id (2.0 vs fast vs mini vs
+            # 2.5) from this. Playground never sent it, so every fast-variant
+            # run here silently billed and rendered as the standard variant.
             "model_name": gen.model_id,
         }
 
@@ -402,21 +399,11 @@ class PlaygroundService:
             kwargs["generation_mode"] = "r2v"
             kwargs["ref_image_urls"] = list(gen.input_media)
 
-        # Substring, not prefix: playground can hold either the flat id
-        # (seedance-2.5-t2v) or the canonical one
-        # (seedance/seedance-2.5-video#t2v).
-        if "seedance-2.5" in gen.model_id.lower():
-            from ...models.byteplus import BytePlusVideoModel
+        from ...models.byteplus import BytePlusVideoModel
 
-            if self._byteplus_video_model is None:
-                self._byteplus_video_model = BytePlusVideoModel({})
-            model = self._byteplus_video_model
-        else:
-            from ...models.mulerouter import MuleRouterVideoModel
-
-            if self._mulerouter_video_model is None:
-                self._mulerouter_video_model = MuleRouterVideoModel({})
-            model = self._mulerouter_video_model
+        if self._byteplus_video_model is None:
+            self._byteplus_video_model = BytePlusVideoModel({})
+        model = self._byteplus_video_model
 
         model.generate(
             prompt=gen.prompt,

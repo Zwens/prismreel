@@ -1,59 +1,61 @@
-"""The Seedance fast variant has to be selectable per call.
+"""Seedance 变体必须按调用解析，且只走 Ark。
 
-The runtime has always known the `-fast` endpoints, but `use_fast` was read
-once from the constructor config and the pipeline builds the model with an
-empty dict — so the fast paths were unreachable and the catalog could not
-expose them honestly.
+模型实例是缓存复用的（pipeline 的 self._byteplus_video_model），所以变体必须
+每次调用现算。存到实例上会让上一次的选择泄漏到下一次生成里。
 
-The model instance is CACHED and reused across tasks (`self._mulerouter_video_model`
-in the pipeline), so the variant must be derived per call. Storing it on the
-instance would let one shot's choice leak into the next shot's generation.
+fast / mini 与标准版计费不同（fast 720p 约 0.12 USD/秒，标准版约 0.15），
+所以「解析不出来就退回标准版」是有意为之的安全默认。
 """
 
 import pytest
 
-from src.models.mulerouter import resolve_seedance_endpoint
+from src.models.byteplus import resolve_ark_model_id
 
 
 @pytest.mark.parametrize("mode", ["t2v", "i2v", "r2v"])
-def test_plain_model_id_routes_to_the_standard_endpoint(mode):
-    path = resolve_seedance_endpoint(mode, "seedance-2.0-" + mode)
-
-    assert "/seedance-2.0/" in path
-    assert "-fast" not in path
+def test_plain_model_id_maps_to_the_standard_ark_id(mode):
+    assert resolve_ark_model_id(f"seedance-2.0-{mode}") == "dreamina-seedance-2-0-260128"
 
 
-@pytest.mark.parametrize("mode,segment", [
-    ("t2v", "text-to-video"),
-    ("i2v", "image-to-video"),
-    ("r2v", "reference-to-video"),
-])
-def test_fast_model_id_routes_to_the_fast_endpoint(mode, segment):
-    path = resolve_seedance_endpoint(mode, "seedance-2.0-fast-" + mode)
-
-    assert "/seedance-2.0-fast/" in path
-    assert segment in path
+@pytest.mark.parametrize("mode", ["t2v", "i2v", "r2v"])
+def test_fast_model_id_maps_to_the_fast_ark_id(mode):
+    assert resolve_ark_model_id(f"seedance-2.0-fast-{mode}") == "dreamina-seedance-2-0-fast-260128"
 
 
-def test_unknown_or_missing_model_id_falls_back_to_standard():
-    """A caller that never passes a model name must not silently get fast
-    (which bills differently); standard is the safe default."""
-    assert "-fast" not in resolve_seedance_endpoint("t2v", None)
-    assert "-fast" not in resolve_seedance_endpoint("t2v", "")
-    assert "-fast" not in resolve_seedance_endpoint("t2v", "something-else")
+@pytest.mark.parametrize("mode", ["t2v", "i2v", "r2v"])
+def test_mini_model_id_maps_to_the_mini_ark_id(mode):
+    assert resolve_ark_model_id(f"seedance-2.0-mini-{mode}") == "dreamina-seedance-2-0-mini-260615"
+
+
+@pytest.mark.parametrize("mode", ["t2v", "i2v", "r2v"])
+def test_25_model_id_maps_to_the_25_ark_id(mode):
+    assert resolve_ark_model_id(f"seedance-2.5-{mode}") == "dreamina-seedance-2-5-260628"
 
 
 def test_canonical_mode_id_with_fast_is_recognised():
-    """Catalog canonical ids look like seedance/seedance-2.0-fast-video#t2v."""
-    path = resolve_seedance_endpoint("t2v", "seedance/seedance-2.0-fast-video#t2v")
+    """Catalog 规范 id 形如 seedance/seedance-2.0-fast-video#t2v。"""
+    assert resolve_ark_model_id(
+        "seedance/seedance-2.0-fast-video#t2v"
+    ) == "dreamina-seedance-2-0-fast-260128"
 
-    assert "/seedance-2.0-fast/" in path
+
+def test_canonical_mode_id_without_variant_is_recognised():
+    assert resolve_ark_model_id(
+        "seedance/seedance-2.0-video#i2v"
+    ) == "dreamina-seedance-2-0-260128"
+
+
+def test_unknown_or_missing_model_id_returns_none():
+    """调用方没传型号时不能猜；返回 None 让上层报错，而不是静默按标准版计费。"""
+    assert resolve_ark_model_id(None) is None
+    assert resolve_ark_model_id("") is None
+    assert resolve_ark_model_id("something-else") is None
 
 
 def test_consecutive_calls_do_not_leak_the_variant():
-    """The cached model instance is shared; resolution must be pure."""
-    fast = resolve_seedance_endpoint("t2v", "seedance-2.0-fast-t2v")
-    plain = resolve_seedance_endpoint("t2v", "seedance-2.0-t2v")
+    """缓存的模型实例是共享的，解析必须是纯函数。"""
+    fast = resolve_ark_model_id("seedance-2.0-fast-t2v")
+    plain = resolve_ark_model_id("seedance-2.0-t2v")
 
-    assert "-fast" in fast
-    assert "-fast" not in plain
+    assert fast == "dreamina-seedance-2-0-fast-260128"
+    assert plain == "dreamina-seedance-2-0-260128"
