@@ -906,13 +906,10 @@ def resolve_image_adapter(model_name: str, default_adapter: ImageGenModel = None
     if cached is not None:
         return cached
 
-    if provider == "mulerouter":
-        from .mulerouter import MuleRouterImageModel
-        cached = MuleRouterImageModel({})
-    elif provider == "vidu":
+    if provider == "vidu":
         from .vidu import ViduImageModel
         cached = ViduImageModel({})
-    else:  # pragma: no cover - _image_provider_for only returns the above
+    else:  # pragma: no cover - _image_provider_for only returns "" or "vidu"
         return default_adapter
 
     _IMAGE_ADAPTER_CACHE[provider] = cached
