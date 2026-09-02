@@ -1,4 +1,5 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithIntl } from '@/test-utils/intl';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock framer-motion
@@ -65,7 +66,7 @@ const defaultProps = {
 };
 
 function renderDialog(props = {}) {
-    return render(<ImportFileDialog {...defaultProps} {...props} />);
+    return renderWithIntl(<ImportFileDialog {...defaultProps} {...props} />);
 }
 
 // ── Tests ──

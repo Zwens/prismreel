@@ -1,4 +1,5 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithIntl } from '@/test-utils/intl';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock framer-motion
@@ -20,23 +21,33 @@ vi.mock('framer-motion', () => ({
     AnimatePresence: ({ children }: any) => <>{children}</>,
 }));
 
-// Mock lucide-react icons
-vi.mock('lucide-react', () => ({
-    ArrowLeft: (props: any) => <span data-testid="icon-arrow-left" {...props} />,
-    Users: (props: any) => <span data-testid="icon-users" {...props} />,
-    MapPin: (props: any) => <span data-testid="icon-map-pin" {...props} />,
-    Package: (props: any) => <span data-testid="icon-package" {...props} />,
-    Plus: (props: any) => <span data-testid="icon-plus" {...props} />,
-    X: (props: any) => <span data-testid="icon-x" {...props} />,
-    Image: (props: any) => <span data-testid="icon-image" {...props} />,
-    Settings: (props: any) => <span data-testid="icon-settings" {...props} />,
-    FileText: (props: any) => <span data-testid="icon-file-text" {...props} />,
-    Download: (props: any) => <span data-testid="icon-download" {...props} />,
-    MessageSquareCode: (props: any) => <span data-testid="icon-message-square-code" {...props} />,
-    ChevronLeft: (props: any) => <span data-testid="icon-chevron-left" {...props} />,
-    ChevronRight: (props: any) => <span data-testid="icon-chevron-right" {...props} />,
-    Play: (props: any) => <span data-testid="icon-play" {...props} />,
-}));
+// Mock lucide-react icons.
+//
+// Stubbed through a Proxy rather than listed one by one: the old explicit
+// list silently returned undefined for any icon it missed, and React then
+// threw while rendering it, which blanked the entire page and failed every
+// test in this file with a misleading "unable to find text" error. That is
+// how SeriesSidebar's Palette broke all 25 specs here.
+vi.mock('lucide-react', () => {
+    const toTestId = (name: string) =>
+        'icon-' + name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+    const cache = new Map<string, any>();
+    return new Proxy({} as Record<string, any>, {
+        // `then` must stay undefined or the module namespace looks thenable
+        // to the loader and gets awaited into nothing.
+        get: (_target, prop) => {
+            if (typeof prop !== 'string' || prop === 'then') return undefined;
+            if (prop === '__esModule') return true;
+            if (!cache.has(prop)) {
+                const Icon = (props: any) => <span data-testid={toTestId(prop)} {...props} />;
+                Icon.displayName = prop;
+                cache.set(prop, Icon);
+            }
+            return cache.get(prop);
+        },
+        has: () => true,
+    });
+});
 
 // Mock AssetCard
 vi.mock('@/components/common/AssetCard', () => ({
@@ -93,7 +104,7 @@ const mockEpisodes = [
 // ── Helpers ──
 
 function renderPage(seriesId = 'series-1') {
-    return render(<SeriesDetailPage seriesId={seriesId} />);
+    return renderWithIntl(<SeriesDetailPage seriesId={seriesId} />);
 }
 
 // ── Tests ──
@@ -383,7 +394,12 @@ describe('SeriesDetailPage', () => {
             fireEvent.click(screen.getByText('确定'));
 
             await waitFor(() => {
-                expect(mockCreateEpisodeForSeries).toHaveBeenCalledWith('series-1', '新集数', 3);
+                // 4th arg is the workflow mode the new episode inherits from
+                // its series; mockSeries carries no workflow_mode, so the
+                // component's "i2v_legacy" fallback is what gets sent.
+                expect(mockCreateEpisodeForSeries).toHaveBeenCalledWith(
+                    'series-1', '新集数', 3, 'i2v_legacy',
+                );
             });
         });
 
