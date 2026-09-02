@@ -911,7 +911,8 @@ def build_catalog_dict(catalog_root: Optional[Path] = None) -> Dict[str, Any]:
     if r2v_default:
         default_settings["r2v_model"] = r2v_default
 
-    return {
+    # Build the complete catalog
+    catalog = {
         "version": version,
         "defaults": {
             "model_settings": default_settings,
@@ -926,6 +927,27 @@ def build_catalog_dict(catalog_root: Optional[Path] = None) -> Dict[str, Any]:
         "models": {key: models[key] for key in sorted(models)},
     }
 
+    # Attach pricing data (sourced from pricing.yaml)
+    pricing = load_pricing()
+
+    # Attach to modes first
+    for mode_entry in catalog.get("modes", {}).values():
+        attach_pricing(mode_entry, pricing)
+
+    # Then copy pricing to legacy models from their corresponding canonical mode
+    legacy_to_canonical = catalog.get("compat", {}).get("legacy_model_ids", {})
+    catalog_modes = catalog.get("modes", {})
+    for legacy_model_id, model_entry in catalog["models"].items():
+        canonical_mode_id = legacy_to_canonical.get(legacy_model_id)
+        if canonical_mode_id and canonical_mode_id in catalog_modes:
+            mode_entry = catalog_modes[canonical_mode_id]
+            model_entry["pricing"] = mode_entry.get("pricing")
+        else:
+            # Fallback: try to attach directly if possible
+            attach_pricing(model_entry, pricing)
+
+    return catalog
+
 
 def write_generated_catalog(
     output_path: Path = GENERATED_MODEL_CATALOG_PATH,
@@ -935,24 +957,6 @@ def write_generated_catalog(
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     catalog = build_catalog_dict(catalog_root or MODEL_CATALOG_ROOT)
-    pricing = load_pricing()
-
-    # Attach pricing to modes (canonical modes) first
-    for mode_entry in catalog.get("modes", {}).values():
-        attach_pricing(mode_entry, pricing)
-
-    # Then copy pricing to legacy models from their corresponding canonical mode
-    legacy_to_canonical = catalog.get("compat", {}).get("legacy_model_ids", {})
-    modes = catalog.get("modes", {})
-    for legacy_model_id, model_entry in catalog["models"].items():
-        canonical_mode_id = legacy_to_canonical.get(legacy_model_id)
-        if canonical_mode_id and canonical_mode_id in modes:
-            mode_entry = modes[canonical_mode_id]
-            model_entry["pricing"] = mode_entry.get("pricing")
-        else:
-            # Fallback: try to attach directly if possible
-            attach_pricing(model_entry, pricing)
-
     output.write_text(
         json.dumps(catalog, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
         encoding="utf-8",
