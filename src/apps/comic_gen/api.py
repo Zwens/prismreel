@@ -1895,7 +1895,7 @@ def update_next_episode_hook(script_id: str, payload: dict):
     return {"hook": script.next_hook_cache, "stale": False}
 
 
-@app.post("/projects/{script_id}/sync_descriptions", response_model=Script)
+@app.post("/projects/{script_id}/sync_descriptions")
 def sync_descriptions(script_id: str):
     """
     Syncs entity descriptions from Script module to Assets module.
@@ -1907,7 +1907,7 @@ def sync_descriptions(script_id: str):
     """
     try:
         updated_script = pipeline.sync_descriptions_from_script_entities(script_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -2036,7 +2036,7 @@ def generate_motion_ref(script_id: str, request: GenerateMotionRefRequest, backg
         background_tasks.add_task(pipeline.process_motion_ref_task, script_id, task_id)
         
         # Return script with task_id for frontend polling
-        response_data = script.model_dump() if hasattr(script, 'model_dump') else script.dict()
+        response_data = merged_project_payload(script)
         response_data["_task_id"] = task_id
         return signed_response(response_data)
 
@@ -2502,7 +2502,7 @@ def toggle_asset_starred(script_id: str, request: ToggleLockRequest):
 
 
 
-@app.post("/projects/{script_id}/assets/update_image", response_model=Script)
+@app.post("/projects/{script_id}/assets/update_image")
 def update_asset_image(script_id: str, request: UpdateAssetImageRequest):
     """Updates an asset's image URL manually."""
     try:
@@ -2512,7 +2512,7 @@ def update_asset_image(script_id: str, request: UpdateAssetImageRequest):
             request.asset_type,
             request.image_url
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -2544,7 +2544,7 @@ class UpdateAssetDescriptionRequest(BaseModel):
     description: str
 
 
-@app.post("/projects/{script_id}/assets/update_description", response_model=Script)
+@app.post("/projects/{script_id}/assets/update_description")
 def update_asset_description(script_id: str, request: UpdateAssetDescriptionRequest):
     """Updates an asset's description."""
     try:
@@ -2554,7 +2554,7 @@ def update_asset_description(script_id: str, request: UpdateAssetDescriptionRequ
             request.asset_type,
             request.description
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -2568,7 +2568,7 @@ class SelectVariantRequest(BaseModel):
     variant_id: str
     generation_type: str = None  # For character: "full_body", "three_view", "headshot"
 
-@app.post("/projects/{script_id}/assets/variant/select", response_model=Script)
+@app.post("/projects/{script_id}/assets/variant/select")
 def select_asset_variant(script_id: str, request: SelectVariantRequest):
     """Selects a specific variant for an asset."""
     try:
@@ -2579,7 +2579,7 @@ def select_asset_variant(script_id: str, request: SelectVariantRequest):
             request.variant_id,
             request.generation_type
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -2590,7 +2590,7 @@ class DeleteVariantRequest(BaseModel):
     asset_type: str
     variant_id: str
 
-@app.post("/projects/{script_id}/assets/variant/delete", response_model=Script)
+@app.post("/projects/{script_id}/assets/variant/delete")
 def delete_asset_variant(script_id: str, request: DeleteVariantRequest):
     """Deletes a specific variant from an asset."""
     try:
@@ -2600,7 +2600,7 @@ def delete_asset_variant(script_id: str, request: DeleteVariantRequest):
             request.asset_type,
             request.variant_id
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -2614,7 +2614,7 @@ class FavoriteVariantRequest(BaseModel):
     generation_type: Optional[str] = None  # For character: 'full_body', 'three_view', 'headshot'
     is_favorited: bool
 
-@app.post("/projects/{script_id}/assets/variant/favorite", response_model=Script)
+@app.post("/projects/{script_id}/assets/variant/favorite")
 def toggle_variant_favorite(script_id: str, request: FavoriteVariantRequest):
     """Toggles the favorite status of a variant. Favorited variants won't be auto-deleted when limit is reached."""
     try:
@@ -2626,13 +2626,13 @@ def toggle_variant_favorite(script_id: str, request: FavoriteVariantRequest):
             request.is_favorited,
             request.generation_type
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/projects/{script_id}/model_settings", response_model=Script)
+@app.post("/projects/{script_id}/model_settings")
 def update_model_settings(script_id: str, request: UpdateModelSettingsRequest):
     """Updates project's model settings for T2I/I2I/I2V and aspect ratios."""
     try:
@@ -2648,7 +2648,7 @@ def update_model_settings(script_id: str, request: UpdateModelSettingsRequest):
             storyboard_aspect_ratio=request.storyboard_aspect_ratio,
             image_model=request.image_model,
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -3539,7 +3539,7 @@ class RenderFrameRequest(BaseModel):
     batch_size: int = 1
 
 
-@app.post("/projects/{script_id}/storyboard/render", response_model=Script)
+@app.post("/projects/{script_id}/storyboard/render")
 def render_frame(script_id: str, request: RenderFrameRequest):
     """Renders a specific frame using composition data (I2I)."""
     try:
@@ -3552,7 +3552,7 @@ def render_frame(script_id: str, request: RenderFrameRequest):
             request.prompt,
             request.batch_size
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -3564,12 +3564,12 @@ class SelectVideoRequest(BaseModel):
     video_id: str
 
 
-@app.post("/projects/{script_id}/frames/{frame_id}/select_video", response_model=Script)
+@app.post("/projects/{script_id}/frames/{frame_id}/select_video")
 def select_video(script_id: str, frame_id: str, request: SelectVideoRequest):
     """Selects a video variant for a specific frame."""
     try:
         updated_script = pipeline.select_video_for_frame(script_id, frame_id, request.video_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -3620,7 +3620,7 @@ def extract_last_frame(script_id: str, frame_id: str, request: ExtractLastFrameR
     """Extract the last frame from a completed video and add it as a variant to the frame's rendered_image_asset."""
     try:
         updated_script = pipeline.extract_last_frame(script_id, frame_id, request.video_task_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except RuntimeError as e:
@@ -3643,7 +3643,7 @@ def upload_frame_image(script_id: str, frame_id: str, file: UploadFile = File(..
             shutil.copyfileobj(file.file, buffer)
 
         updated_script = pipeline.upload_frame_image(script_id, frame_id, file_path)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -3737,13 +3737,13 @@ async def upload_t2i_frame(script_id: str, frame_id: str, file: UploadFile = Fil
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/projects/{script_id}/merge", response_model=Script)
+@app.post("/projects/{script_id}/merge")
 def merge_videos(script_id: str):
     """Merge all selected frame videos into final output"""
     import traceback
     try:
         merged_script = pipeline.merge_videos(script_id)
-        return signed_response(merged_script)
+        return signed_response(merged_project_payload(merged_script))
     except ValueError as e:
         # Known validation errors (no videos, etc.)
         logger.error(f"[MERGE ERROR] Validation failed: {e}")
@@ -3850,7 +3850,7 @@ def clear_project_art_direction(script_id: str):
     script.updated_at = time.time()
     pipeline.scripts[script_id] = script
     pipeline._save_data()
-    return signed_response(script)
+    return signed_response(merged_project_payload(script))
 
 
 @app.put("/projects/{script_id}/last_episode_summary")
@@ -3885,7 +3885,7 @@ def update_last_episode_summary(script_id: str, payload: dict):
     return signed_response(script)
 
 
-@app.post("/projects/{script_id}/art_direction/save", response_model=Script)
+@app.post("/projects/{script_id}/art_direction/save")
 def save_art_direction(script_id: str, request: SaveArtDirectionRequest):
     """Save Art Direction configuration to the project"""
     try:
@@ -3896,7 +3896,7 @@ def save_art_direction(script_id: str, request: SaveArtDirectionRequest):
             request.custom_styles,
             request.ai_recommendations
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:

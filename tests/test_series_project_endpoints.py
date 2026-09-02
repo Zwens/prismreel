@@ -111,3 +111,30 @@ def test_storyboard_analyze_response_keeps_the_merged_cast(client, shared_char_e
     assert r.status_code == 200, r.text
     returned = {c["id"] for c in r.json()["characters"]}
     assert "char-shared" in returned, "series-shared cast dropped from response"
+
+
+# Endpoints whose response the frontend hands straight to updateProject
+# (a shallow merge), so each one has to carry the merged cast the same way
+# GET /projects/{id} does. Sampled from the reachable-without-generation
+# subset; the same rule applies to the render/merge/variant endpoints,
+# which need real media to exercise.
+STORE_FED_ENDPOINTS = [
+    ("/projects/ep-1/model_settings", {"i2v_model": "happyhorse-1.0-i2v"}),
+    ("/projects/ep-1/art_direction/clear", None),
+    ("/projects/ep-1/art_direction/save", {"selected_style_id": "noir", "style_config": {}}),
+]
+
+
+@pytest.mark.parametrize("path,body", STORE_FED_ENDPOINTS, ids=lambda v: str(v)[:40])
+def test_store_fed_endpoints_keep_the_merged_cast(client, shared_char_episode, path, body):
+    """Same invariant as the two above, across the rest of the surface.
+
+    Returning the raw episode Script here blanks the cast for any episode
+    whose assets live series-side, because the store shallow-merges the
+    response over what GET /projects/{id} had already merged.
+    """
+    r = client.post(path, json=body) if body is not None else client.post(path)
+
+    assert r.status_code == 200, r.text
+    returned = {c["id"] for c in r.json()["characters"]}
+    assert "char-shared" in returned, f"{path} dropped the series-shared cast"
