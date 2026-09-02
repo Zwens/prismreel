@@ -92,6 +92,21 @@ def _sorted_unique(values: Sequence[str]) -> List[str]:
     return sorted(dict.fromkeys(values))
 
 
+def _normalize_duration(value: Any) -> Any:
+    """Normalize duration block, plumbing through allow_auto field.
+
+    If value is None, return None. Otherwise, ensure allow_auto is present
+    (defaults to False if absent). Preserve all other fields as-is.
+    """
+    if value is None:
+        return None
+    duration = dict(_require_mapping(value, label="duration"))
+    # Add allow_auto field with default False if not present
+    if "allow_auto" not in duration:
+        duration["allow_auto"] = False
+    return duration
+
+
 def _family_source_paths(catalog_root: Path) -> List[Path]:
     if not MODEL_CATALOG_FAMILIES_DIR.exists() and catalog_root == MODEL_CATALOG_ROOT:
         family_dir = MODEL_CATALOG_FAMILIES_DIR
@@ -636,7 +651,7 @@ def build_catalog_dict(catalog_root: Optional[Path] = None) -> Dict[str, Any]:
                             mode_mapping.get("description"),
                             label=f"{family_path}: {legacy_model_id}.description",
                         ),
-                        duration=mode_mapping.get("duration"),
+                        duration=_normalize_duration(mode_mapping.get("duration")),
                         params=_require_mapping(
                             mode_mapping.get("params", {}),
                             label=f"{family_path}: {legacy_model_id}.params",
@@ -786,7 +801,7 @@ def build_catalog_dict(catalog_root: Optional[Path] = None) -> Dict[str, Any]:
                     model_mapping.get("description"),
                     label=f"{family_path}: {model_id}.description",
                 ),
-                duration=model_mapping.get("duration"),
+                duration=_normalize_duration(model_mapping.get("duration")),
                 params=_require_mapping(
                     model_mapping.get("params", {}),
                     label=f"{family_path}: {model_id}.params",
