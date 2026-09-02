@@ -356,7 +356,7 @@ export default function ParameterBar() {
               />
             )}
 
-            {/* Quality (GPT-Image-2 specific) */}
+            {/* Quality */}
             {hasQuality && (
               <ParamDropdown
                 label={t('parameters.quality')}

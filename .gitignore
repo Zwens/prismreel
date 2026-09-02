@@ -84,6 +84,8 @@ logs/
 # Secrets (extra safety)
 *secret*
 *credential*
+# Exception: track test files with "credential" in name under frontend tests
+!frontend/src/__tests__/provider-credentials.test.ts
 *.pem
 *.key
 !*.pub.key

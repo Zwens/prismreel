@@ -151,11 +151,7 @@ export default function CastWorkbenchModal({ isOpen, kind, entityId, onClose }: 
     const [applyStyle, setApplyStyle] = useState(true);
     const [galleryFilter, setGalleryFilter] = useState<"all" | "favorited">("all");
     const generating = generatingTasks.some((t) => t.assetId === entityId);
-    // Effective t2i model — drives the "design_sheet" template gating: that
-    // template only works with gpt-image-2, so it stays locked unless the
-    // user has selected gpt-image-2 (override or project default).
     const selectedModelId = modelOverride || currentProject?.model_settings?.t2i_model || "wan2.1-t2i";
-    const isGptImage2 = selectedModelId === "gpt-image-2";
     const [selectedTemplate, setSelectedTemplate] = useState<CharacterTemplate>("simple");
     const [pendingTemplate, setPendingTemplate] = useState<CharacterTemplate | null>(null);
     const [promptDirty, setPromptDirty] = useState(false);
@@ -208,9 +204,6 @@ export default function CastWorkbenchModal({ isOpen, kind, entityId, onClose }: 
 
     const handleTemplateSwitch = (tpl: CharacterTemplate) => {
         if (tpl === selectedTemplate) return;
-        // design_sheet (comingSoon) is gated on gpt-image-2 — the button
-        // unlocks when isGptImage2, so allow the switch too.
-        if (CHARACTER_TEMPLATES[tpl].comingSoon && !isGptImage2) return;
         if (promptDirty) {
             setPendingTemplate(tpl);
         } else {
@@ -510,7 +503,7 @@ export default function CastWorkbenchModal({ isOpen, kind, entityId, onClose }: 
                                     <div className="flex gap-3">
                                         {(Object.entries(CHARACTER_TEMPLATES) as [CharacterTemplate, typeof CHARACTER_TEMPLATES[CharacterTemplate]][]).map(([key, tpl]) => {
                                             const isActive = selectedTemplate === key;
-                                            const isLocked = !!(tpl.comingSoon && !isGptImage2);
+                                            const isLocked = !!tpl.comingSoon;
                                             return (
                                                 <button
                                                     key={key}

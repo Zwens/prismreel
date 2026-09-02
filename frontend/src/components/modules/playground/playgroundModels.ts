@@ -85,7 +85,6 @@ const VIDEO_FAMILY_PRIORITY: Record<string, number> = {
 };
 
 const IMAGE_FAMILY_PRIORITY: Record<string, number> = {
-  'gpt-image': 1,
   wan: 2,
   qwen: 3,
 };
@@ -181,7 +180,7 @@ function normalizeParams(
     }
   }
 
-  // quality (GPT-Image-2)
+  // quality
   const quality = raw.quality;
   if (quality && typeof quality === 'object' && 'options' in (quality as object)) {
     const q = quality as { options?: string[]; default?: string };

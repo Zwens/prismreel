@@ -25,10 +25,8 @@ type EnvConfig = EnvConfigPayload & {
   KLING_ACCESS_KEY: string;
   KLING_SECRET_KEY: string;
   VIDU_API_KEY: string;
-  MULEROUTER_API_KEY: string;
   ARK_API_KEY: string;
   ARK_REGION: string;
-  MULERUN_CLI_LOGGED_IN?: boolean;
   endpoint_overrides: Record<string, string>;
 };
 
@@ -36,7 +34,6 @@ const ENDPOINT_PROVIDERS = [
   { key: "DASHSCOPE_BASE_URL", label: "DashScope", placeholder: "https://dashscope.aliyuncs.com" },
   { key: "KLING_BASE_URL", label: "Kling", placeholder: "https://api-beijing.klingai.com/v1" },
   { key: "VIDU_BASE_URL", label: "Vidu", placeholder: "https://api.vidu.cn/ent/v2" },
-  { key: "MULEROUTER_BASE_URL", label: "MuleRouter", placeholder: "https://api.mulerouter.ai" },
 ];
 
 const DEFAULT_CONFIG: EnvConfig = {
@@ -52,7 +49,6 @@ const DEFAULT_CONFIG: EnvConfig = {
   KLING_ACCESS_KEY: "",
   KLING_SECRET_KEY: "",
   VIDU_API_KEY: "",
-  MULEROUTER_API_KEY: "",
   ARK_API_KEY: "",
   ARK_REGION: "",
   endpoint_overrides: {},
@@ -431,49 +427,6 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                       </div>
                     )}
                   </div>
-                </div>
-
-                {/* MuleRun / MuleRouter */}
-                <div className="space-y-3 pt-4 border-t border-glass-border">
-                  <h4 className="text-sm font-medium text-text-secondary">MuleRun / MuleRouter</h4>
-                  <p className="text-xs text-text-secondary/60">用于 Seedance 2.0 视频生成和 GPT-Image-2 图片生成</p>
-                  <div>
-                    <label className="block text-xs text-text-secondary mb-1">{t("apiKeyLabel")}</label>
-                    <input
-                      type="password"
-                      value={config.MULEROUTER_API_KEY}
-                      onChange={(e) => handleChange("MULEROUTER_API_KEY", e.target.value)}
-                      placeholder="muk-..."
-                      className={inputClass}
-                    />
-                    {!config.MULEROUTER_API_KEY && config.MULERUN_CLI_LOGGED_IN && (
-                      <p className="text-[0.6875rem] text-green-400 mt-1">✓ MuleRun CLI 已登录，无需手动填写</p>
-                    )}
-                  </div>
-                  <details className="group">
-                    <summary className="text-xs text-primary cursor-pointer hover:underline flex items-center gap-1">
-                      <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                      如何获取 MuleRun Key？
-                    </summary>
-                    <div className="mt-2 space-y-2 pl-4 border-l border-glass-border">
-                      <div className="flex items-center gap-2 text-xs text-text-secondary">
-                        <span className="shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[0.625rem] font-bold">1</span>
-                        <span>安装 CLI</span>
-                        <code className="ml-auto px-2 py-0.5 bg-glass rounded text-[0.6875rem] font-mono select-all">npm i -g @mulerunai/cli</code>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-text-secondary">
-                        <span className="shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[0.625rem] font-bold">2</span>
-                        <span>浏览器登录</span>
-                        <code className="ml-auto px-2 py-0.5 bg-glass rounded text-[0.6875rem] font-mono select-all">mulerun login</code>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-text-secondary">
-                        <span className="shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[0.625rem] font-bold">3</span>
-                        <span>复制 Key</span>
-                        <code className="ml-auto px-2 py-0.5 bg-glass rounded text-[0.6875rem] font-mono select-all">mulerun studio config</code>
-                      </div>
-                      <p className="text-[0.6875rem] text-text-secondary/50 mt-1">Key 格式为 muk-...，粘贴到上方输入框即可。本地开发如已登录 CLI，无需填写。</p>
-                    </div>
-                  </details>
                 </div>
 
                 <div className="pt-4 border-t border-glass-border">

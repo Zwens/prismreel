@@ -406,9 +406,8 @@ export function modelRequiresCredentials(modelId?: string | null): string[] {
     if (!sources) return [];
 
     // Narrow to the backend this particular model runs on. A family can span
-    // backends — Seedance 2.0 goes through MuleRouter while 2.5 goes through
-    // BytePlus — so flattening every backend's keys would call a 2.0 model
-    // ready just because the unrelated 2.5 credential happens to be set.
+    // backends, so flattening every backend's keys would call a model ready
+    // just because an unrelated backend's credential happens to be set.
     const canonicalId = getCanonicalModeId(modelId) ?? modelId;
     const runtime = MODEL_CATALOG.modes?.[canonicalId]?.runtime;
     const backends = runtime ? Object.keys(runtime) : [];
