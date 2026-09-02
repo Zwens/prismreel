@@ -400,7 +400,6 @@ export default function SettingsPage() {
     }
   };
 
-
   const PathField = ({ value, label }: { value: string; label: string }) => (
     <div>
       <FieldLabel>{label}</FieldLabel>
