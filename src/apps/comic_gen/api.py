@@ -1129,7 +1129,7 @@ class EnvConfig(ProviderRoutingConfig):
     KLING_ACCESS_KEY: Optional[str] = None
     KLING_SECRET_KEY: Optional[str] = None
     VIDU_API_KEY: Optional[str] = None
-    # BytePlus ModelArk / Volcano Ark — Seedance 2.5 runs here.
+    # BytePlus ModelArk / Volcano Ark — the whole Seedance family runs here.
     ARK_API_KEY: Optional[str] = None
     ARK_REGION: Optional[str] = None
     ARK_BASE_URL: Optional[str] = None

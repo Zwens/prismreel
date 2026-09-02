@@ -56,8 +56,8 @@ models:
           allow_auto: true
         params:
           resolution:
-            # 480p verified accepted by the gateway on 2026-08-30; it rejects
-            # anything outside {480p, 720p, 1080p, 4k}.
+            # Tier set per docs/api-reference/byteplus-ark-seedance-seedream.md
+            # §2.2 (2026-09-02).
             options: [480p, 720p, 1080p, 4k]
             default: 720p
           ratio:
@@ -86,8 +86,8 @@ models:
           allow_auto: true
         params:
           resolution:
-            # 480p verified accepted by the gateway on 2026-08-30; it rejects
-            # anything outside {480p, 720p, 1080p, 4k}.
+            # Tier set per docs/api-reference/byteplus-ark-seedance-seedream.md
+            # §2.2 (2026-09-02).
             options: [480p, 720p, 1080p, 4k]
             default: 720p
           ratio:
@@ -120,8 +120,8 @@ models:
           allow_auto: true
         params:
           resolution:
-            # 480p verified accepted by the gateway on 2026-08-30; it rejects
-            # anything outside {480p, 720p, 1080p, 4k}.
+            # Tier set per docs/api-reference/byteplus-ark-seedance-seedream.md
+            # §2.2 (2026-09-02).
             options: [480p, 720p, 1080p, 4k]
             default: 720p
           ratio:
@@ -169,8 +169,8 @@ models:
           allow_auto: true
         params:
           resolution:
-            # 480p verified accepted by the gateway on 2026-08-30; it rejects
-            # anything outside {480p, 720p}.
+            # Tier set per docs/api-reference/byteplus-ark-seedance-seedream.md
+            # §2.2 (2026-09-02).
             options: [480p, 720p]
             default: 720p
           ratio:
@@ -199,8 +199,8 @@ models:
           allow_auto: true
         params:
           resolution:
-            # 480p verified accepted by the gateway on 2026-08-30; it rejects
-            # anything outside {480p, 720p}.
+            # Tier set per docs/api-reference/byteplus-ark-seedance-seedream.md
+            # §2.2 (2026-09-02).
             options: [480p, 720p]
             default: 720p
           ratio:
@@ -233,8 +233,8 @@ models:
           allow_auto: true
         params:
           resolution:
-            # 480p verified accepted by the gateway on 2026-08-30; it rejects
-            # anything outside {480p, 720p}.
+            # Tier set per docs/api-reference/byteplus-ark-seedance-seedream.md
+            # §2.2 (2026-09-02).
             options: [480p, 720p]
             default: 720p
           ratio:
@@ -367,7 +367,9 @@ models:
   # Seedance 2.5 (ByteDance, launched 2026-07-31). Reached through BytePlus
   # ModelArk / Volcano Ark, NOT MuleRouter — probed 2026-08-30, the gateway
   # 404s on every seedance-2.5 path variant while 2.0 answers 400.
-  # Wire id is env-overridable; see src/models/byteplus.py.
+  # Wire id is fixed per catalog entry (not env-overridable); see
+  # src/models/byteplus.py — an unrecognised id fails fast rather than
+  # falling back.
   - id: seedance/seedance-2.5-video
     display_name: Seedance 2.5
     description: ByteDance Seedance 2.5 — native 30s takes, up to 1080p, multimodal references

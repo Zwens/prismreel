@@ -1,4 +1,5 @@
-"""BytePlus ModelArk / Volcano Ark video generation (Seedance 2.5).
+"""BytePlus ModelArk / Volcano Ark video generation (the Seedance family:
+2.0, 2.0 fast, 2.0 mini, 2.5).
 
 Why REST rather than the `volcenginesdkarkruntime` SDK the older DoubaoModel
 uses: the SDK is not installed in this environment, and pulling in a vendor SDK
@@ -10,8 +11,9 @@ not. The wire format is taken from that SDK's own usage in models/doubao.py —
 Verified live 2026-08-30: both hosts below answer `401 AuthenticationError`,
 confirming host + `/api/v3` prefix are real. Auth is checked BEFORE parameter
 validation on Ark (the opposite of MuleRouter), so the request body could NOT
-be probed without a key. Host, path and model id are therefore all
-env-overridable: if a detail is wrong, it is a config fix, not a code fix.
+be probed without a key. Host and path are env-overridable; the wire model id
+is not — it is looked up from ARK_MODEL_IDS below, and an unrecognised catalog
+id makes generate() raise rather than guessing.
 
     ARK_API_KEY    credential (required)
     ARK_REGION     "intl" (default) | "cn"
@@ -134,7 +136,8 @@ def build_ark_content(prompt: str, images: List[str], flags: str) -> List[Dict[s
 
 
 class BytePlusVideoModel(VideoGenModel):
-    """Seedance 2.5 via Ark's async task API: create -> poll -> download."""
+    """The Seedance family (2.0, 2.0 fast, 2.0 mini, 2.5) via Ark's async task
+    API: create -> poll -> download."""
 
     def __init__(self, config: Optional[dict] = None):
         super().__init__(config or {})
