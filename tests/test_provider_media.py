@@ -61,11 +61,14 @@ def test_dashscope_image_local_without_oss_uses_data_uri(tmp_path):
 
 @pytest.mark.parametrize("modality", ["audio", "video", "reference_video"])
 def test_dashscope_non_image_local_without_oss_uses_temp_url_and_header(tmp_path, modality):
-    _write_output_png(tmp_path, "video/ref.mp4")
+    media_path = _write_output_png(tmp_path, "video/ref.mp4")
     uploader = FakeUploader(configured=False)
 
     def fake_temp_url_resolver(local_path: str) -> str:
-        assert local_path.endswith("output/video/ref.mp4")
+        # The resolver is handed an os-native path, so compare it as a path.
+        # endswith("output/video/ref.mp4") only holds on POSIX -- on Windows
+        # the separators are backslashes and the assert always fails.
+        assert Path(local_path) == media_path
         return "oss://dashscope-temp/session-file-001"
 
     resolved = resolve_media_input(
