@@ -175,7 +175,7 @@ spec §5 M3 有完整设计。要点回顾：
 |---|---|---|
 | 5 | `seedance.yaml` 两个空 transport map | **建议不做，等你拍板**。全部 7 个 family 里只有 seedance 这两个键为空，其余都真用到。当前 `_require_mapping` 强制三个键必填，`{}` 恰好表达了"该 family 无特殊音频/参考视频传输模式"，是自文档化的；放宽后「故意留空」和「忘了写」就无法区分了。零风险的替代：给这两行加注释说明留空是有意的 |
 | 6 | `CHANGELOG.md` 自 1.2.1（2026-06-09）停更 | 未动，要不要重启由你定 |
-| 7 | **新增** —— `merged_project_payload` 覆盖面 | 该函数 docstring 写着"每个把响应喂回前端 store 的端点都必须走它"，但 `api.py` 里只有 3 处用了，而有 **53 处**直接 `return signed_response(script)`。`0f683d7` 修的是被测试抓到的那一处，同类 bug 很可能还在别处。需要逐端点核对"响应是否被前端 `updateProject` 消费"，工作量不小，值得单独开一项 |
+| 7 | `merged_project_payload` 覆盖面 | **排查完毕，修了一半**。完整清单见 `docs/superpowers/plans/2026-09-02-merged-project-payload-audit.md`。返回完整 Script 的 project 端点共 60 个：18 个已合并（`0f683d7` + `df46632` 修了其中 16 个，并补了参数化回归测试），**42 个仍返回 raw script**。报告里建议统一处理，但那是 42 个生产端点的响应形状变更，等你拍板 |
 
 ### 根因备忘（债 2 / 债 3）
 
