@@ -8,8 +8,6 @@ import datetime as dt
 import json
 from pathlib import Path
 
-import pytest
-
 from src.utils.model_catalog import (
     GENERATED_MODEL_CATALOG_PATH,
     active_promotions,
