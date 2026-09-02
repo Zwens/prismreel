@@ -175,7 +175,7 @@ spec §5 M3 有完整设计。要点回顾：
 |---|---|---|
 | 5 | `seedance.yaml` 两个空 transport map | **建议不做，等你拍板**。全部 7 个 family 里只有 seedance 这两个键为空，其余都真用到。当前 `_require_mapping` 强制三个键必填，`{}` 恰好表达了"该 family 无特殊音频/参考视频传输模式"，是自文档化的；放宽后「故意留空」和「忘了写」就无法区分了。零风险的替代：给这两行加注释说明留空是有意的 |
 | 6 | `CHANGELOG.md` 自 1.2.1（2026-06-09）停更 | 未动，要不要重启由你定 |
-| 7 | `merged_project_payload` 覆盖面 | **排查完毕，修了一半**。完整清单见 `docs/superpowers/plans/2026-09-02-merged-project-payload-audit.md`。返回完整 Script 的 project 端点共 60 个：18 个已合并（`0f683d7` + `df46632` 修了其中 16 个，并补了参数化回归测试），**42 个仍返回 raw script**。报告里建议统一处理，但那是 42 个生产端点的响应形状变更，等你拍板 |
+| 7 | `merged_project_payload` 覆盖面 | ✅ **已完成**。61 个返回完整 Script 的 project 端点现已 100% 走合并（复核脚本对 raw 端点的计数为 0），42 条路由摘掉 `response_model=Script`。报告：`docs/superpowers/plans/2026-09-02-merged-project-payload-audit.md`。提交 `0f683d7` / `df46632` / `6a263de` |
 
 ### 根因备忘（债 2 / 债 3）
 

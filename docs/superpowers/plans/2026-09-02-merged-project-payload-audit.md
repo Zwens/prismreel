@@ -27,92 +27,48 @@
 `.then()` 链等路径），所以最终以方法 2 为准 —— **任何返回完整 Script 的 project 端点**
 都在风险面内，无论今天前端有没有把它喂回 store。
 
-## 已修（18 个）
+## 结果：全部已处理（61 个端点）
 
-| 方法 | 路由 |
+`/projects/{script_id}` 下所有返回完整 episode Script 的端点，现已 **100%** 经过
+`merged_project_payload`。复核脚本对「仍返回 raw script 的 project 端点」的计数为 **0**。
+
+分三次提交完成：
+
+| 提交 | 范围 |
 |---|---|
-| `GET` | `/projects/{script_id}` |
-| `POST` | `/projects/{script_id}/art_direction/clear` |
-| `POST` | `/projects/{script_id}/art_direction/save` |
-| `POST` | `/projects/{script_id}/assets/generate_motion_ref` |
-| `POST` | `/projects/{script_id}/assets/update_description` |
-| `POST` | `/projects/{script_id}/assets/update_image` |
-| `POST` | `/projects/{script_id}/assets/variant/delete` |
-| `POST` | `/projects/{script_id}/assets/variant/favorite` |
-| `POST` | `/projects/{script_id}/assets/variant/select` |
-| `POST` | `/projects/{script_id}/characters/{char_id}/voice` |
-| `POST` | `/projects/{script_id}/frames/{frame_id}/extract_last_frame` |
-| `POST` | `/projects/{script_id}/frames/{frame_id}/select_video` |
-| `POST` | `/projects/{script_id}/frames/{frame_id}/upload_image` |
-| `POST` | `/projects/{script_id}/merge` |
-| `POST` | `/projects/{script_id}/model_settings` |
-| `POST` | `/projects/{script_id}/storyboard/analyze` |
-| `POST` | `/projects/{script_id}/storyboard/render` |
-| `POST` | `/projects/{script_id}/sync_descriptions` |
+| `0f683d7` | storyboard analyze —— 唯一有既存回归测试盯着的那个（该测试自 `04a190b` 加入起就是红的） |
+| `df46632` | 15 个由前端 `updateProject` 调用链确证会喂回 store 的端点 |
+| `6a263de` | 其余 43 个，统一化 |
 
-`0f683d7` 修了 storyboard analyze 与既有的 GET / bind_voice；`df46632` 修了其余 15 个
-（前端已确证喂回 store 的那批），并给其中 3 个能在无媒体条件下触发的加了参数化回归测试。
+`response_model=Script` 一并从 42 条路由上摘除：该响应模型会把 `merged_project_payload`
+添加的 `source` 字段裁掉，而前端靠它区分 episode / series / global 资产并路由写入
+（理由原本就写在 `GET /projects/{script_id}` 的注释里）。
 
-## 未修（42 个）
+### 未纳入的端点
 
-同样返回完整 Script。「声明了 response_model」一列为「是」的，即使包上
-`merged_project_payload` 也会被响应模型把 `source` 字段裁掉，必须一并去掉该声明
-（理由见 `GET /projects/{script_id}` 的注释）。
+返回的**不是** Script 的 8 处保持原样 —— 单个 `asset` / `frame` / `task` / `tasks` /
+`{"url": ...}`。它们的响应里根本没有 `characters` 键，浅合并抹不掉任何东西。
 
-| 方法 | 路由 | 声明了 response_model=Script |
-|---|---|---|
-| `POST` | `/projects/{script_id}/assets/generate` | 否 |
-| `POST` | `/projects/{script_id}/assets/toggle_lock` | 是 |
-| `POST` | `/projects/{script_id}/assets/toggle_starred` | 是 |
-| `POST` | `/projects/{script_id}/assets/update_attributes` | 是 |
-| `POST` | `/projects/{script_id}/assets/{asset_type}/{asset_id}/generate_video` | 是 |
-| `POST` | `/projects/{script_id}/assets/{asset_type}/{asset_id}/upload` | 否 |
-| `DELETE` | `/projects/{script_id}/assets/{asset_type}/{asset_id}/videos/{video_id}` | 是 |
-| `PUT` | `/projects/{script_id}/audio_mix` | 是 |
-| `POST` | `/projects/{script_id}/beats/align` | 是 |
-| `POST` | `/projects/{script_id}/characters` | 是 |
-| `DELETE` | `/projects/{script_id}/characters/{char_id}` | 是 |
-| `PUT` | `/projects/{script_id}/characters/{char_id}/voice_params` | 是 |
-| `POST` | `/projects/{script_id}/dialogue_audio/batch` | 否 |
-| `POST` | `/projects/{script_id}/frames` | 是 |
-| `POST` | `/projects/{script_id}/frames/copy` | 是 |
-| `PUT` | `/projects/{script_id}/frames/reorder` | 是 |
-| `POST` | `/projects/{script_id}/frames/toggle_lock` | 是 |
-| `PUT` | `/projects/{script_id}/frames/trims` | 是 |
-| `POST` | `/projects/{script_id}/frames/update` | 是 |
-| `DELETE` | `/projects/{script_id}/frames/{frame_id}` | 是 |
-| `POST` | `/projects/{script_id}/frames/{frame_id}/audio` | 是 |
-| `POST` | `/projects/{script_id}/frames/{frame_id}/auto_select_latest_video` | 是 |
-| `DELETE` | `/projects/{script_id}/frames/{frame_id}/dub` | 否 |
-| `POST` | `/projects/{script_id}/frames/{frame_id}/dub/apply` | 否 |
-| `POST` | `/projects/{script_id}/frames/{frame_id}/dub/preview` | 否 |
-| `POST` | `/projects/{script_id}/frames/{frame_id}/unpin_video` | 是 |
-| `POST` | `/projects/{script_id}/generate_assets` | 是 |
-| `POST` | `/projects/{script_id}/generate_audio` | 是 |
-| `POST` | `/projects/{script_id}/generate_storyboard` | 是 |
-| `POST` | `/projects/{script_id}/generate_video` | 是 |
-| `PUT` | `/projects/{script_id}/last_episode_summary` | 否 |
-| `POST` | `/projects/{script_id}/mix/generate_bgm` | 是 |
-| `POST` | `/projects/{script_id}/mix/generate_sfx` | 是 |
-| `POST` | `/projects/{script_id}/props` | 否 |
-| `DELETE` | `/projects/{script_id}/props/{prop_id}` | 否 |
-| `POST` | `/projects/{script_id}/reconcile/apply` | 否 |
-| `POST` | `/projects/{script_id}/scenes` | 是 |
-| `DELETE` | `/projects/{script_id}/scenes/{scene_id}` | 是 |
-| `PATCH` | `/projects/{script_id}/style` | 是 |
-| `PUT` | `/projects/{script_id}/subtitle/settings` | 否 |
-| `PUT` | `/projects/{script_id}/text` | 是 |
-| `POST` | `/projects/{script_id}/toggle_starred` | 否 |
+### 统一化前做的安全抽查
 
-## 建议
+风险模式是「不经 store、直接消费响应，且假设只有本集资产」。全库搜索对响应
+`.characters/.scenes/.props` 的直接访问，只有 3 处：
 
-倾向**统一处理**：让所有返回完整 Script 的 project 端点都走 `merged_project_payload`。
+- `CastWorkbenchModal.tsx:243` 与 `assetGenerationTask.ts:86` —— 数据来自 `api.getProject`，
+  本来就是合并形状，且逻辑是按 id 查找，多出系列资产不影响。
+- `ReconcileModal.tsx:68-70` —— 数据来自 `/reconcile/suggestions`，返回的是建议列表而非 Script。
 
-- 一致性本身就是防御。留着「有的合并、有的不合并」，未来任何一个端点被前端接进 store
-  就会复现同一个 bug，而且下一个人没法从代码看出哪些是安全的。
-- 风险可控：`GET /projects/{script_id}` 一直返回合并形状，store 里的 `currentProject`
-  也一直是合并形状，所以前端从 store 读的路径本来就在处理这个形状。
-- 真正的风险在于**不经 store、直接消费响应**且假设「只有本集资产」的前端代码。
-  统一化前需要抽查这类调用点。
+未发现会被统一化破坏的消费方。
 
-替代方案：只在有明确前端证据时逐个修。代价是这份清单要一直维护下去。
+### 回归测试
+
+`test_store_fed_endpoints_keep_the_merged_cast` 参数化覆盖 8 个无需真实媒体即可触发的端点。
+已验证其辨别力：把 `toggle_starred` 的合并撤掉，**只有**该用例转红。
+render / merge / variant 那批走同一条代码路径，但需要真实媒体才能跑，未纳入。
+
+### 最重要的一个
+
+`/reparse`。`projectStore` 的 `confirmExtraction` 与 `analyzeScript` 用
+`{ ...project }` **整体替换** `currentProject`，而不是浅合并 —— 未合并的响应在这里会把
+cast 彻底清空，而不只是部分覆盖。它还因为返回变量名叫 `result`（而非 `script`/`updated_script`）
+躲过了第一轮正则扫描，是靠「按 `response_model=Script` 复查」才捞出来的。
