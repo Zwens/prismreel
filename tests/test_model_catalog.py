@@ -27,38 +27,36 @@ class TestModelCatalog:
         catalog = build_catalog_dict(MODEL_CATALOG_ROOT)
 
         assert catalog["version"] == 1
-        # Defaults now point at the wan2.7 family (Phase 2 catalog upgrade
+        # Image defaults point at the wan2.7 family (Phase 2 catalog upgrade
         # 2026-Q1) and include the unified image_model surface used by
-        # the Atelier/Studio image generation path.
+        # the Atelier/Studio image generation path. Both video defaults are
+        # happyhorse: ebc5780 anchored the R2V route to this meta default
+        # because several R2V models share ui.order=80 and the old derived
+        # route tie-broke arbitrarily.
         assert catalog["defaults"]["model_settings"] == {
             "t2i_model": "wan2.7-image-pro",
             "i2i_model": "wan2.7-image-pro",
             "image_model": "wan2.7-image-pro",
             "i2v_model": "happyhorse-1.0-i2v",
-            "r2v_model": "wan2.7-r2v",
+            "r2v_model": "happyhorse-1.0-r2v",
         }
 
         models = catalog["models"]
-        # wan2.6 entries remain in the catalog (hidden / legacy-visible)
-        # so existing project files keep round-tripping.
-        assert "wan2.6-t2i" in models
-        assert "wan2.6-image" in models
-        assert "wan2.6-i2v" in models
-        assert "wan2.6-r2v" in models
+        # The whole wan2.6 family was deprecated and pulled out of every
+        # picker in fc71a24 once 2.7 replaced it. The entries stay in the
+        # catalog so existing project files keep round-tripping -- assert
+        # that as one rule rather than per-id, so a future visibility change
+        # to any of them surfaces here.
+        for legacy_id in ("wan2.6-t2i", "wan2.6-image", "wan2.6-i2v", "wan2.6-r2v"):
+            assert legacy_id in models, legacy_id
+            assert models[legacy_id]["status"] == "deprecated", legacy_id
+            assert models[legacy_id]["ui"]["visible_in"] == [], legacy_id
+
         # The kling / vidu legacy ids gained an explicit modality suffix
         # during Phase 2 to disambiguate i2v vs r2v entries.
         assert "kling-v3-i2v" in models
         assert "viduq3-pro-i2v" in models
         assert "pixverse-v4-i2v" in models
-
-        assert models["wan2.6-i2v"]["ui"]["visible_in"] == [
-            "project_settings",
-            "series_settings",
-            "video_sidebar",
-            "global_settings",
-        ]
-        assert models["wan2.6-r2v"]["status"] == "hidden"
-        assert models["wan2.6-r2v"]["ui"]["visible_in"] == []
 
     def test_repo_catalog_emits_additive_mode_aware_sections(self):
         catalog = build_catalog_dict(MODEL_CATALOG_ROOT)
@@ -142,7 +140,7 @@ class TestModelCatalog:
         assert defaults.t2i_model == "wan2.7-image-pro"
         assert defaults.i2i_model == "wan2.7-image-pro"
         assert defaults.i2v_model == "happyhorse-1.0-i2v"
-        assert defaults.r2v_model == "wan2.7-r2v"
+        assert defaults.r2v_model == "happyhorse-1.0-r2v"
 
     def test_validation_report_passes_for_repo_catalog(self):
         catalog = build_catalog_dict(MODEL_CATALOG_ROOT)
