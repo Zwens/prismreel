@@ -122,6 +122,11 @@ STORE_FED_ENDPOINTS = [
     ("/projects/ep-1/model_settings", {"i2v_model": "happyhorse-1.0-i2v"}),
     ("/projects/ep-1/art_direction/clear", None),
     ("/projects/ep-1/art_direction/save", {"selected_style_id": "noir", "style_config": {}}),
+    ("/projects/ep-1/toggle_starred", None),
+    ("/projects/ep-1/characters", {"name": "New Face", "description": "d"}),
+    ("/projects/ep-1/scenes", {"name": "New Place", "description": "d"}),
+    ("/projects/ep-1/props", {"name": "New Thing", "description": "d"}),
+    ("/projects/ep-1/frames", {"prompt": "a shot"}),
 ]
 
 

@@ -348,7 +348,7 @@ def upload_asset(
         if not updated_script:
             raise HTTPException(status_code=404, detail="Script or asset not found")
         
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -396,7 +396,7 @@ class UpdateScriptTextRequest(BaseModel):
     text: str
 
 
-@app.put("/projects/{script_id}/text", response_model=Script)
+@app.put("/projects/{script_id}/text")
 def update_script_text(script_id: str, request: UpdateScriptTextRequest):
     """Persist `original_text` without re-parsing entities.
 
@@ -410,10 +410,10 @@ def update_script_text(script_id: str, request: UpdateScriptTextRequest):
     script.original_text = request.text or ""
     script.updated_at = time.time()
     pipeline._save_data()
-    return signed_response(script)
+    return signed_response(merged_project_payload(script))
 
 
-@app.put("/projects/{script_id}/reparse", response_model=Script)
+@app.put("/projects/{script_id}/reparse")
 async def reparse_project(script_id: str, request: ReparseProjectRequest):
     """Re-parses the text for an existing project, replacing all entities."""
     try:
@@ -423,7 +423,7 @@ async def reparse_project(script_id: str, request: ReparseProjectRequest):
             None,  # Use default executor
             partial(pipeline.reparse_project, script_id, request.text)
         )
-        return signed_response(result)
+        return signed_response(merged_project_payload(result))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -463,7 +463,7 @@ def toggle_project_starred(script_id: str):
     """Toggle the user-starred (featured shortlist) flag on a project."""
     try:
         script = pipeline.toggle_project_starred(script_id)
-        return signed_response(script)
+        return signed_response(merged_project_payload(script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -1585,7 +1585,7 @@ def reconcile_apply(script_id: str, request: ApplyReconcileRequest):
     pipeline.series_store[series.id] = series
     pipeline._save_data()
     pipeline._save_series_data()
-    return signed_response(script)
+    return signed_response(merged_project_payload(script))
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -1918,23 +1918,23 @@ class AddCharacterRequest(BaseModel):
     name: str
     description: str
 
-@app.post("/projects/{script_id}/characters", response_model=Script)
+@app.post("/projects/{script_id}/characters")
 def add_character(script_id: str, request: AddCharacterRequest):
     """Adds a new character."""
     try:
         updated_script = pipeline.add_character(script_id, request.name, request.description)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.delete("/projects/{script_id}/characters/{char_id}", response_model=Script)
+@app.delete("/projects/{script_id}/characters/{char_id}")
 def delete_character(script_id: str, char_id: str):
     """Deletes a character."""
     try:
         updated_script = pipeline.delete_character(script_id, char_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -1944,23 +1944,23 @@ class AddSceneRequest(BaseModel):
     name: str
     description: str
 
-@app.post("/projects/{script_id}/scenes", response_model=Script)
+@app.post("/projects/{script_id}/scenes")
 def add_scene(script_id: str, request: AddSceneRequest):
     """Adds a new scene."""
     try:
         updated_script = pipeline.add_scene(script_id, request.name, request.description)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.delete("/projects/{script_id}/scenes/{scene_id}", response_model=Script)
+@app.delete("/projects/{script_id}/scenes/{scene_id}")
 def delete_scene(script_id: str, scene_id: str):
     """Deletes a scene."""
     try:
         updated_script = pipeline.delete_scene(script_id, scene_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -1971,7 +1971,7 @@ class UpdateStyleRequest(BaseModel):
     style_prompt: Optional[str] = None
 
 
-@app.patch("/projects/{script_id}/style", response_model=Script)
+@app.patch("/projects/{script_id}/style")
 def update_project_style(script_id: str, request: UpdateStyleRequest):
     """Updates the global style settings for a project."""
     try:
@@ -1980,14 +1980,14 @@ def update_project_style(script_id: str, request: UpdateStyleRequest):
             request.style_preset,
             request.style_prompt
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/projects/{script_id}/generate_assets", response_model=Script)
+@app.post("/projects/{script_id}/generate_assets")
 def generate_assets(script_id: str, background_tasks: BackgroundTasks):
     """Triggers asset generation."""
     script = pipeline.get_script(script_id)
@@ -2002,7 +2002,7 @@ def generate_assets(script_id: str, background_tasks: BackgroundTasks):
 
     try:
         updated_script = pipeline.generate_assets(script_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -2140,34 +2140,34 @@ def refine_storyboard_batch(script_id: str):
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
-@app.post("/projects/{script_id}/generate_storyboard", response_model=Script)
+@app.post("/projects/{script_id}/generate_storyboard")
 def generate_storyboard(script_id: str):
     """Triggers storyboard generation."""
     try:
         updated_script = pipeline.generate_storyboard(script_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 
-@app.post("/projects/{script_id}/generate_video", response_model=Script)
+@app.post("/projects/{script_id}/generate_video")
 def generate_video(script_id: str):
     """Triggers video generation."""
     try:
         updated_script = pipeline.generate_video(script_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 
-@app.post("/projects/{script_id}/generate_audio", response_model=Script)
+@app.post("/projects/{script_id}/generate_audio")
 def generate_audio(script_id: str):
     """Triggers audio generation."""
     try:
         updated_script = pipeline.generate_audio(script_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -2395,7 +2395,7 @@ def generate_single_asset(script_id: str, request: GenerateAssetRequest, backgro
         background_tasks.add_task(pipeline.process_asset_generation_task, task_id)
         
         # Return script with task_id for frontend polling
-        response_data = script.model_dump() if hasattr(script, 'model_dump') else script.dict()
+        response_data = merged_project_payload(script)
         response_data["_task_id"] = task_id
         return signed_response(response_data)
 
@@ -2427,7 +2427,7 @@ class GenerateAssetVideoRequest(BaseModel):
     aspect_ratio: Optional[str] = None
 
 
-@app.post("/projects/{script_id}/assets/{asset_type}/{asset_id}/generate_video", response_model=Script)
+@app.post("/projects/{script_id}/assets/{asset_type}/{asset_id}/generate_video")
 def generate_asset_video(script_id: str, asset_type: str, asset_id: str, request: GenerateAssetVideoRequest, background_tasks: BackgroundTasks):
     """Generates a video for a specific asset (I2V)."""
     try:
@@ -2443,7 +2443,7 @@ def generate_asset_video(script_id: str, asset_type: str, asset_id: str, request
         # Add background processing
         background_tasks.add_task(pipeline.process_video_task, script_id, task_id)
         
-        return signed_response(script)
+        return signed_response(merged_project_payload(script))
 
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -2451,7 +2451,7 @@ def generate_asset_video(script_id: str, asset_type: str, asset_id: str, request
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/projects/{script_id}/assets/{asset_type}/{asset_id}/videos/{video_id}", response_model=Script)
+@app.delete("/projects/{script_id}/assets/{asset_type}/{asset_id}/videos/{video_id}")
 def delete_asset_video(script_id: str, asset_type: str, asset_id: str, video_id: str):
     """Deletes a video from an asset."""
     try:
@@ -2461,7 +2461,7 @@ def delete_asset_video(script_id: str, asset_type: str, asset_id: str, video_id:
             asset_type,
             video_id
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -2469,7 +2469,7 @@ def delete_asset_video(script_id: str, asset_type: str, asset_id: str, video_id:
 
 
 
-@app.post("/projects/{script_id}/assets/toggle_lock", response_model=Script)
+@app.post("/projects/{script_id}/assets/toggle_lock")
 def toggle_asset_lock(script_id: str, request: ToggleLockRequest):
     """Toggles the locked status of an asset."""
     try:
@@ -2478,14 +2478,14 @@ def toggle_asset_lock(script_id: str, request: ToggleLockRequest):
             request.asset_id,
             request.asset_type
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/projects/{script_id}/assets/toggle_starred", response_model=Script)
+@app.post("/projects/{script_id}/assets/toggle_starred")
 def toggle_asset_starred(script_id: str, request: ToggleLockRequest):
     """Toggles the starred (library shortlist) status of an asset."""
     try:
@@ -2494,7 +2494,7 @@ def toggle_asset_starred(script_id: str, request: ToggleLockRequest):
             request.asset_id,
             request.asset_type
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -2520,7 +2520,7 @@ def update_asset_image(script_id: str, request: UpdateAssetImageRequest):
 
 
 
-@app.post("/projects/{script_id}/assets/update_attributes", response_model=Script)
+@app.post("/projects/{script_id}/assets/update_attributes")
 def update_asset_attributes(script_id: str, request: UpdateAssetAttributesRequest):
     """Updates arbitrary attributes of an asset."""
     try:
@@ -2530,7 +2530,7 @@ def update_asset_attributes(script_id: str, request: UpdateAssetAttributesReques
             request.asset_type,
             request.attributes
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -2760,7 +2760,7 @@ class UpdateVoiceParamsRequest(BaseModel):
     volume: int = 50
 
 
-@app.put("/projects/{script_id}/characters/{char_id}/voice_params", response_model=Script)
+@app.put("/projects/{script_id}/characters/{char_id}/voice_params")
 def update_voice_params(script_id: str, char_id: str, request: UpdateVoiceParamsRequest):
     """Updates voice parameters for a character."""
     script = pipeline.get_script(script_id)
@@ -2773,7 +2773,7 @@ def update_voice_params(script_id: str, char_id: str, request: UpdateVoiceParams
     char.voice_pitch = request.pitch
     char.voice_volume = request.volume
     pipeline._save_data()
-    return signed_response(script)
+    return signed_response(merged_project_payload(script))
 
 
 @app.get("/voices")
@@ -2994,7 +2994,7 @@ class GenerateLineAudioRequest(BaseModel):
     instructions: Optional[str] = None  # PR-3j · chip emotion + free text
 
 
-@app.post("/projects/{script_id}/frames/{frame_id}/audio", response_model=Script)
+@app.post("/projects/{script_id}/frames/{frame_id}/audio")
 def generate_line_audio(script_id: str, frame_id: str, request: GenerateLineAudioRequest):
     """Generates audio for a specific frame with parameters."""
     try:
@@ -3003,7 +3003,7 @@ def generate_line_audio(script_id: str, frame_id: str, request: GenerateLineAudi
             request.speed, request.pitch, request.volume,
             instructions=request.instructions,
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -3078,7 +3078,7 @@ def update_subtitle_settings(script_id: str, request: UpdateSubtitleSettingsRequ
 
     try:
         script = pipeline.update_subtitle_settings(script_id, settings)
-        return signed_response(script)
+        return signed_response(merged_project_payload(script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -3103,7 +3103,7 @@ class AudioMixRequest(BaseModel):
     sfx_volume: Optional[int] = None
 
 
-@app.put("/projects/{script_id}/audio_mix", response_model=Script)
+@app.put("/projects/{script_id}/audio_mix")
 def update_audio_mix(script_id: str, request: AudioMixRequest):
     """Set BGM + per-track mix levels for the final merge.
 
@@ -3127,7 +3127,7 @@ def update_audio_mix(script_id: str, request: AudioMixRequest):
         mix["sfx"] = max(0, min(100, request.sfx_volume))
     script.mix_settings = mix
     pipeline._save_data()
-    return signed_response(script)
+    return signed_response(merged_project_payload(script))
 
 
 # ─────────────────────────────────────────────────────────────
@@ -3203,7 +3203,7 @@ class AlignBeatsRequest(BaseModel):
     min_beats: int = 1
 
 
-@app.post("/projects/{script_id}/beats/align", response_model=Script)
+@app.post("/projects/{script_id}/beats/align")
 def align_shots_to_beats(script_id: str, request: AlignBeatsRequest):
     """Snap every shot's length to a whole number of beats at the given BPM.
 
@@ -3243,7 +3243,7 @@ def align_shots_to_beats(script_id: str, request: AlignBeatsRequest):
         frame.trim_end_s = None if abs(target - source) < 1e-6 else round(target, 4)
 
     pipeline._save_data()
-    return signed_response(script)
+    return signed_response(merged_project_payload(script))
 
 
 class UpdateFrameTrimsRequest(BaseModel):
@@ -3251,7 +3251,7 @@ class UpdateFrameTrimsRequest(BaseModel):
     trims: Dict[str, Optional[float]]
 
 
-@app.put("/projects/{script_id}/frames/trims", response_model=Script)
+@app.put("/projects/{script_id}/frames/trims")
 def update_frame_trims(script_id: str, request: UpdateFrameTrimsRequest):
     """Set per-shot trimmed durations for beat sync.
 
@@ -3277,7 +3277,7 @@ def update_frame_trims(script_id: str, request: UpdateFrameTrimsRequest):
         by_id[fid].trim_end_s = seconds
 
     pipeline._save_data()
-    return signed_response(script)
+    return signed_response(merged_project_payload(script))
 
 
 class DubPreviewRequest(BaseModel):
@@ -3294,7 +3294,7 @@ def preview_dub(script_id: str, frame_id: str, request: DubPreviewRequest):
             video_task_id=request.video_task_id,
             offset_ms=request.offset_ms,
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except RuntimeError as e:
@@ -3306,7 +3306,7 @@ def apply_dub(script_id: str, frame_id: str):
     """Promote current preview to official dubbed video."""
     try:
         updated_script = pipeline.apply_dub(script_id, frame_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -3316,7 +3316,7 @@ def revert_frame_dub(script_id: str, frame_id: str):
     """Revert dubbing — remove dubbed+preview, keep bg cache."""
     try:
         updated_script = pipeline.revert_dub(script_id, frame_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -3376,7 +3376,7 @@ def generate_dialogue_audio_batch(script_id: str):
                 generated += 1
         logger.info(f"[batch_dialogue_audio] script={script_id} generated={generated} skipped={skipped} failed={failed} no_voice={no_voice}")
         script = pipeline.get_script(script_id)
-        response_data = script.model_dump() if hasattr(script, 'model_dump') else script.dict()
+        response_data = merged_project_payload(script)
         response_data["_batch_stats"] = {"generated": generated, "skipped": skipped, "failed": failed, "no_voice": no_voice}
         return signed_response(response_data)
     except HTTPException:
@@ -3385,7 +3385,7 @@ def generate_dialogue_audio_batch(script_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/projects/{script_id}/mix/generate_sfx", response_model=Script)
+@app.post("/projects/{script_id}/mix/generate_sfx")
 def generate_mix_sfx(script_id: str):
     """Triggers Video-to-Audio SFX generation for all frames."""
     # Re-using generate_audio for now as it covers everything, 
@@ -3393,17 +3393,17 @@ def generate_mix_sfx(script_id: str):
     # Let's just call generate_audio again, it's idempotent-ish.
     try:
         updated_script = pipeline.generate_audio(script_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/projects/{script_id}/mix/generate_bgm", response_model=Script)
+@app.post("/projects/{script_id}/mix/generate_bgm")
 def generate_mix_bgm(script_id: str):
     """Triggers BGM generation."""
     try:
         updated_script = pipeline.generate_audio(script_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -3412,7 +3412,7 @@ class ToggleFrameLockRequest(BaseModel):
     frame_id: str
 
 
-@app.post("/projects/{script_id}/frames/toggle_lock", response_model=Script)
+@app.post("/projects/{script_id}/frames/toggle_lock")
 def toggle_frame_lock(script_id: str, request: ToggleFrameLockRequest):
     """Toggles the locked status of a frame."""
     try:
@@ -3420,7 +3420,7 @@ def toggle_frame_lock(script_id: str, request: ToggleFrameLockRequest):
             script_id,
             request.frame_id
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -3444,7 +3444,7 @@ class UpdateFrameRequest(BaseModel):
     camera_movement_description: Optional[str] = None
     transition_hint: Optional[str] = None
 
-@app.post("/projects/{script_id}/frames/update", response_model=Script)
+@app.post("/projects/{script_id}/frames/update")
 def update_frame(script_id: str, request: UpdateFrameRequest):
     """Updates frame data (prompt, scene, characters, etc.)."""
     try:
@@ -3463,7 +3463,7 @@ def update_frame(script_id: str, request: UpdateFrameRequest):
             camera_movement_description=request.camera_movement_description,
             transition_hint=request.transition_hint,
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -3475,7 +3475,7 @@ class AddFrameRequest(BaseModel):
     camera_angle: str = "medium_shot"
     insert_at: Optional[int] = None
 
-@app.post("/projects/{script_id}/frames", response_model=Script)
+@app.post("/projects/{script_id}/frames")
 def add_frame(script_id: str, request: AddFrameRequest):
     """Adds a new storyboard frame."""
     try:
@@ -3486,18 +3486,18 @@ def add_frame(script_id: str, request: AddFrameRequest):
             request.camera_angle,
             request.insert_at
         )
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.delete("/projects/{script_id}/frames/{frame_id}", response_model=Script)
+@app.delete("/projects/{script_id}/frames/{frame_id}")
 def delete_frame(script_id: str, frame_id: str):
     """Deletes a storyboard frame."""
     try:
         updated_script = pipeline.delete_frame(script_id, frame_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -3507,12 +3507,12 @@ class CopyFrameRequest(BaseModel):
     frame_id: str
     insert_at: Optional[int] = None
 
-@app.post("/projects/{script_id}/frames/copy", response_model=Script)
+@app.post("/projects/{script_id}/frames/copy")
 def copy_frame(script_id: str, request: CopyFrameRequest):
     """Copies a storyboard frame."""
     try:
         updated_script = pipeline.copy_frame(script_id, request.frame_id, request.insert_at)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -3521,12 +3521,12 @@ def copy_frame(script_id: str, request: CopyFrameRequest):
 class ReorderFramesRequest(BaseModel):
     frame_ids: List[str]
 
-@app.put("/projects/{script_id}/frames/reorder", response_model=Script)
+@app.put("/projects/{script_id}/frames/reorder")
 def reorder_frames(script_id: str, request: ReorderFramesRequest):
     """Reorders storyboard frames."""
     try:
         updated_script = pipeline.reorder_frames(script_id, request.frame_ids)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -3576,7 +3576,7 @@ def select_video(script_id: str, frame_id: str, request: SelectVideoRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/projects/{script_id}/frames/{frame_id}/auto_select_latest_video", response_model=Script)
+@app.post("/projects/{script_id}/frames/{frame_id}/auto_select_latest_video")
 def auto_select_latest_video(script_id: str, frame_id: str):
     """Auto-pick the latest completed video as this frame's active take.
 
@@ -3587,14 +3587,14 @@ def auto_select_latest_video(script_id: str, frame_id: str):
     """
     try:
         updated_script = pipeline.auto_select_latest_video(script_id, frame_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/projects/{script_id}/frames/{frame_id}/unpin_video", response_model=Script)
+@app.post("/projects/{script_id}/frames/{frame_id}/unpin_video")
 def unpin_video(script_id: str, frame_id: str):
     """Clear the manual pin; auto_select_latest_video resumes on next poll.
 
@@ -3604,7 +3604,7 @@ def unpin_video(script_id: str, frame_id: str):
     """
     try:
         updated_script = pipeline.unpin_video(script_id, frame_id)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -3882,7 +3882,7 @@ def update_last_episode_summary(script_id: str, payload: dict):
     script.updated_at = time.time()
     pipeline.scripts[script_id] = script
     pipeline._save_data()
-    return signed_response(script)
+    return signed_response(merged_project_payload(script))
 
 
 @app.post("/projects/{script_id}/art_direction/save")
@@ -4208,7 +4208,7 @@ def create_prop(script_id: str, request: CreatePropRequest):
     script.updated_at = time.time()
     pipeline._save_data()
 
-    return signed_response(script)
+    return signed_response(merged_project_payload(script))
 
 
 @app.delete("/projects/{script_id}/props/{prop_id}")
@@ -4232,4 +4232,4 @@ def delete_prop(script_id: str, prop_id: str):
     script.updated_at = time.time()
     pipeline._save_data()
 
-    return signed_response(script)
+    return signed_response(merged_project_payload(script))
