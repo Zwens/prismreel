@@ -2058,10 +2058,16 @@ def analyze_to_storyboard(script_id: str, request: AnalyzeToStoryboardRequest):
     """
     Analyzes script text and generates storyboard frames using AI (Prompt B).
     Replaces existing frames with newly generated ones.
+
+    Goes through merged_project_payload for the same reason bind_voice
+    does: both frontend callers feed this response straight into the
+    project store, which shallow-merges it. Returning the raw episode
+    Script blanked characters/scenes/props for any episode whose assets
+    live in the series pool.
     """
     try:
         updated_script = pipeline.analyze_text_to_frames(script_id, request.text)
-        return signed_response(updated_script)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
