@@ -6,6 +6,50 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.4.0] - 2026-09-02
+
+### Added
+- **Seedance 2.5 参考生成 + Vidu 参考生成 + 批量运行**
+- **Seedance 2.0 mini 变体** — 新增 `seedance-2.0-mini`（480p/720p）
+- **厂商计价表** — 新增 `config/model_catalog/pricing.yaml`，随 model catalog 一同加载、合并与校验
+
+### Changed
+- **Seedance 全族改为 BytePlus Ark 官方直连** — 不再经由 MuleRouter 网关中转
+- **Seedance 默认分辨率 1080p → 720p** — 此前所有变体默认 1080p，其中部分并不支持
+
+### Removed
+- **MuleRouter 网关与 MuleRun CLI 模式** — 含设置页的凭证界面、MuleRun 一键登录、`/config/mulerun-login` 端点
+- **`gpt-image` family** — 该系列仅经 MuleRouter 提供，随网关一并移除（含 1.2.0 加入的 GPT-Image-2 2K/4K 尺寸）
+
+### Fixed
+- **系列共享资产在多处操作后被清空** — 项目接口返回的剧本未合并系列/全局资产，前端浅合并后把已合并的角色/场景/道具列表抹空；表现为角色卡消失、随后的 R2V 对每个引用标签报「尚未生成图片」。61 个项目接口现已全部统一
+- **Seedance 分辨率档位错误** — 4K 挂在了错误的代次上、2.0-fast 虚报支持 1080p，两者都会产生必然失败的请求
+- **无法解析的 Seedance 模型 id** — 改为在调用 Ark 之前就报错，而不是发出一个注定失败的请求
+
+## [1.3.0] - 2026-07-28
+
+### Added
+- **字幕能力** — ASS 渲染 + 抖音/电影两套模板；时间轴由剧本对白与 TTS 实际时长推导；Assembly 面板内的模板选择与轴预览；导出后回报本次字幕结果
+- **两遍渲染引擎** — sidechain ducking + loudnorm + 字幕烧录
+- **音频滤镜图构建器** — 支持 sidechain ducking 与响度归一
+- **卡点剪辑** — 按 BGM 节拍网格裁剪镜头
+- **美术方向新预设** — 东方奇幻分类（六个题材预设，均配示意图）+ 治愈系恋爱动漫预设
+- **动作/姿态选择器** — 同时恢复了运镜选择器
+- **ffprobe 媒体探测** — 读取时长与画面尺寸
+- **原子写入的数据存储** — JSON 原子写 + 滚动备份 + 严格加载，损坏即报错而非静默吞掉
+
+### Changed
+- **品牌更名** — LumenX Studio 正式更名为 PrismReel Studio
+
+### Fixed
+- **打包版与 Docker 镜像无法启动** — 未随包发布 `config/model_catalog` 与 BGM 预设文件
+- **单个坏 URL 会中断整个导出** — 现在跳过并继续
+- **字幕越界与换行** — 字幕轴不再溢出镜头边界，作者手写换行会被正确折行
+- **无效字幕样式返回 404** — 改为 400
+- **`openai` 依赖未声明** — 默认的 DashScope 路径同样经由该 SDK 调用
+
+---
+
 ## [1.2.1] - 2026-06-09
 
 ### Added
