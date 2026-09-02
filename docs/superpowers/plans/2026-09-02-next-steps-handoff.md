@@ -174,7 +174,7 @@ spec §5 M3 有完整设计。要点回顾：
 | # | 内容 | 说明 |
 |---|---|---|
 | 5 | `seedance.yaml` 两个空 transport map | **建议不做，等你拍板**。全部 7 个 family 里只有 seedance 这两个键为空，其余都真用到。当前 `_require_mapping` 强制三个键必填，`{}` 恰好表达了"该 family 无特殊音频/参考视频传输模式"，是自文档化的；放宽后「故意留空」和「忘了写」就无法区分了。零风险的替代：给这两行加注释说明留空是有意的 |
-| 6 | `CHANGELOG.md` 自 1.2.1（2026-06-09）停更 | ✅ **已重启**。补了 `[1.3.0] - 2026-07-28`（成片能力：字幕/渲染/混音/卡点/美术预设，以及更名 PrismReel）与 `[1.4.0] - 2026-09-02`（Ark 直连、MuleRouter 移除、catalog 修正、系列资产合并修复）。**版本号是按语义化推定的**（仓库无 git tag，版本号只在 CHANGELOG 里维护），要改直接改 |
+| 6 | `CHANGELOG.md` 自 1.2.1（2026-06-09）停更 | ✅ **已重启**。补了 `[1.3.0] - 2026-07-28`（成片能力：字幕/渲染/混音/卡点/美术预设，以及更名 PrismReel）与 `[1.5.0] - 2026-09-02`（Ark 直连、MuleRouter 移除、catalog 修正、系列资产合并修复）。版本号由你指定（仓库无 git tag，版本号只在 CHANGELOG 里维护）；1.4.0 是跳过的 |
 | 7 | `merged_project_payload` 覆盖面 | ✅ **已完成**。61 个返回完整 Script 的 project 端点现已 100% 走合并（复核脚本对 raw 端点的计数为 0），42 条路由摘掉 `response_model=Script`。报告：`docs/superpowers/plans/2026-09-02-merged-project-payload-audit.md`。提交 `0f683d7` / `df46632` / `6a263de` |
 
 ### 根因备忘（债 2 / 债 3）

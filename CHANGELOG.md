@@ -6,7 +6,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
-## [1.4.0] - 2026-09-02
+## [1.5.0] - 2026-09-02
 
 ### Added
 - **Seedance 2.5 参考生成 + Vidu 参考生成 + 批量运行**
