@@ -31,25 +31,50 @@ def _format_surface_summary(surface_summary):
 
 
 def check_pricing_coverage() -> list:
-    """Report how many visible video models have pricing data.
+    """Enforce pricing for visible, active Byteplus video models (P1 scope).
 
-    Future requirement: all visible video models should have pricing.
-    Currently only reports statistics; detailed pricing will be added in stages.
+    P1 owns pricing for models that declare a runtime.byteplus backend. Non-Byteplus
+    models (wan, kling, vidu, etc.) are outside this phase's scope and must not fail
+    the build.
+
+    Problem: a visible, active Byteplus video model with pricing: None.
     """
     catalog = load_generated_model_catalog()
-    covered = 0
+    problems = []
+    covered_byteplus = 0
     total_visible = 0
+    total_visible_byteplus = 0
+
+    # Maps to check if a model uses Byteplus backend
+    legacy_to_canonical = catalog.get("compat", {}).get("legacy_model_ids", {})
+    modes = catalog.get("modes", {})
+
     for model_id, entry in catalog.get("models", {}).items():
         ui = entry.get("ui") or {}
         if entry.get("status") != "active" or not ui.get("visible_in"):
             continue
         if ui.get("selection_group") not in VIDEO_GROUPS:
             continue
+
         total_visible += 1
-        if entry.get("pricing") is not None:
-            covered += 1
-    print(f"- pricing: {covered}/{total_visible} visible video model(s) priced")
-    return []  # No problems yet; pricing is being added in stages
+
+        # Check if this model uses Byteplus backend by looking up its canonical mode
+        canonical_mode_id = legacy_to_canonical.get(model_id)
+        has_byteplus = False
+        if canonical_mode_id and canonical_mode_id in modes:
+            mode = modes[canonical_mode_id]
+            has_byteplus = "byteplus" in mode.get("runtime", {})
+
+        if has_byteplus:
+            total_visible_byteplus += 1
+            if entry.get("pricing") is None:
+                problems.append(f"{model_id}: visible Byteplus video model has no pricing entry")
+            else:
+                covered_byteplus += 1
+
+    print(f"- pricing: {covered_byteplus} Byteplus video model(s) priced (P1 scope)")
+    print(f"  ({total_visible} total visible video, {total_visible_byteplus} Byteplus)")
+    return problems
 
 
 def check_promotion_dates() -> list:

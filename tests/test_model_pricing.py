@@ -56,6 +56,21 @@ def test_expired_promotions_are_filtered_out():
     assert active_promotions(entry, now=after) == []
 
 
+def test_naive_timestamp_is_treated_as_utc():
+    """Promotions with naive (timezone-less) ends_at are coerced to UTC."""
+    entry = {
+        "promotions": [
+            {"scope": ["1080p"], "discount": 0.28, "ends_at": "2026-09-17T14:00:00"},
+        ]
+    }
+    # Time-independent: pass explicit now, never rely on system clock
+    before_utc = dt.datetime(2026, 9, 17, 13, 59, 59, tzinfo=dt.timezone.utc)
+    after_utc = dt.datetime(2026, 9, 17, 14, 0, 1, tzinfo=dt.timezone.utc)
+
+    assert len(active_promotions(entry, now=before_utc)) == 1
+    assert active_promotions(entry, now=after_utc) == []
+
+
 def test_pricing_is_merged_into_the_generated_catalog():
     catalog = json.loads(Path(GENERATED_MODEL_CATALOG_PATH).read_text(encoding="utf-8"))
     assert catalog["models"]["seedance-2.5-t2v"]["pricing"]["unit"] == "per_million_tokens"
