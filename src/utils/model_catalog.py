@@ -23,6 +23,7 @@ MODEL_CATALOG_ROOT = REPO_ROOT / "config" / "model_catalog"
 MODEL_CATALOG_META_PATH = MODEL_CATALOG_ROOT / "catalog.meta.yaml"
 MODEL_CATALOG_FAMILIES_DIR = MODEL_CATALOG_ROOT / "families"
 MODEL_CATALOG_SCHEMA_PATH = MODEL_CATALOG_ROOT / "schema" / "model-catalog.schema.json"
+MODEL_CATALOG_PRICING_PATH = MODEL_CATALOG_ROOT / "pricing.yaml"
 GENERATED_MODEL_CATALOG_PATH = MODEL_CATALOG_ROOT / "generated" / "model_catalog.json"
 FRONTEND_GENERATED_MODEL_CATALOG_PATH = (
     REPO_ROOT / "frontend" / "src" / "generated" / "modelCatalog.json"
@@ -934,6 +935,24 @@ def write_generated_catalog(
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     catalog = build_catalog_dict(catalog_root or MODEL_CATALOG_ROOT)
+    pricing = load_pricing()
+
+    # Attach pricing to modes (canonical modes) first
+    for mode_entry in catalog.get("modes", {}).values():
+        attach_pricing(mode_entry, pricing)
+
+    # Then copy pricing to legacy models from their corresponding canonical mode
+    legacy_to_canonical = catalog.get("compat", {}).get("legacy_model_ids", {})
+    modes = catalog.get("modes", {})
+    for legacy_model_id, model_entry in catalog["models"].items():
+        canonical_mode_id = legacy_to_canonical.get(legacy_model_id)
+        if canonical_mode_id and canonical_mode_id in modes:
+            mode_entry = modes[canonical_mode_id]
+            model_entry["pricing"] = mode_entry.get("pricing")
+        else:
+            # Fallback: try to attach directly if possible
+            attach_pricing(model_entry, pricing)
+
     output.write_text(
         json.dumps(catalog, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -1252,3 +1271,66 @@ def build_catalog_validation_report(
         warnings=tuple(warnings),
         stats=stats,
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: Pricing helpers
+# ---------------------------------------------------------------------------
+
+def load_pricing() -> Dict[str, Dict[str, Any]]:
+    """Vendor pricing, keyed by the wire model id.
+
+    Kept out of the family YAMLs because prices change far more often than
+    capability definitions; a price edit should not churn the diff of a file
+    that describes what a model can do.
+    """
+    if not MODEL_CATALOG_PRICING_PATH.exists():
+        return {}
+    raw = yaml.safe_load(MODEL_CATALOG_PRICING_PATH.read_text(encoding="utf-8")) or {}
+    return raw.get("models", {})
+
+
+def active_promotions(
+    pricing_entry: Mapping[str, Any],
+    now: Optional[Any] = None,
+) -> List[Dict[str, Any]]:
+    """Promotions that have not expired yet.
+
+    Callers pass `now` in tests; production reads the clock. An expired promo
+    must disappear on its own — nobody is going to remember to prune it.
+    """
+    import datetime as _dt
+
+    if now is None:
+        now = _dt.datetime.now(_dt.timezone.utc)
+
+    live = []
+    for promo in pricing_entry.get("promotions", []) or []:
+        ends_at = promo.get("ends_at")
+        if not ends_at:
+            continue
+        deadline = _dt.datetime.fromisoformat(ends_at)
+        if deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=_dt.timezone.utc)
+        if deadline > now:
+            live.append(promo)
+    return live
+
+
+def attach_pricing(
+    model_entry: Dict[str, Any],
+    pricing: Mapping[str, Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Attach the vendor price for whichever wire model this mode calls.
+
+    Writes an explicit None when there is no entry, rather than omitting the
+    key: a consumer can then tell "no price data for this model" apart from
+    "someone forgot to wire the field through".
+    """
+    api_model_id = (
+        (model_entry.get("runtime") or {})
+        .get("byteplus", {})
+        .get("api_model_id")
+    )
+    model_entry["pricing"] = pricing.get(api_model_id) if api_model_id else None
+    return model_entry

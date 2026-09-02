@@ -2492,6 +2492,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -2574,6 +2575,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -2645,6 +2647,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -2711,6 +2714,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -2809,6 +2813,7 @@
         "sound": true,
         "watermark": false
       },
+      "pricing": null,
       "provider": "kling",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -2913,6 +2918,7 @@
         "seed": false,
         "watermark": false
       },
+      "pricing": null,
       "provider": "kling",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -3004,6 +3010,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "pixverse",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -3088,6 +3095,7 @@
         "seed": true,
         "watermark": false
       },
+      "pricing": null,
       "provider": "pixverse",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -3148,6 +3156,7 @@
       "id": "pixverse-v4-i2v",
       "inputs": {},
       "params": {},
+      "pricing": null,
       "provider": "pixverse",
       "release_stage": "preview",
       "routing_prefixes": [
@@ -3227,6 +3236,7 @@
         "seed": true,
         "watermark": false
       },
+      "pricing": null,
       "provider": "pixverse",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -3321,6 +3331,7 @@
         },
         "watermark": true
       },
+      "pricing": null,
       "provider": "pixverse",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -3400,6 +3411,7 @@
         },
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -3475,6 +3487,7 @@
         },
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -3571,6 +3584,34 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "480p": {
+            "with_video": 3.3,
+            "without_video": 5.6
+          },
+          "720p": {
+            "with_video": 3.3,
+            "without_video": 5.6
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.25,
+            "ends_at": "2026-09-07T14:00:00+08:00",
+            "scope": [
+              "480p",
+              "720p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "480p": 0.06,
+          "720p": 0.12
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -3666,6 +3707,34 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "480p": {
+            "with_video": 3.3,
+            "without_video": 5.6
+          },
+          "720p": {
+            "with_video": 3.3,
+            "without_video": 5.6
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.25,
+            "ends_at": "2026-09-07T14:00:00+08:00",
+            "scope": [
+              "480p",
+              "720p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "480p": 0.06,
+          "720p": 0.12
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -3755,6 +3824,34 @@
         },
         "seed": true,
         "watermark": true
+      },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "480p": {
+            "with_video": 3.3,
+            "without_video": 5.6
+          },
+          "720p": {
+            "with_video": 3.3,
+            "without_video": 5.6
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.25,
+            "ends_at": "2026-09-07T14:00:00+08:00",
+            "scope": [
+              "480p",
+              "720p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "480p": 0.06,
+          "720p": 0.12
+        },
+        "unit": "per_million_tokens"
       },
       "provider": "byteplus",
       "release_stage": "stable",
@@ -3853,6 +3950,35 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "1080p": {
+            "with_video": 4.7,
+            "without_video": 7.7
+          },
+          "480p": {
+            "with_video": 4.3,
+            "without_video": 7.0
+          },
+          "4k": {
+            "with_video": 2.4,
+            "without_video": 4.0
+          },
+          "720p": {
+            "with_video": 4.3,
+            "without_video": 7.0
+          }
+        },
+        "promotions": [],
+        "reference_per_second": {
+          "1080p": 0.37,
+          "480p": 0.07,
+          "4k": 0.78,
+          "720p": 0.15
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -3947,6 +4073,34 @@
         },
         "seed": true,
         "watermark": true
+      },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "480p": {
+            "with_video": 2.1,
+            "without_video": 3.5
+          },
+          "720p": {
+            "with_video": 2.1,
+            "without_video": 3.5
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.6,
+            "ends_at": "2026-09-07T14:00:00+08:00",
+            "scope": [
+              "480p",
+              "720p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "480p": 0.04,
+          "720p": 0.08
+        },
+        "unit": "per_million_tokens"
       },
       "provider": "byteplus",
       "release_stage": "stable",
@@ -4043,6 +4197,34 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "480p": {
+            "with_video": 2.1,
+            "without_video": 3.5
+          },
+          "720p": {
+            "with_video": 2.1,
+            "without_video": 3.5
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.6,
+            "ends_at": "2026-09-07T14:00:00+08:00",
+            "scope": [
+              "480p",
+              "720p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "480p": 0.04,
+          "720p": 0.08
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -4132,6 +4314,34 @@
         },
         "seed": true,
         "watermark": true
+      },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "480p": {
+            "with_video": 2.1,
+            "without_video": 3.5
+          },
+          "720p": {
+            "with_video": 2.1,
+            "without_video": 3.5
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.6,
+            "ends_at": "2026-09-07T14:00:00+08:00",
+            "scope": [
+              "480p",
+              "720p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "480p": 0.04,
+          "720p": 0.08
+        },
+        "unit": "per_million_tokens"
       },
       "provider": "byteplus",
       "release_stage": "stable",
@@ -4230,6 +4440,35 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "1080p": {
+            "with_video": 4.7,
+            "without_video": 7.7
+          },
+          "480p": {
+            "with_video": 4.3,
+            "without_video": 7.0
+          },
+          "4k": {
+            "with_video": 2.4,
+            "without_video": 4.0
+          },
+          "720p": {
+            "with_video": 4.3,
+            "without_video": 7.0
+          }
+        },
+        "promotions": [],
+        "reference_per_second": {
+          "1080p": 0.37,
+          "480p": 0.07,
+          "4k": 0.78,
+          "720p": 0.15
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -4321,6 +4560,35 @@
         },
         "seed": true,
         "watermark": true
+      },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "1080p": {
+            "with_video": 4.7,
+            "without_video": 7.7
+          },
+          "480p": {
+            "with_video": 4.3,
+            "without_video": 7.0
+          },
+          "4k": {
+            "with_video": 2.4,
+            "without_video": 4.0
+          },
+          "720p": {
+            "with_video": 4.3,
+            "without_video": 7.0
+          }
+        },
+        "promotions": [],
+        "reference_per_second": {
+          "1080p": 0.37,
+          "480p": 0.07,
+          "4k": 0.78,
+          "720p": 0.15
+        },
+        "unit": "per_million_tokens"
       },
       "provider": "byteplus",
       "release_stage": "stable",
@@ -4418,6 +4686,38 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "1080p": {
+            "with_video": 7.0,
+            "without_video": 11.7
+          },
+          "480p": {
+            "with_video": 6.4,
+            "without_video": 10.7
+          },
+          "720p": {
+            "with_video": 6.4,
+            "without_video": 10.7
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.28,
+            "ends_at": "2026-09-17T14:00:00+08:00",
+            "scope": [
+              "1080p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "1080p": 0.569,
+          "480p": 0.103,
+          "720p": 0.231
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -4514,6 +4814,38 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "1080p": {
+            "with_video": 7.0,
+            "without_video": 11.7
+          },
+          "480p": {
+            "with_video": 6.4,
+            "without_video": 10.7
+          },
+          "720p": {
+            "with_video": 6.4,
+            "without_video": 10.7
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.28,
+            "ends_at": "2026-09-17T14:00:00+08:00",
+            "scope": [
+              "1080p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "1080p": 0.569,
+          "480p": 0.103,
+          "720p": 0.231
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -4605,6 +4937,38 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "1080p": {
+            "with_video": 7.0,
+            "without_video": 11.7
+          },
+          "480p": {
+            "with_video": 6.4,
+            "without_video": 10.7
+          },
+          "720p": {
+            "with_video": 6.4,
+            "without_video": 10.7
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.28,
+            "ends_at": "2026-09-17T14:00:00+08:00",
+            "scope": [
+              "1080p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "1080p": 0.569,
+          "480p": 0.103,
+          "720p": 0.231
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -4695,6 +5059,7 @@
         },
         "watermark": false
       },
+      "pricing": null,
       "provider": "vidu",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -4785,6 +5150,7 @@
         },
         "watermark": false
       },
+      "pricing": null,
       "provider": "vidu",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -4878,6 +5244,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "vidu",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -4981,6 +5348,7 @@
         "viduAudio": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "vidu",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -5076,6 +5444,7 @@
         "seed": true,
         "watermark": false
       },
+      "pricing": null,
       "provider": "vidu",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -5179,6 +5548,7 @@
         "viduAudio": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "vidu",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -5272,6 +5642,7 @@
         "seed": true,
         "watermark": false
       },
+      "pricing": null,
       "provider": "vidu",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -5351,6 +5722,7 @@
         },
         "seed": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -5423,6 +5795,7 @@
         },
         "seed": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -5480,6 +5853,7 @@
       "id": "wan2.2-t2i-flash",
       "inputs": {},
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -5537,6 +5911,7 @@
       "id": "wan2.2-t2i-plus",
       "inputs": {},
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -5598,6 +5973,7 @@
         }
       },
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -5675,6 +6051,7 @@
         },
         "seed": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -5732,6 +6109,7 @@
       "id": "wan2.5-t2i-preview",
       "inputs": {},
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -5811,6 +6189,7 @@
         "seed": true,
         "shotType": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -5889,6 +6268,7 @@
         "seed": true,
         "shotType": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -5950,6 +6330,7 @@
         }
       },
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -6012,6 +6393,7 @@
         }
       },
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -6069,6 +6451,7 @@
       "id": "wan2.6-t2i",
       "inputs": {},
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -6160,6 +6543,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -6247,6 +6631,7 @@
         },
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -6331,6 +6716,7 @@
         },
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -6418,6 +6804,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -6480,6 +6867,7 @@
       "id": "wan2.7-t2v",
       "inputs": {},
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -6537,6 +6925,7 @@
       "id": "wan2.7-videoedit",
       "inputs": {},
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -6611,6 +7000,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -6692,6 +7082,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -6782,6 +7173,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -6861,6 +7253,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -6963,6 +7356,7 @@
         "sound": true,
         "watermark": false
       },
+      "pricing": null,
       "provider": "kling",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -7079,6 +7473,7 @@
         "seed": false,
         "watermark": false
       },
+      "pricing": null,
       "provider": "kling",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -7182,6 +7577,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "pixverse",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -7275,6 +7671,7 @@
         "seed": true,
         "watermark": false
       },
+      "pricing": null,
       "provider": "pixverse",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -7344,6 +7741,7 @@
       "mode": "i2v",
       "model_line_id": "pixverse/pixverse-v4-i2v",
       "params": {},
+      "pricing": null,
       "provider": "pixverse",
       "release_stage": "preview",
       "routing_prefixes": [
@@ -7427,6 +7825,7 @@
         "seed": true,
         "watermark": false
       },
+      "pricing": null,
       "provider": "pixverse",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -7530,6 +7929,7 @@
         },
         "watermark": true
       },
+      "pricing": null,
       "provider": "pixverse",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -7618,6 +8018,7 @@
         },
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -7702,6 +8103,7 @@
         },
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -7807,6 +8209,34 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "480p": {
+            "with_video": 3.3,
+            "without_video": 5.6
+          },
+          "720p": {
+            "with_video": 3.3,
+            "without_video": 5.6
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.25,
+            "ends_at": "2026-09-07T14:00:00+08:00",
+            "scope": [
+              "480p",
+              "720p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "480p": 0.06,
+          "720p": 0.12
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -7910,6 +8340,34 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "480p": {
+            "with_video": 3.3,
+            "without_video": 5.6
+          },
+          "720p": {
+            "with_video": 3.3,
+            "without_video": 5.6
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.25,
+            "ends_at": "2026-09-07T14:00:00+08:00",
+            "scope": [
+              "480p",
+              "720p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "480p": 0.06,
+          "720p": 0.12
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -8007,6 +8465,34 @@
         },
         "seed": true,
         "watermark": true
+      },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "480p": {
+            "with_video": 3.3,
+            "without_video": 5.6
+          },
+          "720p": {
+            "with_video": 3.3,
+            "without_video": 5.6
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.25,
+            "ends_at": "2026-09-07T14:00:00+08:00",
+            "scope": [
+              "480p",
+              "720p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "480p": 0.06,
+          "720p": 0.12
+        },
+        "unit": "per_million_tokens"
       },
       "provider": "byteplus",
       "release_stage": "stable",
@@ -8110,6 +8596,34 @@
         },
         "seed": true,
         "watermark": true
+      },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "480p": {
+            "with_video": 2.1,
+            "without_video": 3.5
+          },
+          "720p": {
+            "with_video": 2.1,
+            "without_video": 3.5
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.6,
+            "ends_at": "2026-09-07T14:00:00+08:00",
+            "scope": [
+              "480p",
+              "720p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "480p": 0.04,
+          "720p": 0.08
+        },
+        "unit": "per_million_tokens"
       },
       "provider": "byteplus",
       "release_stage": "stable",
@@ -8215,6 +8729,34 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "480p": {
+            "with_video": 2.1,
+            "without_video": 3.5
+          },
+          "720p": {
+            "with_video": 2.1,
+            "without_video": 3.5
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.6,
+            "ends_at": "2026-09-07T14:00:00+08:00",
+            "scope": [
+              "480p",
+              "720p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "480p": 0.04,
+          "720p": 0.08
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -8313,6 +8855,34 @@
         },
         "seed": true,
         "watermark": true
+      },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "480p": {
+            "with_video": 2.1,
+            "without_video": 3.5
+          },
+          "720p": {
+            "with_video": 2.1,
+            "without_video": 3.5
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.6,
+            "ends_at": "2026-09-07T14:00:00+08:00",
+            "scope": [
+              "480p",
+              "720p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "480p": 0.04,
+          "720p": 0.08
+        },
+        "unit": "per_million_tokens"
       },
       "provider": "byteplus",
       "release_stage": "stable",
@@ -8420,6 +8990,35 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "1080p": {
+            "with_video": 4.7,
+            "without_video": 7.7
+          },
+          "480p": {
+            "with_video": 4.3,
+            "without_video": 7.0
+          },
+          "4k": {
+            "with_video": 2.4,
+            "without_video": 4.0
+          },
+          "720p": {
+            "with_video": 4.3,
+            "without_video": 7.0
+          }
+        },
+        "promotions": [],
+        "reference_per_second": {
+          "1080p": 0.37,
+          "480p": 0.07,
+          "4k": 0.78,
+          "720p": 0.15
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -8525,6 +9124,35 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "1080p": {
+            "with_video": 4.7,
+            "without_video": 7.7
+          },
+          "480p": {
+            "with_video": 4.3,
+            "without_video": 7.0
+          },
+          "4k": {
+            "with_video": 2.4,
+            "without_video": 4.0
+          },
+          "720p": {
+            "with_video": 4.3,
+            "without_video": 7.0
+          }
+        },
+        "promotions": [],
+        "reference_per_second": {
+          "1080p": 0.37,
+          "480p": 0.07,
+          "4k": 0.78,
+          "720p": 0.15
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -8624,6 +9252,35 @@
         },
         "seed": true,
         "watermark": true
+      },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "1080p": {
+            "with_video": 4.7,
+            "without_video": 7.7
+          },
+          "480p": {
+            "with_video": 4.3,
+            "without_video": 7.0
+          },
+          "4k": {
+            "with_video": 2.4,
+            "without_video": 4.0
+          },
+          "720p": {
+            "with_video": 4.3,
+            "without_video": 7.0
+          }
+        },
+        "promotions": [],
+        "reference_per_second": {
+          "1080p": 0.37,
+          "480p": 0.07,
+          "4k": 0.78,
+          "720p": 0.15
+        },
+        "unit": "per_million_tokens"
       },
       "provider": "byteplus",
       "release_stage": "stable",
@@ -8728,6 +9385,38 @@
         },
         "seed": true,
         "watermark": true
+      },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "1080p": {
+            "with_video": 7.0,
+            "without_video": 11.7
+          },
+          "480p": {
+            "with_video": 6.4,
+            "without_video": 10.7
+          },
+          "720p": {
+            "with_video": 6.4,
+            "without_video": 10.7
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.28,
+            "ends_at": "2026-09-17T14:00:00+08:00",
+            "scope": [
+              "1080p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "1080p": 0.569,
+          "480p": 0.103,
+          "720p": 0.231
+        },
+        "unit": "per_million_tokens"
       },
       "provider": "byteplus",
       "release_stage": "stable",
@@ -8834,6 +9523,38 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "1080p": {
+            "with_video": 7.0,
+            "without_video": 11.7
+          },
+          "480p": {
+            "with_video": 6.4,
+            "without_video": 10.7
+          },
+          "720p": {
+            "with_video": 6.4,
+            "without_video": 10.7
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.28,
+            "ends_at": "2026-09-17T14:00:00+08:00",
+            "scope": [
+              "1080p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "1080p": 0.569,
+          "480p": 0.103,
+          "720p": 0.231
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -8934,6 +9655,38 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": {
+        "offline": null,
+        "online": {
+          "1080p": {
+            "with_video": 7.0,
+            "without_video": 11.7
+          },
+          "480p": {
+            "with_video": 6.4,
+            "without_video": 10.7
+          },
+          "720p": {
+            "with_video": 6.4,
+            "without_video": 10.7
+          }
+        },
+        "promotions": [
+          {
+            "discount": 0.28,
+            "ends_at": "2026-09-17T14:00:00+08:00",
+            "scope": [
+              "1080p"
+            ]
+          }
+        ],
+        "reference_per_second": {
+          "1080p": 0.569,
+          "480p": 0.103,
+          "720p": 0.231
+        },
+        "unit": "per_million_tokens"
+      },
       "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -9033,6 +9786,7 @@
         },
         "watermark": false
       },
+      "pricing": null,
       "provider": "vidu",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -9132,6 +9886,7 @@
         },
         "watermark": false
       },
+      "pricing": null,
       "provider": "vidu",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -9234,6 +9989,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "vidu",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -9346,6 +10102,7 @@
         "viduAudio": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "vidu",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -9453,6 +10210,7 @@
         "seed": true,
         "watermark": false
       },
+      "pricing": null,
       "provider": "vidu",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -9569,6 +10327,7 @@
         "viduAudio": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "vidu",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -9674,6 +10433,7 @@
         "seed": true,
         "watermark": false
       },
+      "pricing": null,
       "provider": "vidu",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -9766,6 +10526,7 @@
         },
         "seed": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -9842,6 +10603,7 @@
         },
         "seed": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -9903,6 +10665,7 @@
       "mode": "t2i",
       "model_line_id": "wan/wan2.2-t2i-flash",
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -9964,6 +10727,7 @@
       "mode": "t2i",
       "model_line_id": "wan/wan2.2-t2i-plus",
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -10029,6 +10793,7 @@
       "mode": "i2i",
       "model_line_id": "wan/wan2.5-i2i-preview",
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -10110,6 +10875,7 @@
         },
         "seed": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -10171,6 +10937,7 @@
       "mode": "t2i",
       "model_line_id": "wan/wan2.5-t2i-preview",
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -10253,6 +11020,7 @@
         "seed": true,
         "shotType": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -10318,6 +11086,7 @@
       "mode": "i2i",
       "model_line_id": "wan/wan2.6-image",
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -10379,6 +11148,7 @@
       "mode": "t2i",
       "model_line_id": "wan/wan2.6-t2i",
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -10462,6 +11232,7 @@
         "seed": true,
         "shotType": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -10532,6 +11303,7 @@
       "mode": "r2v",
       "model_line_id": "wan/wan2.6-video",
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -10620,6 +11392,7 @@
         },
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -10713,6 +11486,7 @@
         },
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -10819,6 +11593,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -10915,6 +11690,7 @@
         "seed": true,
         "watermark": true
       },
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -10985,6 +11761,7 @@
       "mode": "t2v",
       "model_line_id": "wan/wan2.7-video",
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [
@@ -11050,6 +11827,7 @@
       "mode": "videoedit",
       "model_line_id": "wan/wan2.7-video",
       "params": {},
+      "pricing": null,
       "provider": "aliyun",
       "release_stage": "stable",
       "routing_prefixes": [

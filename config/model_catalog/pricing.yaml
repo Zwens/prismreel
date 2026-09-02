@@ -1,0 +1,66 @@
+version: 1
+currency: USD
+
+# Ark bills video by tokens; the per-second figures are the vendor's own
+# worked examples (16:9, 5s, no video input) and exist for UI display only.
+# List prices are stored here — never the discounted ones — so that a promo
+# expiring does not leave the real rate unrecoverable.
+models:
+  dreamina-seedance-2-5-260628:
+    unit: per_million_tokens
+    online:
+      "480p": { without_video: 10.70, with_video: 6.40 }
+      "720p": { without_video: 10.70, with_video: 6.40 }
+      "1080p": { without_video: 11.70, with_video: 7.00 }
+    offline: null
+    reference_per_second:
+      "480p": 0.103
+      "720p": 0.231
+      "1080p": 0.569
+    promotions:
+      - scope: ["1080p"]
+        discount: 0.28
+        ends_at: "2026-09-17T14:00:00+08:00"
+
+  dreamina-seedance-2-0-260128:
+    unit: per_million_tokens
+    online:
+      "480p": { without_video: 7.00, with_video: 4.30 }
+      "720p": { without_video: 7.00, with_video: 4.30 }
+      "1080p": { without_video: 7.70, with_video: 4.70 }
+      "4k": { without_video: 4.00, with_video: 2.40 }
+    offline: null
+    reference_per_second:
+      "480p": 0.07
+      "720p": 0.15
+      "1080p": 0.37
+      "4k": 0.78
+    promotions: []
+
+  dreamina-seedance-2-0-fast-260128:
+    unit: per_million_tokens
+    online:
+      "480p": { without_video: 5.60, with_video: 3.30 }
+      "720p": { without_video: 5.60, with_video: 3.30 }
+    offline: null
+    reference_per_second:
+      "480p": 0.06
+      "720p": 0.12
+    promotions:
+      - scope: ["480p", "720p"]
+        discount: 0.25
+        ends_at: "2026-09-07T14:00:00+08:00"
+
+  dreamina-seedance-2-0-mini-260615:
+    unit: per_million_tokens
+    online:
+      "480p": { without_video: 3.50, with_video: 2.10 }
+      "720p": { without_video: 3.50, with_video: 2.10 }
+    offline: null
+    reference_per_second:
+      "480p": 0.04
+      "720p": 0.08
+    promotions:
+      - scope: ["480p", "720p"]
+        discount: 0.60
+        ends_at: "2026-09-07T14:00:00+08:00"

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import datetime as dt
 import sys
 from pathlib import Path
 
@@ -11,7 +12,11 @@ from src.utils.model_catalog import (
     FRONTEND_GENERATED_MODEL_CATALOG_PATH,
     GENERATED_MODEL_CATALOG_PATH,
     build_catalog_validation_report,
+    load_generated_model_catalog,
+    load_pricing,
 )
+
+VIDEO_GROUPS = {"t2v", "i2v", "r2v"}
 
 
 def _format_surface_summary(surface_summary):
@@ -25,10 +30,52 @@ def _format_surface_summary(surface_summary):
     return lines
 
 
+def check_pricing_coverage() -> list:
+    """Report how many visible video models have pricing data.
+
+    Future requirement: all visible video models should have pricing.
+    Currently only reports statistics; detailed pricing will be added in stages.
+    """
+    catalog = load_generated_model_catalog()
+    covered = 0
+    total_visible = 0
+    for model_id, entry in catalog.get("models", {}).items():
+        ui = entry.get("ui") or {}
+        if entry.get("status") != "active" or not ui.get("visible_in"):
+            continue
+        if ui.get("selection_group") not in VIDEO_GROUPS:
+            continue
+        total_visible += 1
+        if entry.get("pricing") is not None:
+            covered += 1
+    print(f"- pricing: {covered}/{total_visible} visible video model(s) priced")
+    return []  # No problems yet; pricing is being added in stages
+
+
+def check_promotion_dates() -> list:
+    problems = []
+    for model_id, entry in load_pricing().items():
+        for promo in entry.get("promotions") or []:
+            ends_at = promo.get("ends_at")
+            if not ends_at:
+                problems.append(f"{model_id}: promotion without ends_at")
+                continue
+            try:
+                dt.datetime.fromisoformat(ends_at)
+            except ValueError:
+                problems.append(f"{model_id}: unparsable ends_at {ends_at!r}")
+    return problems
+
+
 def main() -> int:
     report = build_catalog_validation_report()
 
-    status = "PASSED" if report.ok else "FAILED"
+    # Collect problems from all validators
+    all_problems = list(report.errors)
+    all_problems.extend(check_pricing_coverage())
+    all_problems.extend(check_promotion_dates())
+
+    status = "PASSED" if (report.ok and not all_problems) else "FAILED"
     print(f"Model catalog validation {status}")
     print(f"- backend artifact: {GENERATED_MODEL_CATALOG_PATH}")
     print(f"- frontend artifact: {FRONTEND_GENERATED_MODEL_CATALOG_PATH}")
@@ -60,9 +107,9 @@ def main() -> int:
         for warning in report.warnings:
             print(f"- {warning}")
 
-    if report.errors:
+    if all_problems:
         print("Errors:")
-        for error in report.errors:
+        for error in all_problems:
             print(f"- {error}")
         return 1
 
