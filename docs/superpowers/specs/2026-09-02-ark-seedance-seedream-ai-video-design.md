@@ -12,6 +12,7 @@
 3. 图像侧接入 Seedream 5.0（`seedream-5-0-260128` 与 `dola-seedream-5-0-pro-260628`）。
 4. 把各模型的**时长 / 分辨率 / 计费**元数据补全并落进 catalog —— Ark 的 `/api/v3/models`
    不返回这些，只能取自厂商文档。
+5. **彻底移除 MuleRouter 网关**，平台后续一律采用厂商官方直连。
 
 事实依据全部记录在 `docs/api-reference/byteplus-ark-seedance-seedream.md`（2026-09-02 抓取）。
 
@@ -39,25 +40,56 @@
 - `ARK_MODEL_IDS` 只映射了 2.5 的三个 mode。
 - Seedance family `default_backend: mulerouter`，2.0 系列全部走 MuleRouter。
 
-### 2.3 阻塞项（需要账号侧操作）
+### 2.3 MuleRouter 现状
 
-用 `.env` 中的 `ARK_API_KEY`（末四位 `91d2`，与运行中后端 `/config/env` 一致）逐个探测，
-账号 `3004342898` **在 Ark 上没有开通任何模型** —— Seedance 全系列与 Seedream 全系列均返回
-`has not activated the model`。对照组 `seedream-9-9-nonexistent` 返回 `does not exist`，
-证明该探测能区分「不存在」与「未开通」。
+两个 family 挂在 MuleRouter：`seedance` 与 `gpt-image`。代码体量：
 
-连带后果：
+| 项 | 量 |
+|---|---|
+| `src/models/mulerouter.py` | 630 行 |
+| 后端引用 | `playground/service.py` 16、`pipeline.py` 8、`api.py` 3，另 factory / image / endpoints / provider_registry / model_catalog 各 1–4 |
+| 前端 | `SettingsPage.tsx` 9、`EnvConfigDialog.tsx` 8、`modelCatalog.ts` 1，加 zh/en 两份 i18n |
+| 测试 | `test_mulerouter_seedance_body.py`（79 行）、`test_seedance_variant_routing.py` |
+| 文档 | `docs/api-reference/seedance-mulerouter.md` |
 
-- 提交 `d3084d6` 把 Seedance 2.5 切到 Ark 之后，**2.5 目前是坏的**。
-- `MULEROUTER_API_KEY` 为空，走 MuleRouter 的 Seedance 2.0 家族同样没有凭证。
-- **结论：Seedance 全家当前都不可用。** 因此「2.0 切 Ark」不是迁移，而是让它恢复可用的唯一路径。
+`MULEROUTER_API_KEY` 为空，因此挂在其上的模型**当前已全部不可用**——移除属于删死代码，不是功能回退。
+`~/.prismreel` 下无任何已保存项目引用 seedance 或 gpt-image，**不需要数据迁移**。
 
-开通需在 Ark 控制台操作（需登录），不阻塞编码，**阻塞阶段七的端到端验证**。
+`gpt-image-2` 是 MuleRouter 独占（`src/models/mulerouter.py:86`
+`MULEROUTER_ONLY_MODELS = ("openai/gpt-image-2",)`，走 `/vendors/openai/v1/gpt-image-2/*`），
+且在 catalog 中 `recommended: true`、三个设置页可见。移除后无落脚点，处理方式见 D7。
+
+### 2.4 阻塞项（需要账号侧操作）
+
+用 `.env` 中的 `ARK_API_KEY`（末四位 `91d2`，与运行中后端 `/config/env` 一致）探测，
+账号 `3004342898` **在 Ark 上没有开通任何模型**。
+
+证据链：
+
+| 测试 | 结果 | 结论 |
+|---|---|---|
+| 同一把 key 打 `ark.cn-beijing.volces.com` | 401 `The API key doesn't exist` | key 属国际站，`ARK_REGION=intl` 配置正确 |
+| 打 `ark.ap-southeast.bytepluses.com` | 404 `has not activated the model` | 鉴权通过，卡在开通 |
+| 文本模型 `seed-2-0-pro-260328` | 同样 `not activated` | 非视频模型特有，是账号级 |
+| `GET /endpoints` | 返回空 | 账号下未创建任何 endpoint |
+| 对照组 `seedream-9-9-nonexistent` | `does not exist` | 探测能区分「不存在」与「未开通」 |
+
+**key 本身有效**（无效会像 cn-beijing 那样返回 401，且它能成功列出 55 个模型）。
+Ark 上「API Key 权限范围」与「模型开通状态」是两件独立的事：key 的全资源权限意味着它能访问
+账号**已开通**的全部资源，但不能代替开通动作。`/api/v3/models` 是公共目录，不是账号权限清单。
+
+连带后果：提交 `d3084d6` 把 Seedance 2.5 切到 Ark 之后，**2.5 目前是坏的**；
+加上 MuleRouter 无凭证，**Seedance 全家当前都不可用**。
+因此「2.0 切 Ark」不是迁移，而是让它恢复可用的唯一路径。
+
+开通需在 Ark 控制台的「开通管理」操作（需登录），不阻塞编码，**阻塞阶段七的端到端验证**。
 
 ## 3. 范围
 
 ### 3.1 做
 
+- **移除 MuleRouter 全部代码、配置、UI、测试与文档**
+- 移除 `gpt-image` family，`recommended` 位置交给 Seedream 5.0 pro
 - Seedance catalog 数据修正（2.1 全部条目）
 - 新增 `seedance-2.0-mini`
 - 新增 `vedit` / `vext` 两种 mode，打通 catalog → 运行时 → 前端
@@ -82,8 +114,41 @@
 | D3 | 计费独立成 `pricing.yaml` | 价格变动频率远高于能力定义；分开后改价不污染 family 定义的 diff |
 | D4 | 「AI 视频」为独立顶层入口，不复用 Playground 页 | 用户明确选择 |
 | D5 | 共享组件通过 React context 注入 store | 避免复制 5 个组件；代价是要改动 Playground 现有组件，有回归风险 |
+| D6 | 彻底移除 MuleRouter，平台一律厂商官方直连 | 少一层网关、少一套凭证、少一处故障点；且其当前无凭证、无项目引用，移除成本最低的时机就是现在 |
+| D7 | 删除 `gpt-image` family，不改走 OpenAI 直连 | 它已随 MuleRouter 一同不可用且无项目引用；本期正在接的 `dola-seedream-5-0-pro` 同为 t2i+i2i 且是 Ark 官方直连，直接顶替其 `recommended` 位置，避免为一个模型新引入 OpenAI 凭证与运行时 |
 
 ## 5. 分模块设计
+
+### M0 — 移除 MuleRouter
+
+删除：
+
+- `src/models/mulerouter.py`（630 行）
+- `tests/test_mulerouter_seedance_body.py`
+- `docs/api-reference/seedance-mulerouter.md`
+- `config/model_catalog/families/gpt-image.yaml`（整个 family，见 D7）
+
+改造：
+
+| 文件 | 动作 |
+|---|---|
+| `src/utils/model_catalog.py:9` | `SUPPORTED_PROVIDER_BACKENDS` 去掉 `"mulerouter"` |
+| `src/models/factory.py` | 去掉 mulerouter 分支 |
+| `src/models/image.py:886` | 去掉 `gpt-image` 分支 |
+| `src/utils/endpoints.py`、`src/utils/provider_registry.py` | 去掉 mulerouter 条目 |
+| `src/apps/playground/service.py`（16 处） | Seedance 一律走 `BytePlusVideoModel`，删除网关分支 |
+| `src/apps/comic_gen/pipeline.py`（8 处） | 同上；`use_byteplus` 判断退化为常量 |
+| `src/apps/comic_gen/api.py`（3 处） | 配置清单去掉 `MULEROUTER_API_KEY` |
+| `families/seedance.yaml` | `provider`/`supported_backends`/`default_backend`/`credential_sources`/`transport` 只留 byteplus；删除 `SEEDANCE_PROVIDER_MODE` 回切开关 |
+| `tests/test_seedance_variant_routing.py` | 改写为只断言 Ark 路由 |
+| 前端 `SettingsPage.tsx`(9)、`EnvConfigDialog.tsx`(8)、`modelCatalog.ts`(1) | 移除 MuleRouter 凭证项与相关分支 |
+| `frontend/messages/{zh,en}.json` | 删除对应文案键 |
+| `frontend/src/__tests__/provider-credentials.test.ts` | 更新期望 |
+| `README.md`、`README_EN.md` | 更新 provider 说明 |
+
+`catalog.meta.yaml` 的默认模型当前为 `wan2.7-image-pro`，不涉及被删模型，**无需调整默认值**。
+
+由于无凭证、无项目引用，此模块**不需要数据迁移，也不存在运行时行为回退**。
 
 ### M1 — Catalog 数据修正
 
@@ -174,11 +239,14 @@ Seedance 2.0 系列：`/api/v3/models` 声明支持 VideoEditing / VideoExtensio
 `routing_prefixes` 增加 Ark 侧 id 前缀。
 
 由于 2.0 在 MuleRouter 与 Ark 上是两套 id（`seedance/seedance-2.0-video`
-vs `dreamina-seedance-2-0-260128`），`ARK_MODEL_IDS` 需补全映射。
-`SEEDANCE_PROVIDER_MODE` 环境变量保留，可回切 MuleRouter。
+vs `dreamina-seedance-2-0-260128`），`ARK_MODEL_IDS` 需补全映射，
+catalog 中的 model id 一并改为 Ark 侧写法。
 
-**风险**：两个网关的出片质量与参数语义未必一致，切换后需实测比对。
-当前 MuleRouter 无凭证，无法做 A/B，只能记录为待验证项。
+按 D6，MuleRouter 整体移除，因此**不保留 `SEEDANCE_PROVIDER_MODE` 回切开关**——
+family 只剩 `byteplus` 一个 backend，多留一个只有单一取值的开关是无谓的分支。
+
+**风险**：两个网关的出片质量与参数语义未必一致。但 MuleRouter 当前无凭证，
+本来就无法做 A/B，且它即将被删除，故不设比对任务；以 Ark 的实测结果为准。
 
 ### M5 — Seedream family
 
@@ -188,6 +256,9 @@ vs `dreamina-seedance-2-0-260128`），`ARK_MODEL_IDS` 需补全映射。
 |---|---|---|---|
 | `dola-seedream-5-0-pro-260628` | t2i, i2i | 1K / 1.5K / 2K（编辑场景另有 `auto`） | 2K |
 | `seedream-5-0-260128` | t2i, i2i | 同上 | 2K |
+
+按 D7，`dola-seedream-5-0-pro-260628` 接手被删除的 `gpt-image-2` 的
+`recommended: true` 与 `visible_in: [project_settings, series_settings, global_settings]`。
 
 `size` 还支持直接给 `宽x高` 像素（默认 `2048x2048`），与档位二选一，不可同时使用。
 本期只暴露档位，像素模式留待后续。
@@ -275,6 +346,7 @@ TDD，先测后码。
 
 | 层 | 用例 |
 |---|---|
+| M0 删除验收 | 全仓 `grep -ri mulerouter` 归零；`SUPPORTED_PROVIDER_BACKENDS` 不再含 `mulerouter`；`provider-credentials.test.ts` 不再期望该凭证；catalog 中不存在 `gpt-image` family |
 | `assetImageResolver` | legacy `full_body` / 新 `reference_sheet` / 仅 `image_url` / 全空 四种兜底路径 |
 | pricing 加载 | 缺失条目报错、`promotions` 过期判定、原价与折扣分离 |
 | catalog 校验 | 2.5 不含 4k、fast/mini 不含 1080p、默认值均为 720p |
@@ -298,14 +370,19 @@ python scripts/validate_model_catalog.py
 |---|---|
 | **账号未开通任何 Ark 模型**，端到端无法验证 | 需你在 Ark 控制台开通。代码与单测不受阻，实调验证挂起 |
 | D5 的 context 重构碰 Playground 现有 5 个组件 | 先补 Playground 回归测试再重构 |
-| 2.0 切 Ark 后出片质量与 MuleRouter 有差异 | MuleRouter 当前无凭证，无法 A/B，记为待验证 |
+| 2.0 切 Ark 后出片质量与 MuleRouter 有差异 | MuleRouter 无凭证且即将删除，不设比对，以 Ark 实测为准 |
+| M0 删除面广（12 个文件 + 前端设置 UI + i18n），易漏 | 删除后以 `grep -ri mulerouter` 全仓归零为验收条件，并跑完整测试套件 |
+| 删除 `gpt-image` 后平台少一个图像模型 | 同期接入的两个 Seedream 5.0 填补；且 `catalog.meta.yaml` 默认值本就是 `wan2.7-image-pro`，不受影响 |
 | D1 改默认分辨率影响现有项目 | 仅改默认值，不动已保存的项目设置 |
 | `seedream-5-0` 与 `seedream-5-0-lite` 是两个模型，差异未知 | 本期只接前者，差异待查 |
 | 限时折扣会过期 | 原价入库，折扣带 `ends_at`，过期自动不展示 |
 
 ## 9. 交付物
 
-- `config/model_catalog/families/seedance.yaml`（修正 + 新增 mini + vedit/vext）
+- **删除**：`src/models/mulerouter.py`、`tests/test_mulerouter_seedance_body.py`、
+  `docs/api-reference/seedance-mulerouter.md`、`config/model_catalog/families/gpt-image.yaml`
+- MuleRouter 引用清理：后端 8 个文件、前端 3 个组件 + 2 份 i18n + 1 个测试、2 份 README
+- `config/model_catalog/families/seedance.yaml`（修正 + 新增 mini + vedit/vext + 只留 byteplus backend）
 - `config/model_catalog/families/seedream.yaml`（新增）
 - `config/model_catalog/pricing.yaml`（新增）
 - `src/utils/model_catalog.py`（selection_group 扩展、pricing 合并、`allow_auto`）
@@ -326,13 +403,15 @@ Ark 模型开通；MuleRouter/Ark 出片质量比对；`seedream-5-0-lite` 差�
 
 | 期 | 内容 | 依赖 | 验证方式 |
 |---|---|---|---|
-| P1 | M1 catalog 数据修正 + M2 pricing.yaml 与构建管线 | 无 | 纯数据与构建脚本，`validate_model_catalog.py` + `pytest` 即可完全验证，**不需要模型开通** |
-| P2 | M4 Seedance 2.0 切 Ark | P1 | 需要模型开通才能实调；未开通时只能验证请求体构造 |
+| P0 | M0 移除 MuleRouter + 删除 `gpt-image` family | 无 | 纯删除。验收：全仓 `grep -ri mulerouter` 归零、完整测试套件通过、`validate_model_catalog.py` 通过。**不需要模型开通** |
+| P1 | M1 catalog 数据修正 + M2 pricing.yaml 与构建管线 | P0 | 纯数据与构建脚本，`validate_model_catalog.py` + `pytest` 即可完全验证，**不需要模型开通** |
+| P2 | M4 Seedance 2.0 切 Ark | P0、P1 | 需要模型开通才能实调；未开通时只能验证请求体构造 |
 | P3 | M3 vedit/vext（catalog + 运行时 + 参数校验） | P1、P2 | 提交前校验逻辑可完全单测；实调需开通 |
 | P4 | M5 Seedream + M6 「AI 视频」页 | P1、P3 | 前端可完全本地验证；图像实调需开通 |
 
-**P1 优先，且不受开通阻塞** —— 它同时修掉 2.1 那三个会导致请求失败的错误，
-即便后面几期延后，P1 单独合并也有正收益。
+**P0 与 P1 都不受开通阻塞，应先做完。** P0 删掉一整层死网关，让后续所有改动
+只面对 Ark 一条路径；P1 顺带修掉 2.1 那三个会导致请求失败的错误。
+即便 P2 之后全部延后，P0 + P1 单独合并也有正收益。
 
 M6 内部还可再拆：导航与页面骨架 → context 重构 → 素材选择器。
 其中「context 重构」风险最高（碰 Playground 现有 5 个组件），应单独成一个可回滚的提交。
