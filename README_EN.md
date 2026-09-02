@@ -53,7 +53,7 @@ PrismReel currently includes two core modules:
 ### 🎨 Playground — Standalone Generation Workbench
 
 - **6 Generation Modes** — Image, Text-to-Video, Image-to-Video, Reference-to-Video, Video Editing
-- **10+ AI Models** — GPT-Image-2, Wan 2.7, Seedance 2.0, Kling V3, Vidu Q3, HappyHorse, etc.
+- **10+ AI Models** — Wan 2.7, Seedance 2.0/2.0 Fast/2.0 Mini/2.5, Kling V3, Vidu Q3, HappyHorse, etc.
 - **Dynamic Parameters** — Per-model parameter configuration (size/resolution/duration/quality)
 - **Concurrent Tasks** — Multiple tasks execute simultaneously with real-time status tracking
 - **Prompt Templates** — Save/reuse/favorite/history
@@ -98,8 +98,7 @@ PrismReel currently includes two core modules:
 | **DashScope** | Kling V3 | I2V, R2V |
 | **DashScope** | Vidu Q3 Pro / Turbo | I2V, R2V |
 | **DashScope** | PixVerse V6 / C1 | I2V, R2V |
-| **MuleRun** | Seedance 2.0 | T2V, I2V, R2V |
-| **MuleRun** | GPT-Image-2 | T2I, I2I (up to 4K) |
+| **BytePlus ModelArk** | Seedance 2.0 / 2.0 Fast / 2.0 Mini / 2.5 | T2V, I2V, R2V |
 | **Kling Direct** | Kling V3 | I2V, R2V |
 | **Vidu Direct** | Vidu Q3 Pro / Turbo | I2V, R2V |
 | **DashScope** | CosyVoice, Qwen3-TTS | TTS Dubbing |
@@ -156,7 +155,7 @@ PrismReel uses a **local-first** architecture. The minimal setup requires only o
 | Mode | Required | Available Capabilities |
 |------|----------|----------------------|
 | **Basic** | `DASHSCOPE_API_KEY` | Wan/Qwen/HappyHorse/PixVerse/Kling(proxy)/Vidu(proxy) + TTS |
-| **+ MuleRun** | + `mulerun login` or `MULEROUTER_API_KEY` | + Seedance 2.0 + GPT-Image-2 |
+| **+ BytePlus ModelArk** | + `ARK_API_KEY` | + Seedance 2.0 / 2.0 Fast / 2.0 Mini / 2.5 |
 | **+ Kling Direct** | + `KLING_ACCESS_KEY` + `KLING_SECRET_KEY` | Kling direct connection |
 | **+ Vidu Direct** | + `VIDU_API_KEY` | Vidu direct connection |
 | **+ OSS** | + Alibaba Cloud OSS credentials | Cloud media mirror + signed URLs |
@@ -168,9 +167,7 @@ All settings can be configured via:
 - **Development**: `.env` file in project root
 - **In-app Settings**: Settings page (saves to `~/.prismreel/config.json`)
 
-MuleRun supports two authentication methods:
-1. **CLI mode** (recommended): `npm i -g @mulerunai/cli && mulerun login`
-2. **API Key mode**: Enter `muk-...` format key in Settings page
+BytePlus ModelArk's `ARK_API_KEY` only grants access; you must also activate the Seedance models in the ModelArk console, or calls will return a 404 error.
 
 </details>
 
@@ -194,7 +191,7 @@ prismreel/
 ├── src/
 │   ├── apps/comic_gen/        # Studio backend (API + Pipeline)
 │   ├── apps/playground/       # Playground backend (API + Service)
-│   ├── models/                # AI model adapters (Wanx/Kling/Vidu/MuleRouter)
+│   ├── models/                # AI model adapters (Wanx/Kling/Vidu/BytePlus)
 │   └── audio/                 # TTS voice synthesis
 ├── config/model_catalog/      # Model catalog (YAML → JSON)
 └── output/                    # Generated outputs (local storage)

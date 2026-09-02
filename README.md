@@ -53,7 +53,7 @@ PrismReel 目前包含两个核心模块：
 ### 🎨 Playground — 独立生成工具台
 
 - **6 种生成模式** — 图像生成、文生视频、图生视频、参考生视频、视频编辑
-- **10+ AI 模型** — GPT-Image-2、Wan 2.7、Seedance 2.0、Kling V3、Vidu Q3、HappyHorse 等
+- **10+ AI 模型** — Wan 2.7、Seedance 2.0/2.0 Fast/2.0 Mini/2.5、Kling V3、Vidu Q3、HappyHorse 等
 - **动态参数** — 每个模型独立参数（尺寸/分辨率/时长/画质）
 - **并发任务** — 多任务同时执行，实时状态追踪
 - **Prompt 模板** — 收藏/复用/历史记录
@@ -98,8 +98,7 @@ PrismReel 目前包含两个核心模块：
 | **DashScope** | Kling V3 | I2V, R2V |
 | **DashScope** | Vidu Q3 Pro / Turbo | I2V, R2V |
 | **DashScope** | PixVerse V6 / C1 | I2V, R2V |
-| **MuleRun** | Seedance 2.0 | T2V, I2V, R2V |
-| **MuleRun** | GPT-Image-2 | T2I, I2I (含 4K) |
+| **BytePlus ModelArk** | Seedance 2.0 / 2.0 Fast / 2.0 Mini / 2.5 | T2V, I2V, R2V |
 | **Kling 原厂** | Kling V3 | I2V, R2V |
 | **Vidu 原厂** | Vidu Q3 Pro / Turbo | I2V, R2V |
 | **DashScope** | CosyVoice, Qwen3-TTS | TTS 配音 |
@@ -156,7 +155,7 @@ PrismReel 采用 **本地优先** 的架构，最简配置只需一个 API Key�
 | 模式 | 必填 | 可用能力 |
 |------|------|----------|
 | **基础** | `DASHSCOPE_API_KEY` | Wan/Qwen/HappyHorse/PixVerse/Kling(代理)/Vidu(代理) + TTS |
-| **+ MuleRun** | + `mulerun login` 或 `MULEROUTER_API_KEY` | + Seedance 2.0 + GPT-Image-2 |
+| **+ BytePlus ModelArk** | + `ARK_API_KEY` | + Seedance 2.0 / 2.0 Fast / 2.0 Mini / 2.5 |
 | **+ Kling 原厂** | + `KLING_ACCESS_KEY` + `KLING_SECRET_KEY` | Kling 直连 |
 | **+ Vidu 原厂** | + `VIDU_API_KEY` | Vidu 直连 |
 | **+ OSS** | + 阿里云 OSS 凭证 | 云端媒体镜像 + 签名 URL |
@@ -168,9 +167,7 @@ PrismReel 采用 **本地优先** 的架构，最简配置只需一个 API Key�
 - **开发模式**: 项目根目录 `.env` 文件
 - **应用内设置**: Settings 页面（保存到 `~/.prismreel/config.json`）
 
-MuleRun 支持两种认证方式：
-1. **CLI 模式**（推荐）: `npm i -g @mulerunai/cli && mulerun login`
-2. **API Key 模式**: 在设置页填入 `muk-...` 格式的 Key
+BytePlus ModelArk 的 `ARK_API_KEY` 仅是访问权限，还需在 ModelArk 控制台激活 Seedance 模型；未激活时调用会返回 404 错误。
 
 </details>
 
@@ -194,7 +191,7 @@ prismreel/
 ├── src/
 │   ├── apps/comic_gen/        # Studio 后端 (API + Pipeline)
 │   ├── apps/playground/       # Playground 后端 (API + Service)
-│   ├── models/                # AI 模型适配器 (Wanx/Kling/Vidu/MuleRouter)
+│   ├── models/                # AI 模型适配器 (Wanx/Kling/Vidu/BytePlus)
 │   └── audio/                 # TTS 语音合成
 ├── config/model_catalog/      # 模型目录 (YAML → JSON)
 └── output/                    # 生成产物 (本地存储)
