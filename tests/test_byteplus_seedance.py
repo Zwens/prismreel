@@ -133,3 +133,24 @@ def test_unknown_model_id_returns_none(model):
     tests/test_seedance_variant_routing.py for the full resolution contract
     (resolve_ark_model_id), which this instance method now delegates to."""
     assert model.resolve_model_id("some-future-id") is None
+
+
+def test_generate_rejects_an_unresolvable_model_id_without_calling_ark(model, monkeypatch):
+    """resolve_model_id returning None must fail generate() loudly and before
+    any network call — otherwise {"model": null, ...} gets POSTed straight to
+    Ark, burning a round trip on an opaque vendor-side error."""
+    monkeypatch.setenv("ARK_API_KEY", "test-key")
+
+    def fake_post(*args, **kwargs):
+        raise AssertionError("must not reach the Ark API")
+
+    monkeypatch.setattr("src.models.byteplus.requests.post", fake_post)
+
+    with pytest.raises(ValueError) as excinfo:
+        model.generate(
+            prompt="a shot",
+            output_path="unused.mp4",
+            model_name="some-future-id",
+        )
+
+    assert "some-future-id" in str(excinfo.value)

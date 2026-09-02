@@ -169,6 +169,14 @@ class BytePlusVideoModel(VideoGenModel):
             if ref and ref not in images:
                 images.append(ref)
 
+        model_name = kwargs.get("model_name")
+        wire_model_id = self.resolve_model_id(model_name)
+        if wire_model_id is None:
+            # Fail before the network call: a None model id would otherwise
+            # be POSTed straight to Ark, which wastes a round trip on an
+            # opaque vendor-side 400 with no hint of which id was bad.
+            raise ValueError(f"Unrecognized Seedance model id: {model_name!r}")
+
         flags = build_param_flags(
             resolution=kwargs.get("resolution"),
             duration=kwargs.get("duration"),
@@ -176,7 +184,7 @@ class BytePlusVideoModel(VideoGenModel):
             watermark=kwargs.get("watermark"),
         )
         body = {
-            "model": self.resolve_model_id(kwargs.get("model_name")),
+            "model": wire_model_id,
             "content": build_ark_content(prompt, images, flags),
         }
 
