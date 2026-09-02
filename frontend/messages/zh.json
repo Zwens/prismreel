@@ -2043,7 +2043,6 @@
     },
     "parameters": {
       "imageSize": "图像尺寸",
-      "quality": "画质",
       "aspectRatio": "画面比例",
       "resolution": "分辨率",
       "duration": "时长",

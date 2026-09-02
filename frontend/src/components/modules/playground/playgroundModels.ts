@@ -180,18 +180,6 @@ function normalizeParams(
     }
   }
 
-  // quality
-  const quality = raw.quality;
-  if (quality && typeof quality === 'object' && 'options' in (quality as object)) {
-    const q = quality as { options?: string[]; default?: string };
-    if (q.options) {
-      result.quality = {
-        options: q.options,
-        default: q.default ?? q.options[0] ?? '',
-      };
-    }
-  }
-
   // boolean flags
   if (typeof raw.seed === 'boolean') result.seed = raw.seed;
   if (typeof raw.negativePrompt === 'boolean') result.negativePrompt = raw.negativePrompt;

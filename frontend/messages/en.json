@@ -2043,7 +2043,6 @@
     },
     "parameters": {
       "imageSize": "Image size",
-      "quality": "Quality",
       "aspectRatio": "Aspect ratio",
       "resolution": "Resolution",
       "duration": "Duration",

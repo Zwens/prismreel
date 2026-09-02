@@ -356,16 +356,6 @@ export default function ParameterBar() {
               />
             )}
 
-            {/* Quality */}
-            {hasQuality && (
-              <ParamDropdown
-                label={t('parameters.quality')}
-                value={(parameters.quality as string) ?? qualityDefault}
-                options={qualityOptions}
-                onChange={(v) => updateParam('quality', v)}
-              />
-            )}
-
             {/* Batch — spans full width if no quality, else single col */}
             <div className={!hasQuality && !hasSize ? 'col-span-2' : hasSize && !hasQuality ? '' : ''}>
               {batchPills}
