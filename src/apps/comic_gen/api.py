@@ -1129,7 +1129,6 @@ class EnvConfig(ProviderRoutingConfig):
     KLING_ACCESS_KEY: Optional[str] = None
     KLING_SECRET_KEY: Optional[str] = None
     VIDU_API_KEY: Optional[str] = None
-    MULEROUTER_API_KEY: Optional[str] = None
     # BytePlus ModelArk / Volcano Ark — Seedance 2.5 runs here.
     ARK_API_KEY: Optional[str] = None
     ARK_REGION: Optional[str] = None
@@ -4093,37 +4092,6 @@ def polish_r2v_prompt(request: PolishR2VPromptRequest):
 
 # ===== Environment Configuration Endpoints =====
 
-def _check_mulerun_cli_status() -> bool:
-    """Check if MuleRun CLI is installed and logged in."""
-    try:
-        import shutil, subprocess
-        if shutil.which("mulerun") is None:
-            return False
-        result = subprocess.run(
-            ["mulerun", "login", "status"],
-            capture_output=True, text=True, timeout=5
-        )
-        return result.returncode == 0
-    except Exception:
-        return False
-
-
-@app.post("/config/mulerun-login")
-def trigger_mulerun_login():
-    """Trigger mulerun login — opens browser for OAuth."""
-    import shutil, subprocess
-    if shutil.which("mulerun") is None:
-        raise HTTPException(status_code=400, detail="MuleRun CLI 未安装。请先运行: npm i -g @mulerunai/cli")
-    try:
-        subprocess.Popen(
-            ["mulerun", "login"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        return {"status": "ok", "message": "浏览器已打开，请完成登录"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"启动登录失败: {e}")
-
 
 # Credential-like env fields that must never be returned in plaintext.
 SECRET_FIELDS = {
@@ -4133,7 +4101,6 @@ SECRET_FIELDS = {
     "KLING_ACCESS_KEY",
     "KLING_SECRET_KEY",
     "VIDU_API_KEY",
-    "MULEROUTER_API_KEY",
     "ARK_API_KEY",
 }
 
@@ -4185,7 +4152,6 @@ def get_env_config():
             "KLING_ACCESS_KEY": _mask_secret(os.getenv("KLING_ACCESS_KEY")),
             "KLING_SECRET_KEY": _mask_secret(os.getenv("KLING_SECRET_KEY")),
             "VIDU_API_KEY": _mask_secret(os.getenv("VIDU_API_KEY")),
-            "MULEROUTER_API_KEY": _mask_secret(os.getenv("MULEROUTER_API_KEY")),
             "ARK_API_KEY": _mask_secret(os.getenv("ARK_API_KEY")),
             # Non-secret config.
             "ARK_REGION": os.getenv("ARK_REGION", ""),
@@ -4194,7 +4160,6 @@ def get_env_config():
             "OSS_ENDPOINT": os.getenv("OSS_ENDPOINT", ""),
             "OSS_BASE_PATH": os.getenv("OSS_BASE_PATH", ""),
             "OSS_ENABLE": is_oss_enabled(),
-            "MULERUN_CLI_LOGGED_IN": _check_mulerun_cli_status(),
             "KLING_PROVIDER_MODE": _normalize_provider_mode(os.getenv("KLING_PROVIDER_MODE")),
             "VIDU_PROVIDER_MODE": _normalize_provider_mode(os.getenv("VIDU_PROVIDER_MODE")),
             "PIXVERSE_PROVIDER_MODE": _normalize_provider_mode(os.getenv("PIXVERSE_PROVIDER_MODE")),

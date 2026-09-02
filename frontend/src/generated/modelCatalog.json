@@ -255,20 +255,17 @@
       }
     },
     "seedance": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "display_name": "Seedance (即梦)",
       "docs": {
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "family": "seedance",
@@ -283,13 +280,13 @@
         "seedance-2.5-r2v",
         "seedance-2.5-t2v"
       ],
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "supported_modalities": [
@@ -298,16 +295,11 @@
         "r2v"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       }
     },
     "vidu": {
@@ -1021,24 +1013,21 @@
       }
     },
     "seedance/seedance-2.0-fast-video": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "ByteDance Seedance 2.0 Fast — lower latency variant of the 2.0 endpoints",
       "display_name": "Seedance 2.0 Fast",
       "docs": {
         "context_hub_doc_ids": [
-          "mulerouter/seedance-2.0"
+          "byteplus/modelark-seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "family": "seedance",
@@ -1053,20 +1042,20 @@
         "seedance/seedance-2.0-fast-video#r2v",
         "seedance/seedance-2.0-fast-video#t2v"
       ],
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
-        "mulerouter": {
-          "gateway": "mulerouter"
+        "byteplus": {
+          "api_model_id": "dreamina-seedance-2-0-fast-260128"
         }
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "supported_modalities": [
@@ -1075,37 +1064,29 @@
         "r2v"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       }
     },
     "seedance/seedance-2.0-video": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
-      "description": "ByteDance Seedance 2.0 video generation via MuleRouter",
+      "default_backend": "byteplus",
+      "description": "ByteDance Seedance 2.0 video generation",
       "display_name": "Seedance 2.0",
       "docs": {
         "context_hub_doc_ids": [
-          "mulerouter/seedance-2.0"
+          "byteplus/modelark-seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "family": "seedance",
@@ -1120,20 +1101,20 @@
         "seedance/seedance-2.0-video#r2v",
         "seedance/seedance-2.0-video#t2v"
       ],
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
-        "mulerouter": {
-          "gateway": "mulerouter"
+        "byteplus": {
+          "api_model_id": "dreamina-seedance-2-0-260128"
         }
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "supported_modalities": [
@@ -1142,29 +1123,21 @@
         "r2v"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       }
     },
     "seedance/seedance-2.5-video": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "ByteDance Seedance 2.5 — native 30s takes, up to 4K, multimodal references",
       "display_name": "Seedance 2.5",
       "docs": {
@@ -1172,7 +1145,7 @@
           "byteplus/modelark-seedance-2.5"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "family": "seedance",
@@ -1187,10 +1160,11 @@
         "seedance/seedance-2.5-video#r2v",
         "seedance/seedance-2.5-video#t2v"
       ],
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
@@ -1200,7 +1174,6 @@
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "supported_modalities": [
@@ -1209,16 +1182,11 @@
         "r2v"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       }
     },
     "vidu/vidu/vidu-q3-fast-image": {
@@ -3469,27 +3437,24 @@
       }
     },
     "seedance-2.0-fast-i2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "i2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Image-to-video generation",
       "display_name": "Seedance 2.0 Fast I2V",
       "docs": {
         "context_hub_doc_ids": [
-          "mulerouter/seedance-2.0"
+          "byteplus/modelark-seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -3521,28 +3486,23 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -3560,27 +3520,24 @@
       }
     },
     "seedance-2.0-fast-r2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "r2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Reference-to-video with multi-image input",
       "display_name": "Seedance 2.0 Fast R2V",
       "docs": {
         "context_hub_doc_ids": [
-          "mulerouter/seedance-2.0"
+          "byteplus/modelark-seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -3612,28 +3569,23 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -3651,27 +3603,24 @@
       }
     },
     "seedance-2.0-fast-t2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "t2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Text-to-video generation",
       "display_name": "Seedance 2.0 Fast T2V",
       "docs": {
         "context_hub_doc_ids": [
-          "mulerouter/seedance-2.0"
+          "byteplus/modelark-seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -3698,28 +3647,23 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -3737,27 +3681,24 @@
       }
     },
     "seedance-2.0-i2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "i2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Image-to-video generation",
       "display_name": "Seedance 2.0 I2V",
       "docs": {
         "context_hub_doc_ids": [
-          "mulerouter/seedance-2.0"
+          "byteplus/modelark-seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -3789,28 +3730,23 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -3828,27 +3764,24 @@
       }
     },
     "seedance-2.0-r2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "r2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Reference-to-video with multi-image input",
       "display_name": "Seedance 2.0 R2V",
       "docs": {
         "context_hub_doc_ids": [
-          "mulerouter/seedance-2.0"
+          "byteplus/modelark-seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -3880,28 +3813,23 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -3919,27 +3847,24 @@
       }
     },
     "seedance-2.0-t2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "t2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Text-to-video generation",
       "display_name": "Seedance 2.0 T2V",
       "docs": {
         "context_hub_doc_ids": [
-          "mulerouter/seedance-2.0"
+          "byteplus/modelark-seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -3966,28 +3891,23 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -4005,19 +3925,16 @@
       }
     },
     "seedance-2.5-i2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "i2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "First-frame image to video",
       "display_name": "Seedance 2.5 I2V",
       "docs": {
@@ -4025,7 +3942,7 @@
           "byteplus/modelark-seedance-2.5"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -4058,28 +3975,23 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -4097,19 +4009,16 @@
       }
     },
     "seedance-2.5-r2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "r2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Multimodal reference-to-video, up to 50 reference assets",
       "display_name": "Seedance 2.5 R2V",
       "docs": {
@@ -4117,7 +4026,7 @@
           "byteplus/modelark-seedance-2.5"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -4150,28 +4059,23 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -4189,19 +4093,16 @@
       }
     },
     "seedance-2.5-t2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "t2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Text-to-video, native long takes",
       "display_name": "Seedance 2.5 T2V",
       "docs": {
@@ -4209,7 +4110,7 @@
           "byteplus/modelark-seedance-2.5"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -4237,28 +4138,23 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -7360,27 +7256,24 @@
       }
     },
     "seedance/seedance-2.0-fast-video#i2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "i2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Image-to-video generation",
       "display_name": "Seedance 2.0 Fast I2V",
       "docs": {
         "context_hub_doc_ids": [
-          "mulerouter/seedance-2.0"
+          "byteplus/modelark-seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -7415,33 +7308,28 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
-        "mulerouter": {
-          "gateway": "mulerouter"
+        "byteplus": {
+          "api_model_id": "dreamina-seedance-2-0-fast-260128"
         }
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -7459,27 +7347,24 @@
       }
     },
     "seedance/seedance-2.0-fast-video#r2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "r2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Reference-to-video with multi-image input",
       "display_name": "Seedance 2.0 Fast R2V",
       "docs": {
         "context_hub_doc_ids": [
-          "mulerouter/seedance-2.0"
+          "byteplus/modelark-seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -7514,33 +7399,28 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
-        "mulerouter": {
-          "gateway": "mulerouter"
+        "byteplus": {
+          "api_model_id": "dreamina-seedance-2-0-fast-260128"
         }
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -7558,27 +7438,24 @@
       }
     },
     "seedance/seedance-2.0-fast-video#t2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "t2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Text-to-video generation",
       "display_name": "Seedance 2.0 Fast T2V",
       "docs": {
         "context_hub_doc_ids": [
-          "mulerouter/seedance-2.0"
+          "byteplus/modelark-seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -7608,33 +7485,28 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
-        "mulerouter": {
-          "gateway": "mulerouter"
+        "byteplus": {
+          "api_model_id": "dreamina-seedance-2-0-fast-260128"
         }
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -7652,27 +7524,24 @@
       }
     },
     "seedance/seedance-2.0-video#i2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "i2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Image-to-video generation",
       "display_name": "Seedance 2.0 I2V",
       "docs": {
         "context_hub_doc_ids": [
-          "mulerouter/seedance-2.0"
+          "byteplus/modelark-seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -7707,33 +7576,28 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
-        "mulerouter": {
-          "gateway": "mulerouter"
+        "byteplus": {
+          "api_model_id": "dreamina-seedance-2-0-260128"
         }
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -7751,27 +7615,24 @@
       }
     },
     "seedance/seedance-2.0-video#r2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "r2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Reference-to-video with multi-image input",
       "display_name": "Seedance 2.0 R2V",
       "docs": {
         "context_hub_doc_ids": [
-          "mulerouter/seedance-2.0"
+          "byteplus/modelark-seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -7806,33 +7667,28 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
-        "mulerouter": {
-          "gateway": "mulerouter"
+        "byteplus": {
+          "api_model_id": "dreamina-seedance-2-0-260128"
         }
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -7850,27 +7706,24 @@
       }
     },
     "seedance/seedance-2.0-video#t2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "t2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Text-to-video generation",
       "display_name": "Seedance 2.0 T2V",
       "docs": {
         "context_hub_doc_ids": [
-          "mulerouter/seedance-2.0"
+          "byteplus/modelark-seedance-2.0"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -7900,33 +7753,28 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
-        "mulerouter": {
-          "gateway": "mulerouter"
+        "byteplus": {
+          "api_model_id": "dreamina-seedance-2-0-260128"
         }
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -7944,19 +7792,16 @@
       }
     },
     "seedance/seedance-2.5-video#i2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "i2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "First-frame image to video",
       "display_name": "Seedance 2.5 I2V",
       "docs": {
@@ -7964,7 +7809,7 @@
           "byteplus/modelark-seedance-2.5"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -8000,10 +7845,11 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
@@ -8014,20 +7860,14 @@
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -8045,19 +7885,16 @@
       }
     },
     "seedance/seedance-2.5-video#r2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "r2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Multimodal reference-to-video, up to 50 reference assets",
       "display_name": "Seedance 2.5 R2V",
       "docs": {
@@ -8065,7 +7902,7 @@
           "byteplus/modelark-seedance-2.5"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -8101,10 +7938,11 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
@@ -8115,20 +7953,14 @@
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [
@@ -8146,19 +7978,16 @@
       }
     },
     "seedance/seedance-2.5-video#t2v": {
-      "backend_env_key": "SEEDANCE_PROVIDER_MODE",
+      "backend_env_key": null,
       "capabilities": [
         "t2v"
       ],
       "credential_sources": {
         "byteplus": [
           "ARK_API_KEY"
-        ],
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
         ]
       },
-      "default_backend": "mulerouter",
+      "default_backend": "byteplus",
       "description": "Text-to-video, native long takes",
       "display_name": "Seedance 2.5 T2V",
       "docs": {
@@ -8166,7 +7995,7 @@
           "byteplus/modelark-seedance-2.5"
         ],
         "official_snapshot_ids": [
-          "mulerouter/seedance-2.0/2026-06-03"
+          "byteplus/modelark-seedance/2026-09-02"
         ]
       },
       "duration": {
@@ -8197,10 +8026,11 @@
         "seed": true,
         "watermark": true
       },
-      "provider": "mulerouter",
+      "provider": "byteplus",
       "release_stage": "stable",
       "routing_prefixes": [
         "seedance-2.0-",
+        "seedance-2.5-",
         "seedance/seedance-"
       ],
       "runtime": {
@@ -8211,20 +8041,14 @@
       },
       "status": "active",
       "supported_backends": [
-        "mulerouter",
         "byteplus"
       ],
       "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
+        "audio_input_mode": {},
         "image_input_mode": {
-          "byteplus": "byteplus_ark_image_url",
-          "mulerouter": "mulerouter_base64_image"
+          "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
+        "reference_video_input_mode": {}
       },
       "ui": {
         "badges": [

@@ -1,17 +1,14 @@
 family: seedance
 display_name: "Seedance (即梦)"
-provider: mulerouter
+provider: byteplus
 routing_prefixes:
   - seedance-2.0-
+  - seedance-2.5-
   - seedance/seedance-
 supported_backends:
-  - mulerouter
   - byteplus
-default_backend: mulerouter
-backend_env_key: SEEDANCE_PROVIDER_MODE
+default_backend: byteplus
 credential_sources:
-  mulerouter:
-    - MULEROUTER_API_KEY
   byteplus:
     - ARK_API_KEY
 supported_modalities:
@@ -20,28 +17,25 @@ supported_modalities:
   - r2v
 docs:
   official_snapshot_ids:
-    - mulerouter/seedance-2.0/2026-06-03
+    - byteplus/modelark-seedance/2026-09-02
 transport:
   image_input_mode:
-    mulerouter: mulerouter_base64_image
     # Ark takes an image_url item that may be a public URL or a data URI.
     byteplus: byteplus_ark_image_url
-  audio_input_mode:
-    mulerouter: mulerouter_audio_url
-  reference_video_input_mode:
-    mulerouter: mulerouter_video_url
+  audio_input_mode: {}
+  reference_video_input_mode: {}
 models:
   - id: seedance/seedance-2.0-video
     display_name: Seedance 2.0
-    description: ByteDance Seedance 2.0 video generation via MuleRouter
+    description: ByteDance Seedance 2.0 video generation
     status: active
     release_stage: stable
     docs:
       context_hub_doc_ids:
-        - mulerouter/seedance-2.0
+        - byteplus/modelark-seedance-2.0
     runtime:
-      mulerouter:
-        gateway: mulerouter
+      byteplus:
+        api_model_id: dreamina-seedance-2-0-260128
     modes:
       t2v:
         legacy_id: seedance-2.0-t2v
@@ -127,7 +121,7 @@ models:
           watermark: true
         docs:
           context_hub_doc_ids:
-            - mulerouter/seedance-2.0
+            - byteplus/modelark-seedance-2.0
         inputs:
           reference_images:
             max: 9
@@ -139,10 +133,10 @@ models:
     release_stage: stable
     docs:
       context_hub_doc_ids:
-        - mulerouter/seedance-2.0
+        - byteplus/modelark-seedance-2.0
     runtime:
-      mulerouter:
-        gateway: mulerouter
+      byteplus:
+        api_model_id: dreamina-seedance-2-0-fast-260128
     modes:
       t2v:
         legacy_id: seedance-2.0-fast-t2v
@@ -228,7 +222,7 @@ models:
           watermark: true
         docs:
           context_hub_doc_ids:
-            - mulerouter/seedance-2.0
+            - byteplus/modelark-seedance-2.0
         inputs:
           reference_images:
             max: 9
