@@ -1,7 +1,10 @@
 # 后续工作交接单
 
-日期：2026-09-02
-当前分支：`main` @ `40b10ff`（**领先 `origin/main` 17 个提交，尚未推送**）
+日期：2026-09-02（第二次会话末更新）
+当前分支：`main`（P0+P1 的 18 个提交**已推送**，见下方任务 A）
+
+**本次会话增量**：任务 A 已完成；零散技术债 1/2/3/4 已完成；后端 506 测试全绿、
+前端 46 UI + 193 单元测试全绿。B/C/D 仍被第 0 步阻塞。
 
 ## 已完成（本次会话）
 
@@ -38,6 +41,9 @@ P0 + P1 已实现、评审、合入 `main`：
 
 2.5 已通证明账号与区域都对，开通是**逐个模型**执行的。到 Ark 控制台把上表其余项开通。
 
+**本次会话已复检，状态与上表一致，无变化**（脚本另外报出 `seedance-1-x` 与 `seedream-4-5`
+也未开通，共 9 项）。
+
 随时复检：
 
 ```bash
@@ -48,22 +54,18 @@ python scripts/check_ark_activation.py
 
 ---
 
-## 任务 A：推送 main 到 GitHub
+## 任务 A：推送 main 到 GitHub —— ✅ 已完成
 
-**依赖**：无。**现在就能做。**
+18 个提交（17 个 P0+P1 的，加上交接单自身那次）已走 prismreel-git-publish 流程推送，
+`origin/main` 与本地一致。扫描六项全过，唯一命中是下面注明的那个已知误报。
 
-`main` 有 17 个提交未推送。仓库是公开的，必须走项目自己的发布流程做敏感数据扫描。
-
-> 新窗口启动指令：
->
-> ```
-> 把 main 推送到 GitHub。走 prismreel-git-publish 流程，先做完整的敏感数据扫描再推。
-> 当前 main 有 17 个未推送提交（P0+P1 的 MuleRouter 移除与 catalog 修正）。
-> ```
-
-**注意**：扫描第 2 项（`alibaba-inc.com`）会命中 `.claude/commands/prismreel-git-publish.md`
+**下次推送仍需注意**：扫描第 2 项（`alibaba-inc.com`）会命中 `.claude/commands/prismreel-git-publish.md`
 与 `.codex/workflows/prismreel-git-publish.md` —— 那是扫描命令自身的文本，**误报**。
-lockfile 里的真实命中已在 `cfef80d` 清理完毕。
+lockfile 里的真实命中已在 `cfef80d` 清理完毕。现在交接单自身也会命中同一项（它描述了这件事），
+同样是误报。
+
+另外扫描第 4 项会列出 `frontend/src/__tests__/provider-credentials.test.ts` —— 只是文件名含
+`credential`，内容里的 `sk-live-x` 是测试假值。
 
 ---
 
@@ -156,25 +158,62 @@ spec §5 M3 有完整设计。要点回顾：
 
 ---
 
-## 零散技术债（互不依赖，随时可做）
+## 零散技术债
+
+### 已完成
+
+| # | 内容 | 结果 |
+|---|---|---|
+| 1 | `pytest` 未声明为依赖 | ✅ `ac2155b`。新建 `requirements-dev.txt`。比原描述多一层：测试用 `TestClient`，它需要 `httpx`，而 fastapi 核心**不依赖** httpx（现在能跑只因为 `openai` 传递装上了），所以 httpx 也一并明写。AGENTS.md 原本完全没有测试章节，已补 |
+| 2 | 6 个既有失败测试 | ✅ 后端 **506 passed / 0 failed**（原 500/6）。三个独立根因，见下方「根因备忘」 |
+| 3 | 46 个前端 `test:ui` 失败 | ✅ `b5afdb0`。**46/46 通过**。不止 intl 一个原因，三层套娃，见下方「根因备忘」 |
+| 4 | `quality` 参数残留死代码 | ✅ 上一会话的 `d74f76b` 已清掉，交接单写这条时已过时。复查 `ParameterBar.tsx` / `playgroundModels.ts` 均无残留 |
+
+### 待办
 
 | # | 内容 | 说明 |
 |---|---|---|
-| 1 | `pytest` 未声明为依赖 | `pyproject.toml` 只有 `[tool.pytest.ini_options]`，`requirements.txt` 也没有。全新 clone 跑不了后端测试。单开一个 `chore:` |
-| 2 | 6 个既有失败测试 | 2 个 catalog 默认模型不匹配（期望 `wan2.7-r2v` 实为 `happyhorse-1.0-r2v`）、3 个 dashscope 媒体传输、1 个分镜合并。**先于本次工作存在**，值得单独查 |
-| 3 | 46 个前端 `test:ui` 失败 | `NextIntlClientProvider` context 问题，同样先于本次工作存在 |
-| 4 | `quality` 参数残留死代码 | `ParameterBar.tsx` 的 `hasQuality`/`qualityOptions` 与 `playgroundModels.ts` 的类型字段。`params.quality` 已无生产者，永久不可达 |
-| 5 | `seedance.yaml` 两个空 transport map | `_require_mapping` 硬性要求每个 family 都有这两个键。要删得先放宽该校验逻辑 |
-| 6 | `CHANGELOG.md` 自 1.2.1（2026-06-09）停更 | 本次的 provider 移除、新增 mini、默认分辨率降到 720p 都是用户可见变更，未记录。要不要重启由你定 |
+| 5 | `seedance.yaml` 两个空 transport map | **建议不做，等你拍板**。全部 7 个 family 里只有 seedance 这两个键为空，其余都真用到。当前 `_require_mapping` 强制三个键必填，`{}` 恰好表达了"该 family 无特殊音频/参考视频传输模式"，是自文档化的；放宽后「故意留空」和「忘了写」就无法区分了。零风险的替代：给这两行加注释说明留空是有意的 |
+| 6 | `CHANGELOG.md` 自 1.2.1（2026-06-09）停更 | 未动，要不要重启由你定 |
+| 7 | **新增** —— `merged_project_payload` 覆盖面 | 该函数 docstring 写着"每个把响应喂回前端 store 的端点都必须走它"，但 `api.py` 里只有 3 处用了，而有 **53 处**直接 `return signed_response(script)`。`0f683d7` 修的是被测试抓到的那一处，同类 bug 很可能还在别处。需要逐端点核对"响应是否被前端 `updateProject` 消费"，工作量不小，值得单独开一项 |
+
+### 根因备忘（债 2 / 债 3）
+
+后端 6 个：
+
+- 2 个 catalog —— `fc71a24` 把整个 wan2.6 族标为 deprecated 并清空 `visible_in`、
+  `ebc5780` 把默认 r2v 改成 `happyhorse-1.0-r2v`（消除 `ui.order=80` 并列时的任意 tie-break）。
+  两次都是有意的生产变更，但 `ebc5780` 只同步了**前端**测试，从没碰过 `tests/`。
+  修的是测试，不是生产。顺带把 wan2.6 的逐 id 断言改成一条规则 —— 逐 id 写法让另外两处
+  不匹配藏在了第一条失败断言后面。
+- 3 个 dashscope —— 断言写死了 POSIX 分隔符 `endswith("output/video/ref.mp4")`，
+  在 Windows 上**永远不可能通过**。生产无 bug，只是断言不可移植。
+- 1 个分镜合并 —— **这个是真的生产 bug**（`0f683d7`）。`analyze_to_storyboard` 返回未合并的
+  episode Script，而两个前端调用方都把它直接喂给浅合并的 `updateProject`，于是把已合并的
+  cast 抹成空。`04a190b` 加这条测试时用同样的方式修了 `bind_voice`，却漏了这个端点，
+  所以它**从落地那天起就是红的**。
+
+前端 46 个，三层，每层都被上一层挡住：
+
+1. 两个 spec 都没包 `NextIntlClientProvider`，首个 `useTranslations` 直接抛错，整文件全灭。
+   已加 `frontend/src/test-utils/intl.tsx`，复刻 `Providers.tsx`，喂**真的** `messages/zh.json`
+   （spec 断言的中文文案就是 i18n 时原样搬进去的，用真 messages 才能让改 key 立刻暴露）。
+2. `SeriesDetailPage` 的 lucide-react mock 逐个列举图标，漏了 `SeriesSidebar` 用的 `Palette`，
+   React 渲染 undefined 抛错 → 页面全空 → 25 个测试全报"找不到文本"这种误导性错误。
+   改成 Proxy 兜住任意图标名。
+3. `createEpisodeForSeries` 多了第 4 个参数（新集数从系列继承的 workflow mode），断言还写着 3 个。
 
 ---
 
 ## 建议顺序
 
 ```
-第 0 步（开通剩余模型）  ─┬─→  任务 A（推送，不依赖开通，可并行）
-                         │
-                         └─→  任务 B（P2 实调）→ 任务 C（P3）→ 任务 D（P4）
+第 0 步（开通剩余模型）──→ 任务 B（P2 实调）──→ 任务 C（P3）──→ 任务 D（P4）
+                          ↑
+                    唯一的阻塞点，只能你在 Ark 控制台点
 ```
 
-**任务 A 现在就能做，且与其他一切无关。** 技术债 1–6 随时可插。
+任务 A ✅ 已完成。技术债 1–4 ✅ 已完成。**现在整条链路只卡在第 0 步。**
+
+在你开通之前，能推进的只剩债 5 / 6 / 7，其中 5 和 6 都需要你先拍板（见上表），
+7 是新发现的、可以独立开工的一项。
