@@ -64,6 +64,9 @@ describe('model catalog selectors', () => {
             'pixverse/pixverse-v6-video',
             'seedance-2.0-i2v',
             'pixverse-c1-i2v',
+            // Seedance 2.0 Mini (order 80) ties with Wan 2.7 I2V; 'Seedance'
+            // sorts before 'Wan' alphabetically.
+            'seedance-2.0-mini-i2v',
             'wan2.7-i2v',
             'viduq3-pro-i2v',
             'viduq3-turbo-i2v',
