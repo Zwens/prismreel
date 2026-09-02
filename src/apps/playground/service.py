@@ -41,7 +41,6 @@ class PlaygroundService:
         self._kling_model = None
         self._vidu_model = None
         self._byteplus_video_model = None
-        self._mulerouter_image_model = None
         self._vidu_image_model = None
 
     # ------------------------------------------------------------------
@@ -194,9 +193,7 @@ class PlaygroundService:
             out_path = os.path.join(IMAGE_OUTPUT_DIR, out_filename)
 
             try:
-                if model_lower.startswith("gpt-image"):
-                    self._generate_image_mulerouter(gen, out_path, idx)
-                elif is_vidu_image_model(model_lower):
+                if is_vidu_image_model(model_lower):
                     self._generate_image_vidu(gen, out_path, idx)
                 else:
                     self._generate_image_wanx(gen, out_path, idx)
@@ -262,30 +259,6 @@ class PlaygroundService:
             kwargs["ref_image_paths"] = list(gen.input_media)
 
         self._vidu_image_model.generate(
-            prompt=gen.prompt,
-            output_path=out_path,
-            **kwargs,
-        )
-
-    def _generate_image_mulerouter(self, gen: PlaygroundGeneration, out_path: str, _idx: int) -> None:
-        """Delegate to :class:`MuleRouterImageModel` (GPT-Image-2)."""
-        from ...models.mulerouter import MuleRouterImageModel
-
-        if self._mulerouter_image_model is None:
-            self._mulerouter_image_model = MuleRouterImageModel({})
-
-        params = gen.parameters
-        kwargs = {
-            "size": params.get("size", "1024x1024"),
-            "quality": params.get("quality", "high"),
-            "n": 1,
-        }
-
-        # i2i: attach reference images
-        if gen.mode == PlaygroundMode.I2I and gen.input_media:
-            kwargs["ref_image_paths"] = list(gen.input_media)
-
-        self._mulerouter_image_model.generate(
             prompt=gen.prompt,
             output_path=out_path,
             **kwargs,

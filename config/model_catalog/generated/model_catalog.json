@@ -1,7 +1,6 @@
 {
   "compat": {
     "legacy_model_ids": {
-      "gpt-image-2": "gpt-image/gpt-image-2#image",
       "happyhorse-1.0-i2v": "happyhorse/happyhorse-1.0-video#i2v",
       "happyhorse-1.0-r2v": "happyhorse/happyhorse-1.0-video#r2v",
       "happyhorse-1.0-t2v": "happyhorse/happyhorse-1.0-t2v#i2v",
@@ -68,47 +67,6 @@
     }
   },
   "families": {
-    "gpt-image": {
-      "backend_env_key": null,
-      "credential_sources": {
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
-        ]
-      },
-      "default_backend": "mulerouter",
-      "display_name": "GPT Image (OpenAI)",
-      "docs": {
-        "official_snapshot_ids": [
-          "mulerouter/gpt-image-2/2026-06-03"
-        ]
-      },
-      "family": "gpt-image",
-      "models": [
-        "gpt-image-2"
-      ],
-      "provider": "mulerouter",
-      "routing_prefixes": [
-        "gpt-image-"
-      ],
-      "supported_backends": [
-        "mulerouter"
-      ],
-      "supported_modalities": [
-        "t2i",
-        "i2i"
-      ],
-      "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
-        "image_input_mode": {
-          "mulerouter": "mulerouter_base64_image"
-        },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
-      }
-    },
     "happyhorse": {
       "backend_env_key": null,
       "credential_sources": {
@@ -476,62 +434,6 @@
     }
   },
   "model_lines": {
-    "gpt-image/gpt-image-2": {
-      "backend_env_key": null,
-      "credential_sources": {
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
-        ]
-      },
-      "default_backend": "mulerouter",
-      "description": "OpenAI GPT-Image-2 via MuleRouter (T2I + I2I editing)",
-      "display_name": "GPT Image 2",
-      "docs": {
-        "context_hub_doc_ids": [
-          "mulerouter/gpt-image-2"
-        ],
-        "official_snapshot_ids": [
-          "mulerouter/gpt-image-2/2026-06-03"
-        ]
-      },
-      "family": "gpt-image",
-      "id": "gpt-image/gpt-image-2",
-      "legacy_model_ids": [
-        "gpt-image-2"
-      ],
-      "modes": [
-        "gpt-image/gpt-image-2#image"
-      ],
-      "provider": "mulerouter",
-      "release_stage": "stable",
-      "routing_prefixes": [
-        "gpt-image-"
-      ],
-      "runtime": {
-        "mulerouter": {
-          "gateway": "mulerouter"
-        }
-      },
-      "status": "active",
-      "supported_backends": [
-        "mulerouter"
-      ],
-      "supported_modalities": [
-        "t2i",
-        "i2i"
-      ],
-      "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
-        "image_input_mode": {
-          "mulerouter": "mulerouter_base64_image"
-        },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
-      }
-    },
     "happyhorse/happyhorse-1.0-t2v": {
       "backend_env_key": null,
       "credential_sources": {
@@ -2508,92 +2410,6 @@
     }
   },
   "models": {
-    "gpt-image-2": {
-      "backend_env_key": null,
-      "capabilities": [
-        "t2i",
-        "i2i"
-      ],
-      "credential_sources": {
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
-        ]
-      },
-      "default_backend": "mulerouter",
-      "description": "OpenAI GPT-Image-2 via MuleRouter (T2I + I2I editing)",
-      "display_name": "GPT Image 2",
-      "docs": {
-        "context_hub_doc_ids": [
-          "mulerouter/gpt-image-2"
-        ],
-        "official_snapshot_ids": [
-          "mulerouter/gpt-image-2/2026-06-03"
-        ]
-      },
-      "duration": null,
-      "family": "gpt-image",
-      "id": "gpt-image-2",
-      "inputs": {},
-      "params": {
-        "negativePrompt": false,
-        "promptExtend": false,
-        "quality": {
-          "default": "high",
-          "options": [
-            "high",
-            "medium",
-            "low"
-          ]
-        },
-        "seed": false,
-        "size": {
-          "default": "1024x1024",
-          "options": [
-            "1024x1024",
-            "1536x1024",
-            "1024x1536",
-            "2048x2048",
-            "2048x1152",
-            "3840x2160",
-            "2160x3840"
-          ]
-        },
-        "watermark": false
-      },
-      "provider": "mulerouter",
-      "release_stage": "stable",
-      "routing_prefixes": [
-        "gpt-image-"
-      ],
-      "status": "active",
-      "supported_backends": [
-        "mulerouter"
-      ],
-      "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
-        "image_input_mode": {
-          "mulerouter": "mulerouter_base64_image"
-        },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
-      },
-      "ui": {
-        "badges": [
-          "new"
-        ],
-        "order": 95,
-        "recommended": true,
-        "selection_group": "image",
-        "visible_in": [
-          "project_settings",
-          "series_settings",
-          "global_settings"
-        ]
-      }
-    },
     "happyhorse-1.0-i2v": {
       "backend_env_key": null,
       "capabilities": [
@@ -6379,100 +6195,6 @@
     }
   },
   "modes": {
-    "gpt-image/gpt-image-2#image": {
-      "backend_env_key": null,
-      "capabilities": [
-        "t2i",
-        "i2i"
-      ],
-      "credential_sources": {
-        "mulerouter": [
-          "MULEROUTER_API_KEY"
-        ]
-      },
-      "default_backend": "mulerouter",
-      "description": "OpenAI GPT-Image-2 via MuleRouter (T2I + I2I editing)",
-      "display_name": "GPT Image 2",
-      "docs": {
-        "context_hub_doc_ids": [
-          "mulerouter/gpt-image-2"
-        ],
-        "official_snapshot_ids": [
-          "mulerouter/gpt-image-2/2026-06-03"
-        ]
-      },
-      "duration": null,
-      "family": "gpt-image",
-      "id": "gpt-image/gpt-image-2#image",
-      "inputs": {},
-      "legacy_model_id": "gpt-image-2",
-      "mode": "image",
-      "model_line_id": "gpt-image/gpt-image-2",
-      "params": {
-        "negativePrompt": false,
-        "promptExtend": false,
-        "quality": {
-          "default": "high",
-          "options": [
-            "high",
-            "medium",
-            "low"
-          ]
-        },
-        "seed": false,
-        "size": {
-          "default": "1024x1024",
-          "options": [
-            "1024x1024",
-            "1536x1024",
-            "1024x1536",
-            "2048x2048",
-            "2048x1152",
-            "3840x2160",
-            "2160x3840"
-          ]
-        },
-        "watermark": false
-      },
-      "provider": "mulerouter",
-      "release_stage": "stable",
-      "routing_prefixes": [
-        "gpt-image-"
-      ],
-      "runtime": {
-        "mulerouter": {
-          "gateway": "mulerouter"
-        }
-      },
-      "status": "active",
-      "supported_backends": [
-        "mulerouter"
-      ],
-      "transport": {
-        "audio_input_mode": {
-          "mulerouter": "mulerouter_audio_url"
-        },
-        "image_input_mode": {
-          "mulerouter": "mulerouter_base64_image"
-        },
-        "reference_video_input_mode": {
-          "mulerouter": "mulerouter_video_url"
-        }
-      },
-      "ui": {
-        "badges": [
-          "new"
-        ],
-        "order": 95,
-        "recommended": true,
-        "selection_group": "image",
-        "visible_in": [
-          "project_settings",
-          "series_settings",
-          "global_settings"
-        ]
-      }
-    },
     "happyhorse/happyhorse-1.0-t2v#i2v": {
       "backend_env_key": null,
       "capabilities": [

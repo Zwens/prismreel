@@ -883,8 +883,6 @@ def _image_provider_for(model_name: str) -> str:
     name = (model_name or "").strip().lower()
     if not name:
         return ""
-    if name.startswith("gpt-image"):
-        return "mulerouter"
     # Imported lazily: src.models.vidu imports ImageGenModel from this module.
     from .vidu import is_vidu_image_model
     if is_vidu_image_model(name):
