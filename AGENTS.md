@@ -162,6 +162,18 @@ cd frontend && npm run dev
 python main.py
 ```
 
+### Testing
+```bash
+# Test dependencies live in requirements-dev.txt, not requirements.txt
+pip install -r requirements.txt -r requirements-dev.txt
+
+# Backend suite (pytest config lives in pyproject.toml)
+pytest
+
+# Frontend suite (unit + UI)
+cd frontend && npm run test:all
+```
+
 ## File Structure
 
 ### Output Management

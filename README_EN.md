@@ -136,6 +136,9 @@ Or start separately:
 pip install -r requirements.txt
 ./start_backend.sh  # http://localhost:17177
 
+# To run the backend test suite, install the dev extras (pytest, ...)
+pip install -r requirements-dev.txt && pytest
+
 # Frontend
 cd frontend && npm install && npm run dev  # http://localhost:3008
 ```

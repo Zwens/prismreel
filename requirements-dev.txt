@@ -1,0 +1,13 @@
+# 开发与测试依赖。运行时不需要这些，所以不放进 requirements.txt；
+# 全新 clone 要跑后端测试就装它：
+#   pip install -r requirements.txt -r requirements-dev.txt
+
+# pyproject.toml 有 [tool.pytest.ini_options]，但此前没有任何地方声明
+# pytest 本身，全新环境里 `pytest` 根本不存在。
+pytest>=8.0.0
+
+# tests/ 里多处用 fastapi.testclient.TestClient，而它底层走 httpx。
+# fastapi 核心并不依赖 httpx（Requires: pydantic, starlette, typing-extensions），
+# 目前能跑只是因为 requirements.txt 的 openai 把 httpx 传递装上了——
+# 和 numpy 那条一样，明写出来免得哪天上游断了传递链。
+httpx>=0.27.0

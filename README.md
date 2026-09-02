@@ -136,6 +136,9 @@ npm run dev
 pip install -r requirements.txt
 ./start_backend.sh  # http://localhost:17177
 
+# 要跑后端测试，再装一份开发依赖（pytest 等）
+pip install -r requirements-dev.txt && pytest
+
 # 前端
 cd frontend && npm install && npm run dev  # http://localhost:3008
 ```
