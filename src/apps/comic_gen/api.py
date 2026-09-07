@@ -4108,6 +4108,7 @@ SECRET_FIELDS = {
     "KLING_SECRET_KEY",
     "VIDU_API_KEY",
     "ARK_API_KEY",
+    "OPENAI_API_KEY",
 }
 
 # Bullet sentinel: never appears in a real key, so the save path can detect an
@@ -4159,7 +4160,9 @@ def get_env_config():
             "KLING_SECRET_KEY": _mask_secret(os.getenv("KLING_SECRET_KEY")),
             "VIDU_API_KEY": _mask_secret(os.getenv("VIDU_API_KEY")),
             "ARK_API_KEY": _mask_secret(os.getenv("ARK_API_KEY")),
+            "OPENAI_API_KEY": _mask_secret(os.getenv("OPENAI_API_KEY")),
             # Non-secret config.
+            "LLM_PROVIDER": os.getenv("LLM_PROVIDER", "dashscope"),
             "ARK_REGION": os.getenv("ARK_REGION", ""),
             "ARK_BASE_URL": os.getenv("ARK_BASE_URL", ""),
             "OSS_BUCKET_NAME": os.getenv("OSS_BUCKET_NAME", ""),
