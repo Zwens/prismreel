@@ -36,11 +36,19 @@ Task 7（本輪 commit `45e7a48`）：**全部約 100 個** `/projects/{script_i
 
 **驗證**：新測試 `test_file_ownership_middleware.py` 4/4 過；`pytest src/apps/comic_gen/` 28/29 過（`test_pipeline` 失敗是既有環境缺 LLM API Key，用 git stash 驗證改動前也一樣失敗，非迴歸）；`ast.parse` 語法檢查過；app import 啟動無路由註冊錯誤。
 
-## 下一步：Task 9 開始
+## Task 9 已完成（claude-wmzic-26 本輪，commit `a00b2b3`）
 
-Task 9：`enforce_login` 全域 Middleware。計畫全文見 `docs/superpowers/plans/2026-09-08-multi-tenant-auth.md` Task 9 段落（約 1253 行起）。
+依計畫實作 `enforce_login` middleware，但發現並修正一個既有 bug：`require_login`（Task 2 寫的 dependency，`GET /projects/` 等端點在用）沒有遵守 `auth.py` 檔頭註解明載的「`JWT_SECRET` 留空 = 完全停用登入閘門」規則，一律要求已登入。已跟使用者確認後修正：`require_login` 在 `JWT_SECRET` 未設定時回傳 `_ANONYMOUS_ADMIN`（role="admin"，讓既有 `user.role != "admin"` 過濾邏輯自然給予完整存取），與新 middleware 行為一致。
 
-**提醒**：本輪發現計畫文件對程式碼結構的假設（Task 8 Step 1）與實際不完全相符，接手者執行前應對照計畫描述與實際程式碼，發現落差先跟使用者核實範圍，不要照單全收硬做。
+計畫測試程式碼本身也有兩個小缺口，接手時已修正：範例 JWT secret 只有 11 字元（低於 auth.py 強制的 32 字元下限）、`test_auth_login_endpoint_accessible_without_cookie` 缺少其他 auth 測試都在用的 `isolated_db` fixture（否則打到真實 `output/auth.db` 沒有 `users` 表）。
+
+**驗證**：新測試 4/4 過；`pytest src/apps/comic_gen/` 32/33 過（`test_pipeline` 同樣是既有環境缺 LLM API Key，非迴歸）；語法檢查+app 啟動皆過。
+
+## 下一步：Task 10 開始（前端 axios + 401 攔截）
+
+計畫全文見 `docs/superpowers/plans/2026-09-08-multi-tenant-auth.md` Task 10 段落（約 1365 行起）。
+
+**提醒**：本輪 Task 8/9 都發現計畫文件與實際程式碼/既有行為有落差（Task 8 是路徑組裝結構假設錯誤，Task 9 是既有 `require_login` 沒貫徹自己文件裡寫的規則）。接手者執行前應對照計畫描述與實際程式碼，發現落差先跟使用者核實範圍，不要照單全收硬做。
 
 ## 偏離計畫之處（Task 1-5 遺留，仍適用）
 
