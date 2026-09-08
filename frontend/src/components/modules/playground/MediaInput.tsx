@@ -5,7 +5,7 @@ import { ImagePlus, Film, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { API_URL, playgroundApi } from '@/lib/api';
 import { usePlaygroundStore, type PlaygroundMode } from './usePlaygroundStore';
-import AssetPickerModal from './AssetPickerModal';
+import AssetSourcePicker from './AssetSourcePicker';
 
 // ---------------------------------------------------------------------------
 // Mode config
@@ -288,7 +288,7 @@ export default function MediaInput() {
     setInputMedia([...inputMedia, path]);
   };
 
-  // Determine accept type for AssetPickerModal
+  // Determine accept type for AssetSourcePicker
   const acceptType: 'image' | 'video' | 'all' =
     mode === 'r2v' && isSeedance
       ? 'all'
@@ -372,7 +372,7 @@ export default function MediaInput() {
 
         {fileInput}
 
-        <AssetPickerModal
+        <AssetSourcePicker
           isOpen={showAssetPicker}
           onClose={() => setShowAssetPicker(false)}
           onSelect={handleAssetSelect}
@@ -491,7 +491,7 @@ export default function MediaInput() {
 
       {fileInput}
 
-      <AssetPickerModal
+      <AssetSourcePicker
         isOpen={showAssetPicker}
         onClose={() => setShowAssetPicker(false)}
         onSelect={handleAssetSelect}

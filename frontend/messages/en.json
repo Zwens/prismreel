@@ -2031,15 +2031,22 @@
       "daysAgo": "{count}d ago",
       "monthsAgo": "{count}mo ago"
     },
-    "assetPicker": {
-      "tabAll": "All",
-      "tabImage": "Images",
-      "tabVideo": "Videos",
+    "assetSourcePicker": {
       "title": "Select media",
+      "close": "Close",
+      "tabLibrary": "Library",
+      "tabSeries": "Series",
+      "tabProject": "Project",
+      "tabHistory": "History",
       "loading": "Loading…",
       "retry": "Retry",
+      "loadFailed": "Failed to load",
       "empty": "No media available",
-      "emptyHint": "Generate something in the Playground and your outputs will appear here",
+      "pickSeries": "Pick a series first",
+      "pickProject": "Pick a project first",
+      "noSeries": "No series yet",
+      "noProject": "No projects yet",
+      "shotLabel": "Shot {index}",
       "cancel": "Cancel",
       "select": "Select"
     },
