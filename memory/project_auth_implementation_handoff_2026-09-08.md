@@ -44,11 +44,21 @@ Task 7（本輪 commit `45e7a48`）：**全部約 100 個** `/projects/{script_i
 
 **驗證**：新測試 4/4 過；`pytest src/apps/comic_gen/` 32/33 過（`test_pipeline` 同樣是既有環境缺 LLM API Key，非迴歸）；語法檢查+app 啟動皆過。
 
-## 下一步：Task 10 開始（前端 axios + 401 攔截）
+## Task 10 已完成（claude-wmzic-26 本輪，commit `7b42f0e`）
 
-計畫全文見 `docs/superpowers/plans/2026-09-08-multi-tenant-auth.md` Task 10 段落（約 1365 行起）。
+依計畫加 `axios.defaults.withCredentials = true` + `authInterceptor.ts`（401 導向 `/login`），安裝點放在 `Providers.tsx`（根 `layout.tsx` 是 server component，`Providers` 才是最外層 client component，符合計畫 Step 3 的判斷邏輯）。
 
-**提醒**：本輪 Task 8/9 都發現計畫文件與實際程式碼/既有行為有落差（Task 8 是路徑組裝結構假設錯誤，Task 9 是既有 `require_login` 沒貫徹自己文件裡寫的規則）。接手者執行前應對照計畫描述與實際程式碼，發現落差先跟使用者核實範圍，不要照單全收硬做。
+**額外發現並修正的落差**：`withCredentials=true` 要求後端 CORS 回應明確 origin（不能是 `"*"`），但既有 `enforce_api_key`/CORS 設定只在 `PRISMREEL_CORS_ORIGINS` 明確設定時才開 `allow_credentials`——dev 模式（前端 `localhost:3008`、後端不同 port，跨 origin）預設會讓登入 cookie 送不出去，登入系統實質失效。已跟使用者確認後修正：`PRISMREEL_CORS_ORIGINS` 未設定時，改用 `allow_origin_regex` 只放行 `localhost`/`127.0.0.1`（任意 port），生產環境設定了該環境變數則維持原本明確 allowlist 行為不變。
+
+**未完成/略過**：Step 4 手動驗證只做到「dev server 啟動無錯誤」，計畫本文也註明「完整驗證需等 Task 11 登入頁存在」，尚未實際打開瀏覽器測 401 導向（因為 `/login` 頁面還不存在，Task 11 才建立）。
+
+**驗證**：新檔案 `authInterceptor.ts` 獨立 tsc 檢查過；`npm run typecheck` 有 1 個既有型別錯誤（`EnvConfigChecker.tsx`，用 git stash 驗證改動前就存在，非本次引入，不在 Task 10 範圍內未處理）；後端 `pytest` 32/33 過（同樣既知的 `test_pipeline` LLM Key 缺失，非迴歸）；Next.js dev server 手動啟動確認無錯誤。
+
+## 下一步：Task 11 開始（前端登入頁 + 邀請落地頁）
+
+計畫全文見 `docs/superpowers/plans/2026-09-08-multi-tenant-auth.md` Task 11 段落（約 1444 行起）。Task 11 完成後應回頭補完 Task 10 Step 4 的完整手動驗證（瀏覽器測 401 → 導向 `/login`）。
+
+**提醒**：本輪 Task 8/9/10 都發現計畫文件與實際程式碼/既有行為有落差（Task 8 路徑組裝結構假設錯誤、Task 9 既有 `require_login` 沒貫徹自己文件裡寫的規則、Task 10 CORS 設定與新 cookie 機制不相容）。接手者執行前應對照計畫描述與實際程式碼，發現落差先跟使用者核實範圍，不要照單全收硬做。`EnvConfigChecker.tsx` 的既有型別錯誤與 auth 無關，非本輪任務範圍，暫不處理。
 
 ## 偏離計畫之處（Task 1-5 遺留，仍適用）
 
