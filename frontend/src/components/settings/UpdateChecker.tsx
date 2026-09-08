@@ -16,7 +16,7 @@ import { useTranslations } from "next-intl";
 import { RefreshCw, Loader2, Check, Sparkles, ExternalLink, CircleAlert } from "lucide-react";
 
 // 本地版本常量,避免跨文件耦合(与 SettingsPage 的 APP_VERSION 同源)。
-const APP_VERSION = "v0.2.0";
+const APP_VERSION = "v1.5.0";
 const REPO = "alibaba/prismreel";
 const LATEST_API = `https://api.github.com/repos/${REPO}/releases/latest`;
 const RELEASES_URL = `https://github.com/${REPO}/releases`;
