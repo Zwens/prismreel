@@ -407,7 +407,7 @@ class ComicGenPipeline:
         if repaired:
             self._save_data()
 
-    def create_project(self, title: str, text: str, skip_analysis: bool = False, workflow_mode: str = "i2v_legacy", series_id: Optional[str] = None) -> Script:
+    def create_project(self, title: str, text: str, skip_analysis: bool = False, workflow_mode: str = "i2v_legacy", series_id: Optional[str] = None, owner_id: str = "") -> Script:
         """Step 1: Parse novel and create project.
 
         When `series_id` is provided the new project is bound as the next
@@ -423,6 +423,7 @@ class ComicGenPipeline:
             script = self.script_processor.parse_novel(title, text)
 
         script.workflow_mode = workflow_mode
+        script.owner_id = owner_id
         self.scripts[script.id] = script
         self._save_data()
 

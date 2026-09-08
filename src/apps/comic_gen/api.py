@@ -523,7 +523,7 @@ class CreateProjectRequest(BaseModel):
 
 
 @app.post("/projects", response_model=Script)
-async def create_project(request: CreateProjectRequest, skip_analysis: bool = False):
+async def create_project(request: CreateProjectRequest, skip_analysis: bool = False, user=Depends(auth.require_login)):
     """Creates a new project from a novel text.
 
     When `series_id` is provided the project is bound as the next episode
@@ -535,7 +535,7 @@ async def create_project(request: CreateProjectRequest, skip_analysis: bool = Fa
     try:
         result = await loop.run_in_executor(
             None,  # Use default executor
-            partial(pipeline.create_project, request.title, request.text, skip_analysis, request.workflow_mode, request.series_id)
+            partial(pipeline.create_project, request.title, request.text, skip_analysis, request.workflow_mode, request.series_id, user.id)
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -607,9 +607,11 @@ async def extract_preview(script_id: str, request: ReparseProjectRequest):
 
 
 @app.get("/projects/", response_model=List[dict])
-def list_projects():
+def list_projects(user=Depends(auth.require_login)):
     """Lists all projects from backend storage."""
     scripts = list(pipeline.scripts.values())
+    if user.role != "admin":
+        scripts = [s for s in scripts if not s.owner_id or s.owner_id == user.id]
     return signed_response(scripts)
 
 
@@ -1565,26 +1567,20 @@ def merged_project_payload(script) -> dict:
 
 
 @app.get("/projects/{script_id}")
-def get_project(script_id: str):
+def get_project(script: Script = Depends(get_owned_script)):
     """Retrieves a project by ID, with series-shared and global assets
     merged in (see merged_project_payload).
 
     Response model dropped from `Script` because of the added `source`
     field."""
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
     return signed_response(merged_project_payload(script))
 
 
 
 @app.delete("/projects/{script_id}")
-def delete_project(script_id: str):
+def delete_project(script: Script = Depends(get_owned_script)):
     """Deletes a project by ID. WARNING: This permanently removes the project from backend storage."""
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
-    
+    script_id = script.id
     try:
         # If project belongs to a Series, remove from episode_ids
         if script.series_id:
