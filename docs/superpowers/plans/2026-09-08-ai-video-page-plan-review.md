@@ -112,9 +112,10 @@ AI 视频页的核心是一个模型选择器 + 参数条。在 catalog 正处�
   └─ 第 4 步 拔除 DashScope + seedance 补 v2v + 退役映射
         ← catalog 在此定型
 
+B. D5 context 注入重构 —— ✅ 已完成（272153f）。不消费 catalog，故无需等第 4 步
+
 catalog 定型后
-  └─ B. D5 context 注入重构（独立提交，先补 14 个消费方回归测试）
-  └─ C. AI 视频页 M6（导航 + 独立 store + 页面，复用 A 的选择器）
+  └─ C. AI 视频页 M6（导航 + 独立 store + 页面，复用 A 的选择器与 B 的 provider）
   └─ D. v2v 任务子类型（edit / extend），用已开通的 Seedance 2.5 实调
 
 始终阻塞（只能在 Ark 控制台点）
@@ -232,7 +233,39 @@ catalog 定型后
 **优先用 store 里的副本而非传进来的 prop**（`history.find(...) ?? generationProp`），
 为的是别处改了 `saved_to_library` 后详情页能同步。已有用例钉住。
 
-## 7. 并行作业提示（2026-09-08）
+## 7. 已交付：D5 store 工厂 + context 注入（2026-09-08）
+
+裁决 2 的重构本体。`272153f`，单个可回滚提交。
+
+**做法**：store 由模块级单例改为工厂 `createPlaygroundStore()`；组件跟哪个实例说话
+由上方的 `PlaygroundStoreProvider` 决定，而非由 import 决定。保留默认实例
+`playgroundStore`，`usePlaygroundStoreApi()` 在无 provider 时回退到它——创作台因此
+一行未改、行为照旧；AI 视频页只需把子树包进 provider。
+
+**两处手工改写**（provider 覆盖不到的非 React 调用点）：
+
+| 位置 | 改法 |
+|---|---|
+| `ResultGallery` 删除处理 | 从已有的整店解构里取 `removeGeneration` |
+| `PlaygroundPage` 队列泵 | 改用 `usePlaygroundStoreApi().getState()` 取快照。这里要的是快照不是订阅——为读队列而订阅队列会让页面每次队列变动都重渲染，反过来冲击它自己驱动的泵 |
+
+**关键验证点**：其余 43 条 storeWiring 用例全都跑在无 provider 的回退路径上，
+它们证明创作台没坏，但对隔离一无所知。因此另加 `storeWiring.isolation.spec.tsx` 5 条，
+正面断言两个子树两个 store、互相看不见。变异验证：让 `usePlaygroundStoreApi` 无视
+context 永远返回默认实例（即"重构其实没生效"），恰好其中 3 条变红，不依赖 provider
+的 2 条保持绿。
+
+**留给下一步的两件小事**（有意不塞进这个提交，以免"可回滚"变成空话）：
+
+- `ResultGallery` 与 `PromptTemplateModal` 仍用整店解构，改成选择器可收窄重渲染范围
+- store 里 localStorage 支撑的两项（featured、并发数）目前所有实例共用同一组 key。
+  创作台与 AI 视频页要不要共享"精选"标记和并发上限，是产品决策，做 AI 视频页时再定
+
+**验证**：`typecheck` 干净；`test:ui` 110/110；`test` 205/205。
+
+---
+
+## 8. 并行作业提示（2026-09-08）
 
 本次复审执行期间，另一个会话（`lengjinglumenxstudio-aa`）在同一仓库并行推进 Gemini 迁移：
 
