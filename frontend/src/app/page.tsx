@@ -26,6 +26,7 @@ const ImportFileDialog = dynamic(() => import("@/components/series/ImportFileDia
 const SettingsPage = dynamic(() => import("@/components/settings/SettingsPage"), { ssr: false });
 const AssetLibraryPage = dynamic(() => import("@/components/library/AssetLibraryPage"), { ssr: false });
 const PlaygroundPage = dynamic(() => import("@/components/modules/playground/PlaygroundPage"), { ssr: false });
+const AiVideoPage = dynamic(() => import("@/components/modules/aivideo/AiVideoPage"), { ssr: false });
 
 // ── Create Series Dialog ──
 function CreateSeriesDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -460,7 +461,7 @@ export default function Home() {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
-  const [currentView, setCurrentView] = useState<'home' | 'project' | 'series' | 'series-episode' | 'library' | 'settings' | 'playground'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'project' | 'series' | 'series-episode' | 'library' | 'settings' | 'aivideo' | 'playground'>('home');
   const [activeTab, setActiveTab] = useState<GlobalTab>("workspace");
   const [wsSearch, setWsSearch] = useState("");
   const online = useOnline();
@@ -603,6 +604,14 @@ export default function Home() {
         setEpisodeId(null);
         return;
       }
+      if (hash === '#/ai-video') {
+        setCurrentView('aivideo');
+        setActiveTab('aivideo');
+        setProjectId(null);
+        setSeriesId(null);
+        setEpisodeId(null);
+        return;
+      }
       if (hash === '#/playground') {
         setCurrentView('playground');
         setActiveTab('playground');
@@ -661,6 +670,9 @@ export default function Home() {
     }
     if (currentView === 'settings') {
       return <SettingsPage />;
+    }
+    if (currentView === 'aivideo') {
+      return <AiVideoPage />;
     }
     if (currentView === 'playground') {
       return <PlaygroundPage />;
