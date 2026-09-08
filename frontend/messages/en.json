@@ -426,7 +426,24 @@
     "playground": "Playground",
     "settings": "Settings",
     "workspaceAria": "PrismReel Studio · Workspace",
-    "mainNavAria": "Main navigation"
+    "mainNavAria": "Main navigation",
+    "aivideo": "AI Video"
+  },
+  "aivideo": {
+    "eyebrow": "Single shot",
+    "title": "AI Video",
+    "subtitle": "Generate one video, straight from the assets you already have",
+    "groupVideo": "Video modes",
+    "mode": {
+      "t2v": "Text to video",
+      "i2v": "Image to video",
+      "v2v": "Video edit"
+    },
+    "noModels": "No model available for this mode",
+    "noModelsHint": "The catalog has no usable model for this mode — pick another one",
+    "generate": "Generate",
+    "generateBatch": "Generate {count}",
+    "resultsCount": "{count} results"
   },
   "workspace": {
     "title": "My Workspace",

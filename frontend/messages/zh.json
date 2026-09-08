@@ -426,7 +426,24 @@
     "playground": "创作台",
     "settings": "设置",
     "workspaceAria": "PrismReel Studio · 工作区",
-    "mainNavAria": "主导航"
+    "mainNavAria": "主导航",
+    "aivideo": "AI 视频"
+  },
+  "aivideo": {
+    "eyebrow": "单条生成",
+    "title": "AI 视频",
+    "subtitle": "直接取用系统里已有的素材，生成单条视频",
+    "groupVideo": "视频模式",
+    "mode": {
+      "t2v": "文生视频",
+      "i2v": "图生视频",
+      "v2v": "视频编辑"
+    },
+    "noModels": "该模式暂无可用模型",
+    "noModelsHint": "模型目录里没有支持该模式的可用模型，请改选其他模式",
+    "generate": "生成",
+    "generateBatch": "生成 {count} 条",
+    "resultsCount": "{count} 条结果"
   },
   "workspace": {
     "title": "我的工作区",
