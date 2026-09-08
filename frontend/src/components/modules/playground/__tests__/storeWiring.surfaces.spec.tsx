@@ -236,7 +236,7 @@ describe('PromptTemplateModal ↔ store', () => {
         expect(screen.getByText('赛博雨夜')).toBeInTheDocument();
     });
 
-    it('applies a template through the store', () => {
+    it('applies a template through the store', async () => {
         usePlaygroundStore.setState({
             showTemplateModal: true,
             templates: [
@@ -248,6 +248,9 @@ describe('PromptTemplateModal ↔ store', () => {
         fireEvent.click(screen.getByRole('button', { name: '套用' }));
 
         expect(store().prompt).toBe('霓虹, 湿地面');
+        // Applying also closes the modal behind a 250ms transition. Await it, or
+        // the timer fires after teardown and setState explodes on a dead tree.
+        await waitFor(() => expect(store().showTemplateModal).toBe(false));
     });
 
     it('keeps the favourite toggle in the store, not in local state', () => {
