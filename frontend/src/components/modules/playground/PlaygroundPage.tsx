@@ -9,7 +9,7 @@ import MediaInput from './MediaInput';
 import PromptInput from './PromptInput';
 import ParameterBar from './ParameterBar';
 import ResultGallery from './ResultGallery';
-import { usePlaygroundStore, type PlaygroundMode, type PlaygroundGeneration, type QueuedRequest } from './usePlaygroundStore';
+import { usePlaygroundStore, usePlaygroundStoreApi, type PlaygroundMode, type PlaygroundGeneration, type QueuedRequest } from './usePlaygroundStore';
 import { playgroundApi, type PlaygroundGenerationResponse } from '@/lib/api';
 
 // ---------------------------------------------------------------------------
@@ -80,6 +80,9 @@ export default function PlaygroundPage() {
   const setTemplates = usePlaygroundStore((s) => s.setTemplates);
   const startGeneration = usePlaygroundStore((s) => s.startGeneration);
   const updateGeneration = usePlaygroundStore((s) => s.updateGeneration);
+  // The pump needs a snapshot, not a subscription: re-rendering the page on
+  // every queue mutation just to read it would fight the pump it drives.
+  const storeApi = usePlaygroundStoreApi();
   const enqueueRequest = usePlaygroundStore((s) => s.enqueueRequest);
   const markDispatching = usePlaygroundStore((s) => s.markDispatching);
   const removeFromQueue = usePlaygroundStore((s) => s.removeFromQueue);
@@ -201,7 +204,7 @@ export default function PlaygroundPage() {
 
   // Pump: dispatch pending requests up to the concurrency limit.
   const pump = useCallback(() => {
-    const s = usePlaygroundStore.getState();
+    const s = storeApi.getState();
     const dispatching = s.queue.filter((q) => q.status === 'dispatching').length;
     let slots = s.maxConcurrent - s.activeGenerationIds.length - dispatching;
     if (slots <= 0) return;
@@ -212,7 +215,7 @@ export default function PlaygroundPage() {
       markDispatching(req.id);
       dispatchRequest(req);
     }
-  }, [markDispatching, dispatchRequest]);
+  }, [markDispatching, dispatchRequest, storeApi]);
 
   // Run the pump whenever the queue, in-flight count, or concurrency changes.
   useEffect(() => {

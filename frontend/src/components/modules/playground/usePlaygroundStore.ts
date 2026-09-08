@@ -1,4 +1,5 @@
-import { create } from 'zustand';
+import { createContext, createElement, useContext, type ReactNode } from 'react';
+import { createStore, useStore, type StateCreator } from 'zustand';
 
 // ---------------------------------------------------------------------------
 // Featured (best-of-batch) persistence — client-side localStorage only.
@@ -207,7 +208,7 @@ const DEFAULT_BATCH_SIZE = 1;
 // Store
 // ---------------------------------------------------------------------------
 
-export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
+const initPlaygroundState: StateCreator<PlaygroundState> = (set, get) => ({
   // -- Current input --------------------------------------------------------
   mode: DEFAULT_MODE,
   modelId: DEFAULT_MODEL_ID,
@@ -419,4 +420,60 @@ export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
       parameters: {},
       batchSize: DEFAULT_BATCH_SIZE,
     }),
-}));
+});
+
+/**
+ * Build an independent store instance.
+ *
+ * The playground used to own a single module-level store, which was fine while
+ * it was the only surface composing a generation. The standalone AI-video page
+ * is a second such surface, and one shared store would let the two pages
+ * overwrite each other's mode / prompt / inputMedia. So the store became a
+ * factory, and which instance a component talks to is decided by the provider
+ * above it rather than by the import it happens to use.
+ */
+export function createPlaygroundStore() {
+  return createStore<PlaygroundState>()(initPlaygroundState);
+}
+
+export type PlaygroundStoreApi = ReturnType<typeof createPlaygroundStore>;
+
+/** The instance the创作台 uses. Kept as a module-level singleton so that page —
+ *  and anything not wrapped in a provider — behaves exactly as it did before. */
+export const playgroundStore = createPlaygroundStore();
+
+const PlaygroundStoreContext = createContext<PlaygroundStoreApi | null>(null);
+
+/** Bind a subtree to its own store. Only the AI-video page needs this; the
+ *  playground renders without one and lands on the default instance. */
+export function PlaygroundStoreProvider({
+  store,
+  children,
+}: {
+  store: PlaygroundStoreApi;
+  children: ReactNode;
+}) {
+  return createElement(PlaygroundStoreContext.Provider, { value: store }, children);
+}
+
+/**
+ * The store API for this subtree, unsubscribed.
+ *
+ * For imperative reads outside the render path — the queue pump needs a fresh
+ * snapshot and must not re-render on every queue change. Reaching for
+ * `playgroundStore.getState()` directly would work today and silently talk to
+ * the wrong instance the moment a second page exists; this does not.
+ */
+export function usePlaygroundStoreApi(): PlaygroundStoreApi {
+  return useContext(PlaygroundStoreContext) ?? playgroundStore;
+}
+
+export function usePlaygroundStore(): PlaygroundState;
+export function usePlaygroundStore<T>(selector: (state: PlaygroundState) => T): T;
+export function usePlaygroundStore<T>(selector?: (state: PlaygroundState) => T) {
+  const store = usePlaygroundStoreApi();
+  // Both call shapes were already in use — selector form in most components,
+  // whole-store destructure in ResultGallery and PromptTemplateModal — so both
+  // are supported rather than rewriting every call site in the same commit.
+  return selector ? useStore(store, selector) : useStore(store);
+}

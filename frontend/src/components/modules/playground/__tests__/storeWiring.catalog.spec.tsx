@@ -42,12 +42,12 @@ vi.mock('@/lib/api', () => ({
 import ModelSelector from '../ModelSelector';
 import ParameterBar from '../ParameterBar';
 import { getModelsForMode } from '../playgroundModels';
-import { usePlaygroundStore } from '../usePlaygroundStore';
+import { playgroundStore } from '../usePlaygroundStore';
 
-const store = () => usePlaygroundStore.getState();
+const store = () => playgroundStore.getState();
 
 beforeEach(() => {
-    usePlaygroundStore.setState({
+    playgroundStore.setState({
         mode: 't2i',
         modelId: '',
         parameters: {},
@@ -64,7 +64,7 @@ describe('ModelSelector ↔ store', () => {
     });
 
     it('re-picks a valid model when the store mode changes under it', () => {
-        usePlaygroundStore.setState({ mode: 't2v' });
+        playgroundStore.setState({ mode: 't2v' });
         renderWithIntl(<ModelSelector />);
 
         const validForT2v = getModelsForMode('t2v').map((m) => m.id);
@@ -87,7 +87,7 @@ describe('ModelSelector ↔ store', () => {
 
 describe('ParameterBar ↔ store', () => {
     it('marks the batch size held in the store', () => {
-        usePlaygroundStore.setState({ batchSize: 4 });
+        playgroundStore.setState({ batchSize: 4 });
         renderWithIntl(<ParameterBar />);
 
         expect(screen.getByRole('button', { name: 'x4' }).className).toContain('bg-primary');
@@ -102,7 +102,7 @@ describe('ParameterBar ↔ store', () => {
     });
 
     it('does not clobber unrelated parameters when one control changes', () => {
-        usePlaygroundStore.setState({
+        playgroundStore.setState({
             modelId: getModelsForMode('t2i')[0].id,
             parameters: { seed: 12345 },
         });

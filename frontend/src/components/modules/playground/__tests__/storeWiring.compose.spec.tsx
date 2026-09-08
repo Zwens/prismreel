@@ -67,12 +67,12 @@ import ModeSelector from '../ModeSelector';
 import PromptInput from '../PromptInput';
 import MediaInput from '../MediaInput';
 import QueuePanel from '../QueuePanel';
-import { usePlaygroundStore } from '../usePlaygroundStore';
+import { playgroundStore } from '../usePlaygroundStore';
 
-const store = () => usePlaygroundStore.getState();
+const store = () => playgroundStore.getState();
 
 beforeEach(() => {
-    usePlaygroundStore.setState({
+    playgroundStore.setState({
         mode: 't2i',
         modelId: '',
         prompt: '',
@@ -99,7 +99,7 @@ describe('ModeSelector ↔ store', () => {
     });
 
     it('marks the pill that matches the store mode as active', () => {
-        usePlaygroundStore.setState({ mode: 'r2v' });
+        playgroundStore.setState({ mode: 'r2v' });
         renderWithIntl(<ModeSelector />);
 
         expect(screen.getByRole('button', { name: '参考生' }).className).toContain(
@@ -113,7 +113,7 @@ describe('ModeSelector ↔ store', () => {
 
 describe('PromptInput ↔ store', () => {
     it('renders the prompt held in the store', () => {
-        usePlaygroundStore.setState({ prompt: '雨夜的天台，霓虹反光' });
+        playgroundStore.setState({ prompt: '雨夜的天台，霓虹反光' });
         renderWithIntl(<PromptInput />);
 
         expect(screen.getByPlaceholderText('描述你想生成的内容...')).toHaveValue(
@@ -171,7 +171,7 @@ describe('PromptInput ↔ store', () => {
 
 describe('MediaInput ↔ store', () => {
     it('appends the asset picked from the library to inputMedia', async () => {
-        usePlaygroundStore.setState({ mode: 'i2v' });
+        playgroundStore.setState({ mode: 'i2v' });
         renderWithIntl(<MediaInput />);
 
         fireEvent.click(screen.getByRole('button', { name: '从资产库选取' }));
@@ -184,7 +184,7 @@ describe('MediaInput ↔ store', () => {
 
 describe('QueuePanel ↔ store', () => {
     it('counts the requests waiting in the store queue', () => {
-        usePlaygroundStore.setState({
+        playgroundStore.setState({
             queue: [
                 { id: 'q1', status: 'pending', enqueuedAt: 1 } as any,
                 { id: 'q2', status: 'pending', enqueuedAt: 2 } as any,
@@ -196,7 +196,7 @@ describe('QueuePanel ↔ store', () => {
     });
 
     it('writes a lowered concurrency limit back to the store', () => {
-        usePlaygroundStore.setState({ maxConcurrent: 3 });
+        playgroundStore.setState({ maxConcurrent: 3 });
         renderWithIntl(<QueuePanel />);
 
         fireEvent.click(screen.getByRole('button', { name: /队列/ }));

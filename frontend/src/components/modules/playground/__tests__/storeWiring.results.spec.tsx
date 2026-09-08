@@ -55,9 +55,9 @@ vi.mock('@/lib/api', () => ({
 
 import ResultCard from '../ResultCard';
 import PromptHistoryDrawer from '../PromptHistoryDrawer';
-import { usePlaygroundStore, type PlaygroundGeneration } from '../usePlaygroundStore';
+import { playgroundStore, type PlaygroundGeneration } from '../usePlaygroundStore';
 
-const store = () => usePlaygroundStore.getState();
+const store = () => playgroundStore.getState();
 
 function generation(overrides: Partial<PlaygroundGeneration> = {}): PlaygroundGeneration {
     return {
@@ -83,7 +83,7 @@ function generation(overrides: Partial<PlaygroundGeneration> = {}): PlaygroundGe
 }
 
 beforeEach(() => {
-    usePlaygroundStore.setState({
+    playgroundStore.setState({
         mode: 't2i',
         modelId: '',
         prompt: '',
@@ -107,14 +107,14 @@ describe('ResultCard ↔ store', () => {
     });
 
     it('shows the featured badge for the output the store marks as featured', () => {
-        usePlaygroundStore.setState({ featuredByGen: { g1: 'o1' } });
+        playgroundStore.setState({ featuredByGen: { g1: 'o1' } });
         renderWithIntl(<ResultCard generation={generation()} />);
 
         expect(screen.getByText('精选')).toBeInTheDocument();
     });
 
     it('shows no featured badge when the store marks a different output', () => {
-        usePlaygroundStore.setState({ featuredByGen: { g1: 'other-output' } });
+        playgroundStore.setState({ featuredByGen: { g1: 'other-output' } });
         renderWithIntl(<ResultCard generation={generation()} />);
 
         expect(screen.queryByText('精选')).not.toBeInTheDocument();
@@ -148,7 +148,7 @@ describe('ResultCard ↔ store', () => {
     });
 
     it('honours the per-mode model preference held in the store', () => {
-        usePlaygroundStore.setState({ modelPreferences: { i2i: 'seedream-5-0-260128' } });
+        playgroundStore.setState({ modelPreferences: { i2i: 'seedream-5-0-260128' } });
         renderWithIntl(<ResultCard generation={generation()} />);
 
         fireEvent.click(screen.getByTitle('用作参考图'));
@@ -165,14 +165,14 @@ describe('PromptHistoryDrawer ↔ store', () => {
     });
 
     it('opens when the store flag flips', () => {
-        usePlaygroundStore.setState({ showHistoryDrawer: true });
+        playgroundStore.setState({ showHistoryDrawer: true });
         renderWithIntl(<PromptHistoryDrawer />);
 
         expect(screen.getByText('Prompt 历史')).toBeInTheDocument();
     });
 
     it('lists prompts from the store history', () => {
-        usePlaygroundStore.setState({
+        playgroundStore.setState({
             showHistoryDrawer: true,
             history: [generation({ prompt: '穿过雾港的渡轮' })],
         });
@@ -182,7 +182,7 @@ describe('PromptHistoryDrawer ↔ store', () => {
     });
 
     it('loads a past prompt back into the store when picked', async () => {
-        usePlaygroundStore.setState({
+        playgroundStore.setState({
             showHistoryDrawer: true,
             history: [generation({ prompt: '穿过雾港的渡轮' })],
         });

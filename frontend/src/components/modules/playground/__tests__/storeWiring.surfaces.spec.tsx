@@ -10,7 +10,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
  *
  * The awkward one here is ResultGallery: it reaches the store three different
  * ways — a whole-store destructure, actions closed over in callbacks, and one
- * bare `usePlaygroundStore.getState()` at module scope inside the delete
+ * bare `playgroundStore.getState()` at module scope inside the delete
  * handler. That last call sits outside the React tree, so a context provider
  * cannot reach it; whoever does D5 has to rewrite it by hand. The delete test
  * below is what will catch them if they don't.
@@ -83,9 +83,9 @@ import ResultGallery from '../ResultGallery';
 import DetailPanel from '../DetailPanel';
 import PromptTemplateModal from '../PromptTemplateModal';
 import PlaygroundPage from '../PlaygroundPage';
-import { usePlaygroundStore, type PlaygroundGeneration } from '../usePlaygroundStore';
+import { playgroundStore, type PlaygroundGeneration } from '../usePlaygroundStore';
 
-const store = () => usePlaygroundStore.getState();
+const store = () => playgroundStore.getState();
 
 function generation(overrides: Partial<PlaygroundGeneration> = {}): PlaygroundGeneration {
     return {
@@ -112,7 +112,7 @@ function generation(overrides: Partial<PlaygroundGeneration> = {}): PlaygroundGe
 
 beforeEach(() => {
     vi.clearAllMocks();
-    usePlaygroundStore.setState({
+    playgroundStore.setState({
         mode: 't2i',
         modelId: 'gemini-3.1-flash-image',
         prompt: '',
@@ -134,7 +134,7 @@ beforeEach(() => {
 
 describe('ResultGallery ↔ store', () => {
     it('renders the generations held in the store history', () => {
-        usePlaygroundStore.setState({ history: [generation({ prompt: '穿过雾港的渡轮' })] });
+        playgroundStore.setState({ history: [generation({ prompt: '穿过雾港的渡轮' })] });
         renderWithIntl(<ResultGallery />);
 
         expect(screen.getByText('穿过雾港的渡轮')).toBeInTheDocument();
@@ -147,7 +147,7 @@ describe('ResultGallery ↔ store', () => {
     });
 
     it('filters the store history by media kind', () => {
-        usePlaygroundStore.setState({
+        playgroundStore.setState({
             history: [
                 generation({ id: 'g1', prompt: '一张图', mode: 't2i' }),
                 generation({ id: 'g2', prompt: '一段视频', mode: 't2v' }),
@@ -161,13 +161,13 @@ describe('ResultGallery ↔ store', () => {
         expect(screen.queryByText('一张图')).not.toBeInTheDocument();
     });
 
-    // Guards the module-scope usePlaygroundStore.getState() in handleDelete —
+    // Guards the module-scope playgroundStore.getState() in handleDelete —
     // the one call site a React context provider cannot reach.
     it('removes the deleted generation from the store, not just the local view', async () => {
         // Delete is only offered on a failed generation — that is the card that
         // renders the button, so the store's only getState() call site is
         // reachable exclusively through this path.
-        usePlaygroundStore.setState({
+        playgroundStore.setState({
             history: [generation({ status: 'failed', error: 'provider rejected the request' })],
         });
         renderWithIntl(<ResultGallery />);
@@ -180,7 +180,7 @@ describe('ResultGallery ↔ store', () => {
 
     // ResultGallery passes an explicit targetMode, unlike ResultCard's default.
     it('sends an image to i2v rather than i2i when asked to generate video', () => {
-        usePlaygroundStore.setState({ history: [generation()] });
+        playgroundStore.setState({ history: [generation()] });
         renderWithIntl(<ResultGallery />);
 
         fireEvent.click(screen.getByTitle('生成视频'));
@@ -195,7 +195,7 @@ describe('DetailPanel ↔ store', () => {
     // store's copy, so a save//featured update made elsewhere stays in sync.
     it('prefers the store copy of the generation over the prop it was given', () => {
         const stale = generation({ prompt: '旧的提示词' });
-        usePlaygroundStore.setState({ history: [generation({ prompt: '新的提示词' })] });
+        playgroundStore.setState({ history: [generation({ prompt: '新的提示词' })] });
 
         renderWithIntl(
             <DetailPanel
@@ -212,7 +212,7 @@ describe('DetailPanel ↔ store', () => {
 
     it('records the featured pick in the store', () => {
         const gen = generation();
-        usePlaygroundStore.setState({ history: [gen] });
+        playgroundStore.setState({ history: [gen] });
         renderWithIntl(
             <DetailPanel
                 generation={gen}
@@ -236,7 +236,7 @@ describe('PromptTemplateModal ↔ store', () => {
     });
 
     it('lists the templates held in the store', () => {
-        usePlaygroundStore.setState({
+        playgroundStore.setState({
             showTemplateModal: true,
             templates: [
                 { id: 't1', name: '赛博雨夜', category: 'image', prompt: '霓虹, 湿地面' } as any,
@@ -248,7 +248,7 @@ describe('PromptTemplateModal ↔ store', () => {
     });
 
     it('applies a template through the store', async () => {
-        usePlaygroundStore.setState({
+        playgroundStore.setState({
             showTemplateModal: true,
             templates: [
                 { id: 't1', name: '赛博雨夜', category: 'image', prompt: '霓虹, 湿地面' } as any,
@@ -265,7 +265,7 @@ describe('PromptTemplateModal ↔ store', () => {
     });
 
     it('keeps the favourite toggle in the store, not in local state', () => {
-        usePlaygroundStore.setState({
+        playgroundStore.setState({
             showTemplateModal: true,
             templates: [
                 { id: 't1', name: '赛博雨夜', category: 'image', prompt: '霓虹, 湿地面' } as any,
@@ -283,7 +283,7 @@ describe('PlaygroundPage ↔ store', () => {
     // The generate button does not POST directly — it enqueues, and a pump
     // dispatches under the concurrency limit. Both halves live in the store.
     it('enqueues the compose state rather than posting straight away', async () => {
-        usePlaygroundStore.setState({
+        playgroundStore.setState({
             prompt: '雨夜的天台',
             maxConcurrent: 0, // hold the pump so the request stays observable in the queue
         });
@@ -301,7 +301,7 @@ describe('PlaygroundPage ↔ store', () => {
     });
 
     it('auto-detects i2i from the store when t2i already has reference media', async () => {
-        usePlaygroundStore.setState({
+        playgroundStore.setState({
             prompt: '换成黄昏',
             mode: 't2i',
             inputMedia: ['output/library/linwan.png'],
@@ -315,10 +315,10 @@ describe('PlaygroundPage ↔ store', () => {
         expect(store().queue[0].mode).toBe('i2i');
     });
 
-    // Guards the pump's usePlaygroundStore.getState() at PlaygroundPage.tsx:204 —
+    // Guards the pump's playgroundStore.getState() at PlaygroundPage.tsx:204 —
     // the second call site a context provider cannot reach.
     it('pumps a queued request out to the API and drains the queue', async () => {
-        usePlaygroundStore.setState({ prompt: '雨夜的天台', maxConcurrent: 2 });
+        playgroundStore.setState({ prompt: '雨夜的天台', maxConcurrent: 2 });
         renderWithIntl(<PlaygroundPage />);
 
         fireEvent.click(screen.getByRole('button', { name: /生成/ }));
@@ -333,7 +333,7 @@ describe('PlaygroundPage ↔ store', () => {
     // The pump reads queue / maxConcurrent / activeGenerationIds off the store to
     // decide how many slots are free; break that read and it dispatches anyway.
     it('holds a request back when the store says every slot is busy', async () => {
-        usePlaygroundStore.setState({
+        playgroundStore.setState({
             prompt: '雨夜的天台',
             maxConcurrent: 1,
             activeGenerationIds: ['already-running'],

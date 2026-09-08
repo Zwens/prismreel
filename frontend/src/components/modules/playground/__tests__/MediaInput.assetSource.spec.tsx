@@ -44,10 +44,10 @@ vi.mock('@/lib/api', () => ({
 }));
 
 import MediaInput from '../MediaInput';
-import { usePlaygroundStore } from '../usePlaygroundStore';
+import { playgroundStore } from '../usePlaygroundStore';
 
 beforeEach(() => {
-    usePlaygroundStore.setState({ mode: 'i2v', inputMedia: [] });
+    playgroundStore.setState({ mode: 'i2v', inputMedia: [] });
 });
 
 describe('MediaInput — asset source', () => {
