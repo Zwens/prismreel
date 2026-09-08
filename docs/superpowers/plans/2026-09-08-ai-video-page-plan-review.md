@@ -265,7 +265,53 @@ context 永远返回默认实例（即"重构其实没生效"），恰好其中 
 
 ---
 
-## 8. 并行作业提示（2026-09-08）
+## 8. 已交付：独立「AI 视频」页（2026-09-08）
+
+M6 本体，也是这条线最初的需求。`22c0f7e`（i18n）、`9365f1e`（抽 hook）、`4834089`（页面）。
+
+**排序订正**：复审初稿把 C 排在"catalog 定型后"，理由是"新页面要重写一遍模型选择器
+和参数条"。D5 做完后这条理由不成立了——页面复用创作台的 6 个组件，靠 provider 接到
+自己的 store，不产生第二套目录逻辑。实际唯一的耦合是 `messages/*.json`，与并行会话
+约定后单独提交解决。
+
+| 组成 | 落法 |
+|---|---|
+| 自有 store | 每次挂载建一个 `createPlaygroundStore()` 实例，初始模态 t2v |
+| 模态 | 只有 t2v / i2v / v2v。无图像模态；无 r2v（参考图驱动的镜头属于系列分镜，不属于一次性生成）；按裁决 1，编辑/续写是 v2v 之下的子类型而非独立模态 |
+| 组件 | ModelSelector / MediaInput / PromptInput / ParameterBar / ResultGallery / QueuePanel 全部复用 |
+| 编排 | `useGenerationRunner()`，从 PlaygroundPage 抽出（M6 要求）。PlaygroundPage 347 → 169 行 |
+| 素材选择器 | 复用第 5 节的 `AssetSourcePicker`，零改动 |
+
+**顺带修掉的两个真问题**：
+
+1. **空模态**。`ModelSelector` 的自动改选 effect 条件是 `availableModels.length > 0`，
+   为 0 时整个不执行，上一个模态的 `modelId` 留下来被提交。实测过：删掉四家族后 v2v
+   一度归零，t2i 采纳 `gemini-3-pro-image`，切到 v2v 后 modelId 还是它。新页面改为明说
+   「该模式暂无可用模型」并禁用生成。**创作台仍有此行为，未改**（不在本次范围）
+2. **导航切片**。`GlobalSidebar` 原用 `GLOBAL_NAV_ITEMS.slice(0, 3)` 切主导航，是写死
+   的个数。加第 4 项而不动它，新入口会从桌面侧栏消失、却仍出现在移动端 `BottomTabBar`
+   ——静默，且只错在一个断点上。改成按 id 排除 settings，并补 4 条用例钉住
+
+**变异验证**：把页面的 `storeRef` 换成共享的 `playgroundStore`，恰好那两条隔离用例
+（提示词不外泄、模态不外泄）变红。
+
+**页面 spec 用桩目录而非真目录**：DashScope 下线正在重写目录，一条因为家族被退役而
+红掉的页面用例只会被删掉而不是修好。桩目录也是让 v2v 真的为空、从而能测到空状态的
+唯一办法。
+
+**验证**：typecheck 干净；`test:ui` **123/123**。
+（`npm test` 此刻 185/205，20 条失败全在 `model-catalog` / `video-params` /
+`settings-store` / `provider-credentials`，是并行会话第 4 步的目录连带，已报给对方。）
+
+### 8.1 还剩什么
+
+- **D. v2v 任务子类型**（edit / extend）——后端 `omni_reference_task_type` + 前端子类型
+  选择器，用已开通的 Seedance 2.5 实调。这是 M6/M3 里唯一没做的部分
+- 创作台的空模态行为（同上第 1 条），要不要一并修，是产品决策
+
+---
+
+## 9. 并行作业提示（2026-09-08）
 
 本次复审执行期间，另一个会话（`lengjinglumenxstudio-aa`）在同一仓库并行推进 Gemini 迁移：
 
