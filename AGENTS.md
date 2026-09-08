@@ -6,7 +6,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 - Git author is already configured for this repo, do not modify git config
 - **NEVER** add `Co-Authored-By` lines in commit messages
-- Push to GitHub remote (`github`) only, ignore `origin` (deprecated GitLab)
+- Push to `origin` (GitLab, `https://gjseo.qit1.net/prismreel`) — this is the live remote
 
 ## Project Workflow Triggers
 
