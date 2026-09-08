@@ -438,6 +438,7 @@
     "library": "Library",
     "playground": "Playground",
     "settings": "Settings",
+    "logout": "Log out",
     "workspaceAria": "PrismReel Studio · Workspace",
     "mainNavAria": "Main navigation"
   },

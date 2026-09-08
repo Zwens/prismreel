@@ -68,6 +68,35 @@ export async function getCurrentUser() {
     return res.data;
 }
 
+export type AdminUser = {
+    id: string;
+    email: string;
+    role: string;
+    display_name: string | null;
+    is_active: boolean;
+    created_at: number;
+};
+
+export async function adminListUsers(): Promise<AdminUser[]> {
+    const res = await axios.get(`${API_URL}/admin/users`);
+    return res.data;
+}
+
+export async function adminCreateInvite(role: string = "member", emailHint?: string) {
+    const res = await axios.post(`${API_URL}/admin/invites`, { role, email_hint: emailHint });
+    return res.data;
+}
+
+export async function adminResetPassword(userId: string, newPassword: string) {
+    const res = await axios.post(`${API_URL}/admin/users/${userId}/reset_password`, { new_password: newPassword });
+    return res.data;
+}
+
+export async function adminDeactivateUser(userId: string) {
+    const res = await axios.post(`${API_URL}/admin/users/${userId}/deactivate`);
+    return res.data;
+}
+
 export type ProviderMode = "dashscope" | "vendor";
 
 /**
