@@ -64,7 +64,25 @@ def get_current_user_from_cookie(request: Request):
     return user_repo.get_user_by_id(payload.get("user_id"))
 
 
+# Used only when JWT_SECRET is unset (login gate disabled, see the comment
+# at the top of this module). Carries role="admin" so owner_id filtering in
+# route handlers (e.g. `if user.role != "admin": filter by owner`) grants
+# full access, matching "gate disabled" meaning "behave like the single-user
+# desktop mode that predates auth" rather than a locked-out empty result.
+_ANONYMOUS_ADMIN = user_repo.User(
+    id="anonymous",
+    email="",
+    password_hash="",
+    role="admin",
+    display_name="Anonymous",
+    created_at=0.0,
+    is_active=True,
+)
+
+
 def require_login(request: Request):
+    if not JWT_SECRET:
+        return _ANONYMOUS_ADMIN
     user = get_current_user_from_cookie(request)
     if user is None or not user.is_active:
         raise HTTPException(status_code=401, detail="Not authenticated")

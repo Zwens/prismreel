@@ -102,6 +102,21 @@ async def enforce_api_key(request: Request, call_next):
             return JSONResponse(status_code=401, content={"detail": "Missing or invalid API key"})
     return await call_next(request)
 
+_AUTH_PUBLIC_PREFIXES = ("/health", "/files/", "/static/", "/docs", "/openapi.json", "/redoc", "/auth/login", "/auth/redeem_invite")
+
+
+@app.middleware("http")
+async def enforce_login(request: Request, call_next):
+    if not auth.JWT_SECRET:
+        return await call_next(request)
+    path = request.url.path
+    if path.startswith(_AUTH_PUBLIC_PREFIXES):
+        return await call_next(request)
+    user = auth.get_current_user_from_cookie(request)
+    if user is None or not user.is_active:
+        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+    return await call_next(request)
+
 # --- Rate limit for AI-cost-triggering generation endpoints ---
 # Every /generate_* or .../generate call fans out to a paid vendor API
 # (DashScope/Kling/Vidu/Ark), so this caps spend-per-caller, not just load.
