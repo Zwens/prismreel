@@ -67,7 +67,49 @@ Task 7（本輪 commit `45e7a48`）：**全部約 100 個** `/projects/{script_i
 
 **驗證**：後端 `pytest src/apps/comic_gen/` 32/33 過（`test_pipeline` 同樣既知的 LLM Key 缺失，非迴歸）；前端 `npm run typecheck` 生產 build 通過、`/login`+`/redeem` 正確靜態匯出，唯一殘留錯誤是既有的 `EnvConfigChecker.tsx` 型別問題（非 auth 相關，非本輪範圍）；瀏覽器 Playwright 實測登入頁視覺（暖深底+玻璃面板+Fraunces 標題字皆正確）、實際輸入帳密登入成功導向首頁 cookie 正確存住；**登出後 401 導向測試失敗**（上述 CORS bug），這就是發現該 bug 的過程。
 
-## 下一步：先修 CORS+401 標頭 bug，再繼續 Task 12
+## CORS+401 middleware 順序 bug 已修復（本輪，commit `18b0c72`，第五輪交接）
+
+**根因確認**：Starlette middleware stack 執行順序是「後註冊者在外層」。`app.add_middleware(CORSMiddleware, ...)` 原本寫在 `api.py:99`，早於所有 `@app.middleware("http")` 裝飾器（`enforce_api_key`/`enforce_login`/`rate_limit_generation_endpoints`/`add_cache_control_header`/`enforce_file_ownership`），導致 CORSMiddleware 其實被疊在最內層——任何後面註冊的 middleware 短路回應（401/403/429）都不會經過它。
+
+**修法**：把 `app.add_middleware(CORSMiddleware, ...)` 呼叫本身移到所有 `@app.middleware("http")` 函式定義**之後**（`enforce_file_ownership` 定義結束後），配置值計算（`_cors_allow_origins`/`_cors_allow_credentials`/`_cors_allow_origin_regex`/`_cookie_secure`）留在原位不動，只搬呼叫本身。
+
+**驗證**：
+1. 重建本機 `.env`（`PRISMREEL_JWT_SECRET`/`PRISMREEL_ADMIN_EMAIL`/`PRISMREEL_ADMIN_PASSWORD`）+ 重跑 `scripts/migrate_auth_v1.py` 成功
+2. `ast.parse` 語法檢查過；uvicorn 啟動無路由註冊錯誤
+3. **curl 帶 `Origin: http://localhost:3008` header 重新驗證**：`/health`（200）與 `/config/env` 未帶 cookie（401）**現在都回傳** `access-control-allow-origin: http://localhost:3008` + `access-control-allow-credentials: true` —— 修復前 401 回應是沒有這兩個標頭的，這正是交接文件記錄的 bug 現象
+4. `pytest src/apps/comic_gen/` 32/33 過（`test_pipeline` 同樣既知的 LLM Key 缺失，非迴歸）
+
+**未完成**：瀏覽器端到端驗證（登出後重整是否導向 `/login`）本輪**卡在 Chrome 擴充功能本身**——`mcp__claude-in-chrome__computer`/`read_page`/`get_page_text` 對 `localhost:3008/login` 全部回報 `Frame with ID 0 is showing error page`，重開分頁、改用 `127.0.0.1` 皆同樣結果，但 `curl` 直接打前端 3008 和後端 17177 都正常回應，判斷是瀏覽器自動化工具連線問題而非應用程式問題。已用 AskUserQuestion 跟使用者核實，使用者選擇「先跳過瀏覽器驗證，直接 commit CORS 修復」。**下一輪如果要補做這步**：先確認 Chrome 擴充功能本身是否正常連線（`mcp__claude-in-chrome__tabs_context_mcp` 能列出 tab 但截圖/讀頁失敗，可能是分頁層級的暫時性問題），或考慮改用 Playwright MCP 工具重試。
+
+**本機測試環境**：本輪建立的測試用 `.env` 與 migration marker（`output/.auth_migrated`）**未清除**，留給下一輪直接可用，內容為：`PRISMREEL_JWT_SECRET=test_local_dev_jwt_secret_key_32chars_minimum_ok`、`PRISMREEL_ADMIN_EMAIL=admin@test.local`、`PRISMREEL_ADMIN_PASSWORD=TestAdminPass123`。
+
+## 瀏覽器端到端驗證已補做（本輪，透過 Task 12 實作過程），CORS bug 徹底確認修復
+
+上一輪記錄的 Chrome 擴充功能連線問題（`mcp__claude-in-chrome__*` 全部回報 `Frame with ID 0 is showing error page`）本輪改用 **Playwright MCP**（`mcp__plugin_playwright_playwright__*`）繞過，運作正常。完整跑了一次登入→登出→訪問受保護路由的流程：
+- admin 登入 `http://localhost:3008/login` 成功導向 `/`，側欄正確顯示新增的「登出」按鈕
+- 點擊登出按鈕：頁面導向 `/login`（`logout()` API 呼叫成功）
+- 登出後直接導覽到 `/admin/users`（受 `enforce_login` 保護）：**正確 401 並被攔截器導向 `/login`** —— 這正是上一輪 CORS middleware 順序 bug 修復前完全無法觸發的行為，現在完整驗證通過
+
+## Task 12 已完成（本輪，commit `a6daa30`）
+
+**與計畫的落差**（動工前已用 AskUserQuestion 逐一跟使用者核實）：
+1. 計畫假設側欄有獨立「齒輪圖示按鈕」可在上方插入登出圖示——實際 `GlobalSidebar.tsx` 的 Settings 是帶文字標籤的 `NavButton`（icon+label），沒有純圖示按鈕，整個側欄也沒有目前登入使用者的角色資訊。確認後改為：在 Settings `NavButton` 下方新增一個同樣視覺風格的登出 `NavButton`（`lucide-react` 的 `LogOut` icon + i18n `nav.logout` 文字），不判斷 admin 角色、所有已登入使用者皆可見。三語系（`en`/`zh`/`zh-Hant`）messages 都補了 `nav.logout` key。
+2. 計畫 admin 頁面程式碼範例產生的邀請連結是 `/redeem/{invite_code}`（動態路由），但 Task 11 已把 `/redeem` 改成 `?code=xxx` query string 路由（因為 `output: export` 靜態匯出下動態路由段需要 `generateStaticParams()`，邀請碼不可能 build time 窮舉）。`admin/users/page.tsx` 建立邀請連結時已改用 `${origin}/redeem?code=${invite_code}`。
+3. 計畫未提及側欄要有「前往 Admin 後台」的入口——確認後維持計畫原始範圍，不加入口，admin 使用者直接輸入網址 `/admin/users` 訪問即可（頁面內部用 `getCurrentUser().role` 判斷，非 admin 會被 `router.push("/")` 導回首頁）。
+4. `admin/users/page.tsx` 內部原本計畫程式碼有 `.catch(() => router.push("/login"))`，會跟全域 `authInterceptor.ts` 的 401 攔截器（`window.location.href = "/login"`）重複觸發跳轉、互相競爭——實作時已移除該 catch 分支，統一交給全域攔截器處理（跟 `login`/`redeem` 頁面的既有模式一致）。
+
+**未偏離之處**：後端 `/admin/users`、`/admin/invites`、`/admin/users/{id}/reset_password`、`/admin/users/{id}/deactivate` 四個端點簽名與計畫描述完全一致，`api.ts` 新增的四個 admin 函式與 `admin/users/page.tsx` 的資料串接邏輯基本照計畫範例（僅上述 4 點修正）。
+
+**驗證**：
+- `npm run typecheck`：唯一殘留錯誤是既有的 `EnvConfigChecker.tsx`（已用 `git stash` 確認改動前就存在，非本輪引入，非 auth 相關）
+- `npm run lint`：唯一命中本輪修改檔案的是 `frontend/src/lib/api.ts:108` 的 `_removed` 未使用變數警告，經 `git diff` 確認不在本輪 diff 範圍內，是既有問題
+- `npm run test`（vitest）：194/194 全過，含 `i18n.test.ts`（驗證三語系 key 對齊，新增的 `nav.logout` 沒有破壞既有完整性檢查）
+- `pytest src/apps/comic_gen/`：32/33 過（`test_pipeline` 既知 LLM Key 缺失，非迴歸）
+- **Playwright 端到端瀏覽器測試**（見上方段落）：admin 登入 → `/admin/users` 列出使用者清單 → 建立邀請連結（格式驗證為 `/redeem?code=xxx`）→ 開啟連結完成註冊自動登入 → 新 member 帳號訪問 `/admin/users` 被導回 `/` → 側欄登出按鈕點擊後導向 `/login` → 登出後訪問受保護路由觸發 401 並被攔截器導向 `/login`，全部通過
+
+**測試中額外發現的環境細節（非程式碼 bug）**：本機 `output/auth.db` 裡既有的 `admin@test.local` 帳號密碼跟本輪 `.env` 的 `PRISMREEL_ADMIN_PASSWORD` 不一致（因為 migration marker `output/.auth_migrated` 已存在，`migrate_auth_v1.py` 不會重新建立/更新既有 admin 密碼）。用 `user_repo.set_password()` 手動重設密碼為 `.env` 內的值以利本輪測試，這只影響本機測試資料庫，非程式碼問題，下一輪如果密碼又對不上可用同樣方式處理或直接刪除 `output/auth.db` + marker 重跑 migration。
+
+## 下一步：Task 13（部署設定）與 Task 14（VPS 上線）
 
 計畫全文見 `docs/superpowers/plans/2026-09-08-multi-tenant-auth.md` Task 12 段落（約 1620 行起，Admin 後台+側欄登出按鈕）。**Task 10 Step 4 手動驗證仍未完整通過**——不是頁面不存在的問題（Task 11 已建），是上述 middleware 順序 bug 擋住的，修完 CORS 順序才能重跑這步驗證。
 
