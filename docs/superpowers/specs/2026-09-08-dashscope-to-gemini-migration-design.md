@@ -40,6 +40,11 @@ PrismReel 当前把阿里云 DashScope 同时当作五种东西在用：LLM 后�
   都能出图且都支持 `aspectRatio`，但 interactions 把图像埋在 `steps[1].content[0].data`，
   generateContent 直接回 `candidates[0].content.parts[*].inlineData.data`，浅一层且
   parts 里混着文本说明也好扫描。实测 9:16 请求返回 768x1376，比例正确。
+- **TTS 端点同样选用 `generateContent`**（实施第 3 步实测）。`/v1beta/interactions` 亦可用，
+  但音频埋在 `steps[0].content[0].data`；generateContent 回 `parts[0].inlineData.data`，
+  mime 为 `audio/l16; rate=24000; channels=1`，确认是裸 PCM，需自封 44 字节 WAV 头。
+- **`synthesize_gemini` 增加了有界重试**（第 3 步实测中真实遇到 `ConnectionResetError(10054)`）。
+  配一整集台词是几十上百次连续调用，裸奔一次失败整批作废。429 与 5xx 重试，其余 4xx 立即抛。
 - **曾计划引入 MiniMax** 承接中文音色与音色克隆。因用户仅持有 Gemini 与 ARK 两个凭证，该方案作废，克隆能力确认无法保留。
 
 ## 3. 供应商最终形态
@@ -211,7 +216,7 @@ GEMINI_BASE_URL=https://generativelanguage.googleapis.com   # 可选，留空用
 映射规则，按优先级：
 
 1. **性别必须一致**——男声不得映射为女声，反之亦然。这是硬约束，违反会直接毁掉已完成的配音。该约束依赖 6.3 节的音色性别归类先完成
-2. 特征标签就近匹配。初步对应关系（待试听后确认）：知性 → Erinome(Clear) 或 Kore(Firm)；暖心 → Sulafat(Warm)；睿智 → Sadaltager(Knowledgeable)；阳光 → Puck(Upbeat) 或 Laomedeia(Upbeat)；低音 → Algenib(Gravelly) 或 Gacrux(Mature)；博学 → Charon(Informative) 或 Rasalgethi(Informative)；深情 → Achernar(Soft) 或 Vindemiatrix(Gentle)
+2. 特征标签就近匹配。**已于第 3 步完成人工试听归类（30 个音色 14 女 / 16 男），映射表落定为 `config/voice_migration.yaml`**：`longxiaochun_v2`(知性女,17处)→`Kore`(Firm,女)、`longzhe_v2`(暖心男)→`Achird`(Friendly,男)、`longcheng_v2`(睿智青年)→`Sadaltager`(Knowledgeable,男)、`longze_v2`(阳光男)→`Puck`(Upbeat,男)、`longxiaocheng_v2`(低音男)→`Algenib`(Gravelly,男)、`longxiu_v2`(博学男)→`Charon`(Informative,男)、`longhan_v2`(深情男)→`Algieba`(Smooth,男)。原始候选清单：知性 → Erinome(Clear) 或 Kore(Firm)；暖心 → Sulafat(Warm)；睿智 → Sadaltager(Knowledgeable)；阳光 → Puck(Upbeat) 或 Laomedeia(Upbeat)；低音 → Algenib(Gravelly) 或 Gacrux(Mature)；博学 → Charon(Informative) 或 Rasalgethi(Informative)；深情 → Achernar(Soft) 或 Vindemiatrix(Gentle)
 3. 使用量最高的 `longxiaochun_v2`（17 处）优先保证匹配度
 
 未命中映射表的历史 voice_id：**不静默替换**，在角色配音面板标记为「音色已失效，请重选」，并按性别给出推荐候选。
