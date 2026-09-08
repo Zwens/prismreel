@@ -37,3 +37,31 @@ def decode_access_token(token: str) -> dict:
 
 def new_uuid() -> str:
     return uuid.uuid4().hex
+
+
+from fastapi import Request, HTTPException, Depends
+from . import user_repo
+
+
+def get_current_user_from_cookie(request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        return None
+    try:
+        payload = decode_access_token(token)
+    except jwt.InvalidTokenError:
+        return None
+    return user_repo.get_user_by_id(payload.get("user_id"))
+
+
+def require_login(request: Request):
+    user = get_current_user_from_cookie(request)
+    if user is None or not user.is_active:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return user
+
+
+def require_admin(user=Depends(require_login)):
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    return user
