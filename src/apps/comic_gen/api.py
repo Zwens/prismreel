@@ -20,7 +20,7 @@
 # import_file_preview, import_file_confirm, upload_t2i_frame,
 # analyze_script_for_styles. All others are `def` for a reason.
 # ─────────────────────────────────────────────────────────────────────────────
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Request
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError
@@ -36,6 +36,7 @@ import uuid
 import logging
 import traceback
 from .pipeline import ComicGenPipeline, LibraryAssetInUseError
+from . import auth, user_repo
 from .models import (
     ArtDirection,
     PromptConfig,
@@ -169,6 +170,121 @@ app.mount("/files/playground", StaticFiles(directory="output/playground"), name=
 
 # Initialize pipeline
 pipeline = ComicGenPipeline()
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Multi-tenant auth — /auth/* (public) and /admin/* (admin-only)
+# ─────────────────────────────────────────────────────────────────────
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class RedeemInviteRequest(BaseModel):
+    invite_code: str
+    email: str
+    password: str
+
+
+class CreateInviteRequest(BaseModel):
+    role: str = "member"
+    email_hint: Optional[str] = None
+
+
+class ResetPasswordRequest(BaseModel):
+    new_password: str
+
+
+def get_owned_script(script_id: str, user=Depends(auth.require_login)):
+    script = pipeline.get_script(script_id)
+    if not script:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if user.role != "admin" and script.owner_id and script.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return script
+
+
+def get_owned_series(series_id: str, user=Depends(auth.require_login)):
+    series = pipeline.get_series(series_id)
+    if not series:
+        raise HTTPException(status_code=404, detail="Series not found")
+    if user.role != "admin" and series.owner_id and series.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Series not found")
+    return series
+
+
+@app.post("/auth/login")
+def login(body: LoginRequest):
+    user = user_repo.get_user_by_email(body.email)
+    if not user or not user.is_active or not auth.verify_password(body.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="帳號或密碼錯誤")
+    token = auth.create_access_token(user.id, user.role)
+    resp = JSONResponse({"id": user.id, "email": user.email, "role": user.role, "display_name": user.display_name})
+    resp.set_cookie(
+        "access_token", token,
+        httponly=True, secure=True, samesite="lax",
+        max_age=auth.JWT_EXPIRE_DAYS * 86400,
+    )
+    return resp
+
+
+@app.post("/auth/logout")
+def logout(_user=Depends(auth.require_login)):
+    resp = JSONResponse({"status": "logged_out"})
+    resp.delete_cookie("access_token")
+    return resp
+
+
+@app.get("/auth/me")
+def auth_me(user=Depends(auth.require_login)):
+    return {"id": user.id, "email": user.email, "role": user.role, "display_name": user.display_name}
+
+
+@app.post("/auth/redeem_invite")
+def redeem_invite(body: RedeemInviteRequest):
+    try:
+        user = user_repo.redeem_invite(body.invite_code, body.email, body.password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    token = auth.create_access_token(user.id, user.role)
+    resp = JSONResponse({"id": user.id, "email": user.email, "role": user.role})
+    resp.set_cookie(
+        "access_token", token,
+        httponly=True, secure=True, samesite="lax",
+        max_age=auth.JWT_EXPIRE_DAYS * 86400,
+    )
+    return resp
+
+
+@app.post("/admin/invites")
+def admin_create_invite(body: CreateInviteRequest, admin=Depends(auth.require_admin)):
+    code = user_repo.create_invite(created_by=admin.id, role=body.role, email_hint=body.email_hint)
+    return {"invite_code": code}
+
+
+@app.get("/admin/users")
+def admin_list_users(_admin=Depends(auth.require_admin)):
+    return [
+        {"id": u.id, "email": u.email, "role": u.role, "display_name": u.display_name, "is_active": u.is_active, "created_at": u.created_at}
+        for u in user_repo.list_users()
+    ]
+
+
+@app.post("/admin/users/{user_id}/reset_password")
+def admin_reset_password(user_id: str, body: ResetPasswordRequest, _admin=Depends(auth.require_admin)):
+    if not user_repo.get_user_by_id(user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+    user_repo.set_password(user_id, body.new_password)
+    return {"status": "password_reset"}
+
+
+@app.post("/admin/users/{user_id}/deactivate")
+def admin_deactivate_user(user_id: str, _admin=Depends(auth.require_admin)):
+    if not user_repo.get_user_by_id(user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+    user_repo.set_active(user_id, False)
+    return {"status": "deactivated"}
+
 
 @app.get("/debug/config")
 def debug_config():
