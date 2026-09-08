@@ -36,6 +36,10 @@ PrismReel 当前把阿里云 DashScope 同时当作五种东西在用：LLM 后�
 以下决策在设计过程中被推翻过，记录在此以免后续实施时按旧结论行事：
 
 - **D10 原为「V2V 整体移除」**。依据是 `seedance.yaml` 声明的 `supported_modalities: [t2v, i2v, r2v]`。用真实 `ARK_API_KEY` 调 `/api/v3/models` 后发现，Seedance 四个在售型号的 `task_type` 均含 `VideoEditing` 且 `input_modalities` 含 `video`——**是目录漏标，不是平台不支持**。结论反转为保留。
+- **图像端点由 `/v1beta/interactions` 改为 `generateContent`**（实施第 2 步时实测）。两者
+  都能出图且都支持 `aspectRatio`，但 interactions 把图像埋在 `steps[1].content[0].data`，
+  generateContent 直接回 `candidates[0].content.parts[*].inlineData.data`，浅一层且
+  parts 里混着文本说明也好扫描。实测 9:16 请求返回 768x1376，比例正确。
 - **曾计划引入 MiniMax** 承接中文音色与音色克隆。因用户仅持有 Gemini 与 ARK 两个凭证，该方案作废，克隆能力确认无法保留。
 
 ## 3. 供应商最终形态
@@ -58,7 +62,9 @@ Kling 与 Vidu 的家族定义保留在目录中并切到 vendor backend，但�
 
 ### 4.1 Gemini 端点（抓取自 ai.google.dev）
 
-- 原生统一端点：`POST https://generativelanguage.googleapis.com/v1beta/interactions`。图像与 TTS 均走此端点，采用 `input` 数组 + `response_format` 结构，**不是**旧版 `generateContent`。
+- 原生端点有两套，实测均可用：`POST /v1beta/interactions`（`input` 数组 + `response_format`）与
+  `POST /v1beta/models/{model}:generateContent`（`contents` + `generationConfig.responseModalities`）。
+  **图像实现选用 generateContent**，理由见 2.1 修订记录；TTS 端点在第 3 步实测后再定。
 - OpenAI 兼容层：`https://generativelanguage.googleapis.com/v1beta/openai/`。支持 chat completions、流式、function calling、结构化输出、图像理解；官方标注仍为 beta，不支持的参数会被静默忽略。
 - 连通性：本机 curl 直连返回 403（缺 key，端点可达），无需代理。
 
@@ -146,7 +152,7 @@ GEMINI_BASE_URL=https://generativelanguage.googleapis.com   # 可选，留空用
 
 ### 6.2 图像（双供应商）
 
-**新增 `src/models/gemini_image.py`** —— 实现 `src/models/image.py` 中既有的 `ImageGenModel` 抽象基类，走 `/v1beta/interactions`：
+**新增 `src/models/gemini_image.py`** —— 实现 `src/models/image.py` 中既有的 `ImageGenModel` 抽象基类，走 `generateContent` + `responseModalities: ["IMAGE"]`（端点选型依据见 2.1 修订记录）：
 
 - 默认模型 `gemini-3.1-flash-image`，高质档 `gemini-3-pro-image`
 - 入参映射：现有 `size` 参数转换为 Gemini 的 `aspect_ratio` + `image_size`
@@ -158,7 +164,8 @@ GEMINI_BASE_URL=https://generativelanguage.googleapis.com   # 可选，留空用
 - 默认模型 `seedream-5-0-260128`，高质档 `dola-seedream-5-0-pro-260628`
 - 与 Seedance 同厂，图像风格与后续视频生成更连贯
 
-**`src/models/image.py`（916 行）**：`resolve_image_adapter()` 的 `default_adapter` 由 `WanxImageModel` 换为 `GeminiImageModel`；`_image_provider_for()` 增加 `seedream` 分支（现有 vidu 分支不动）；`WanxImageModel` 类及其全部 `_generate_*` 私有方法删除；第 37 行 `DASHSCOPE_API_KEY 无效` 文案改为 Gemini。
+**`src/models/image.py`（916 行）**：`_image_provider_for()` 增加 `gemini-` 前缀分支，按 id 路由到 `GeminiImageModel`。
+**不在本步把 `default_adapter` 换成 Gemini** —— wan / qwen-image 尚未迁移、存量项目仍引用它们，改默认会把这些请求送错供应商且不会报错，只会出坏图；该替换随 wan 家族删除一并进行。`_image_provider_for()` 增加 `seedream` 分支（现有 vidu 分支不动）；`WanxImageModel` 类及其全部 `_generate_*` 私有方法删除；第 37 行 `DASHSCOPE_API_KEY 无效` 文案改为 Gemini。
 
 删除文件：`src/models/wanx.py`（1042 行）、`src/models/qwen_vl.py`（111 行）。已核实 `qwen_vl.py` 在 `src`、`scripts`、`tests` 中均无调用方，可直接删除，无需替代实现。
 

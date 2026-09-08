@@ -1,6 +1,9 @@
 {
   "compat": {
     "legacy_model_ids": {
+      "gemini-3-pro-image": "gemini/gemini-3-pro-image#image",
+      "gemini-3.1-flash-image": "gemini/gemini-3.1-flash-image#image",
+      "gemini-3.1-flash-lite-image": "gemini/gemini-3.1-flash-lite-image#image",
       "happyhorse-1.0-i2v": "happyhorse/happyhorse-1.0-video#i2v",
       "happyhorse-1.0-r2v": "happyhorse/happyhorse-1.0-video#r2v",
       "happyhorse-1.0-t2v": "happyhorse/happyhorse-1.0-t2v#i2v",
@@ -70,6 +73,45 @@
     }
   },
   "families": {
+    "gemini": {
+      "backend_env_key": null,
+      "credential_sources": {
+        "google": [
+          "GEMINI_API_KEY"
+        ]
+      },
+      "default_backend": "google",
+      "display_name": "Gemini Image (Nano Banana)",
+      "docs": {
+        "official_snapshot_ids": [
+          "google/gemini-image/2026-09-08"
+        ]
+      },
+      "family": "gemini",
+      "models": [
+        "gemini-3-pro-image",
+        "gemini-3.1-flash-image",
+        "gemini-3.1-flash-lite-image"
+      ],
+      "provider": "google",
+      "routing_prefixes": [
+        "gemini-"
+      ],
+      "supported_backends": [
+        "google"
+      ],
+      "supported_modalities": [
+        "t2i",
+        "i2i"
+      ],
+      "transport": {
+        "audio_input_mode": {},
+        "image_input_mode": {
+          "google": "gemini_inline_base64"
+        },
+        "reference_video_input_mode": {}
+      }
+    },
     "happyhorse": {
       "backend_env_key": null,
       "credential_sources": {
@@ -432,6 +474,165 @@
     }
   },
   "model_lines": {
+    "gemini/gemini-3-pro-image": {
+      "backend_env_key": null,
+      "credential_sources": {
+        "google": [
+          "GEMINI_API_KEY"
+        ]
+      },
+      "default_backend": "google",
+      "description": "Highest-fidelity Gemini image model; 2K/4K output and the strongest character consistency",
+      "display_name": "Nano Banana Pro",
+      "docs": {
+        "context_hub_doc_ids": [
+          "google/gemini-image"
+        ],
+        "official_snapshot_ids": [
+          "google/gemini-image/2026-09-08"
+        ]
+      },
+      "family": "gemini",
+      "id": "gemini/gemini-3-pro-image",
+      "legacy_model_ids": [
+        "gemini-3-pro-image"
+      ],
+      "modes": [
+        "gemini/gemini-3-pro-image#image"
+      ],
+      "provider": "google",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "gemini-"
+      ],
+      "runtime": {
+        "google": {
+          "api_model_id": "gemini-3-pro-image",
+          "gateway": "google"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "google"
+      ],
+      "supported_modalities": [
+        "t2i",
+        "i2i"
+      ],
+      "transport": {
+        "audio_input_mode": {},
+        "image_input_mode": {
+          "google": "gemini_inline_base64"
+        },
+        "reference_video_input_mode": {}
+      }
+    },
+    "gemini/gemini-3.1-flash-image": {
+      "backend_env_key": null,
+      "credential_sources": {
+        "google": [
+          "GEMINI_API_KEY"
+        ]
+      },
+      "default_backend": "google",
+      "description": "Default image model; fast, supports up to 14 reference images including 4 for character consistency",
+      "display_name": "Nano Banana 2",
+      "docs": {
+        "context_hub_doc_ids": [
+          "google/gemini-image"
+        ],
+        "official_snapshot_ids": [
+          "google/gemini-image/2026-09-08"
+        ]
+      },
+      "family": "gemini",
+      "id": "gemini/gemini-3.1-flash-image",
+      "legacy_model_ids": [
+        "gemini-3.1-flash-image"
+      ],
+      "modes": [
+        "gemini/gemini-3.1-flash-image#image"
+      ],
+      "provider": "google",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "gemini-"
+      ],
+      "runtime": {
+        "google": {
+          "api_model_id": "gemini-3.1-flash-image",
+          "gateway": "google"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "google"
+      ],
+      "supported_modalities": [
+        "t2i",
+        "i2i"
+      ],
+      "transport": {
+        "audio_input_mode": {},
+        "image_input_mode": {
+          "google": "gemini_inline_base64"
+        },
+        "reference_video_input_mode": {}
+      }
+    },
+    "gemini/gemini-3.1-flash-lite-image": {
+      "backend_env_key": null,
+      "credential_sources": {
+        "google": [
+          "GEMINI_API_KEY"
+        ]
+      },
+      "default_backend": "google",
+      "description": "Cheapest Gemini image model; 0.5K/1K output only",
+      "display_name": "Nano Banana 2 Lite",
+      "docs": {
+        "context_hub_doc_ids": [
+          "google/gemini-image"
+        ],
+        "official_snapshot_ids": [
+          "google/gemini-image/2026-09-08"
+        ]
+      },
+      "family": "gemini",
+      "id": "gemini/gemini-3.1-flash-lite-image",
+      "legacy_model_ids": [
+        "gemini-3.1-flash-lite-image"
+      ],
+      "modes": [
+        "gemini/gemini-3.1-flash-lite-image#image"
+      ],
+      "provider": "google",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "gemini-"
+      ],
+      "runtime": {
+        "google": {
+          "api_model_id": "gemini-3.1-flash-lite-image",
+          "gateway": "google"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "google"
+      ],
+      "supported_modalities": [
+        "t2i",
+        "i2i"
+      ],
+      "transport": {
+        "audio_input_mode": {},
+        "image_input_mode": {
+          "google": "gemini_inline_base64"
+        },
+        "reference_video_input_mode": {}
+      }
+    },
     "happyhorse/happyhorse-1.0-t2v": {
       "backend_env_key": null,
       "credential_sources": {
@@ -2443,6 +2644,228 @@
     }
   },
   "models": {
+    "gemini-3-pro-image": {
+      "backend_env_key": null,
+      "capabilities": [
+        "t2i",
+        "i2i"
+      ],
+      "credential_sources": {
+        "google": [
+          "GEMINI_API_KEY"
+        ]
+      },
+      "default_backend": "google",
+      "description": "Highest-fidelity Gemini image model; 2K/4K output and the strongest character consistency",
+      "display_name": "Nano Banana Pro",
+      "docs": {
+        "context_hub_doc_ids": [
+          "google/gemini-image"
+        ],
+        "official_snapshot_ids": [
+          "google/gemini-image/2026-09-08"
+        ]
+      },
+      "duration": null,
+      "family": "gemini",
+      "id": "gemini-3-pro-image",
+      "inputs": {},
+      "params": {
+        "negativePrompt": true,
+        "referenceImages": {
+          "max": 14
+        },
+        "seed": false,
+        "size": {
+          "default": "1024*1024",
+          "options": [
+            "1024*1024",
+            "1024*576",
+            "576*1024",
+            "1024*768",
+            "768*1024",
+            "1024*1536",
+            "1536*1024"
+          ]
+        }
+      },
+      "pricing": null,
+      "provider": "google",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "gemini-"
+      ],
+      "status": "active",
+      "supported_backends": [
+        "google"
+      ],
+      "transport": {
+        "audio_input_mode": {},
+        "image_input_mode": {
+          "google": "gemini_inline_base64"
+        },
+        "reference_video_input_mode": {}
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 120,
+        "recommended": false,
+        "selection_group": "image",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "global_settings"
+        ]
+      }
+    },
+    "gemini-3.1-flash-image": {
+      "backend_env_key": null,
+      "capabilities": [
+        "t2i",
+        "i2i"
+      ],
+      "credential_sources": {
+        "google": [
+          "GEMINI_API_KEY"
+        ]
+      },
+      "default_backend": "google",
+      "description": "Default image model; fast, supports up to 14 reference images including 4 for character consistency",
+      "display_name": "Nano Banana 2",
+      "docs": {
+        "context_hub_doc_ids": [
+          "google/gemini-image"
+        ],
+        "official_snapshot_ids": [
+          "google/gemini-image/2026-09-08"
+        ]
+      },
+      "duration": null,
+      "family": "gemini",
+      "id": "gemini-3.1-flash-image",
+      "inputs": {},
+      "params": {
+        "negativePrompt": true,
+        "referenceImages": {
+          "max": 14
+        },
+        "seed": false,
+        "size": {
+          "default": "1024*1024",
+          "options": [
+            "1024*1024",
+            "1024*576",
+            "576*1024",
+            "1024*768",
+            "768*1024",
+            "1024*1536",
+            "1536*1024"
+          ]
+        }
+      },
+      "pricing": null,
+      "provider": "google",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "gemini-"
+      ],
+      "status": "active",
+      "supported_backends": [
+        "google"
+      ],
+      "transport": {
+        "audio_input_mode": {},
+        "image_input_mode": {
+          "google": "gemini_inline_base64"
+        },
+        "reference_video_input_mode": {}
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 110,
+        "recommended": false,
+        "selection_group": "image",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "global_settings"
+        ]
+      }
+    },
+    "gemini-3.1-flash-lite-image": {
+      "backend_env_key": null,
+      "capabilities": [
+        "t2i",
+        "i2i"
+      ],
+      "credential_sources": {
+        "google": [
+          "GEMINI_API_KEY"
+        ]
+      },
+      "default_backend": "google",
+      "description": "Cheapest Gemini image model; 0.5K/1K output only",
+      "display_name": "Nano Banana 2 Lite",
+      "docs": {
+        "context_hub_doc_ids": [
+          "google/gemini-image"
+        ],
+        "official_snapshot_ids": [
+          "google/gemini-image/2026-09-08"
+        ]
+      },
+      "duration": null,
+      "family": "gemini",
+      "id": "gemini-3.1-flash-lite-image",
+      "inputs": {},
+      "params": {
+        "negativePrompt": true,
+        "referenceImages": {
+          "max": 14
+        },
+        "seed": false,
+        "size": {
+          "default": "1024*1024",
+          "options": [
+            "1024*1024",
+            "1024*576",
+            "576*1024"
+          ]
+        }
+      },
+      "pricing": null,
+      "provider": "google",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "gemini-"
+      ],
+      "status": "active",
+      "supported_backends": [
+        "google"
+      ],
+      "transport": {
+        "audio_input_mode": {},
+        "image_input_mode": {
+          "google": "gemini_inline_base64"
+        },
+        "reference_video_input_mode": {}
+      },
+      "ui": {
+        "badges": [],
+        "order": 100,
+        "recommended": false,
+        "selection_group": "image",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "global_settings"
+        ]
+      }
+    },
     "happyhorse-1.0-i2v": {
       "backend_env_key": null,
       "capabilities": [
@@ -6959,6 +7382,255 @@
     }
   },
   "modes": {
+    "gemini/gemini-3-pro-image#image": {
+      "backend_env_key": null,
+      "capabilities": [
+        "t2i",
+        "i2i"
+      ],
+      "credential_sources": {
+        "google": [
+          "GEMINI_API_KEY"
+        ]
+      },
+      "default_backend": "google",
+      "description": "Highest-fidelity Gemini image model; 2K/4K output and the strongest character consistency",
+      "display_name": "Nano Banana Pro",
+      "docs": {
+        "context_hub_doc_ids": [
+          "google/gemini-image"
+        ],
+        "official_snapshot_ids": [
+          "google/gemini-image/2026-09-08"
+        ]
+      },
+      "duration": null,
+      "family": "gemini",
+      "id": "gemini/gemini-3-pro-image#image",
+      "inputs": {},
+      "legacy_model_id": "gemini-3-pro-image",
+      "mode": "image",
+      "model_line_id": "gemini/gemini-3-pro-image",
+      "params": {
+        "negativePrompt": true,
+        "referenceImages": {
+          "max": 14
+        },
+        "seed": false,
+        "size": {
+          "default": "1024*1024",
+          "options": [
+            "1024*1024",
+            "1024*576",
+            "576*1024",
+            "1024*768",
+            "768*1024",
+            "1024*1536",
+            "1536*1024"
+          ]
+        }
+      },
+      "pricing": null,
+      "provider": "google",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "gemini-"
+      ],
+      "runtime": {
+        "google": {
+          "api_model_id": "gemini-3-pro-image",
+          "gateway": "google"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "google"
+      ],
+      "transport": {
+        "audio_input_mode": {},
+        "image_input_mode": {
+          "google": "gemini_inline_base64"
+        },
+        "reference_video_input_mode": {}
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 120,
+        "recommended": false,
+        "selection_group": "image",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "global_settings"
+        ]
+      }
+    },
+    "gemini/gemini-3.1-flash-image#image": {
+      "backend_env_key": null,
+      "capabilities": [
+        "t2i",
+        "i2i"
+      ],
+      "credential_sources": {
+        "google": [
+          "GEMINI_API_KEY"
+        ]
+      },
+      "default_backend": "google",
+      "description": "Default image model; fast, supports up to 14 reference images including 4 for character consistency",
+      "display_name": "Nano Banana 2",
+      "docs": {
+        "context_hub_doc_ids": [
+          "google/gemini-image"
+        ],
+        "official_snapshot_ids": [
+          "google/gemini-image/2026-09-08"
+        ]
+      },
+      "duration": null,
+      "family": "gemini",
+      "id": "gemini/gemini-3.1-flash-image#image",
+      "inputs": {},
+      "legacy_model_id": "gemini-3.1-flash-image",
+      "mode": "image",
+      "model_line_id": "gemini/gemini-3.1-flash-image",
+      "params": {
+        "negativePrompt": true,
+        "referenceImages": {
+          "max": 14
+        },
+        "seed": false,
+        "size": {
+          "default": "1024*1024",
+          "options": [
+            "1024*1024",
+            "1024*576",
+            "576*1024",
+            "1024*768",
+            "768*1024",
+            "1024*1536",
+            "1536*1024"
+          ]
+        }
+      },
+      "pricing": null,
+      "provider": "google",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "gemini-"
+      ],
+      "runtime": {
+        "google": {
+          "api_model_id": "gemini-3.1-flash-image",
+          "gateway": "google"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "google"
+      ],
+      "transport": {
+        "audio_input_mode": {},
+        "image_input_mode": {
+          "google": "gemini_inline_base64"
+        },
+        "reference_video_input_mode": {}
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 110,
+        "recommended": false,
+        "selection_group": "image",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "global_settings"
+        ]
+      }
+    },
+    "gemini/gemini-3.1-flash-lite-image#image": {
+      "backend_env_key": null,
+      "capabilities": [
+        "t2i",
+        "i2i"
+      ],
+      "credential_sources": {
+        "google": [
+          "GEMINI_API_KEY"
+        ]
+      },
+      "default_backend": "google",
+      "description": "Cheapest Gemini image model; 0.5K/1K output only",
+      "display_name": "Nano Banana 2 Lite",
+      "docs": {
+        "context_hub_doc_ids": [
+          "google/gemini-image"
+        ],
+        "official_snapshot_ids": [
+          "google/gemini-image/2026-09-08"
+        ]
+      },
+      "duration": null,
+      "family": "gemini",
+      "id": "gemini/gemini-3.1-flash-lite-image#image",
+      "inputs": {},
+      "legacy_model_id": "gemini-3.1-flash-lite-image",
+      "mode": "image",
+      "model_line_id": "gemini/gemini-3.1-flash-lite-image",
+      "params": {
+        "negativePrompt": true,
+        "referenceImages": {
+          "max": 14
+        },
+        "seed": false,
+        "size": {
+          "default": "1024*1024",
+          "options": [
+            "1024*1024",
+            "1024*576",
+            "576*1024"
+          ]
+        }
+      },
+      "pricing": null,
+      "provider": "google",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "gemini-"
+      ],
+      "runtime": {
+        "google": {
+          "api_model_id": "gemini-3.1-flash-lite-image",
+          "gateway": "google"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "google"
+      ],
+      "transport": {
+        "audio_input_mode": {},
+        "image_input_mode": {
+          "google": "gemini_inline_base64"
+        },
+        "reference_video_input_mode": {}
+      },
+      "ui": {
+        "badges": [],
+        "order": 100,
+        "recommended": false,
+        "selection_group": "image",
+        "visible_in": [
+          "project_settings",
+          "series_settings",
+          "global_settings"
+        ]
+      }
+    },
     "happyhorse/happyhorse-1.0-t2v#i2v": {
       "backend_env_key": null,
       "capabilities": [

@@ -883,6 +883,8 @@ def _image_provider_for(model_name: str) -> str:
     name = (model_name or "").strip().lower()
     if not name:
         return ""
+    if name.startswith("gemini-"):
+        return "gemini"
     # Imported lazily: src.models.vidu imports ImageGenModel from this module.
     from .vidu import is_vidu_image_model
     if is_vidu_image_model(name):
@@ -897,6 +899,11 @@ def resolve_image_adapter(model_name: str, default_adapter: ImageGenModel = None
     new image provider is one branch here instead of one branch per call site.
     Anything unrecognized falls through to ``default_adapter`` (DashScope/Wanx),
     preserving the previous behavior for wan / qwen-image ids.
+
+    Gemini is routed by prefix rather than made the default: wan / qwen-image
+    have not migrated yet and existing projects still reference them, so
+    swapping the default would send those requests to the wrong provider.
+    That swap belongs to the step that deletes the wan family.
     """
     provider = _image_provider_for(model_name)
     if not provider:
@@ -906,10 +913,13 @@ def resolve_image_adapter(model_name: str, default_adapter: ImageGenModel = None
     if cached is not None:
         return cached
 
-    if provider == "vidu":
+    if provider == "gemini":
+        from .gemini_image import GeminiImageModel
+        cached = GeminiImageModel({})
+    elif provider == "vidu":
         from .vidu import ViduImageModel
         cached = ViduImageModel({})
-    else:  # pragma: no cover - _image_provider_for only returns "" or "vidu"
+    else:  # pragma: no cover - _image_provider_for returns "", "gemini" or "vidu"
         return default_adapter
 
     _IMAGE_ADAPTER_CACHE[provider] = cached
