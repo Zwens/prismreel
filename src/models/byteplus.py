@@ -169,11 +169,13 @@ def validate_omni_task(
     duration: Optional[int],
     source_seconds: Optional[float],
 ) -> None:
-    """Reject a request Ark would reject, before spending the round trip.
+    """Reject a request Ark would reject, before it is ever sent.
 
-    Ark does check these synchronously when the sub-type is explicit, so this is
-    a second line rather than the only one. It earns its place by naming what
-    the user did — the vendor error names a field.
+    Verified 2026-09-08: Ark does NOT validate these synchronously, despite the
+    vendor doc saying so. A violating request gets HTTP 200 and a task id, and
+    only then fails asynchronously — the failed task is free, but the user has
+    waited minutes to be told a field was wrong. So this is the only check that
+    can answer immediately, not a second line behind the vendor's.
     """
     if task_type is None or task_type == "auto":
         return

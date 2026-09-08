@@ -7,11 +7,12 @@ sub-types of one omni-reference task, selected with ``omni_reference_task_type``
 that parameter at all. The 2.0 series can still edit, but only by letting the
 model guess from the prompt.
 
-Each sub-type carries hard constraints that Ark rejects the task for. Ark does
-validate them synchronously when the sub-type is explicit, so these local checks
-are not the only line of defence — but a rejected task is a wasted round trip on
-a request we could already tell was invalid, and the vendor's message names the
-field rather than what the user did. So they are checked here, before the POST.
+Each sub-type carries hard constraints Ark rejects the task for. Verified against
+the live API on 2026-09-08: that rejection is NOT synchronous, despite the vendor
+doc saying so — a violating request gets HTTP 200 and a task id, and only fails
+minutes later. The failed task is free, so this is not about money; it is that
+these local checks are the only ones that can answer immediately, and they name
+what the user did rather than which field was wrong.
 """
 
 import pytest
