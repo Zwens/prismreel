@@ -90,6 +90,12 @@ if not _cors_origins_env:
     _cors_allow_origin_regex = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
     _cors_allow_credentials = True
 
+# `Secure` cookies are only stored by browsers over HTTPS. Same dev/prod
+# signal as the CORS block above: no explicit PRISMREEL_CORS_ORIGINS means
+# local `next dev` over plain http, where Secure=True would silently drop
+# the login cookie on every request.
+_cookie_secure = bool(_cors_origins_env)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_allow_origins if _cors_origins_env else [],
@@ -266,7 +272,7 @@ def login(body: LoginRequest):
     resp = JSONResponse({"id": user.id, "email": user.email, "role": user.role, "display_name": user.display_name})
     resp.set_cookie(
         "access_token", token,
-        httponly=True, secure=True, samesite="lax",
+        httponly=True, secure=_cookie_secure, samesite="lax",
         max_age=auth.JWT_EXPIRE_DAYS * 86400,
     )
     return resp
@@ -294,7 +300,7 @@ def redeem_invite(body: RedeemInviteRequest):
     resp = JSONResponse({"id": user.id, "email": user.email, "role": user.role})
     resp.set_cookie(
         "access_token", token,
-        httponly=True, secure=True, samesite="lax",
+        httponly=True, secure=_cookie_secure, samesite="lax",
         max_age=auth.JWT_EXPIRE_DAYS * 86400,
     )
     return resp

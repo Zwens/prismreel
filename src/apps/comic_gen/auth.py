@@ -69,20 +69,32 @@ def get_current_user_from_cookie(request: Request):
 # route handlers (e.g. `if user.role != "admin": filter by owner`) grants
 # full access, matching "gate disabled" meaning "behave like the single-user
 # desktop mode that predates auth" rather than a locked-out empty result.
-_ANONYMOUS_ADMIN = user_repo.User(
-    id="anonymous",
-    email="",
-    password_hash="",
-    role="admin",
-    display_name="Anonymous",
-    created_at=0.0,
-    is_active=True,
-)
+#
+# Built lazily (not at module import time): `user_repo` imports from this
+# module before its own `User` class is defined, so referencing
+# `user_repo.User` here at module scope deadlocks any entrypoint that
+# imports `user_repo` first (e.g. scripts/migrate_auth_v1.py).
+_anonymous_admin: "user_repo.User | None" = None
+
+
+def _get_anonymous_admin():
+    global _anonymous_admin
+    if _anonymous_admin is None:
+        _anonymous_admin = user_repo.User(
+            id="anonymous",
+            email="",
+            password_hash="",
+            role="admin",
+            display_name="Anonymous",
+            created_at=0.0,
+            is_active=True,
+        )
+    return _anonymous_admin
 
 
 def require_login(request: Request):
     if not JWT_SECRET:
-        return _ANONYMOUS_ADMIN
+        return _get_anonymous_admin()
     user = get_current_user_from_cookie(request)
     if user is None or not user.is_active:
         raise HTTPException(status_code=401, detail="Not authenticated")

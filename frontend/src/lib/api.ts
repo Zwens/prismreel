@@ -49,6 +49,25 @@ if (API_KEY) {
 // frontend and backend run on different ports (cross-origin).
 axios.defaults.withCredentials = true;
 
+export async function login(email: string, password: string) {
+    const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+    return res.data;
+}
+
+export async function redeemInvite(code: string, email: string, password: string) {
+    const res = await axios.post(`${API_URL}/auth/redeem_invite`, { invite_code: code, email, password });
+    return res.data;
+}
+
+export async function logout() {
+    await axios.post(`${API_URL}/auth/logout`);
+}
+
+export async function getCurrentUser() {
+    const res = await axios.get(`${API_URL}/auth/me`);
+    return res.data;
+}
+
 export type ProviderMode = "dashscope" | "vendor";
 
 /**

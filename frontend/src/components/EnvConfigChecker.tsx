@@ -1,21 +1,29 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import EnvConfigDialog from "@/components/project/EnvConfigDialog";
 import { api } from "@/lib/api";
 
+// Public auth pages render before login, so the env-config API call would
+// always 401 under the login gate and misleadingly show "env not configured".
+const _PUBLIC_PATH_PREFIXES = ["/login", "/redeem"];
+
 export default function EnvConfigChecker() {
+  const pathname = usePathname();
   const [isEnvDialogOpen, setIsEnvDialogOpen] = useState(false);
   const [envRequired, setEnvRequired] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
 
+  const isPublicPage = _PUBLIC_PATH_PREFIXES.some((p) => pathname?.startsWith(p));
+
   useEffect(() => {
     // 只在客户端执行，且只检查一次
-    if (typeof window === 'undefined' || hasChecked) return;
-    
+    if (typeof window === 'undefined' || hasChecked || isPublicPage) return;
+
     checkEnvConfig();
     setHasChecked(true);
-  }, [hasChecked]);
+  }, [hasChecked, isPublicPage]);
 
   const checkEnvConfig = async () => {
     try {
@@ -41,6 +49,8 @@ export default function EnvConfigChecker() {
       setIsEnvDialogOpen(true);
     }
   };
+
+  if (isPublicPage) return null;
 
   return (
     <EnvConfigDialog
