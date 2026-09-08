@@ -27,36 +27,26 @@ class TestModelCatalog:
         catalog = build_catalog_dict(MODEL_CATALOG_ROOT)
 
         assert catalog["version"] == 1
-        # Image defaults point at the wan2.7 family (Phase 2 catalog upgrade
-        # 2026-Q1) and include the unified image_model surface used by
-        # the Atelier/Studio image generation path. Both video defaults are
-        # happyhorse: ebc5780 anchored the R2V route to this meta default
-        # because several R2V models share ui.order=80 and the old derived
-        # route tie-broke arbitrarily.
+        # DashScope 下线后：图像默认落到 Gemini，视频默认落到 Seedance。
+        # 这里断言具体 id 而不是"非空"，是因为默认模型一旦指向不存在的 id，
+        # 新建项目会在第一次生成时才失败。
         assert catalog["defaults"]["model_settings"] == {
-            "t2i_model": "wan2.7-image-pro",
-            "i2i_model": "wan2.7-image-pro",
-            "image_model": "wan2.7-image-pro",
-            "i2v_model": "happyhorse-1.0-i2v",
-            "r2v_model": "happyhorse-1.0-r2v",
+            "t2i_model": "gemini-3.1-flash-image",
+            "i2i_model": "gemini-3.1-flash-image",
+            "image_model": "gemini-3.1-flash-image",
+            "i2v_model": "seedance-2.5-i2v",
+            "r2v_model": "seedance-2.5-r2v",
         }
 
         models = catalog["models"]
-        # The whole wan2.6 family was deprecated and pulled out of every
-        # picker in fc71a24 once 2.7 replaced it. The entries stay in the
-        # catalog so existing project files keep round-tripping -- assert
-        # that as one rule rather than per-id, so a future visibility change
-        # to any of them surfaces here.
-        for legacy_id in ("wan2.6-t2i", "wan2.6-image", "wan2.6-i2v", "wan2.6-r2v"):
-            assert legacy_id in models, legacy_id
-            assert models[legacy_id]["status"] == "deprecated", legacy_id
-            assert models[legacy_id]["ui"]["visible_in"] == [], legacy_id
-
-        # The kling / vidu legacy ids gained an explicit modality suffix
-        # during Phase 2 to disambiguate i2v vs r2v entries.
+        # 三家仍在目录里的供应商，legacy id 带显式模态后缀以区分 i2v / r2v。
         assert "kling-v3-i2v" in models
         assert "viduq3-pro-i2v" in models
-        assert "pixverse-v4-i2v" in models
+        assert "seedance-2.5-i2v" in models
+        # 已下架家族必须彻底消失 —— 留在目录里会让它们重新出现在选择器中。
+        for gone in ("wan2.7-image-pro", "wan2.6-i2v", "qwen-image-2.0",
+                     "happyhorse-1.0-i2v", "pixverse-v4-i2v"):
+            assert gone not in models, gone
 
     def test_repo_catalog_emits_additive_mode_aware_sections(self):
         catalog = build_catalog_dict(MODEL_CATALOG_ROOT)
@@ -66,23 +56,23 @@ class TestModelCatalog:
         assert "compat" in catalog
         assert "legacy_model_ids" in catalog["compat"]
 
-        assert "wan2.6-i2v" in catalog["models"]
-        assert "wan2.6-r2v" in catalog["models"]
-        assert "wan/wan2.6-video" in catalog["model_lines"]
-        assert "wan/wan2.6-video#i2v" in catalog["modes"]
-        assert "wan/wan2.6-video#r2v" in catalog["modes"]
-        assert catalog["compat"]["legacy_model_ids"]["wan2.6-i2v"] == "wan/wan2.6-video#i2v"
-        assert catalog["compat"]["legacy_model_ids"]["wan2.6-r2v"] == "wan/wan2.6-video#r2v"
+        assert "seedance-2.5-i2v" in catalog["models"]
+        assert "seedance-2.5-r2v" in catalog["models"]
+        assert "seedance/seedance-2.5-video" in catalog["model_lines"]
+        assert "seedance/seedance-2.5-video#i2v" in catalog["modes"]
+        assert "seedance/seedance-2.5-video#r2v" in catalog["modes"]
+        assert catalog["compat"]["legacy_model_ids"]["seedance-2.5-i2v"] == "seedance/seedance-2.5-video#i2v"
+        assert catalog["compat"]["legacy_model_ids"]["seedance-2.5-r2v"] == "seedance/seedance-2.5-video#r2v"
 
     def test_mode_runtime_gateway_metadata_is_additive_and_routing_stays_family_based(self):
         catalog = build_catalog_dict(MODEL_CATALOG_ROOT)
 
-        canonical_mode_id = catalog["compat"]["legacy_model_ids"]["wan2.6-r2v"]
-        assert catalog["modes"][canonical_mode_id]["runtime"]["dashscope"]["gateway"] == "dashscope"
+        canonical_mode_id = catalog["compat"]["legacy_model_ids"]["seedance-2.5-r2v"]
+        assert catalog["modes"][canonical_mode_id]["runtime"]["byteplus"]["gateway"] == "byteplus"
 
         family_configs = build_provider_family_configs(catalog)
         family_map = {config.model_family: config for config in family_configs}
-        assert family_map["wan2.6-"].backend_default == "dashscope"
+        assert family_map["seedance-2.5-"].backend_default == "byteplus"
 
     def test_visible_models_must_link_to_context_hub_docs(self):
         catalog = build_catalog_dict(MODEL_CATALOG_ROOT)
@@ -120,27 +110,27 @@ class TestModelCatalog:
         family_configs = build_provider_family_configs(catalog)
         family_map = {config.model_family: config for config in family_configs}
 
-        assert "wan2.6-" in family_map
-        assert "wan2.5-" in family_map
-        assert "wan2.2-" in family_map
+        assert "gemini-" in family_map
+        assert "seedance-2.5-" in family_map
         assert "kling-" in family_map
         assert "vidu" in family_map
-        assert "pixverse-" in family_map
 
-        assert family_map["kling-"].backend_env_key == "KLING_PROVIDER_MODE"
-        assert family_map["vidu"].backend_env_key == "VIDU_PROVIDER_MODE"
-        # Pixverse has no vendor backend yet — all pixverse routing
-        # currently goes through dashscope, so no PROVIDER_MODE env
-        # switch is wired in the catalog. Document the current state.
-        assert family_map["pixverse-"].backend_env_key is None
+        assert family_map["gemini-"].backend_default == "google"
+        assert family_map["seedance-2.5-"].backend_default == "byteplus"
+        # DashScope 下线后 kling / vidu 只剩 vendor 一条通道，双 backend 的
+        # PROVIDER_MODE 开关随之失去意义，目录里已移除。
+        assert family_map["kling-"].backend_default == "vendor"
+        assert family_map["vidu"].backend_default == "vendor"
+        assert family_map["kling-"].backend_env_key is None
+        assert family_map["vidu"].backend_env_key is None
 
     def test_default_model_settings_come_from_catalog(self):
         defaults = get_default_model_settings(MODEL_CATALOG_ROOT)
 
-        assert defaults.t2i_model == "wan2.7-image-pro"
-        assert defaults.i2i_model == "wan2.7-image-pro"
-        assert defaults.i2v_model == "happyhorse-1.0-i2v"
-        assert defaults.r2v_model == "happyhorse-1.0-r2v"
+        assert defaults.t2i_model == "gemini-3.1-flash-image"
+        assert defaults.i2i_model == "gemini-3.1-flash-image"
+        assert defaults.i2v_model == "seedance-2.5-i2v"
+        assert defaults.r2v_model == "seedance-2.5-r2v"
 
     def test_validation_report_passes_for_repo_catalog(self):
         catalog = build_catalog_dict(MODEL_CATALOG_ROOT)
@@ -149,7 +139,7 @@ class TestModelCatalog:
 
         assert report.ok is True
         assert report.errors == ()
-        assert report.stats["defaults"]["t2i_model"] == "wan2.7-image-pro"
+        assert report.stats["defaults"]["t2i_model"] == "gemini-3.1-flash-image"
         assert report.stats["surface_summary"]["video_sidebar"]["i2v"]
 
     def test_validation_report_detects_frontend_catalog_drift(self):
@@ -165,10 +155,10 @@ class TestModelCatalog:
     def test_validation_report_detects_default_visibility_regression(self):
         catalog = build_catalog_dict(MODEL_CATALOG_ROOT)
         broken_catalog = deepcopy(catalog)
-        # Target the current default I2V model (happyhorse-1.0-i2v after
+        # Target the current default I2V model (seedance-2.5-i2v after
         # the 2026-05-26 catalog meta switch) so the validation actually
         # fires — the previous default (wan2.7-i2v) is no longer authoritative.
-        broken_catalog["models"]["happyhorse-1.0-i2v"]["ui"]["visible_in"] = [
+        broken_catalog["models"]["seedance-2.5-i2v"]["ui"]["visible_in"] = [
             "project_settings",
             "series_settings",
             "global_settings",
@@ -194,7 +184,7 @@ class TestModelCatalogValidation:
                         # (added during the Phase 2 unified image surface
                         # work) — synthetic test catalogs must include it.
                         "image_model": "wan2.6-t2i",
-                        "i2v_model": "wan2.6-i2v",
+                        "i2v_model": "seedance-2.5-i2v",
                     }
                 },
             },
@@ -205,14 +195,14 @@ class TestModelCatalogValidation:
                 "family": "wan",
                 "provider": "aliyun",
                 "routing_prefixes": ["wan2.6-"],
-                "supported_backends": ["dashscope"],
-                "default_backend": "dashscope",
-                "credential_sources": {"dashscope": ["DASHSCOPE_API_KEY"]},
+                "supported_backends": ["byteplus"],
+                "default_backend": "byteplus",
+                "credential_sources": {"byteplus": ["DASHSCOPE_API_KEY"]},
                 "supported_modalities": ["t2i", "i2i", "i2v", "r2v"],
                 "transport": {
-                    "image_input_mode": {"dashscope": "dashscope_multimodal_message"},
-                    "audio_input_mode": {"dashscope": "dashscope_temp_file_url"},
-                    "reference_video_input_mode": {"dashscope": "dashscope_temp_file_url"},
+                    "image_input_mode": {"byteplus": "dashscope_multimodal_message"},
+                    "audio_input_mode": {"byteplus": "dashscope_temp_file_url"},
+                    "reference_video_input_mode": {"byteplus": "dashscope_temp_file_url"},
                 },
                 "docs": {"official_snapshot_ids": ["aliyun/wan/2026-04-03"]},
                 "models": [
@@ -256,7 +246,7 @@ class TestModelCatalogValidation:
                         # (added during the Phase 2 unified image surface
                         # work) — synthetic test catalogs must include it.
                         "image_model": "wan2.6-t2i",
-                        "i2v_model": "wan2.6-i2v",
+                        "i2v_model": "seedance-2.5-i2v",
                     }
                 },
             },
@@ -267,14 +257,14 @@ class TestModelCatalogValidation:
                 "family": "broken",
                 "provider": "example",
                 "routing_prefixes": ["broken-"],
-                "supported_backends": ["dashscope", "mystery"],
-                "default_backend": "dashscope",
-                "credential_sources": {"dashscope": ["DASHSCOPE_API_KEY"]},
+                "supported_backends": ["byteplus", "mystery"],
+                "default_backend": "byteplus",
+                "credential_sources": {"byteplus": ["DASHSCOPE_API_KEY"]},
                 "supported_modalities": ["i2v"],
                 "transport": {
-                    "image_input_mode": {"dashscope": "dashscope_image_to_video"},
-                    "audio_input_mode": {"dashscope": "dashscope_temp_file_url"},
-                    "reference_video_input_mode": {"dashscope": "dashscope_temp_file_url"},
+                    "image_input_mode": {"byteplus": "dashscope_image_to_video"},
+                    "audio_input_mode": {"byteplus": "dashscope_temp_file_url"},
+                    "reference_video_input_mode": {"byteplus": "dashscope_temp_file_url"},
                 },
                 "docs": {"official_snapshot_ids": ["example/broken/2026-04-03"]},
                 "models": [
@@ -356,13 +346,13 @@ class TestPhase2CatalogContract:
 
         wan_video_modes = [
             mid for mid in catalog["modes"]
-            if mid.startswith("wan/wan2.6-video#")
+            if mid.startswith("seedance/seedance-2.5-video#")
         ]
-        assert wan_video_modes, "Expected wan2.6-video modes to exist"
+        assert wan_video_modes, "Expected seedance-2.5-video modes to exist"
 
         for mode_id in wan_video_modes:
             mode = catalog["modes"][mode_id]
-            dashscope_runtime = mode["runtime"].get("dashscope", {})
+            dashscope_runtime = mode["runtime"].get("byteplus", {})
             assert "gateway" in dashscope_runtime, (
                 f"{mode_id} missing runtime.dashscope.gateway"
             )
@@ -374,47 +364,47 @@ class TestCatalogAccessor:
     def test_resolve_legacy_to_canonical(self):
         accessor = get_catalog_accessor(build_catalog_dict(MODEL_CATALOG_ROOT))
 
-        assert accessor.resolve_legacy_to_canonical("wan2.6-i2v") == "wan/wan2.6-video#i2v"
-        assert accessor.resolve_legacy_to_canonical("wan2.6-r2v") == "wan/wan2.6-video#r2v"
+        assert accessor.resolve_legacy_to_canonical("seedance-2.5-i2v") == "seedance/seedance-2.5-video#i2v"
+        assert accessor.resolve_legacy_to_canonical("seedance-2.5-r2v") == "seedance/seedance-2.5-video#r2v"
         assert accessor.resolve_legacy_to_canonical("nonexistent") is None
 
     def test_resolve_canonical_to_legacy(self):
         accessor = get_catalog_accessor(build_catalog_dict(MODEL_CATALOG_ROOT))
 
-        assert accessor.resolve_canonical_to_legacy("wan/wan2.6-video#i2v") == "wan2.6-i2v"
-        assert accessor.resolve_canonical_to_legacy("wan/wan2.6-video#r2v") == "wan2.6-r2v"
+        assert accessor.resolve_canonical_to_legacy("seedance/seedance-2.5-video#i2v") == "seedance-2.5-i2v"
+        assert accessor.resolve_canonical_to_legacy("seedance/seedance-2.5-video#r2v") == "seedance-2.5-r2v"
         assert accessor.resolve_canonical_to_legacy("nonexistent") is None
 
     def test_resolve_to_flat_accepts_both_id_forms(self):
         accessor = get_catalog_accessor(build_catalog_dict(MODEL_CATALOG_ROOT))
 
-        assert accessor.resolve_to_flat("wan2.6-i2v") == "wan2.6-i2v"
-        assert accessor.resolve_to_flat("wan/wan2.6-video#i2v") == "wan2.6-i2v"
+        assert accessor.resolve_to_flat("seedance-2.5-i2v") == "seedance-2.5-i2v"
+        assert accessor.resolve_to_flat("seedance/seedance-2.5-video#i2v") == "seedance-2.5-i2v"
         assert accessor.resolve_to_flat("unknown-id") == "unknown-id"
 
     def test_get_mode_entry_returns_full_metadata(self):
         accessor = get_catalog_accessor(build_catalog_dict(MODEL_CATALOG_ROOT))
 
-        entry = accessor.get_mode_entry("wan/wan2.6-video#i2v")
+        entry = accessor.get_mode_entry("seedance/seedance-2.5-video#i2v")
         assert entry is not None
-        assert entry["model_line_id"] == "wan/wan2.6-video"
-        assert entry["legacy_model_id"] == "wan2.6-i2v"
+        assert entry["model_line_id"] == "seedance/seedance-2.5-video"
+        assert entry["legacy_model_id"] == "seedance-2.5-i2v"
         assert entry["mode"] == "i2v"
-        assert entry["family"] == "wan"
+        assert entry["family"] == "seedance"
 
     def test_get_mode_runtime(self):
         accessor = get_catalog_accessor(build_catalog_dict(MODEL_CATALOG_ROOT))
 
-        runtime = accessor.get_mode_runtime("wan/wan2.6-video#r2v")
+        runtime = accessor.get_mode_runtime("seedance/seedance-2.5-video#r2v")
         assert runtime is not None
-        assert "dashscope" in runtime
+        assert "byteplus" in runtime
 
         assert accessor.get_mode_runtime("nonexistent") is None
 
     def test_get_mode_product(self):
         accessor = get_catalog_accessor(build_catalog_dict(MODEL_CATALOG_ROOT))
 
-        ui = accessor.get_mode_product("wan/wan2.6-video#i2v")
+        ui = accessor.get_mode_product("seedance/seedance-2.5-video#i2v")
         assert ui is not None
         assert ui["selection_group"] == "i2v"
 
@@ -423,9 +413,9 @@ class TestCatalogAccessor:
     def test_get_gateway(self):
         accessor = get_catalog_accessor(build_catalog_dict(MODEL_CATALOG_ROOT))
 
-        assert accessor.get_gateway("wan/wan2.6-video#r2v") == "dashscope"
-        assert accessor.get_gateway("wan/wan2.6-video#r2v", "vendor") is None
-        assert accessor.get_gateway("nonexistent") is None
+        assert accessor.get_gateway("seedance/seedance-2.5-video#r2v", "byteplus") == "byteplus"
+        assert accessor.get_gateway("seedance/seedance-2.5-video#r2v", "vendor") is None
+        assert accessor.get_gateway("nonexistent", "byteplus") is None
 
     def test_enumeration_helpers(self):
         accessor = get_catalog_accessor(build_catalog_dict(MODEL_CATALOG_ROOT))
@@ -455,14 +445,14 @@ class TestGetGatewayForModel:
     def test_gateway_lookup_with_flat_id(self):
         from src.utils.provider_registry import get_gateway_for_model
 
-        result = get_gateway_for_model("wan2.6-i2v")
-        assert result == "dashscope"
+        result = get_gateway_for_model("seedance-2.5-i2v")
+        assert result == "byteplus"
 
     def test_gateway_lookup_with_canonical_id(self):
         from src.utils.provider_registry import get_gateway_for_model
 
-        result = get_gateway_for_model("wan/wan2.6-video#i2v")
-        assert result == "dashscope"
+        result = get_gateway_for_model("seedance/seedance-2.5-video#i2v")
+        assert result == "byteplus"
 
     def test_gateway_lookup_vendor_backend(self):
         from src.utils.provider_registry import get_gateway_for_model
@@ -472,11 +462,11 @@ class TestGetGatewayForModel:
         result = get_gateway_for_model("kling-v3-i2v", backend="vendor")
         assert result == "kling"
 
-    def test_gateway_lookup_dashscope_backend_for_dual_provider(self):
+    def test_gateway_lookup_returns_none_for_a_backend_the_family_lacks(self):
+        # kling 现在只有 vendor 一条通道；问它 byteplus 应得 None 而不是猜一个。
         from src.utils.provider_registry import get_gateway_for_model
 
-        result = get_gateway_for_model("kling-v3-i2v", backend="dashscope")
-        assert result == "dashscope"
+        assert get_gateway_for_model("kling-v3-i2v", backend="byteplus") is None
 
     def test_gateway_lookup_vidu_vendor(self):
         from src.utils.provider_registry import get_gateway_for_model
@@ -494,6 +484,6 @@ class TestGetGatewayForModel:
     def test_gateway_defaults_to_dashscope_when_backend_omitted(self):
         from src.utils.provider_registry import get_gateway_for_model
 
-        result_explicit = get_gateway_for_model("wan2.6-r2v", backend="dashscope")
-        result_default = get_gateway_for_model("wan2.6-r2v")
-        assert result_explicit == result_default == "dashscope"
+        result_explicit = get_gateway_for_model("seedance-2.5-r2v", backend="byteplus")
+        result_default = get_gateway_for_model("seedance-2.5-r2v")
+        assert result_explicit == result_default == "byteplus"

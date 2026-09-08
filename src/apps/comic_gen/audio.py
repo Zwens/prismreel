@@ -236,7 +236,7 @@ class AudioGenerator:
 
         if not self.tts:
             frame.status = GenerationStatus.FAILED
-            frame.audio_error = "TTS service not available. Check DASHSCOPE_API_KEY configuration."
+            frame.audio_error = "TTS service not available. Check GEMINI_API_KEY configuration."
             logger.warning(f"TTS not initialized, cannot generate audio for frame {frame.id}")
             return frame
 

@@ -40,8 +40,6 @@ from .pipeline import ComicGenPipeline, LibraryAssetInUseError
 from .models import (
     ArtDirection,
     PromptConfig,
-    ProviderBackend,
-    ProviderRoutingConfig,
     Script,
     Series,
     StoryboardFrame,
@@ -1118,11 +1116,10 @@ async def import_file_confirm(request: ConfirmImportRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-class EnvConfig(ProviderRoutingConfig):
+class EnvConfig(BaseModel):
     # Google Gemini — backs the LLM chain (script / storyboard / prompt polish).
     GEMINI_API_KEY: Optional[str] = None
     GEMINI_BASE_URL: Optional[str] = None
-    DASHSCOPE_API_KEY: Optional[str] = None
     ALIBABA_CLOUD_ACCESS_KEY_ID: Optional[str] = None
     ALIBABA_CLOUD_ACCESS_KEY_SECRET: Optional[str] = None
     OSS_BUCKET_NAME: Optional[str] = None
@@ -1137,13 +1134,6 @@ class EnvConfig(ProviderRoutingConfig):
     ARK_REGION: Optional[str] = None
     ARK_BASE_URL: Optional[str] = None
     endpoint_overrides: Dict[str, str] = Field(default_factory=dict)
-
-
-def _normalize_provider_mode(value: Optional[str]) -> str:
-    normalized = (value or "").strip().lower()
-    if normalized in (ProviderBackend.DASHSCOPE.value, ProviderBackend.VENDOR.value):
-        return normalized
-    return ProviderBackend.DASHSCOPE.value
 
 
 def get_user_config_path() -> str:
@@ -1276,8 +1266,6 @@ def update_env_config(config: EnvConfig):
                 # Booleans (e.g. OSS_ENABLE) persist as "true"/"false" strings so
                 # they round-trip through os.environ and the .env/config.json store.
                 config_dict[key] = "true" if value else "false"
-            elif isinstance(value, ProviderBackend):
-                config_dict[key] = value.value
             else:
                 config_dict[key] = value
 
@@ -3972,7 +3960,6 @@ def polish_r2v_prompt(request: PolishR2VPromptRequest):
 # Credential-like env fields that must never be returned in plaintext.
 SECRET_FIELDS = {
     "GEMINI_API_KEY",
-    "DASHSCOPE_API_KEY",
     "ALIBABA_CLOUD_ACCESS_KEY_ID",
     "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
     "KLING_ACCESS_KEY",
@@ -4024,7 +4011,6 @@ def get_env_config():
         return {
             # Masked secrets — never plaintext.
             "GEMINI_API_KEY": _mask_secret(os.getenv("GEMINI_API_KEY")),
-            "DASHSCOPE_API_KEY": _mask_secret(os.getenv("DASHSCOPE_API_KEY")),
             "ALIBABA_CLOUD_ACCESS_KEY_ID": _mask_secret(os.getenv("ALIBABA_CLOUD_ACCESS_KEY_ID")),
             "ALIBABA_CLOUD_ACCESS_KEY_SECRET": _mask_secret(os.getenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET")),
             "KLING_ACCESS_KEY": _mask_secret(os.getenv("KLING_ACCESS_KEY")),
@@ -4038,9 +4024,6 @@ def get_env_config():
             "OSS_ENDPOINT": os.getenv("OSS_ENDPOINT", ""),
             "OSS_BASE_PATH": os.getenv("OSS_BASE_PATH", ""),
             "OSS_ENABLE": is_oss_enabled(),
-            "KLING_PROVIDER_MODE": _normalize_provider_mode(os.getenv("KLING_PROVIDER_MODE")),
-            "VIDU_PROVIDER_MODE": _normalize_provider_mode(os.getenv("VIDU_PROVIDER_MODE")),
-            "PIXVERSE_PROVIDER_MODE": _normalize_provider_mode(os.getenv("PIXVERSE_PROVIDER_MODE")),
             "endpoint_overrides": endpoint_overrides,
             "secrets_configured": secrets_configured,
         }

@@ -90,46 +90,6 @@ def test_pipeline_routes_vidu_vendor_mode_to_vendor_adapter(monkeypatch):
     assert calls["vendor_kwargs"]["img_path"] == "/tmp/downloaded-vidu.png"
     assert task.status == "completed"
 
-
-def test_pipeline_routes_vidu_dashscope_mode_to_wanx_without_vendor_credentials(monkeypatch):
-    monkeypatch.setenv("VIDU_PROVIDER_MODE", "dashscope")
-    monkeypatch.delenv("VIDU_API_KEY", raising=False)
-
-    task = VideoTask(
-        id="task-vidu-dashscope",
-        project_id="script-1",
-        image_url="https://example.com/ref.png",
-        prompt="demo",
-        model="viduq3-pro",
-    )
-
-    calls = {}
-
-    class FakeViduModel:
-        def __init__(self, config):
-            calls["vendor_init"] = config
-
-        def generate(self, **kwargs):
-            calls["vendor_kwargs"] = kwargs
-            raise AssertionError("Vendor adapter should not be used in dashscope mode")
-
-    class FakeWanxModel:
-        def generate(self, **kwargs):
-            calls["wanx_kwargs"] = kwargs
-            return kwargs["output_path"], 0.0
-
-    monkeypatch.setattr("src.models.vidu.ViduModel", FakeViduModel)
-
-    pipeline = _build_pipeline(task, FakeWanxModel())
-    pipeline.process_video_task("script-1", "task-vidu-dashscope")
-
-    assert "wanx_kwargs" in calls
-    assert "vendor_kwargs" not in calls
-    assert calls["wanx_kwargs"]["model"] == "viduq3-pro"
-    assert calls["wanx_kwargs"]["img_path"] == "/tmp/downloaded-vidu.png"
-    assert task.status == "completed"
-
-
 def test_vendor_vidu_local_image_without_oss_fails_clearly(monkeypatch, tmp_path):
     local_path = _write_output_png("uploads/test_vidu_vendor_ref_no_oss.png")
 

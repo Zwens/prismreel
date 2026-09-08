@@ -21,7 +21,7 @@ export default function EnvConfigChecker() {
     try {
       const config = await api.getEnvConfig();
       // 空值和空字符串都视为未配置
-      const dashscopeKey = config.DASHSCOPE_API_KEY?.trim();
+      const dashscopeKey = config.GEMINI_API_KEY?.trim();
       const hasRequired = dashscopeKey && dashscopeKey.length > 0;
       
       if (!hasRequired) {

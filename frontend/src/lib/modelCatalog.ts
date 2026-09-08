@@ -190,7 +190,7 @@ export function getModelLineEntry(modelLineId: string) {
 /** Get the gateway value for a canonical mode on a backend. */
 export function getModeGateway(
     canonicalModeId: string,
-    backend: string = 'dashscope'
+    backend: string
 ): string | undefined {
     const mode = MODEL_CATALOG.modes[canonicalModeId];
     if (!mode) return undefined;

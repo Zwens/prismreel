@@ -1,112 +1,59 @@
-from src.apps.comic_gen.models import ProviderBackend, ProviderRoutingConfig
-from src.utils.provider_registry import ProviderFamilyConfig, ProviderRegistry, get_default_provider_registry
+from src.utils.provider_registry import (
+    ProviderFamilyConfig,
+    ProviderRegistry,
+    get_default_provider_registry,
+    resolve_provider_backend,
+)
 
 
 class TestProviderRegistryRouting:
-    def test_wan26_models_route_to_dashscope(self):
-        registry = get_default_provider_registry()
+    def test_gemini_models_route_to_google(self):
+        assert resolve_provider_backend("gemini-3.1-flash-image") == "google"
 
-        assert registry.resolve_backend("wan2.6-t2i") == "dashscope"
-        assert registry.resolve_backend("wan2.6-image") == "dashscope"
-        assert registry.resolve_backend("wan2.6-i2v") == "dashscope"
+    def test_seedance_models_route_to_byteplus(self):
+        assert resolve_provider_backend("seedance-2.5-i2v") == "byteplus"
+        assert resolve_provider_backend("seedance-2.0-fast-r2v") == "byteplus"
 
-    def test_kling_defaults_to_dashscope_when_mode_is_unset(self):
-        registry = get_default_provider_registry()
+    def test_kling_and_vidu_are_vendor_only_now(self):
+        # DashScope 通道拔除后这两家只剩直连；曾经的 KLING_PROVIDER_MODE /
+        # VIDU_PROVIDER_MODE 开关已随之移除，设什么都不该改变路由。
+        assert resolve_provider_backend("kling-v3-i2v") == "vendor"
+        assert resolve_provider_backend("viduq3-pro-i2v") == "vendor"
+        assert resolve_provider_backend("kling-v3-i2v", env={"KLING_PROVIDER_MODE": "dashscope"}) == "vendor"
+        assert resolve_provider_backend("viduq3-pro-i2v", env={"VIDU_PROVIDER_MODE": "dashscope"}) == "vendor"
 
-        assert registry.resolve_backend("kling-v1") == "dashscope"
-        assert registry.resolve_backend("kling-v1", env={"KLING_PROVIDER_MODE": ""}) == "dashscope"
+    def test_retired_families_no_longer_resolve(self):
+        # 已删家族不应还能解析出 backend —— 那意味着注册表里留了幽灵条目。
+        import pytest as _pytest
+        for gone in ("wan2.7-image-pro", "happyhorse-1.0-i2v", "pixverse-v4-i2v",
+                     "qwen-image-2.0"):
+            with _pytest.raises(KeyError):
+                resolve_provider_backend(gone)
 
-    def test_vidu_defaults_to_dashscope_when_mode_is_unset(self):
-        registry = get_default_provider_registry()
-
-        assert registry.resolve_backend("vidu2.0") == "dashscope"
-        assert registry.resolve_backend("vidu2.0", env={"VIDU_PROVIDER_MODE": ""}) == "dashscope"
-
-    def test_pixverse_defaults_to_dashscope_when_mode_is_unset(self):
-        registry = get_default_provider_registry()
-
-        assert registry.resolve_backend("pixverse-v4-i2v") == "dashscope"
-        assert (
-            registry.resolve_backend(
-                "pixverse-v4-i2v",
-                env={"PIXVERSE_PROVIDER_MODE": ""},
-            )
-            == "dashscope"
-        )
-
-    def test_kling_vidu_and_pixverse_can_route_to_vendor(self):
-        registry = get_default_provider_registry()
-        env = {
-            "KLING_PROVIDER_MODE": "vendor",
-            "VIDU_PROVIDER_MODE": "vendor",
-            "PIXVERSE_PROVIDER_MODE": "vendor",
-        }
-
-        assert registry.resolve_backend("kling-v1", env=env) == "vendor"
-        assert registry.resolve_backend("vidu2.0", env=env) == "vendor"
-        # Pixverse currently has no vendor backend (catalog defines
-        # supported_backends: [dashscope] only and no backend_env_key).
-        # Stays on dashscope regardless of the env override.
-        assert registry.resolve_backend("pixverse-v4-i2v", env=env) == "dashscope"
-
-    def test_invalid_provider_mode_falls_back_to_default_backend(self):
-        registry = get_default_provider_registry()
-        env = {"KLING_PROVIDER_MODE": "not-a-valid-backend"}
-
-        assert registry.resolve_backend("kling-v1", env=env) == "dashscope"
-
-    def test_future_pixverse_family_can_be_registered_without_resolver_changes(self):
+    def test_a_new_family_can_be_registered_without_resolver_changes(self):
+        """路由解析器对家族是数据驱动的：新增供应商只该改数据，不该改代码。"""
         registry = ProviderRegistry()
         registry.register_family(
             ProviderFamilyConfig(
-                model_family="pixverse-",
-                backend_default="dashscope",
-                backend_env_key="PIXVERSE_PROVIDER_MODE",
+                model_family="someprovider-",
+                backend_default="vendor",
+                backend_env_key="SOMEPROVIDER_PROVIDER_MODE",
                 credential_sources={
-                    "dashscope": ("DASHSCOPE_API_KEY",),
-                    "vendor": ("PIXVERSE_API_KEY",),
+                    "vendor": ("SOMEPROVIDER_API_KEY",),
+                    "byteplus": ("ARK_API_KEY",),
                 },
                 supported_modalities=("t2v", "i2v"),
-                image_input_mode={
-                    "dashscope": "dashscope_image_input",
-                    "vendor": "pixverse_vendor_image_input",
-                },
-                audio_input_mode={
-                    "dashscope": "dashscope_temp_file_url",
-                    "vendor": "pixverse_vendor_audio_url",
-                },
-                reference_video_input_mode={
-                    "dashscope": "dashscope_temp_file_url",
-                    "vendor": "pixverse_vendor_reference_video_url",
-                },
+                image_input_mode={"vendor": "someprovider_vendor_image_input"},
+                audio_input_mode={},
+                reference_video_input_mode={},
             )
         )
 
-        assert registry.resolve_backend("pixverse-v4-i2v") == "dashscope"
+        assert registry.resolve_backend("someprovider-v1-i2v") == "vendor"
         assert (
             registry.resolve_backend(
-                "pixverse-v4-i2v",
-                env={"PIXVERSE_PROVIDER_MODE": "vendor"},
+                "someprovider-v1-i2v",
+                env={"SOMEPROVIDER_PROVIDER_MODE": "byteplus"},
             )
-            == "vendor"
+            == "byteplus"
         )
-
-
-class TestProviderRoutingConfig:
-    def test_provider_modes_default_to_dashscope(self):
-        config = ProviderRoutingConfig()
-
-        assert config.KLING_PROVIDER_MODE == ProviderBackend.DASHSCOPE
-        assert config.VIDU_PROVIDER_MODE == ProviderBackend.DASHSCOPE
-        assert config.PIXVERSE_PROVIDER_MODE == ProviderBackend.DASHSCOPE
-
-    def test_provider_modes_accept_vendor_override(self):
-        config = ProviderRoutingConfig(
-            KLING_PROVIDER_MODE="vendor",
-            VIDU_PROVIDER_MODE="vendor",
-            PIXVERSE_PROVIDER_MODE="vendor",
-        )
-
-        assert config.KLING_PROVIDER_MODE == ProviderBackend.VENDOR
-        assert config.VIDU_PROVIDER_MODE == ProviderBackend.VENDOR
-        assert config.PIXVERSE_PROVIDER_MODE == ProviderBackend.VENDOR

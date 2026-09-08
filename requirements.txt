@@ -4,7 +4,6 @@ uvicorn[standard]>=0.30.0
 python-multipart>=0.0.9
 
 # AI/ML Models
-dashscope>=1.20.0
 pywebview>=5.0.0
 
 # Data Validation & Processing
@@ -30,7 +29,7 @@ soundfile>=0.12.0
 # 别的包的传递依赖，恰好装上了——列在这里是因为现在有代码明写着依赖它。
 numpy>=1.24.0
 
-# LLM 客户端。不是只有 LLM_PROVIDER=openai 才需要——默认的 DashScope 也是
+# LLM 客户端。Gemini 通过其 OpenAI 兼容层复用同一个包
 # 通过阿里云的 OpenAI 兼容端点调用的，用的就是这个 SDK（见 llm_adapter.py 的
 # _get_client）。缺它时剧本分析会直接失败，而报错只提 openai，很容易被误读成
 # "我配了阿里云 key 为什么还要 OpenAI"。

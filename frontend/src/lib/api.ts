@@ -35,7 +35,6 @@ const getApiUrl = (): string => {
 
 export const API_URL = getApiUrl();
 
-export type ProviderMode = "dashscope" | "vendor";
 
 /**
  * PR-3g #3 · TTS voice metadata returned by GET /voices.
@@ -62,16 +61,12 @@ export interface VoiceMeta {
 export interface EnvConfigPayload {
     GEMINI_API_KEY?: string;
     GEMINI_BASE_URL?: string;
-    DASHSCOPE_API_KEY?: string;
     ALIBABA_CLOUD_ACCESS_KEY_ID?: string;
     ALIBABA_CLOUD_ACCESS_KEY_SECRET?: string;
     OSS_BUCKET_NAME?: string;
     OSS_ENDPOINT?: string;
     OSS_BASE_PATH?: string;
     OSS_ENABLE?: boolean;
-    KLING_PROVIDER_MODE?: ProviderMode;
-    VIDU_PROVIDER_MODE?: ProviderMode;
-    PIXVERSE_PROVIDER_MODE?: ProviderMode;
     KLING_ACCESS_KEY?: string;
     KLING_SECRET_KEY?: string;
     VIDU_API_KEY?: string;

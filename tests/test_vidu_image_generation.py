@@ -6,7 +6,8 @@ misread: model-id normalization, size snapping, and the request payload shape.
 
 import pytest
 
-from src.models.image import WanxImageModel, resolve_image_adapter
+from src.models.gemini_image import GeminiImageModel
+from src.models.image import resolve_image_adapter
 from src.models.vidu import (
     ViduImageModel,
     is_vidu_image_model,
@@ -67,7 +68,7 @@ def test_to_vendor_image_model(catalog_id, expected):
         ("vidu/viduq3-pro-video", False),
         ("viduq3-drama-r2v", False),
         ("gpt-image-2", False),
-        ("wan2.7-image-pro", False),
+        ("gemini-3.1-flash-image", False),
         ("", False),
         (None, False),
     ],
@@ -112,12 +113,14 @@ def test_size_snapping_never_upgrades_the_billing_tier():
 # ---------------------------------------------------------------------------
 
 def test_resolve_image_adapter_routes_by_model_id():
-    default = WanxImageModel({})
+    default = GeminiImageModel({})
 
     assert isinstance(resolve_image_adapter("vidu/vidu-q3-lite-image", default), ViduImageModel)
     assert isinstance(resolve_image_adapter("q3-fast", default), ViduImageModel)
     # Unknown / wan / vidu-video ids keep falling through to the default adapter.
-    assert resolve_image_adapter("wan2.7-image-pro", default) is default
+    # 非 vidu、非 gemini 的 id 应落到 default_adapter；用一个已下架的 id
+    # 断言这条兜底路径仍然成立（不再是 wan，因为 wan 家族已删除）。
+    assert resolve_image_adapter("some-retired-model", default) is default
     assert resolve_image_adapter("vidu/viduq3-pro-video", default) is default
     assert resolve_image_adapter(None, default) is default
 

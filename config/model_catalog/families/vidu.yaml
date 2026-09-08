@@ -5,13 +5,9 @@ routing_prefixes:
   - vidu/vidu
   - vidu
 supported_backends:
-  - dashscope
   - vendor
-default_backend: dashscope
-backend_env_key: VIDU_PROVIDER_MODE
+default_backend: vendor
 credential_sources:
-  dashscope:
-    - DASHSCOPE_API_KEY
   vendor:
     - VIDU_API_KEY
 supported_modalities:
@@ -22,13 +18,10 @@ supported_modalities:
   - i2i
 transport:
   image_input_mode:
-    dashscope: dashscope_image_to_video
     vendor: vidu_vendor_image_url
   audio_input_mode:
-    dashscope: dashscope_temp_file_url
     vendor: vidu_vendor_audio_url
   reference_video_input_mode:
-    dashscope: dashscope_temp_file_url
     vendor: vidu_vendor_video_url
 docs:
   official_snapshot_ids:
@@ -40,8 +33,6 @@ models:
     status: active
     release_stage: stable
     runtime:
-      dashscope:
-        gateway: dashscope
       vendor:
         gateway: vidu
     docs:
@@ -55,8 +46,6 @@ models:
         description: Vidu latest model for image-to-video
         capabilities: [i2v]
         runtime:
-          dashscope:
-            api_model_id: vidu/viduq3-pro_img2video
         ui:
           selection_group: i2v
           visible_in: [project_settings, series_settings, video_sidebar, global_settings]
@@ -91,8 +80,6 @@ models:
         description: Vidu reference-to-video with multi-image support
         capabilities: [r2v]
         runtime:
-          dashscope:
-            api_model_id: vidu/viduq3-mix_reference2video
           vendor:
             api_model_id: viduq3-mix
         ui:
@@ -124,8 +111,6 @@ models:
     status: active
     release_stage: stable
     runtime:
-      dashscope:
-        gateway: dashscope
       vendor:
         gateway: vidu
     docs:
@@ -139,8 +124,6 @@ models:
         description: Vidu fast generation
         capabilities: [i2v]
         runtime:
-          dashscope:
-            api_model_id: vidu/viduq3-turbo_img2video
         ui:
           selection_group: i2v
           visible_in: [project_settings, series_settings, video_sidebar, global_settings]
@@ -174,8 +157,6 @@ models:
         description: Vidu turbo reference-to-video
         capabilities: [r2v]
         runtime:
-          dashscope:
-            api_model_id: vidu/viduq3-turbo_reference2video
           vendor:
             api_model_id: viduq3-turbo
         ui:

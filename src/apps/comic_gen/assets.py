@@ -4,7 +4,8 @@ import time
 from typing import Dict, Any, List
 from urllib.parse import quote
 from .models import Character, Scene, Prop, GenerationStatus, ImageAsset, ImageVariant, MAX_VARIANTS_PER_ASSET
-from ...models.image import WanxImageModel, ImageGenModel, resolve_image_adapter
+from ...models.image import ImageGenModel, resolve_image_adapter
+from ...models.gemini_image import GeminiImageModel
 from ...utils import get_logger
 from ...utils.media_refs import to_project_media_ref
 from ...utils.oss_utils import is_object_key
@@ -50,7 +51,7 @@ ASPECT_RATIO_TO_SIZE = {
 class AssetGenerator:
     def __init__(self, config: Dict[str, Any] = None):
         self.config = config or {}
-        self.model = WanxImageModel(self.config.get('model', {}))
+        self.model = GeminiImageModel(self.config.get('model', {}))
         self.output_dir = self.config.get('output_dir', 'output/assets')
 
     def _get_model_for(self, model_name: str) -> "ImageGenModel":

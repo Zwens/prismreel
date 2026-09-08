@@ -1,8 +1,8 @@
 version: 1
 defaults:
   model_settings:
-    t2i_model: wan2.7-image-pro
-    i2i_model: wan2.7-image-pro
-    i2v_model: happyhorse-1.0-i2v
-    r2v_model: happyhorse-1.0-r2v
-    image_model: wan2.7-image-pro
+    t2i_model: gemini-3.1-flash-image
+    i2i_model: gemini-3.1-flash-image
+    image_model: gemini-3.1-flash-image
+    i2v_model: seedance-2.5-i2v
+    r2v_model: seedance-2.5-r2v

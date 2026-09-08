@@ -157,11 +157,29 @@ class TestSynthesis:
         text = captured["payload"]["contents"][0]["parts"][0]["text"]
         assert text.strip() == "台词"
 
-    def test_unknown_voice_falls_back_to_a_registered_one(self, captured, tmp_path):
-        # 存量项目里可能残留未迁移的 voice_id；回落到有效音色，不要 400。
-        synthesize_gemini("台词", str(tmp_path / "a.wav"), voice="longxiaochun_v2")
-        name = captured["payload"]["generationConfig"]["speechConfig"]["voiceConfig"]["prebuiltVoiceConfig"]["voiceName"]
-        assert name in GEMINI_VOICES
+    @staticmethod
+    def _sent_voice(captured):
+        cfg = captured["payload"]["generationConfig"]["speechConfig"]
+        return cfg["voiceConfig"]["prebuiltVoiceConfig"]["voiceName"]
+
+    def test_legacy_voice_id_is_migrated_not_merely_defaulted(self, captured, tmp_path):
+        # 特意选 longzhe_v2 而不是 longxiaochun_v2：后者的迁移目标恰好就是
+        # DEFAULT_VOICE(Kore)，用它做断言时即使迁移查表完全失效、只是回落到
+        # 默认音色，测试也照样绿 —— 名字承诺的和实际验证的就不是一回事了。
+        # longzhe_v2 → Achird，与默认值不同，能真正区分"迁移"和"兜底"。
+        from src.audio.gemini_tts import DEFAULT_VOICE
+
+        synthesize_gemini("台词", str(tmp_path / "a.wav"), voice="longzhe_v2")
+
+        sent = self._sent_voice(captured)
+        assert sent == "Achird"
+        assert sent != DEFAULT_VOICE, "该断言必须能区分迁移与默认兜底"
+
+    def test_truly_unknown_voice_falls_back_to_the_default(self, captured, tmp_path):
+        from src.audio.gemini_tts import DEFAULT_VOICE
+
+        synthesize_gemini("台词", str(tmp_path / "a.wav"), voice="never-existed-voice")
+        assert self._sent_voice(captured) == DEFAULT_VOICE
 
     def test_text_only_response_raises(self, monkeypatch, tmp_path):
         monkeypatch.setenv("GEMINI_API_KEY", "k")

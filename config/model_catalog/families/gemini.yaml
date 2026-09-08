@@ -53,8 +53,12 @@ models:
         default: "1024*1024"
       negativePrompt: true
       seed: false
-      referenceImages:
+    inputs:
+      # 前端 getMaxReferenceImages() 读的是 inputs.reference_images.max；
+      # 写在 params 下会被忽略，UI 会按默认值 3 封顶。
+      reference_images:
         max: 14
+        reference_type: image
 
   - id: gemini-3.1-flash-image
     display_name: Nano Banana 2
@@ -79,8 +83,12 @@ models:
         default: "1024*1024"
       negativePrompt: true
       seed: false
-      referenceImages:
+    inputs:
+      # 前端 getMaxReferenceImages() 读的是 inputs.reference_images.max；
+      # 写在 params 下会被忽略，UI 会按默认值 3 封顶。
+      reference_images:
         max: 14
+        reference_type: image
 
   - id: gemini-3.1-flash-lite-image
     display_name: Nano Banana 2 Lite
@@ -104,5 +112,9 @@ models:
         default: "1024*1024"
       negativePrompt: true
       seed: false
-      referenceImages:
+    inputs:
+      # 前端 getMaxReferenceImages() 读的是 inputs.reference_images.max；
+      # 写在 params 下会被忽略，UI 会按默认值 3 封顶。
+      reference_images:
         max: 14
+        reference_type: image

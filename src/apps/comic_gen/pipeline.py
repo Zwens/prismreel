@@ -12,6 +12,7 @@ from .llm import ScriptProcessor
 from .assets import AssetGenerator
 from .storyboard import StoryboardGenerator
 from .video import VideoGenerator
+from ...utils.retired_models import migrate_project_models
 from .audio import AudioGenerator
 from .export import ExportManager
 from .editing import RenderEngine, collect_render_segments
@@ -344,22 +345,29 @@ class ComicGenPipeline:
             return True
 
     def _resolve_video_backend(self, model_name: str) -> str:
+        """Which backend serves this video model.
+
+        Falls back to ``byteplus``: DashScope used to be the catch-all, but
+        after its removal Seedance on Ark is the only backend that serves an
+        unrecognised video id with any chance of working. Kling and Vidu
+        require their own credentials and would fail on a guess anyway.
+        """
         try:
             return resolve_provider_backend(model_name)
         except (KeyError, ValueError):
             logger.debug(
-                "Provider backend not registered for video model %s, defaulting to dashscope.",
+                "Provider backend not registered for video model %s; defaulting to byteplus.",
                 model_name,
             )
-            return "dashscope"
+            return "byteplus"
         except Exception as e:
             logger.warning(
                 "Unexpected error resolving provider backend for video model %s: %s. "
-                "Falling back to dashscope.",
+                "Falling back to byteplus.",
                 model_name,
                 e,
             )
-            return "dashscope"
+            return "byteplus"
 
     # ... (existing methods)
 
@@ -379,7 +387,23 @@ class ComicGenPipeline:
         data = load_json_strict(self.data_file)
         if data is None:
             return {}
-        return {k: Script(**v) for k, v in data.items()}
+
+        # 已下架模型 id 在读取时改写一次并回写落盘。DashScope 移除后，存量项目
+        # 里指向 wan / qwen-image / happyhorse / pixverse 的引用在目录里已不存在，
+        # 不改写的话用户要到点击生成时才看到「未知模型」。
+        # 回写而不是每次渲染临时换算，是为了让老 id 只存活一个版本周期，
+        # 之后 retired_models 那张表就能删掉。
+        data, changed = migrate_project_models(data)
+        scripts = {k: Script(**v) for k, v in data.items()}
+        if changed:
+            logger.info("Migrated retired model ids in project data; writing back.")
+            self.scripts = scripts
+            try:
+                self._save_data()
+            except Exception as e:
+                # 迁移只是便利功能：写回失败不该挡住应用启动，下次读取会再试。
+                logger.warning("Failed to persist migrated model ids: %s", e)
+        return scripts
 
     def _save_data(self):
         """Save data with thread lock to prevent concurrent write issues."""
@@ -3387,7 +3411,7 @@ class ComicGenPipeline:
                     watermark=bool(task.watermark) if task.watermark is not None else False,
                 )
             else:
-                # Default: Wanx model
+                # 兜底：BytePlus Ark（Seedance）
                 # Issue 17: persist provider IDs (Bailian / DashScope task_id +
                 # request_id) onto our VideoTask the moment wanx gets them, BEFORE
                 # the long polling loop. Lets the user copy them from the queue

@@ -37,82 +37,6 @@ describe('I2V_MODELS 配置', () => {
     });
 });
 
-// ── Wan 2.6 参数 ───────────────────────────────────────────────────────
-
-// wan2.6-i2v is now hidden in the catalog (deprecated in 524f3a1, visible_in:
-// []), so it no longer appears in I2V_MODELS. Read its params directly from the
-// generated catalog to keep the wan2.6 contract documented and tested.
-describe('Wan 2.6 模型参数', () => {
-    const p = (rawCatalog as any).models['wan2.6-i2v']?.params as ModelParamSupport;
-
-    it('支持所有 Wan 系列参数', () => {
-        expect(p.resolution).toBeDefined();
-        expect(p.seed).toBe(true);
-        expect(p.negativePrompt).toBe(true);
-        expect(p.promptExtend).toBe(true);
-        expect(p.shotType).toBe(true);
-        expect(p.audio).toBe(true);
-    });
-
-    it('resolution 包含 480p/720p/1080p', () => {
-        expect(p.resolution!.options).toEqual(['480p', '720p', '1080p']);
-        expect(p.resolution!.default).toBe('720p');
-    });
-
-    it('不支持 Kling/Vidu 独有参数', () => {
-        expect(p.mode).toBeUndefined();
-        expect(p.sound).toBeUndefined();
-        expect(p.cfgScale).toBeUndefined();
-        expect(p.viduAudio).toBeUndefined();
-        expect(p.movementAmplitude).toBeUndefined();
-    });
-});
-
-// ── Wan 2.5 参数 ───────────────────────────────────────────────────────
-
-// wan2.5-i2v-preview is now hidden in the catalog (visible_in: []), so
-// it doesn't appear in I2V_MODELS. Read its params directly from the
-// generated catalog to keep the wan2.5 contract documented and tested.
-import rawCatalog from '@/generated/modelCatalog.json';
-
-describe('Wan 2.5 模型参数', () => {
-    const wan25Params = (rawCatalog as any).models['wan2.5-i2v-preview']?.params;
-    const p = wan25Params as ModelParamSupport;
-
-    it('支持 resolution, seed, negativePrompt, audio', () => {
-        expect(p.resolution).toBeDefined();
-        expect(p.seed).toBe(true);
-        expect(p.negativePrompt).toBe(true);
-        expect(p.audio).toBe(true);
-    });
-
-    it('不支持 promptExtend 和 shotType', () => {
-        expect(p.promptExtend).toBeUndefined();
-        expect(p.shotType).toBeUndefined();
-    });
-});
-
-// ── Wan 2.2 参数 ───────────────────────────────────────────────────────
-
-describe('Wan 2.2 模型参数', () => {
-    // wan2.2-i2v-plus is now hidden in the catalog. Read params directly
-    // from the raw catalog so the legacy contract stays documented.
-    const wan22Params = (rawCatalog as any).models['wan2.2-i2v-plus']?.params;
-    const p = wan22Params as ModelParamSupport;
-
-    it('支持 resolution, seed, negativePrompt', () => {
-        expect(p.resolution).toBeDefined();
-        expect(p.seed).toBe(true);
-        expect(p.negativePrompt).toBe(true);
-    });
-
-    it('不支持 promptExtend, shotType, audio', () => {
-        expect(p.promptExtend).toBeUndefined();
-        expect(p.shotType).toBeUndefined();
-        expect(p.audio).toBeUndefined();
-    });
-});
-
 // ── Kling v3 参数 ──────────────────────────────────────────────────────
 
 describe('Kling v3 模型参数', () => {
@@ -267,16 +191,11 @@ describe('模型切换参数重置逻辑', () => {
         expect(result.viduAudio).toBe(true);
     });
 
-    it('切换到 Wan 2.7 → promptExtend 默认 true', () => {
-        // wan2.6 was deprecated/hidden (524f3a1); wan2.7-i2v is the current
-        // visible Wan I2V model. Its resolution default is 1080p.
-        const result = simulateModelSwitch('wan2.7-i2v');
-        expect(result.promptExtend).toBe(true);
-        expect(result.resolution).toBe('1080p');
-    });
-
-    it('切换到 Wan 2.2 → 无 promptExtend', () => {
-        const result = simulateModelSwitch('wan2.2-i2v-plus');
+    it('切换到 Seedance → 无 promptExtend', () => {
+        // Wan 家族随 DashScope 一并下架，Seedance 是现在的默认 I2V。它不支持
+        // promptExtend，切过去时该标志必须被重置 —— 带着不支持的参数发请求
+        // 会被供应商直接拒绝。
+        const result = simulateModelSwitch('seedance-2.5-i2v');
         expect(result.promptExtend).toBe(false);
     });
 });
