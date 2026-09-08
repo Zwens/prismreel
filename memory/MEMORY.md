@@ -15,4 +15,5 @@
 - 桌面單機模式（`python main.py`）與 VPS 多用戶部署模式並存，改動時注意兩者行為差異
 
 ## 待辦：多租戶登入系統
-- [**登入系統實作交接**](project_auth_handoff.md) — spec 已寫好待審閱，下一 session 接手實作
+- [**登入系統實作進度交接（2026-09-08）**](project_auth_implementation_handoff_2026-09-08.md) — Task 1-5/14 已完成並commit於`feature/multi-tenant-auth`分支，claude-wmzic-83接手Task 6起；含3項偏離計畫的技術細節（bcrypt版本坑/弱密鑰檢查/本機Python路徑）
+- [**登入系統spec交接（已過時，見上方進度交接）**](project_auth_handoff.md) — spec本身已審閱通過，此檔僅保留spec歷史脈絡
