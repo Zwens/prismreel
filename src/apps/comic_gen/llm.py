@@ -67,10 +67,10 @@ def _is_echo(result_en: str, draft_en: str, threshold: float = 0.95) -> bool:
 
 def _resolve_image_for_vision(url: str) -> Optional[str]:
     """把任意形式的图像 URL 规整成 vision API 能直接消费的形式。
-      - 已是 http(s):// 或 data:image/ → 原样返回（DashScope 能 fetch / 已内联）
+      - 已是 http(s):// 或 data:image/ → 原样返回（Gemini 能 fetch / 已内联）
       - 看起来是相对路径（output/* 或 /files/* 或裸文件名）→ 读本地文件做 base64 data URI
       - 找不到本地文件 → 返回 None，调用方应跳过这一张
-    DashScope 无法访问 localhost 或私有 OSS 路径，所以本地路径必须 inline。"""
+    Gemini 同样无法访问 localhost 或私有 OSS 路径，所以本地路径必须 inline。"""
     import base64
     if not url or not isinstance(url, str):
         return None
@@ -758,7 +758,7 @@ class ScriptProcessor:
         logger.info("Analyzing script for visual style recommendations...")
         
         if not self.is_configured:
-            logger.warning("DASHSCOPE_API_KEY not set. Returning default recommendations.")
+            logger.warning("GEMINI_API_KEY not set. Returning default recommendations.")
             return self._mock_style_recommendations()
         
         if custom_style_prompt and custom_style_prompt.strip():
@@ -920,7 +920,7 @@ class ScriptProcessor:
         logger.info(f"Analyzing text to storyboard: {text[:100]}...")
         
         if not self.is_configured:
-            logger.warning("DASHSCOPE_API_KEY not set. Returning mock frames.")
+            logger.warning("GEMINI_API_KEY not set. Returning mock frames.")
             return self._mock_storyboard_frames(text)
         
         # Build entities context
@@ -1217,8 +1217,8 @@ Return a JSON object with ALL fields below. null is acceptable for optional fiel
         if not self.is_configured:
             raise PolishError(
                 reason="is_configured_false",
-                message_zh="LLM 未配置（缺少 DASHSCOPE_API_KEY），请到设置中检查。",
-                message_en="LLM not configured (missing DASHSCOPE_API_KEY). Please check settings.",
+                message_zh="LLM 未配置（缺少 GEMINI_API_KEY），请到设置中检查。",
+                message_en="LLM not configured (missing GEMINI_API_KEY). Please check settings.",
             )
 
         has_images = bool(image_urls)
@@ -1358,8 +1358,8 @@ Return a JSON object with ALL fields below. null is acceptable for optional fiel
         if not self.is_configured:
             raise PolishError(
                 reason="is_configured_false",
-                message_zh="LLM 未配置（缺少 DASHSCOPE_API_KEY），请到设置中检查。",
-                message_en="LLM not configured (missing DASHSCOPE_API_KEY). Please check settings.",
+                message_zh="LLM 未配置（缺少 GEMINI_API_KEY），请到设置中检查。",
+                message_en="LLM not configured (missing GEMINI_API_KEY). Please check settings.",
             )
 
         has_images = bool(image_urls)

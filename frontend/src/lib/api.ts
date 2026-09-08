@@ -75,6 +75,8 @@ export interface CustomVoice {
 }
 
 export interface EnvConfigPayload {
+    GEMINI_API_KEY?: string;
+    GEMINI_BASE_URL?: string;
     DASHSCOPE_API_KEY?: string;
     ALIBABA_CLOUD_ACCESS_KEY_ID?: string;
     ALIBABA_CLOUD_ACCESS_KEY_SECRET?: string;

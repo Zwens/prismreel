@@ -1119,6 +1119,9 @@ async def import_file_confirm(request: ConfirmImportRequest):
 
 
 class EnvConfig(ProviderRoutingConfig):
+    # Google Gemini — backs the LLM chain (script / storyboard / prompt polish).
+    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_BASE_URL: Optional[str] = None
     DASHSCOPE_API_KEY: Optional[str] = None
     ALIBABA_CLOUD_ACCESS_KEY_ID: Optional[str] = None
     ALIBABA_CLOUD_ACCESS_KEY_SECRET: Optional[str] = None
@@ -4101,6 +4104,7 @@ def polish_r2v_prompt(request: PolishR2VPromptRequest):
 
 # Credential-like env fields that must never be returned in plaintext.
 SECRET_FIELDS = {
+    "GEMINI_API_KEY",
     "DASHSCOPE_API_KEY",
     "ALIBABA_CLOUD_ACCESS_KEY_ID",
     "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
@@ -4152,6 +4156,7 @@ def get_env_config():
 
         return {
             # Masked secrets — never plaintext.
+            "GEMINI_API_KEY": _mask_secret(os.getenv("GEMINI_API_KEY")),
             "DASHSCOPE_API_KEY": _mask_secret(os.getenv("DASHSCOPE_API_KEY")),
             "ALIBABA_CLOUD_ACCESS_KEY_ID": _mask_secret(os.getenv("ALIBABA_CLOUD_ACCESS_KEY_ID")),
             "ALIBABA_CLOUD_ACCESS_KEY_SECRET": _mask_secret(os.getenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET")),

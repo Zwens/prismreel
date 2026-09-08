@@ -30,9 +30,10 @@ import {
   settingsInputClass,
 } from "./SettingsControls";
 
-const APP_VERSION = "v0.2.0";
+const APP_VERSION = "v1.5.0";
 
 type EnvConfig = EnvConfigPayload & {
+  GEMINI_API_KEY: string;
   DASHSCOPE_API_KEY: string;
   ALIBABA_CLOUD_ACCESS_KEY_ID: string;
   ALIBABA_CLOUD_ACCESS_KEY_SECRET: string;
@@ -52,12 +53,14 @@ type EnvConfig = EnvConfigPayload & {
 };
 
 const ENDPOINT_PROVIDERS = [
+  { key: "GEMINI_BASE_URL", label: "Gemini", placeholder: "https://generativelanguage.googleapis.com" },
   { key: "DASHSCOPE_BASE_URL", label: "DashScope", placeholder: "https://dashscope.aliyuncs.com" },
   { key: "KLING_BASE_URL", label: "Kling", placeholder: "https://api-beijing.klingai.com/v1" },
   { key: "VIDU_BASE_URL", label: "Vidu", placeholder: "https://api.vidu.cn/ent/v2" },
 ];
 
 const DEFAULT_CONFIG: EnvConfig = {
+  GEMINI_API_KEY: "",
   DASHSCOPE_API_KEY: "",
   ALIBABA_CLOUD_ACCESS_KEY_ID: "",
   ALIBABA_CLOUD_ACCESS_KEY_SECRET: "",
@@ -89,6 +92,8 @@ const normalizeEnvConfig = (existing: EnvConfig, data?: EnvConfigPayload): EnvCo
 
 const getValidationErrors = (env: EnvConfig): string[] => {
   const errors: string[] = [];
+  if (!env.GEMINI_API_KEY?.trim()) errors.push("Gemini API Key");
+  // DashScope 仍为必填：LLM 已切走，但图像生成尚未迁移，缺它出不了图。
   if (!env.DASHSCOPE_API_KEY?.trim()) errors.push("DashScope API Key");
   if (env.KLING_PROVIDER_MODE === "vendor") {
     if (!env.KLING_ACCESS_KEY?.trim()) errors.push("Kling Access Key (vendor mode)");
@@ -671,6 +676,20 @@ export default function SettingsPage() {
         </div>
       ) : (
         <div className="space-y-1">
+          <FormRow label={t("geminiKeyLabel")} hint={t("geminiKeyHint")}>
+            <FieldLabel>GEMINI_API_KEY *</FieldLabel>
+            <KeyField
+              value={config.GEMINI_API_KEY}
+              onChange={(v) => handleChange("GEMINI_API_KEY", v)}
+              placeholder="AIza..."
+              status={
+                config.GEMINI_API_KEY?.trim()
+                  ? { kind: "ok", text: t("filled") }
+                  : { kind: "warn", text: t("notConfiguredUnavailable") }
+              }
+            />
+          </FormRow>
+
           <FormRow label={t("dashscopeKeyLabel")} hint={t("dashscopeKeyHint")}>
             <FieldLabel>DASHSCOPE_API_KEY *</FieldLabel>
             <KeyField
