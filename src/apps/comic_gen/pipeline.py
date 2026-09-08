@@ -4258,7 +4258,7 @@ class ComicGenPipeline:
             self._save_data()
             return new_asset
 
-    def create_series(self, title: str, description: str = "", workflow_mode: str = "i2v_legacy", content_mode: str = "scripted", default_generation_mode: str = "r2v") -> Series:
+    def create_series(self, title: str, description: str = "", workflow_mode: str = "i2v_legacy", content_mode: str = "scripted", default_generation_mode: str = "r2v", owner_id: str = "") -> Series:
         """Create a new Series."""
         with self._save_lock:
             series = Series(
@@ -4268,6 +4268,7 @@ class ComicGenPipeline:
                 workflow_mode=workflow_mode,
                 content_mode=content_mode,
                 default_generation_mode=default_generation_mode,
+                owner_id=owner_id,
                 created_at=time.time(),
                 updated_at=time.time(),
             )
@@ -4713,11 +4714,11 @@ class ComicGenPipeline:
         return self.script_processor.split_into_episodes(text, suggested_episodes)
 
     def create_series_from_import(self, title: str, text: str, episodes_data: List[Dict],
-                                   description: str = "") -> Dict:
+                                   description: str = "", owner_id: str = "") -> Dict:
         """Create a Series with Episodes from import data.
         episodes_data: list of dicts with episode_number, title, start_marker, end_marker."""
         # Create the Series (already acquires lock internally)
-        series = self.create_series(title, description)
+        series = self.create_series(title, description, owner_id=owner_id)
 
         # Split text into episode chunks based on markers
         episode_texts = self._split_text_by_markers(text, episodes_data)
@@ -4734,6 +4735,7 @@ class ComicGenPipeline:
                 script = self.script_processor.create_draft_script(ep_title, ep_text)
                 script.series_id = series.id
                 script.episode_number = episode_number
+                script.owner_id = owner_id
                 self.scripts[script.id] = script
 
                 series.episode_ids.append(script.id)
