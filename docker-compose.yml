@@ -12,14 +12,16 @@ services:
       - NO_PROXY=*.aliyuncs.com,localhost,127.0.0.1
     volumes:
       - ./output:/app/output
-    ports:
-      - "17177:17177"
+    expose:
+      - "17177"
     restart: unless-stopped
 
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_KEY: ${NEXT_PUBLIC_API_KEY:-}
     container_name: prismreel-frontend
     ports:
       - "3000:80"

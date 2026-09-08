@@ -17,6 +17,7 @@ from .models import (
 from .service import PlaygroundService
 from .storage import PlaygroundStorage
 from ...utils import get_logger
+from ...utils.upload_guard import validate_image_upload
 
 logger = get_logger(__name__)
 
@@ -165,15 +166,14 @@ router.add_api_route("/templates/{template_id}", delete_template, methods=["DELE
 UPLOAD_DIR = os.path.join("output", "playground", "uploads")
 
 
-async def upload_media(file: UploadFile = File(...)):
+def upload_media(file: UploadFile = File(...)):
     """Upload a media file for use as playground input (reference image, first frame, etc.)."""
     os.makedirs(UPLOAD_DIR, exist_ok=True)
-    ext = os.path.splitext(file.filename or "file")[1] or ".bin"
-    filename = f"{uuid.uuid4()}{ext}"
+    data, ext = validate_image_upload(file)
+    filename = f"{uuid.uuid4()}.{ext}"
     dest = os.path.join(UPLOAD_DIR, filename)
-    contents = await file.read()
     with open(dest, "wb") as f:
-        f.write(contents)
+        f.write(data)
     return {"path": dest}
 
 

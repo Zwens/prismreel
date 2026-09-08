@@ -32,7 +32,6 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 import json
 import os
-import shutil
 import uuid
 import logging
 import traceback
@@ -50,6 +49,8 @@ from .models import (
 from .llm import ScriptProcessor, DEFAULT_STORYBOARD_POLISH_PROMPT, DEFAULT_VIDEO_POLISH_PROMPT, DEFAULT_R2V_POLISH_PROMPT, DEFAULT_ENTITY_EXTRACTION_PROMPT, DEFAULT_STYLE_ANALYSIS_PROMPT, DEFAULT_STORYBOARD_EXTRACTION_PROMPT
 from ...utils.oss_utils import OSSImageUploader, sign_oss_urls_in_data
 from ...utils import setup_logging
+from ...utils.upload_guard import validate_image_upload
+from ...utils.rate_limit import is_rate_limited
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv, set_key
 
@@ -74,14 +75,48 @@ logger.info(f"STARTUP: OSS_ENDPOINT={os.getenv('OSS_ENDPOINT')}, OSS_BUCKET_NAME
 
 
 
+_cors_origins_env = os.getenv("PRISMREEL_CORS_ORIGINS", "").strip()
+_cors_allow_origins = [o.strip() for o in _cors_origins_env.split(",") if o.strip()] if _cors_origins_env else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify the frontend origin
-    allow_credentials=True,
+    allow_origins=_cors_allow_origins,
+    allow_credentials=bool(_cors_origins_env),  # credentials only make sense with an explicit origin allowlist
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["Content-Disposition"],  # Allow browsers to access Content-Disposition for downloads
 )
+
+# --- API key gate ---
+# Set PRISMREEL_API_KEY to require this header on every request except the
+# paths below. Unset (desktop/local dev default) = no gate, matches prior
+# behavior so `python main.py` on 127.0.0.1 keeps working unauthenticated.
+_API_KEY = os.getenv("PRISMREEL_API_KEY", "").strip()
+_API_KEY_EXEMPT_PREFIXES = ("/health", "/files/", "/static/", "/docs", "/openapi.json", "/redoc")
+
+@app.middleware("http")
+async def enforce_api_key(request: Request, call_next):
+    if _API_KEY and not request.url.path.startswith(_API_KEY_EXEMPT_PREFIXES):
+        if request.headers.get("x-api-key") != _API_KEY:
+            return JSONResponse(status_code=401, content={"detail": "Missing or invalid API key"})
+    return await call_next(request)
+
+# --- Rate limit for AI-cost-triggering generation endpoints ---
+# Every /generate_* or .../generate call fans out to a paid vendor API
+# (DashScope/Kling/Vidu/Ark), so this caps spend-per-caller, not just load.
+_GENERATION_RATE_LIMIT_MAX = int(os.getenv("PRISMREEL_GENERATION_RATE_LIMIT", "20"))
+_GENERATION_RATE_LIMIT_WINDOW_S = 60.0
+
+@app.middleware("http")
+async def rate_limit_generation_endpoints(request: Request, call_next):
+    if request.method == "POST" and "generate" in request.url.path:
+        client_key = request.headers.get("x-api-key") or (request.client.host if request.client else "unknown")
+        if is_rate_limited(client_key, _GENERATION_RATE_LIMIT_MAX, _GENERATION_RATE_LIMIT_WINDOW_S):
+            return JSONResponse(
+                status_code=429,
+                content={"detail": f"Rate limit exceeded: max {_GENERATION_RATE_LIMIT_MAX} generation calls per {int(_GENERATION_RATE_LIMIT_WINDOW_S)}s"},
+            )
+    return await call_next(request)
 
 # Middleware to add cache headers to static files
 @app.middleware("http")
@@ -280,12 +315,12 @@ def check_system():
 def upload_file(file: UploadFile = File(...)):
     """Uploads a file and returns its URL (OSS if configured, else local)."""
     try:
-        file_ext = os.path.splitext(file.filename)[1]
-        filename = f"{uuid.uuid4()}{file_ext}"
+        data, ext = validate_image_upload(file)
+        filename = f"{uuid.uuid4()}.{ext}"
         file_path = os.path.join("output/uploads", filename)
 
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            buffer.write(data)
 
         # Try uploading to OSS
         oss_url = OSSImageUploader().upload_image(file_path)
@@ -294,6 +329,8 @@ def upload_file(file: UploadFile = File(...)):
 
         # Fallback to local URL (relative path for frontend getAssetUrl)
         return {"url": f"uploads/{filename}"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -322,19 +359,19 @@ def upload_asset(
     """
     try:
         # 1. Save file locally first
-        file_ext = os.path.splitext(file.filename)[1]
-        filename = f"{uuid.uuid4()}{file_ext}"
+        data, ext = validate_image_upload(file)
+        filename = f"{uuid.uuid4()}.{ext}"
         file_path = os.path.join("output/uploads", filename)
-        
+
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        
+            buffer.write(data)
+
         # 2. Upload to OSS
         uploader = OSSImageUploader()
         oss_url = uploader.upload_image(file_path)
         if not oss_url:
             oss_url = f"uploads/{filename}"  # Fallback to local path
-        
+
         # 3. Update asset with new variant
         updated_script = pipeline.add_uploaded_asset_variant(
             script_id=script_id,
@@ -349,9 +386,11 @@ def upload_asset(
             raise HTTPException(status_code=404, detail="Script or asset not found")
         
         return signed_response(merged_project_payload(updated_script))
-        
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception(f"Error uploading asset: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -945,16 +984,18 @@ def upload_library_asset_image(file: UploadFile = File(...)):
     returns the {image_url} contract the library UI expects.
     """
     try:
-        file_ext = os.path.splitext(file.filename or "")[1]
-        filename = f"{uuid.uuid4()}{file_ext}"
+        data, ext = validate_image_upload(file)
+        filename = f"{uuid.uuid4()}.{ext}"
         file_path = os.path.join("output/uploads", filename)
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            buffer.write(data)
         # Prefer OSS when configured (signed), else fall back to local path.
         oss_url = OSSImageUploader().upload_image(file_path)
         if oss_url:
             return signed_response({"image_url": oss_url})
         return {"image_url": f"uploads/{filename}"}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("upload_library_asset_image failed")
         raise HTTPException(status_code=500, detail=str(e))
@@ -1052,7 +1093,9 @@ async def import_file_preview(
     if suggested_episodes < 1 or suggested_episodes > 50:
         raise HTTPException(status_code=400, detail="建议集数应在 1-50 之间")
     try:
-        content_bytes = await file.read()
+        content_bytes = await file.read(5 * 1024 * 1024 + 1)
+        if len(content_bytes) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="文件超过 5MB 限制")
         text = content_bytes.decode("utf-8")
         if not text.strip():
             raise HTTPException(status_code=400, detail="文件内容为空")
@@ -3635,17 +3678,19 @@ def upload_frame_image(script_id: str, frame_id: str, file: UploadFile = File(..
     """Upload an image as a variant for a frame's rendered_image_asset."""
     try:
         # Save file locally first
-        file_ext = os.path.splitext(file.filename)[1]
-        filename = f"{uuid.uuid4()}{file_ext}"
+        data, ext = validate_image_upload(file)
+        filename = f"{uuid.uuid4()}.{ext}"
         file_path = os.path.join("output/uploads", filename)
 
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            buffer.write(data)
 
         updated_script = pipeline.upload_frame_image(script_id, frame_id, file_path)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception(f"Error uploading frame image: {e}")
         raise HTTPException(status_code=500, detail=str(e))

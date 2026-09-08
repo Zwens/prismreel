@@ -35,6 +35,16 @@ const getApiUrl = (): string => {
 
 export const API_URL = getApiUrl();
 
+// Sent on every request when the backend has PRISMREEL_API_KEY set (see
+// api.py's enforce_api_key middleware). Baked into the client bundle at
+// build time (NEXT_PUBLIC_*), so this only gates casual/automated access
+// from outside the deployment — it does not hide the key from anyone who
+// can already load the page.
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
+if (API_KEY) {
+    axios.defaults.headers.common["X-API-Key"] = API_KEY;
+}
+
 export type ProviderMode = "dashscope" | "vendor";
 
 /**

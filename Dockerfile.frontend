@@ -11,6 +11,8 @@ COPY frontend/ .
 # Build for Docker (override desktop app paths)
 ENV NODE_ENV=production
 ENV DOCKER_BUILD=true
+ARG NEXT_PUBLIC_API_KEY
+ENV NEXT_PUBLIC_API_KEY=$NEXT_PUBLIC_API_KEY
 RUN npm run build
 
 # Stage 2: Serve with nginx
