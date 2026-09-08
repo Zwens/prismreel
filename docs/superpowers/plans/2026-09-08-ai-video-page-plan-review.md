@@ -303,11 +303,34 @@ M6 本体，也是这条线最初的需求。`22c0f7e`（i18n）、`9365f1e`（�
 （`npm test` 此刻 185/205，20 条失败全在 `model-catalog` / `video-params` /
 `settings-store` / `provider-credentials`，是并行会话第 4 步的目录连带，已报给对方。）
 
-### 8.1 还剩什么
+### 8.1 已交付：v2v 任务子类型（D）
 
-- **D. v2v 任务子类型**（edit / extend）——后端 `omni_reference_task_type` + 前端子类型
-  选择器，用已开通的 Seedance 2.5 实调。这是 M6/M3 里唯一没做的部分
-- 创作台的空模态行为（同上第 1 条），要不要一并修，是产品决策
+`12c4c2f`（适配器）、`99ad903`（选择器）、`a076674`（透传测试），共 19 个后端用例。
+
+按裁决 1 参数化而非新增 mode。并行会话独立印证了这个选择：`SUPPORTED_SELECTION_GROUPS`
+里根本没有 v2v 槽位，新增 mode 还得先扩那个白名单，成本比参数化高得多。
+
+**顺带修的第三个真问题**：目录里有 `seedance-2.5-v2v`，而 `ARK_MODEL_IDS` 里没有对应
+条目，`resolve_model_id` 返回 None、`generate()` 抛 `Unrecognized Seedance model id`
+——这个模态在 UI 里看得见、一提交就失败。是并行会话补目录时漏了适配器映射表，
+它已确认。
+
+约束落法：edit 要求 ratio=adaptive、duration=-1、源视频 4–30 秒；extend 只要求
+adaptive。**仅对 2.5 下发**该参数；`auto` 通过不发送表达。源视频时长用 ffprobe 读，
+**读不到就放行**——OSS 上的要下载才能探测，Ark 本来就会同步校验，在这里猜只会拦住
+合法请求。UI 选「编辑」时自动锁定画幅与时长，不锁的话用户能组装出必然被拒的请求。
+
+**一处未经验证的推断**：content 里 video 项的形状
+`{"type":"video_url","video_url":{"url":...},"role":"reference_video"}` 是照
+`image_url` 加 spec §6.1 推出来的，厂商文档快照只写了 `content.role = reference_video`，
+没给确切 JSON 结构。代码注释已标注，**只有真实调用能确认**。
+
+### 8.2 还剩什么
+
+- **实调验证**（未做，需用户批准）：一次 5 秒 720p 编辑约 0.7–1.5 USD，edit + extend
+  各验一次约 1.5–3 USD。要确认的是上面那个 video 项形状，以及
+  `InvalidParameter.TaskTypeConstraint` / `TaskTypeMismatch` 两个异步错误码的实际文案
+- 创作台的空模态行为（§8 第 1 条），要不要一并修，是产品决策
 
 ---
 
