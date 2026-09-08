@@ -18,10 +18,14 @@ export default function ModelSelector() {
   const availableModels = useMemo(() => getModelsForMode(mode), [mode]);
 
   const selected = useMemo(() => {
+    // Nothing can serve this mode, so there is nothing selected. Falling back to
+    // getModelDisplayInfo(modelId) here would keep presenting the previous
+    // mode's model as the current pick — the collapsed selector was the only
+    // thing on screen, and it lied.
+    if (availableModels.length === 0) return null;
     const info = getModelDisplayInfo(modelId);
     if (info) return info;
-    if (availableModels.length > 0) return { displayName: availableModels[0].displayName, family: availableModels[0].family };
-    return null;
+    return { displayName: availableModels[0].displayName, family: availableModels[0].family };
   }, [modelId, availableModels]);
 
   useEffect(() => {
@@ -35,7 +39,14 @@ export default function ModelSelector() {
   }, [open]);
 
   useEffect(() => {
-    if (availableModels.length > 0 && !availableModels.some((m) => m.id === modelId)) {
+    if (availableModels.length === 0) {
+      // Drop the stale id rather than leaving it to be submitted against a mode
+      // it cannot serve. The old guard skipped this branch entirely, so the
+      // previous mode's model went out with the request.
+      if (modelId) setModelId('');
+      return;
+    }
+    if (!availableModels.some((m) => m.id === modelId)) {
       setModelId(availableModels[0].id);
     }
   }, [availableModels, modelId, setModelId]);

@@ -9,6 +9,7 @@ import PromptInput from './PromptInput';
 import ParameterBar from './ParameterBar';
 import ResultGallery from './ResultGallery';
 import { usePlaygroundStore, type PlaygroundMode } from './usePlaygroundStore';
+import { getModelsForMode } from './playgroundModels';
 import { useGenerationRunner } from './useGenerationRunner';
 
 // ---------------------------------------------------------------------------
@@ -48,7 +49,10 @@ export default function PlaygroundPage() {
 
   const resultCount = history.reduce((n, g) => n + g.outputs.length, 0);
   const showMediaInput = MODES_WITH_MEDIA.includes(mode) || MODES_WITH_OPTIONAL_MEDIA.includes(mode);
-  const canGenerate = prompt.trim().length > 0;
+  // A mode nothing can serve is not submittable. Without this the button stays
+  // live and posts whatever model id the previous mode left behind.
+  const hasModel = getModelsForMode(mode).length > 0;
+  const canGenerate = hasModel && prompt.trim().length > 0;
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -124,6 +128,11 @@ export default function PlaygroundPage() {
               {t('compose.modelLabel')}
             </div>
             <ModelSelector />
+            {!hasModel && (
+              <p className="mt-2 text-[0.6875rem] leading-relaxed text-status-failed-fg">
+                {t('model.noModels')}
+              </p>
+            )}
             <div className="my-4 h-px bg-border-subtle" />
             <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
               {t('compose.parametersLabel')}
