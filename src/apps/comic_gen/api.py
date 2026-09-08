@@ -96,16 +96,6 @@ if not _cors_origins_env:
 # the login cookie on every request.
 _cookie_secure = bool(_cors_origins_env)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_cors_allow_origins if _cors_origins_env else [],
-    allow_origin_regex=_cors_allow_origin_regex,
-    allow_credentials=_cors_allow_credentials,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["Content-Disposition"],  # Allow browsers to access Content-Disposition for downloads
-)
-
 # --- API key gate ---
 # Set PRISMREEL_API_KEY to require this header on every request except the
 # paths below. Unset (desktop/local dev default) = no gate, matches prior
@@ -211,6 +201,24 @@ async def enforce_file_ownership(request: Request, call_next):
             if not user or (user.role != "admin" and user.id != owner_id):
                 return JSONResponse(status_code=403, content={"detail": "Forbidden"})
     return await call_next(request)
+
+# CORSMiddleware must be added last: Starlette's middleware stack executes
+# in reverse-registration order, so the most-recently-added middleware runs
+# outermost. Every @app.middleware("http") function above can short-circuit
+# with a 401/403/429 response (enforce_login, enforce_api_key,
+# enforce_file_ownership, rate_limit_generation_endpoints) — those responses
+# must still pass through CORSMiddleware or the browser drops them entirely
+# for lacking an Access-Control-Allow-Origin header before axios ever sees
+# the status code.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_allow_origins if _cors_origins_env else [],
+    allow_origin_regex=_cors_allow_origin_regex,
+    allow_credentials=_cors_allow_credentials,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Content-Disposition"],  # Allow browsers to access Content-Disposition for downloads
+)
 
 # Ensure playground output directories exist
 os.makedirs("output/playground/images", exist_ok=True)
