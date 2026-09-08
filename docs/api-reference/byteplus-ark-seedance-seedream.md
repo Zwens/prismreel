@@ -90,8 +90,36 @@ Seedance 2.5 的 1080p 与 2.0 的 4K 输出使用 10-bit 色深 + H.265/HEVC，
 | `edit` | 编辑原视频的画面或音频 | `content` 至少一个 `reference_video`；源视频 **4–30 秒**；`ratio` 必须 `adaptive`；`duration` 必须 `-1` |
 | `extend` | 向前或向后续写原视频 | `content` 至少一个 `reference_video`；`ratio` 必须 `adaptive` |
 
-显式指定时在建任务阶段同步校验并立即报错；`auto` 则可能建成任务后才异步失败。
+~~显式指定时在建任务阶段同步校验并立即报错~~；`auto` 则可能建成任务后才异步失败。
 即使显式指定，模型仍会依据 prompt 二次判定，不一致会抛 `InvalidParameter.TaskTypeMismatch`。
+
+> **实测更正（2026-09-08）**：**没有同步校验**。显式指定 `edit` 并违反硬约束时，建任务
+> 请求照常返回 `HTTP 200` 和任务 id，随后任务以 `status: failed` 结束。
+> **但失败任务 `usage` 缺失、不计费**——所以"不会白花钱"这个结论成立，只是机制是
+> 异步失败而非同步拒绝。含义：客户端的提交前校验是**唯一**能立即给出可操作错误的一环，
+> 不能依赖厂商同步拒绝。
+>
+> 实测到的 `InvalidParameter.TaskTypeConstraint` 原文（两种违规各一）：
+>
+> ```
+> The parameter `ratio` specified in the request is not valid. Seedance identified
+> your task as video editing based on your prompt. For this task type, the output
+> ratio and duration follow the input video selected by the model for editing, and
+> the video selected must satisfy the duration requirement of 4 to 30 seconds.
+> Issues: [0] `ratio` must be `adaptive`.
+> ```
+>
+> ```
+> ... Issues: [0] `duration` must be -1.
+> ```
+>
+> 结构固定：一句"哪个参数非法" + 一段该任务类型的约束说明 + `Issues: [i] ...` 逐条列出。
+> 前端做文案映射时按 `Issues:` 之后的部分取更贴近用户，前面那段是通用说明。
+>
+> **`InvalidParameter.TaskTypeMismatch` 未能触发**。显式指定 `extend`、prompt 写明确的
+> 编辑意图（"把天空整个换成夜晚的星空，保持其他不变"），任务**照常成功出片**，
+> 未报 mismatch。也就是文档所称"模型二次判定不一致会抛错"在本次实测中没有发生，
+> 该错误码的触发条件不明，前端映射可以先按通用错误处理。这次尝试计费 5.67 USD。
 
 **已实调验证（2026-09-08）**。此前 content 里 video 项的确切 JSON 结构在文档中缺失，
 只写了 `content.role = reference_video`。以下形状经真实建任务确认被接受：
@@ -103,6 +131,10 @@ Seedance 2.5 的 1080p 与 2.0 的 4K 输出使用 10-bit 色深 + H.265/HEVC，
 同一次请求确认：`omni_reference_task_type: "edit"` 被接受；`--ratio adaptive` 解析为
 源视频自身的比例（源为 9:16，返回 `ratio: "9:16"`）；`--duration -1` 使输出保持源片长度
 （源 20.6 秒，返回 `duration: 20`）。任务 `cgt-20260908173854-tqf85`，约 3.5 分钟完成。
+
+**extend 同批验证**：`omni_reference_task_type: "extend"` 被接受，任务成功出片；
+`ratio adaptive` 同样解析为源片比例（9:16），`duration: -1` 下输出 21 秒（源 20.6 秒）。
+计价 885,600 tokens = 5.67 USD，与 edit 基本同量级。
 
 **实测计价**：一次 720p、20 秒、含视频输入的编辑 = `usage.total_tokens` 872,100，
 按 6.40 USD/百万 token 计 **5.58 USD**。即约 **0.28 USD/输出秒**，明显高于官方"典型场景"
