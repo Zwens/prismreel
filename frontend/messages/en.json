@@ -443,7 +443,15 @@
     "noModelsHint": "The catalog has no usable model for this mode — pick another one",
     "generate": "Generate",
     "generateBatch": "Generate {count}",
-    "resultsCount": "{count} results"
+    "resultsCount": "{count} results",
+    "taskType": {
+      "label": "Task type",
+      "auto": "Auto",
+      "edit": "Edit",
+      "extend": "Extend",
+      "hint": "Editing keeps the source ratio and length, so both are locked",
+      "unsupported": "This model cannot be told explicitly; it will decide on its own"
+    }
   },
   "workspace": {
     "title": "My Workspace",

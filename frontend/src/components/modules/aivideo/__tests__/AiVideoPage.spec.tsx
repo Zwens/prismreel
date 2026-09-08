@@ -46,7 +46,30 @@ const catalogStub = vi.hoisted(() => ({
             params: { resolution: { options: ['720p'], default: '720p' }, seed: true },
             inputs: {},
         },
-        // Deliberately no v2v model — that mode is the empty-state fixture.
+        'seedance-2.5-v2v': {
+            id: 'seedance-2.5-v2v',
+            display_name: 'Stub V2V 2.5',
+            family: 'seedance',
+            description: 'video to video',
+            capabilities: ['v2v'],
+            status: 'hidden',
+            ui: { recommended: true, order: 10, badges: [] },
+            duration: { type: 'slider', min: 4, max: 30, step: 1, default: 5 },
+            params: { ratio: { options: ['adaptive', '16:9'], default: 'adaptive' }, seed: true },
+            inputs: { reference_videos: { max: 1, reference_type: 'video' } },
+        },
+        'stub-v2v-old': {
+            id: 'stub-v2v-old',
+            display_name: 'Stub V2V 2.0',
+            family: 'seedance',
+            description: 'video to video, older',
+            capabilities: ['v2v'],
+            status: 'hidden',
+            ui: { recommended: false, order: 5, badges: [] },
+            duration: { type: 'slider', min: 4, max: 30, step: 1, default: 5 },
+            params: { ratio: { options: ['adaptive'], default: 'adaptive' }, seed: true },
+            inputs: { reference_videos: { max: 1, reference_type: 'video' } },
+        },
     },
 }));
 
@@ -192,24 +215,94 @@ describe('AiVideoPage — video only', () => {
 
 describe('AiVideoPage — a mode with no model', () => {
     // The playground silently keeps the previous mode's model id here and lets
-    // the user submit it. This page refuses instead.
-    it('says so rather than showing a stale model', () => {
-        renderWithIntl(<AiVideoPage />);
+    // the user submit it. This page refuses instead. Exercised by stripping the
+    // stub catalog down to a single mode.
+    it('says so rather than showing a stale model', async () => {
+        vi.resetModules();
+        const empty = { models: { 'only-t2v': catalogStub.models['stub-t2v'] } };
+        vi.doMock('@/generated/modelCatalog.json', () => ({ default: empty }));
+        const { default: Page } = await import('../AiVideoPage');
 
-        fireEvent.click(screen.getByRole('button', { name: '视频编辑' }));
+        renderWithIntl(<Page />);
+        fireEvent.click(screen.getByRole('button', { name: '图生视频' }));
 
         expect(screen.getByText('该模式暂无可用模型')).toBeInTheDocument();
-        expect(screen.queryByText('Stub T2V')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /^生成/ })).toBeDisabled();
+        vi.doUnmock('@/generated/modelCatalog.json');
+        vi.resetModules();
     });
+});
 
-    it('refuses to generate', () => {
+describe('AiVideoPage — edit / extend sub-type', () => {
+    // Ark treats editing and extension as sub-types of one omni-reference task
+    // rather than as modes of their own, and only Seedance 2.5 accepts the
+    // parameter that picks between them.
+    it('offers the sub-type once v2v is selected', () => {
         renderWithIntl(<AiVideoPage />);
 
-        fireEvent.change(screen.getByPlaceholderText('描述你想生成的内容...'), {
-            target: { value: '海面上的暴风雨' },
-        });
         fireEvent.click(screen.getByRole('button', { name: '视频编辑' }));
 
-        expect(screen.getByRole('button', { name: /^生成/ })).toBeDisabled();
+        expect(screen.getByRole('button', { name: '自动判定' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '编辑' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '续写' })).toBeInTheDocument();
+    });
+
+    it('keeps the sub-type out of the other modes', () => {
+        renderWithIntl(<AiVideoPage />);
+
+        expect(screen.queryByRole('button', { name: '自动判定' })).not.toBeInTheDocument();
+    });
+
+    it('sends the picked sub-type as a generation parameter', async () => {
+        renderWithIntl(<AiVideoPage />);
+
+        fireEvent.click(screen.getByRole('button', { name: '视频编辑' }));
+        fireEvent.click(screen.getByRole('button', { name: '续写' }));
+        fireEvent.change(screen.getByPlaceholderText('描述你想生成的内容...'), {
+            target: { value: '继续往前走' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: /^生成/ }));
+
+        await waitFor(() => expect(mockGenerate).toHaveBeenCalled());
+        expect(mockGenerate.mock.calls[0][0].parameters).toMatchObject({ task_type: 'extend' });
+    });
+
+    it('leaves auto out of the request rather than spelling it out', async () => {
+        renderWithIntl(<AiVideoPage />);
+
+        fireEvent.click(screen.getByRole('button', { name: '视频编辑' }));
+        // Go somewhere else and back, so 'auto' is an actual choice rather than
+        // the untouched default — sending it explicitly is what 2.0 rejects.
+        fireEvent.click(screen.getByRole('button', { name: '续写' }));
+        fireEvent.click(screen.getByRole('button', { name: '自动判定' }));
+        fireEvent.change(screen.getByPlaceholderText('描述你想生成的内容...'), {
+            target: { value: '继续往前走' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: /^生成/ }));
+
+        await waitFor(() => expect(mockGenerate).toHaveBeenCalled());
+        const params = mockGenerate.mock.calls[0][0].parameters ?? {};
+        expect(params.task_type).toBeUndefined();
+    });
+
+    // Ark rejects an edit whose ratio is not adaptive or whose duration is not
+    // -1, so the page pins both rather than letting the user build a request
+    // that can only fail.
+    it('locks ratio and duration when edit is picked', async () => {
+        renderWithIntl(<AiVideoPage />);
+
+        fireEvent.click(screen.getByRole('button', { name: '视频编辑' }));
+        fireEvent.click(screen.getByRole('button', { name: '编辑' }));
+        fireEvent.change(screen.getByPlaceholderText('描述你想生成的内容...'), {
+            target: { value: '把天空改成黄昏' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: /^生成/ }));
+
+        await waitFor(() => expect(mockGenerate).toHaveBeenCalled());
+        expect(mockGenerate.mock.calls[0][0].parameters).toMatchObject({
+            task_type: 'edit',
+            aspect_ratio: 'adaptive',
+            duration: -1,
+        });
     });
 });

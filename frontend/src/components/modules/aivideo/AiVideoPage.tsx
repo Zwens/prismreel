@@ -33,6 +33,17 @@ import {
 
 const VIDEO_MODES: PlaygroundMode[] = ['t2v', 'i2v', 'v2v'];
 
+/** The sub-types of Ark's omni-reference task, in the order they are offered.
+ *  'auto' is the vendor default and is expressed by sending nothing. */
+const TASK_TYPES = ['auto', 'edit', 'extend'] as const;
+type TaskType = (typeof TASK_TYPES)[number];
+
+/** Only Seedance 2.5 accepts omni_reference_task_type; the 2.0 series can still
+ *  edit and extend, but only by letting the model guess from the prompt.
+ *  Mirrors ARK_OMNI_TASK_TYPE_MODELS in src/models/byteplus.py — kept as a
+ *  prefix here because the catalog carries no field for the capability. */
+const SUPPORTS_TASK_TYPE = /^seedance-2\.5-/;
+
 /** Modes that cannot be submitted without a source image or video. */
 const MODES_NEEDING_MEDIA: PlaygroundMode[] = ['i2v', 'v2v'];
 
@@ -60,6 +71,9 @@ function AiVideoWorkspace() {
   const batchSize = usePlaygroundStore((s) => s.batchSize);
   const history = usePlaygroundStore((s) => s.history);
   const setMode = usePlaygroundStore((s) => s.setMode);
+  const modelId = usePlaygroundStore((s) => s.modelId);
+  const parameters = usePlaygroundStore((s) => s.parameters);
+  const setParameters = usePlaygroundStore((s) => s.setParameters);
   const { generate } = useGenerationRunner();
 
   const availableModels = useMemo(() => getModelsForMode(mode), [mode]);
@@ -73,6 +87,27 @@ function AiVideoWorkspace() {
 
   const resultCount = history.reduce((n, g) => n + g.outputs.length, 0);
   const showMediaInput = MODES_NEEDING_MEDIA.includes(mode);
+
+  const showTaskType = mode === 'v2v' && hasModel;
+  const taskTypeSupported = SUPPORTS_TASK_TYPE.test(modelId);
+  const taskType: TaskType = (parameters.task_type as TaskType) ?? 'auto';
+
+  // Ark rejects an edit whose ratio is not adaptive or whose duration is not -1.
+  // Pinning both here beats letting the user assemble a request that can only
+  // come back as a vendor error naming a field they never set.
+  const pickTaskType = (next: TaskType) => {
+    const rest = { ...parameters };
+    delete rest.task_type;
+    if (next === 'auto') {
+      setParameters(rest);
+      return;
+    }
+    setParameters(
+      next === 'edit'
+        ? { ...rest, task_type: 'edit', aspect_ratio: 'adaptive', duration: -1 }
+        : { ...rest, task_type: next },
+    );
+  };
 
   return (
     <div className="flex h-full flex-col overflow-hidden text-foreground">
@@ -143,6 +178,51 @@ function AiVideoWorkspace() {
               <span className="text-[0.6875rem] leading-relaxed text-text-muted">
                 {t('noModelsHint')}
               </span>
+            </div>
+          )}
+
+          {showTaskType && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[0.5625rem] uppercase tracking-[0.18em] text-text-muted">
+                  {t('taskType.label')}
+                </span>
+                <span className="atelier-group-line h-px flex-1 bg-border-subtle" />
+              </div>
+              {taskTypeSupported ? (
+                <>
+                  <div className="atelier-pill-tabs flex gap-[2px] rounded-full bg-surface-inset p-[3px]">
+                    {TASK_TYPES.map((key) => {
+                      const active = taskType === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => pickTaskType(key)}
+                          className={[
+                            'flex-1 cursor-pointer rounded-full px-3 py-1.5 text-center text-[0.6875rem] font-semibold transition-all',
+                            active
+                              ? 'atelier-pill-tab-active bg-surface text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.4)]'
+                              : 'text-text-muted hover:bg-hover-bg hover:text-foreground',
+                          ].join(' ')}
+                        >
+                          {t(`taskType.${key}`)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {taskType === 'edit' && (
+                    <span className="text-[0.6875rem] leading-relaxed text-text-muted">
+                      {t('taskType.hint')}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-[0.6875rem] leading-relaxed text-text-muted">
+                  {t('taskType.unsupported')}
+                </span>
+              )}
             </div>
           )}
 

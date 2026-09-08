@@ -443,7 +443,15 @@
     "noModelsHint": "模型目录里没有支持该模式的可用模型，请改选其他模式",
     "generate": "生成",
     "generateBatch": "生成 {count} 条",
-    "resultsCount": "{count} 条结果"
+    "resultsCount": "{count} 条结果",
+    "taskType": {
+      "label": "任务类型",
+      "auto": "自动判定",
+      "edit": "编辑",
+      "extend": "续写",
+      "hint": "编辑会保持原视频的画幅与时长，这两项已自动锁定",
+      "unsupported": "当前模型不支持显式指定，将由模型自动判定"
+    }
   },
   "workspace": {
     "title": "我的工作区",
