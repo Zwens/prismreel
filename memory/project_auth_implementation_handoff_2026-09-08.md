@@ -54,11 +54,24 @@ Task 7（本輪 commit `45e7a48`）：**全部約 100 個** `/projects/{script_i
 
 **驗證**：新檔案 `authInterceptor.ts` 獨立 tsc 檢查過；`npm run typecheck` 有 1 個既有型別錯誤（`EnvConfigChecker.tsx`，用 git stash 驗證改動前就存在，非本次引入，不在 Task 10 範圍內未處理）；後端 `pytest` 32/33 過（同樣既知的 `test_pipeline` LLM Key 缺失，非迴歸）；Next.js dev server 手動啟動確認無錯誤。
 
-## 下一步：Task 11 開始（前端登入頁 + 邀請落地頁）
+## Task 11 已完成（本 session，commit `8075003`），但發現一個未修的關鍵架構 bug——下一輪必須先處理
 
-計畫全文見 `docs/superpowers/plans/2026-09-08-multi-tenant-auth.md` Task 11 段落（約 1444 行起）。Task 11 完成後應回頭補完 Task 10 Step 4 的完整手動驗證（瀏覽器測 401 → 導向 `/login`）。
+**實作**：`api.ts` 加 `login`/`redeemInvite`/`logout`/`getCurrentUser`；`frontend/src/app/login/page.tsx`（Atelier 視覺風格，`bg-background` 取代計畫範例寫錯名的 `var(--color-bg,...)`）；`frontend/src/app/redeem/page.tsx`（改用 `?code=xxx` query string，非計畫原文的 `/redeem/[code]` 動態路由——後者在 `output: export` 生產 build 下因 `generateStaticParams()` 缺失會直接編譯失敗，邀請碼又不可能 build time 窮舉，已用 AskUserQuestion 核實後改掉）。
 
-**提醒**：本輪 Task 8/9/10 都發現計畫文件與實際程式碼/既有行為有落差（Task 8 路徑組裝結構假設錯誤、Task 9 既有 `require_login` 沒貫徹自己文件裡寫的規則、Task 10 CORS 設定與新 cookie 機制不相容）。接手者執行前應對照計畫描述與實際程式碼，發現落差先跟使用者核實範圍，不要照單全收硬做。`EnvConfigChecker.tsx` 的既有型別錯誤與 auth 無關，非本輪任務範圍，暫不處理。
+**本輪同時修的三個真實 bug**（皆非本次引入，是 Task 8/9/10 留下、遇到才發現，每個都先 AskUserQuestion 核實過才動手）：
+1. `set_cookie` 硬編碼 `secure=True`，dev 模式 http localhost 下瀏覽器不存 cookie，登入形同虛設。改用 `_cookie_secure = bool(_cors_origins_env)`，跟 Task 10 CORS 用同一個 dev/prod 判斷訊號。
+2. `auth.py` 模組層級建立 `_ANONYMOUS_ADMIN = user_repo.User(...)`，但 `user_repo.py` 頂層先 `from .auth import ...`（在 `User` class 定義之前）——任何先 import `user_repo` 的入口點（如 `scripts/migrate_auth_v1.py`）都會循環引入崩潰。改成 `_get_anonymous_admin()` lazy singleton。
+3. `EnvConfigChecker` 掛在根 layout 對所有路由渲染，登入閘門生效後未登入狀態呼叫 `getEnvConfig()` 必 401，被 catch 分支誤判成「環境未配置」彈窗蓋住登入表單。改成 `/login`、`/redeem` 路徑不渲染該元件。
+
+**🔴🔴 發現但依使用者指示暫不修、必須列入下輪第一件事處理**：`enforce_login` middleware（`api.py:127`）在 401 短路時 `return JSONResponse(...)`，但它是在 `CORSMiddleware`（`api.py:99`）**之後**用 `@app.middleware("http")` 註冊的。Starlette middleware 執行順序是反向的（後註冊的先執行），所以這個 401 回應完全繞過 `CORSMiddleware`，瀏覽器收到沒有 `access-control-allow-origin` 標頭的回應會直接擋掉整個 response——JS 端只看到 axios `Network Error`，`error.response` 是 `undefined`，**Task 10 的 401 導向攔截器（`authInterceptor.ts`）因此完全無法觸發**。已用 curl 帶 `Origin` header 實測驗證（`/health` 200 回應有 CORS 標頭，`/config/env` 401 回應沒有）。這不只是手動驗收問題——正式上線後任何使用者 session 過期都會卡在「項目同步失敗 Network Error」畫面，不會被導向登入頁。**下一輪接手第一件事**：把 `CORSMiddleware` 改成在所有 `@app.middleware("http")` 函式**之後**才 `add_middleware`，確保它在最外層能處理所有短路回應，改完要用 curl 帶 Origin header 重新驗證 401 回應是否帶 CORS 標頭，再用瀏覽器實測登出後重新整理是否正確導向 `/login`（本輪就是卡在這步發現的）。
+
+**驗證**：後端 `pytest src/apps/comic_gen/` 32/33 過（`test_pipeline` 同樣既知的 LLM Key 缺失，非迴歸）；前端 `npm run typecheck` 生產 build 通過、`/login`+`/redeem` 正確靜態匯出，唯一殘留錯誤是既有的 `EnvConfigChecker.tsx` 型別問題（非 auth 相關，非本輪範圍）；瀏覽器 Playwright 實測登入頁視覺（暖深底+玻璃面板+Fraunces 標題字皆正確）、實際輸入帳密登入成功導向首頁 cookie 正確存住；**登出後 401 導向測試失敗**（上述 CORS bug），這就是發現該 bug 的過程。
+
+## 下一步：先修 CORS+401 標頭 bug，再繼續 Task 12
+
+計畫全文見 `docs/superpowers/plans/2026-09-08-multi-tenant-auth.md` Task 12 段落（約 1620 行起，Admin 後台+側欄登出按鈕）。**Task 10 Step 4 手動驗證仍未完整通過**——不是頁面不存在的問題（Task 11 已建），是上述 middleware 順序 bug 擋住的，修完 CORS 順序才能重跑這步驗證。
+
+**提醒**：本輪 Task 11 又再度發現計畫與實際程式碼/既有行為有落差（`/redeem/[code]` 與 `output: export` 衝突、`secure=True` 與 dev http 衝突、`_ANONYMOUS_ADMIN` 循環引入、`EnvConfigChecker` 全域渲染衝突、CORS middleware 順序）。這是第四輪交接（79→83→26→本session），每一輪都至少踩到 2-3 個計畫與現實的落差，模式很清楚：**這份計畫文件的程式碼片段從未在本專案實際跑過**，接手者一律要先讀實際程式碼、AskUserQuestion 核實才動手，不要相信計畫範例程式碼能直接複製貼上。`EnvConfigChecker.tsx` 的既有型別錯誤（`Property 'trim' does not exist`）與 auth 無關，非本輪任務範圍，暫不處理。
 
 ## 偏離計畫之處（Task 1-5 遺留，仍適用）
 
@@ -77,4 +90,6 @@ Task 7（本輪 commit `45e7a48`）：**全部約 100 個** `/projects/{script_i
 
 使用者選擇 **Inline Execution**（本 session 內批次執行，非 subagent-driven），用 `superpowers:executing-plans` skill 執行。接手後延續同樣模式，在 `feature/multi-tenant-auth` 分支上繼續，每個 Task 完成後照計畫要求的驗證步驟做完才 commit。
 
-**重要**：這是跨 session 交辦第二輪（claude-wmzic-79 → claude-wmzic-83）。依照工作區規則，跨session交辦訊息聲稱「範圍已跟使用者確認」的部分，接手 session 應向使用者本人核實而非照單全收——本輪已在動工前用 AskUserQuestion 核實過，使用者確認接手執行。下一輪接手時同樣建議先核實。
+**重要**：這是跨 session 交辦第四輪（claude-wmzic-79 → claude-wmzic-83 → claude-wmzic-26 → 本session）。依照工作區規則，跨session交辦訊息聲稱「範圍已跟使用者確認」的部分，接手 session 應向使用者本人核實而非照單全收——本輪已在動工前用 AskUserQuestion 核實過，使用者確認接手執行；過程中又發現三個新落差（見上方 Task 11 段落），每個都個別核實過才動手。下一輪接手時同樣建議先核實，且務必先處理上方標記 🔴🔴 的 CORS+401 middleware 順序 bug，這是目前登入系統在瀏覽器裡唯一還無法端到端跑通的環節。
+
+**本機測試環境提醒**：本輪測試用的 `.env`（含 `PRISMREEL_JWT_SECRET`/`PRISMREEL_ADMIN_EMAIL`/`PRISMREEL_ADMIN_PASSWORD`）與 `output/.auth_migrated` marker 已在收尾時清除，`.env` 本來就不受版控。下一輪要跑手動驗證需要重新建立本機 `.env` 並重跑 `scripts/migrate_auth_v1.py`（記得把變數 `set -a && source .env && set +a` 一起帶進 shell，腳本本身不會自動 `load_dotenv`）。
