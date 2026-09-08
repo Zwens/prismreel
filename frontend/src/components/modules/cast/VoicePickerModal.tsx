@@ -21,18 +21,17 @@
  * Spec: r2v-workflow-v3-unified.md §4.2 + Q2-Q5 + Q15
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { X, Play, Pause, Check, Sparkles, Loader2, Trash2 } from "lucide-react";
+import { X, Play, Pause, Check, Sparkles, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { api, type VoiceMeta, type CustomVoice } from "@/lib/api";
+import { api, type VoiceMeta } from "@/lib/api";
 import { getAssetUrl } from "@/lib/utils";
-import VoiceCloneModal from "./VoiceCloneModal";
-import VoiceDesignModal from "./VoiceDesignModal";
 
 // L1.5 推荐: gender-based curated 4 voices (Q4 推荐)
-// Hard-coded "通用最不会出错"组合。LLM-based L4 推荐 stub for future PR.
+// "通用最不会出错"组合。CosyVoice 下线后改为 Gemini 预置音色，性别依据是
+// 对 30 个音色的人工试听（Google 官方只给特征词，不标性别）。
 const RECOMMENDED_BY_GENDER: Record<string, string[]> = {
-    Male: ["longcheng_v2", "longze_v2", "longshu_v2", "longxiaocheng_v2"],
-    Female: ["longxiaochun_v2", "longyue_v2", "longfeifei_v2", "longwan_v2"],
+    Male: ["Achird", "Sadaltager", "Puck", "Algenib"],
+    Female: ["Kore", "Vindemiatrix", "Sulafat", "Erinome"],
 };
 
 interface VoicePickerModalProps {
@@ -52,8 +51,6 @@ interface VoicePickerModalProps {
     characterDescription?: string;
 }
 
-type Tab = "system" | "clone" | "design";
-
 export default function VoicePickerModal({
     isOpen,
     onClose,
@@ -66,16 +63,12 @@ export default function VoicePickerModal({
     characterDescription,
 }: VoicePickerModalProps) {
     const t = useTranslations("voicePicker");
-    const [tab, setTab] = useState<Tab>("system");
     const [voices, setVoices] = useState<VoiceMeta[]>([]);
-    const [customVoices, setCustomVoices] = useState<CustomVoice[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedId, setSelectedId] = useState<string | undefined>(currentVoiceId);
     const [playingId, setPlayingId] = useState<string | null>(null);
     const [previewingId, setPreviewingId] = useState<string | null>(null);
-    const [cloneModalOpen, setCloneModalOpen] = useState(false);
-    const [designModalOpen, setDesignModalOpen] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Sync selected when current changes / modal opens
@@ -83,16 +76,6 @@ export default function VoicePickerModal({
         if (isOpen) setSelectedId(currentVoiceId);
     }, [isOpen, currentVoiceId]);
 
-    // PR-3h · refresh custom voices list (called on open + after clone)
-    const refreshCustomVoices = useCallback(async () => {
-        if (!seriesId) return;
-        try {
-            const list = await api.listCustomVoices(seriesId);
-            setCustomVoices(list);
-        } catch (e) {
-            console.error("Failed to load custom voices:", e);
-        }
-    }, [seriesId]);
 
     // Load voices once when modal opens
     useEffect(() => {
@@ -100,49 +83,14 @@ export default function VoicePickerModal({
         let cancelled = false;
         setLoading(true);
         setError(null);
-        Promise.all([
-            api.getVoices(),
-            seriesId ? api.listCustomVoices(seriesId).catch(() => []) : Promise.resolve([]),
-        ])
-            .then(([vs, customs]) => {
-                if (!cancelled) {
-                    setVoices(vs);
-                    setCustomVoices(customs);
-                }
-            })
+        api.getVoices()
+            .then((vs) => { if (!cancelled) setVoices(vs); })
             .catch((e) => { if (!cancelled) setError(e?.message || "Failed to load voices"); })
             .finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
-    }, [isOpen, seriesId]);
+    }, [isOpen]);
 
-    // PR-3h · handle clone result — refresh list + auto-select new clone
-    const handleCloneCreated = async (newVoice: CustomVoice) => {
-        await refreshCustomVoices();
-        setSelectedId(newVoice.id);
-        setTab("clone"); // ensure we're showing the clone tab so user sees their new voice
-    };
 
-    // PR-3i · handle design result — refresh list + auto-select new design
-    const handleDesignCreated = async (newVoice: CustomVoice) => {
-        await refreshCustomVoices();
-        setSelectedId(newVoice.id);
-        setTab("design");
-    };
-
-    // PR-3h · delete a custom voice (Tab 2/3 trash icon)
-    const handleDeleteCustom = async (voiceId: string) => {
-        if (!seriesId) return;
-        if (!window.confirm(t("confirmDelete"))) return;
-        try {
-            await api.deleteCustomVoice(seriesId, voiceId);
-            await refreshCustomVoices();
-            if (selectedId === voiceId) setSelectedId(undefined);
-        } catch (e) {
-            console.error("Failed to delete custom voice:", e);
-        }
-    };
-
-    // Stop any in-flight audio when closing
     useEffect(() => {
         if (!isOpen && audioRef.current) {
             audioRef.current.pause();
@@ -159,7 +107,7 @@ export default function VoicePickerModal({
             ? t("previewTextNamed", { name: characterName })
             : t("previewTextDefault"));
 
-    // PR-3h · unified preview-by-id (works for both system VoiceMeta and CustomVoice)
+    // Unified preview-by-id.
     const handlePreviewById = async (voiceId: string) => {
         if (audioRef.current) {
             audioRef.current.pause();
@@ -196,7 +144,6 @@ export default function VoicePickerModal({
     };
 
     const handlePreview = (voice: VoiceMeta) => handlePreviewById(voice.id);
-    const handlePreviewCustom = (cv: CustomVoice) => handlePreviewById(cv.id);
 
     // L1.5 recommended subset based on character gender
     const recommended = useMemo<VoiceMeta[]>(() => {
@@ -219,14 +166,13 @@ export default function VoicePickerModal({
     }, [voices, characterGender]);
 
     // Group system voices by sub-category for the catalog area
-    const groups = useMemo(() => {
-        const systemVoices = voices.filter((v) => v.origin === "system");
-        const cosy = systemVoices.filter((v) => v.family === "cosyvoice");
-        const qwenStandard = systemVoices.filter((v) => v.family === "qwen3" && !v.dialect && !v.lang_primary);
-        const qwenDialect = systemVoices.filter((v) => v.family === "qwen3" && v.dialect);
-        const qwenIntl = systemVoices.filter((v) => v.family === "qwen3" && v.lang_primary);
-        return { cosy, qwenStandard, qwenDialect, qwenIntl };
-    }, [voices]);
+    // Gemini 的 30 个音色同属一个家族、一个模型，按 cosyvoice/qwen3 分组已无
+    // 意义。改按性别分组 —— 绑定角色时第一件事就是筛性别。
+    const groups = useMemo(() => ({
+        female: voices.filter((v) => v.gender === "Female"),
+        male: voices.filter((v) => v.gender === "Male"),
+        other: voices.filter((v) => v.gender !== "Female" && v.gender !== "Male"),
+    }), [voices]);
 
     if (!isOpen) return null;
 
@@ -253,30 +199,6 @@ export default function VoicePickerModal({
                     </button>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex items-center gap-1 px-6 pt-3 border-b border-glass-border">
-                    {[
-                        { id: "system" as const, label: t("tabSystem") },
-                        { id: "clone" as const, label: t("tabClone") },
-                        { id: "design" as const, label: t("tabDesign") },
-                    ].map((tabDef) => (
-                        <button
-                            key={tabDef.id}
-                            onClick={() => setTab(tabDef.id)}
-                            className={`relative px-3 pb-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] transition-colors ${
-                                tab === tabDef.id
-                                    ? "text-foreground"
-                                    : "text-text-muted hover:text-text-secondary"
-                            }`}
-                        >
-                            {tabDef.label}
-                            {tab === tabDef.id && (
-                                <span className="absolute bottom-0 left-2 right-2 h-px bg-primary" aria-hidden="true" />
-                            )}
-                        </button>
-                    ))}
-                </div>
-
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
                     {loading && (
@@ -290,7 +212,7 @@ export default function VoicePickerModal({
                         </div>
                     )}
 
-                    {!loading && !error && tab === "system" && (
+                    {!loading && !error && (
                         <div className="space-y-6">
                             {/* Recommended row */}
                             {recommended.length > 0 && (
@@ -317,60 +239,12 @@ export default function VoicePickerModal({
                             )}
 
                             {/* Grouped catalog */}
-                            <VoiceGroup label={t("groupCosyvoice")} voices={groups.cosy} selectedId={selectedId} playingId={playingId} previewingId={previewingId} onSelect={setSelectedId} onPreview={handlePreview} />
-                            <VoiceGroup label={t("groupStandardZh")} voices={groups.qwenStandard} selectedId={selectedId} playingId={playingId} previewingId={previewingId} onSelect={setSelectedId} onPreview={handlePreview} />
-                            <VoiceGroup label={t("groupDialect")} voices={groups.qwenDialect} selectedId={selectedId} playingId={playingId} previewingId={previewingId} onSelect={setSelectedId} onPreview={handlePreview} />
-                            <VoiceGroup label={t("groupInternational")} voices={groups.qwenIntl} selectedId={selectedId} playingId={playingId} previewingId={previewingId} onSelect={setSelectedId} onPreview={handlePreview} />
+                            <VoiceGroup label={t("groupFemale")} voices={groups.female} selectedId={selectedId} playingId={playingId} previewingId={previewingId} onSelect={setSelectedId} onPreview={handlePreview} />
+                            <VoiceGroup label={t("groupMale")} voices={groups.male} selectedId={selectedId} playingId={playingId} previewingId={previewingId} onSelect={setSelectedId} onPreview={handlePreview} />
+                            <VoiceGroup label={t("groupOther")} voices={groups.other} selectedId={selectedId} playingId={playingId} previewingId={previewingId} onSelect={setSelectedId} onPreview={handlePreview} />
                         </div>
                     )}
 
-                    {!loading && !error && tab === "clone" && (
-                        seriesId ? (
-                            <CustomVoiceList
-                                t={t}
-                                voices={customVoices.filter((cv) => cv.origin === "clone")}
-                                selectedId={selectedId}
-                                playingId={playingId}
-                                previewingId={previewingId}
-                                onSelect={setSelectedId}
-                                onPreview={(cv) => handlePreviewCustom(cv)}
-                                onDelete={handleDeleteCustom}
-                                onCreate={() => setCloneModalOpen(true)}
-                                createLabel={t("cloneCreateBtn")}
-                                emptyTitle={t("cloneEmptyTitle")}
-                                emptyBody={t("cloneEmptyBody")}
-                            />
-                        ) : (
-                            <NeedsSeriesPlaceholder
-                                title={t("cloneEmptyTitle")}
-                                body={t("cloneNeedsSeries")}
-                            />
-                        )
-                    )}
-
-                    {!loading && !error && tab === "design" && (
-                        seriesId ? (
-                            <CustomVoiceList
-                                t={t}
-                                voices={customVoices.filter((cv) => cv.origin === "design")}
-                                selectedId={selectedId}
-                                playingId={playingId}
-                                previewingId={previewingId}
-                                onSelect={setSelectedId}
-                                onPreview={(cv) => handlePreviewCustom(cv)}
-                                onDelete={handleDeleteCustom}
-                                onCreate={() => setDesignModalOpen(true)}
-                                createLabel={t("designCreateBtn")}
-                                emptyTitle={t("designEmptyTitle")}
-                                emptyBody={t("designEmptyBody")}
-                            />
-                        ) : (
-                            <NeedsSeriesPlaceholder
-                                title={t("designEmptyTitle")}
-                                body={t("designNeedsSeries")}
-                            />
-                        )
-                    )}
                 </div>
 
                 {/* Footer */}
@@ -390,10 +264,7 @@ export default function VoicePickerModal({
                         <button
                             onClick={() => {
                                 if (!selectedId) return;
-                                // PR-3h · lookup in both system + custom pools
-                                const systemMeta = voices.find(v => v.id === selectedId);
-                                const customMeta = customVoices.find(cv => cv.id === selectedId);
-                                const name = systemMeta?.name || customMeta?.label || selectedId;
+                                const name = voices.find(v => v.id === selectedId)?.name || selectedId;
                                 onApply(selectedId, name);
                                 onClose();
                             }}
@@ -406,26 +277,6 @@ export default function VoicePickerModal({
                 </div>
             </div>
 
-            {seriesId && (
-                <VoiceCloneModal
-                    isOpen={cloneModalOpen}
-                    onClose={() => setCloneModalOpen(false)}
-                    seriesId={seriesId}
-                    characterName={characterName}
-                    characterDescription={characterDescription}
-                    onCreated={handleCloneCreated}
-                />
-            )}
-            {seriesId && (
-                <VoiceDesignModal
-                    isOpen={designModalOpen}
-                    onClose={() => setDesignModalOpen(false)}
-                    seriesId={seriesId}
-                    characterName={characterName}
-                    characterDescription={characterDescription}
-                    onCreated={handleDesignCreated}
-                />
-            )}
         </div>
     );
 }
@@ -537,117 +388,3 @@ function VoiceCard({
     );
 }
 
-function NeedsSeriesPlaceholder({ title, body }: { title: string; body: string }) {
-    return (
-        <div className="grid place-items-center py-16 text-center">
-            <Sparkles size={32} className="text-text-muted/40 mb-3" />
-            <p className="text-foreground font-medium">{title}</p>
-            <p className="mt-1 text-body-sm text-text-secondary max-w-md">{body}</p>
-        </div>
-    );
-}
-
-/** PR-3h · List of CustomVoices with create button + per-card delete. */
-function CustomVoiceList({
-    t,
-    voices,
-    selectedId,
-    playingId,
-    previewingId,
-    onSelect,
-    onPreview,
-    onDelete,
-    onCreate,
-    createLabel,
-    emptyTitle,
-    emptyBody,
-}: {
-    t: (key: string) => string;
-    voices: CustomVoice[];
-    selectedId?: string;
-    playingId: string | null;
-    previewingId: string | null;
-    onSelect: (id: string) => void;
-    onPreview: (voice: CustomVoice) => void;
-    onDelete: (id: string) => void;
-    onCreate: () => void;
-    createLabel: string;
-    emptyTitle: string;
-    emptyBody: string;
-}) {
-    return (
-        <div className="space-y-4">
-            {/* Create button (always visible at top) */}
-            <button
-                onClick={onCreate}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-[0.8125rem] font-medium text-primary hover:bg-primary/10 hover:border-primary/60 transition-colors"
-            >
-                {createLabel}
-            </button>
-
-            {voices.length === 0 ? (
-                <div className="grid place-items-center py-10 text-center">
-                    <p className="text-foreground font-medium">{emptyTitle}</p>
-                    <p className="mt-1 text-body-sm text-text-secondary max-w-md">{emptyBody}</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-                    {voices.map((cv) => {
-                        const isSelected = selectedId === cv.id;
-                        const isPlaying = playingId === cv.id;
-                        const isPreviewing = previewingId === cv.id;
-                        return (
-                            <div
-                                key={cv.id}
-                                onClick={() => onSelect(cv.id)}
-                                className={`relative cursor-pointer rounded-lg border p-3 transition-colors ${
-                                    isSelected
-                                        ? "border-primary bg-[rgba(100,108,255,0.10)]"
-                                        : "border-glass-border bg-glass hover:border-foreground/30"
-                                }`}
-                            >
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-[0.8125rem] font-medium text-foreground" title={cv.label}>
-                                            {cv.label}
-                                        </p>
-                                        <p className="mt-0.5 font-mono text-[0.59375rem] uppercase tracking-[0.14em] text-text-muted">
-                                            {cv.origin === "clone" ? t("originClone") : t("originDesign")}
-                                            <span className="mx-1 text-text-muted/40">·</span>
-                                            {cv.target_model}
-                                        </p>
-                                    </div>
-                                    <div className="flex shrink-0 items-center gap-1">
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); onPreview(cv); }}
-                                            aria-label={t("playPreviewAria")}
-                                            className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition-colors ${
-                                                isPlaying
-                                                    ? "border-primary bg-primary/15 text-primary"
-                                                    : "border-glass-border bg-black/30 text-text-secondary hover:border-foreground/30 hover:text-foreground"
-                                            }`}
-                                        >
-                                            {isPreviewing ? <Loader2 size={12} className="animate-spin" /> : isPlaying ? <Pause size={12} /> : <Play size={12} />}
-                                        </button>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); onDelete(cv.id); }}
-                                            aria-label={t("deleteVoiceAria")}
-                                            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-glass-border bg-black/30 text-text-muted hover:border-danger/40 hover:bg-danger/10 hover:text-danger transition-colors"
-                                        >
-                                            <Trash2 size={11} />
-                                        </button>
-                                    </div>
-                                </div>
-                                {isSelected && (
-                                    <div className="absolute top-1.5 right-1.5 grid h-5 w-5 place-items-center rounded-full bg-primary text-white">
-                                        <Check size={11} strokeWidth={2.5} />
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-        </div>
-    );
-}

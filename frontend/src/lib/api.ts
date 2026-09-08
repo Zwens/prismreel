@@ -58,21 +58,6 @@ export interface VoiceMeta {
     origin: "system" | "clone" | "design";
 }
 
-/**
- * PR-3h · Custom voice entry from series.custom_voices[].
- * Returned by GET /series/{id}/custom_voices and POST /voice/clone (single).
- * Picker tabs 2/3 render these alongside the system catalog.
- */
-export interface CustomVoice {
-    id: string;                            // dashscope voice_id
-    label: string;                         // user-given display name
-    origin: "clone" | "design";
-    target_model: string;                  // e.g. "cosyvoice-v3.5-plus"
-    family: "cosyvoice" | "qwen3";
-    created_at: number;
-    source_audio_url?: string | null;      // clone-specific
-    voice_prompt?: string | null;          // design-specific (PR-3i)
-}
 
 export interface EnvConfigPayload {
     GEMINI_API_KEY?: string;
@@ -946,117 +931,6 @@ export const api = {
         return response.json();
     },
 
-    /**
-     * PR-3h · Clone a voice from a reference audio URL.
-     * Frontend flow:
-     *   1. Upload audio file via /upload → receive URL
-     *   2. Call cloneVoice({series_id, audio_url, label}) → CustomVoice
-     *   3. Picker modal 我的复刻 tab refreshes via listCustomVoices()
-     * Audio requirements: ≤10MB, MP3/WAV/M4A, ≥16kHz, 10-20s recommended.
-     */
-    cloneVoice: async (params: {
-        series_id: string;
-        audio_url: string;
-        label: string;
-        target_model?: string;
-    }): Promise<CustomVoice> => {
-        const response = await fetch(`${API_URL}/voice/clone`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                series_id: params.series_id,
-                audio_url: params.audio_url,
-                label: params.label,
-                target_model: params.target_model ?? "cosyvoice-v3.5-plus",
-            }),
-        });
-        if (!response.ok) {
-            const detail = await response.text();
-            throw new Error(`Voice clone failed: ${response.status} ${detail}`);
-        }
-        return response.json();
-    },
-
-    /** PR-3h · List custom voices (clones + designs) on a series. */
-    listCustomVoices: async (seriesId: string): Promise<CustomVoice[]> => {
-        const response = await fetch(`${API_URL}/series/${seriesId}/custom_voices`);
-        if (!response.ok) throw new Error("Failed to list custom voices");
-        return response.json();
-    },
-
-    /** PR-3h · Remove a custom voice. Does NOT delete on dashscope side. */
-    deleteCustomVoice: async (seriesId: string, voiceId: string): Promise<{ removed: boolean }> => {
-        const response = await fetch(`${API_URL}/series/${seriesId}/custom_voices/${voiceId}`, {
-            method: "DELETE",
-        });
-        if (!response.ok) throw new Error("Failed to delete custom voice");
-        return response.json();
-    },
-
-    /**
-     * PR-3i · Voice design — mint a new voice from a text prompt + return preview.
-     * Iterative: re-call with tweaked voice_prompt; only persist via designVoiceAccept.
-     */
-    designVoicePreview: async (params: {
-        voice_prompt: string;
-        preview_text?: string;
-        target_model?: string;
-    }): Promise<{ voice_id: string; preview_url: string; target_model: string }> => {
-        const response = await fetch(`${API_URL}/voice/design/preview`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                voice_prompt: params.voice_prompt,
-                preview_text: params.preview_text ?? "你好，这是一段音色测试。请仔细听一听是否符合预期。",
-                target_model: params.target_model ?? "cosyvoice-v3.5-plus",
-            }),
-        });
-        if (!response.ok) {
-            const detail = await response.text();
-            throw new Error(`Voice design preview failed: ${response.status} ${detail}`);
-        }
-        return response.json();
-    },
-
-    /** PR-3i · Commit a previewed design voice to series.custom_voices[]. */
-    designVoiceAccept: async (params: {
-        series_id: string;
-        voice_id: string;
-        voice_prompt: string;
-        label: string;
-        target_model?: string;
-    }): Promise<CustomVoice> => {
-        const response = await fetch(`${API_URL}/voice/design/accept`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                series_id: params.series_id,
-                voice_id: params.voice_id,
-                voice_prompt: params.voice_prompt,
-                label: params.label,
-                target_model: params.target_model ?? "cosyvoice-v3.5-plus",
-            }),
-        });
-        if (!response.ok) {
-            const detail = await response.text();
-            throw new Error(`Voice design accept failed: ${response.status} ${detail}`);
-        }
-        return response.json();
-    },
-
-    /** PR-3i · LLM helper — translate character.description → CosyVoice voice_prompt. */
-    translateVoicePrompt: async (description: string): Promise<{ voice_prompt: string }> => {
-        const response = await fetch(`${API_URL}/voice/design/translate`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ description }),
-        });
-        if (!response.ok) {
-            const detail = await response.text();
-            throw new Error(`Voice prompt translate failed: ${response.status} ${detail}`);
-        }
-        return response.json();
-    },
 
     bindVoice: async (scriptId: string, charId: string, voiceId: string, voiceName: string) => {
         const response = await fetch(`${API_URL}/projects/${scriptId}/characters/${charId}/voice`, {
