@@ -12,7 +12,7 @@ def test_hash_and_verify_password_roundtrip():
 
 
 def test_create_and_decode_access_token(monkeypatch):
-    monkeypatch.setenv("PRISMREEL_JWT_SECRET", "test-secret-for-unit-tests")
+    monkeypatch.setenv("PRISMREEL_JWT_SECRET", "test-secret-for-unit-tests-32chars-min")
     import importlib
     from src.apps.comic_gen import auth
     importlib.reload(auth)
@@ -24,7 +24,7 @@ def test_create_and_decode_access_token(monkeypatch):
 
 
 def test_decode_access_token_rejects_garbage(monkeypatch):
-    monkeypatch.setenv("PRISMREEL_JWT_SECRET", "test-secret-for-unit-tests")
+    monkeypatch.setenv("PRISMREEL_JWT_SECRET", "test-secret-for-unit-tests-32chars-min")
     import importlib
     from src.apps.comic_gen import auth
     importlib.reload(auth)

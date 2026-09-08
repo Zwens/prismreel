@@ -11,6 +11,16 @@ JWT_SECRET = os.getenv("PRISMREEL_JWT_SECRET", "").strip()
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_DAYS = int(os.getenv("PRISMREEL_JWT_EXPIRE_DAYS", "7"))
 
+# 留空 = 完全停用登入閘門，比照既有 PRISMREEL_API_KEY 的慣例（desktop 單機
+# 模式維持現狀、也是 spec §8 的緊急回滾手段）。但一旦「有設定」，就不能是
+# 隨手打的弱密鑰——非空但過短會被 HS256 暴力破解，這裡直接拒絕啟動而不是
+# 静默接受。
+if JWT_SECRET and len(JWT_SECRET) < 32:
+    raise RuntimeError(
+        "PRISMREEL_JWT_SECRET is set but shorter than 32 characters. "
+        "Use a strong random value (e.g. `openssl rand -hex 32`), or unset it entirely to disable the login gate."
+    )
+
 
 def hash_password(plain: str) -> str:
     return _pwd_context.hash(plain)

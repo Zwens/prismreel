@@ -5,7 +5,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def isolated_db(monkeypatch, tmp_path):
-    monkeypatch.setenv("PRISMREEL_JWT_SECRET", "test-secret")
+    monkeypatch.setenv("PRISMREEL_JWT_SECRET", "test-secret-needs-32-chars-minimum")
     import importlib
     from src.apps.comic_gen import auth_db, user_repo
     monkeypatch.setattr(auth_db, "_DB_PATH", str(tmp_path / "auth.db"))
