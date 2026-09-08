@@ -259,3 +259,91 @@ def test_an_unknown_sub_type_is_rejected_locally(model, no_network):
                        model_name="seedance-2.5-v2v",
                        video_url="https://oss.example/clip.mp4",
                        task_type="rewrite")
+
+
+# ---------------------------------------------------------------------------
+# Service passthrough
+#
+# The adapter and the playground service were written by two different sessions
+# working in parallel, against a shared understanding rather than a shared file.
+# These close the loop: a v2v generation assembled the way the API layer
+# assembles one has to come out the other end as an Ark body with the source
+# video attached and the sub-type set.
+# ---------------------------------------------------------------------------
+
+def _v2v_generation(**params):
+    from src.apps.playground.models import PlaygroundGeneration, PlaygroundMode
+
+    return PlaygroundGeneration(
+        id="gen-1",
+        mode=PlaygroundMode.V2V,
+        model_id="seedance-2.5-v2v",
+        prompt="把天空改成黄昏",
+        input_media=["https://oss.example/clip.mp4"],
+        parameters=params,
+        created_at="2026-09-08T00:00:00Z",
+    )
+
+
+def _capture_ark_body(monkeypatch, gen):
+    """Run the service's Seedance path far enough to see the Ark request body."""
+    from src.apps.playground.service import PlaygroundService
+
+    captured = {}
+
+    def fake_post(url, json=None, headers=None, timeout=None):
+        captured["body"] = json
+        raise RuntimeError("stop after capture")
+
+    monkeypatch.setenv("ARK_API_KEY", "test-key")
+    monkeypatch.setattr("src.models.byteplus.requests.post", fake_post)
+    monkeypatch.setattr("src.models.byteplus.probe_video_duration", lambda _src: 10.0)
+
+    service = PlaygroundService.__new__(PlaygroundService)
+    service._byteplus_video_model = None
+    with pytest.raises(RuntimeError, match="stop after capture"):
+        service._generate_video_seedance(gen, "out.mp4")
+    return captured["body"]
+
+
+def test_service_attaches_the_source_video_for_v2v(monkeypatch):
+    body = _capture_ark_body(monkeypatch, _v2v_generation(aspect_ratio="adaptive"))
+
+    assert {
+        "type": "video_url",
+        "video_url": {"url": "https://oss.example/clip.mp4"},
+        "role": "reference_video",
+    } in body["content"]
+
+
+def test_service_forwards_the_sub_type_to_ark(monkeypatch):
+    body = _capture_ark_body(
+        monkeypatch, _v2v_generation(task_type="edit", aspect_ratio="adaptive", duration=-1)
+    )
+
+    assert body["omni_reference_task_type"] == "edit"
+
+
+def test_service_omits_the_sub_type_when_none_was_chosen(monkeypatch):
+    body = _capture_ark_body(monkeypatch, _v2v_generation(aspect_ratio="adaptive"))
+
+    assert "omni_reference_task_type" not in body
+
+
+def test_service_surfaces_a_constraint_violation_instead_of_calling_ark(monkeypatch):
+    """The UI pins ratio and duration for an edit, but the API accepts a raw
+    parameters dict — a caller bypassing the UI still gets stopped locally."""
+    from src.apps.playground.service import PlaygroundService
+
+    monkeypatch.setenv("ARK_API_KEY", "test-key")
+    monkeypatch.setattr(
+        "src.models.byteplus.requests.post",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("Ark was called")),
+    )
+
+    service = PlaygroundService.__new__(PlaygroundService)
+    service._byteplus_video_model = None
+    gen = _v2v_generation(task_type="edit", aspect_ratio="16:9", duration=5)
+
+    with pytest.raises(ValueError, match="adaptive"):
+        service._generate_video_seedance(gen, "out.mp4")
