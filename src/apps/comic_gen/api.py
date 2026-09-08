@@ -79,10 +79,22 @@ logger.info(f"STARTUP: OSS_ENDPOINT={os.getenv('OSS_ENDPOINT')}, OSS_BUCKET_NAME
 _cors_origins_env = os.getenv("PRISMREEL_CORS_ORIGINS", "").strip()
 _cors_allow_origins = [o.strip() for o in _cors_origins_env.split(",") if o.strip()] if _cors_origins_env else ["*"]
 
+# The login cookie (Task 9/10) needs allow_credentials=True to cross the
+# frontend<->backend port gap in `next dev` — but that's incompatible with
+# allow_origins=["*"] by browser spec, so with no explicit allowlist we fall
+# back to a localhost-only regex (any port) instead of leaving credentialed
+# requests silently dropped in the default dev setup.
+_cors_allow_credentials = bool(_cors_origins_env)
+_cors_allow_origin_regex = None
+if not _cors_origins_env:
+    _cors_allow_origin_regex = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+    _cors_allow_credentials = True
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_allow_origins,
-    allow_credentials=bool(_cors_origins_env),  # credentials only make sense with an explicit origin allowlist
+    allow_origins=_cors_allow_origins if _cors_origins_env else [],
+    allow_origin_regex=_cors_allow_origin_regex,
+    allow_credentials=_cors_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["Content-Disposition"],  # Allow browsers to access Content-Disposition for downloads

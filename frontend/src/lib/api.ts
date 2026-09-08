@@ -45,6 +45,10 @@ if (API_KEY) {
     axios.defaults.headers.common["X-API-Key"] = API_KEY;
 }
 
+// Send the login cookie on every request, including dev mode where the
+// frontend and backend run on different ports (cross-origin).
+axios.defaults.withCredentials = true;
+
 export type ProviderMode = "dashscope" | "vendor";
 
 /**
