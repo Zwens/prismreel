@@ -39,8 +39,8 @@
 ```
 
 爆炸半径是原估「5 个组件」的 2.4 倍。最扎手的不是数量而是形态：`ResultGallery.tsx:105`
-直接调 `usePlaygroundStore.getState()` —— 模块级单例访问，不在 React 树里，context
-注入没法自动覆盖它，必须单独改写。另有 `ResultGallery` 与 `PromptTemplateModal` 用整店
+与 `PlaygroundPage.tsx:204` 直接调 `usePlaygroundStore.getState()` —— 模块级单例访问，
+不在 React 树里，context 注入没法自动覆盖，两处都必须单独改写。另有 `ResultGallery` 与 `PromptTemplateModal` 用整店
 解构 `usePlaygroundStore()` 而非选择器，改造时要留意重渲染范围。
 
 > 订正：本文档初稿写「14 个文件消费」并称 `playgroundModels.ts` 也读 store，
@@ -183,7 +183,7 @@ catalog 定型后
 
 ## 6. 已交付：D5 前置回归测试（2026-09-08）
 
-裁决 2 要求「context 重构前先补齐消费方回归测试」。**12 个运行时消费方已全部覆盖**，共 40 条用例。
+裁决 2 要求「context 重构前先补齐消费方回归测试」。**12 个运行时消费方已全部覆盖**，共 43 条用例。
 
 **为什么是这些断言**：context 注入的失败模式是静默的——某个组件仍读旧的模块级单例，
 照样渲染、照样接受点击，只是不再和它周围的页面达成一致。所以每条用例都双向钉住这条缝：
@@ -194,7 +194,7 @@ catalog 定型后
 | `__tests__/storeWiring.compose.spec.tsx` | ModeSelector / PromptInput / MediaInput / QueuePanel | 11 |
 | `__tests__/storeWiring.results.spec.tsx` | ResultCard / PromptHistoryDrawer | 10 |
 | `__tests__/storeWiring.catalog.spec.tsx` | ModelSelector / ParameterBar | 6 |
-| `__tests__/storeWiring.surfaces.spec.tsx` | ResultGallery / DetailPanel / PromptTemplateModal / PlaygroundPage | 13 |
+| `__tests__/storeWiring.surfaces.spec.tsx` | ResultGallery / DetailPanel / PromptTemplateModal / PlaygroundPage | 16 |
 
 **变异验证**（这批是既有代码的表征测试，"通过"本身不证明有效），做了两次：
 
@@ -202,14 +202,21 @@ catalog 定型后
    恰好它那 2 条（读、写各一）变红，其余 9 条不动。
 2. 删掉 `ResultGallery.tsx:105` 的 `usePlaygroundStore.getState().removeGeneration(...)`
    ——正是 context 注入漏掉非 React 调用点后会留下的样子——恰好删除那 1 条变红，其余 12 条不动。
+3. 把 `PlaygroundPage.tsx:204` 队列泵的 `getState()` 换成写死的空状态——恰好
+   「泵出队列请求」那 1 条变红，其余 15 条不动。
 
-两次改动均已还原，`git diff` 干净。
+三次改动均已还原，`git diff` 干净。
+
+> 订正：本文档一度写 `getState()`「全仓库仅此一处」，不确。生产代码有**两处**，
+> 第二处是 `PlaygroundPage` 的队列泵——首次排查时用的 grep 只匹配了选择器形态，漏了它。
+> 该处原本也无测试覆盖，已补三条（i2i 自动判定、泵出并清空队列、并发满时按住不发）。
 
 **目录变动免疫**：`ModelSelector` / `ParameterBar` 那 6 条不硬编码任何模型 id，
 期望值在运行时由 `getModelsForMode()` 现算。Gemini 迁移第 4 步要删 4 个家族、加 2 个，
 硬编码 id 的测试会在那时集体变红并被当成噪音改掉，正好在最需要它们的时候失效。
 
-**验证**：`npm run test:ui` **97/97**（本轮前 57）；`npm test` 205/205；`typecheck` 干净。
+**验证**：playground 相关 UI 用例 100 条全过（本轮前 57）；`npm test` 205/205；`typecheck` 干净。
+（`npm run test:ui` 全量此刻为 105，多出的 5 条是并行会话新增的 cast 测试。）
 
 ### 6.1 重构时最需要当心的三处
 
@@ -217,7 +224,7 @@ catalog 定型后
 
 | 形态 | 出现处 | 为什么危险 |
 |---|---|---|
-| `getState()` 模块级单例调用 | `ResultGallery.tsx:105`（删除处理） | **不在 React 树里，provider 无法覆盖**，必须手工改写。全仓库仅此一处 |
+| `getState()` 模块级单例调用 | `ResultGallery.tsx:105`（删除处理）、`PlaygroundPage.tsx:204`（队列泵） | **不在 React 树里，provider 无法覆盖**，两处都必须手工改写 |
 | 整店解构 `usePlaygroundStore()` | `ResultGallery.tsx:43`、`PromptTemplateModal.tsx:58` | 订阅整个 store，任何字段变化都重渲染；换 context 时若照搬会放大重渲染范围 |
 | 选择器 `usePlaygroundStore((s) => ...)` | 其余 10 处 | 最容易改，逐个换 hook 即可 |
 

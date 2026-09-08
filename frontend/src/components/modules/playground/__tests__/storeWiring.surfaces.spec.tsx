@@ -44,7 +44,18 @@ vi.mock('lucide-react', () => {
 });
 
 const mockDeleteGeneration = vi.fn().mockResolvedValue({});
-const mockGenerate = vi.fn().mockResolvedValue({ id: 'new-gen' });
+const mockGenerate = vi.fn().mockResolvedValue({
+    id: 'new-gen',
+    mode: 't2i',
+    model_id: 'gemini-3.1-flash-image',
+    prompt: '雨夜的天台',
+    status: 'completed',
+    input_media: [],
+    parameters: {},
+    batch_size: 1,
+    outputs: [],
+    created_at: new Date().toISOString(),
+});
 const mockCreateTemplate = vi.fn();
 
 vi.mock('@/lib/api', () => ({
@@ -286,6 +297,53 @@ describe('PlaygroundPage ↔ store', () => {
             mode: 't2i',
             status: 'pending',
         });
+        expect(mockGenerate).not.toHaveBeenCalled();
+    });
+
+    it('auto-detects i2i from the store when t2i already has reference media', async () => {
+        usePlaygroundStore.setState({
+            prompt: '换成黄昏',
+            mode: 't2i',
+            inputMedia: ['output/library/linwan.png'],
+            maxConcurrent: 0,
+        });
+        renderWithIntl(<PlaygroundPage />);
+
+        fireEvent.click(screen.getByRole('button', { name: /生成/ }));
+
+        await waitFor(() => expect(store().queue).toHaveLength(1));
+        expect(store().queue[0].mode).toBe('i2i');
+    });
+
+    // Guards the pump's usePlaygroundStore.getState() at PlaygroundPage.tsx:204 —
+    // the second call site a context provider cannot reach.
+    it('pumps a queued request out to the API and drains the queue', async () => {
+        usePlaygroundStore.setState({ prompt: '雨夜的天台', maxConcurrent: 2 });
+        renderWithIntl(<PlaygroundPage />);
+
+        fireEvent.click(screen.getByRole('button', { name: /生成/ }));
+
+        await waitFor(() => expect(mockGenerate).toHaveBeenCalledTimes(1));
+        expect(mockGenerate).toHaveBeenCalledWith(
+            expect.objectContaining({ prompt: '雨夜的天台', mode: 't2i' }),
+        );
+        await waitFor(() => expect(store().queue).toHaveLength(0));
+    });
+
+    // The pump reads queue / maxConcurrent / activeGenerationIds off the store to
+    // decide how many slots are free; break that read and it dispatches anyway.
+    it('holds a request back when the store says every slot is busy', async () => {
+        usePlaygroundStore.setState({
+            prompt: '雨夜的天台',
+            maxConcurrent: 1,
+            activeGenerationIds: ['already-running'],
+        });
+        renderWithIntl(<PlaygroundPage />);
+
+        fireEvent.click(screen.getByRole('button', { name: /生成/ }));
+
+        await waitFor(() => expect(store().queue).toHaveLength(1));
+        expect(store().queue[0].status).toBe('pending');
         expect(mockGenerate).not.toHaveBeenCalled();
     });
 
