@@ -109,7 +109,31 @@ Task 7（本輪 commit `45e7a48`）：**全部約 100 個** `/projects/{script_i
 
 **測試中額外發現的環境細節（非程式碼 bug）**：本機 `output/auth.db` 裡既有的 `admin@test.local` 帳號密碼跟本輪 `.env` 的 `PRISMREEL_ADMIN_PASSWORD` 不一致（因為 migration marker `output/.auth_migrated` 已存在，`migrate_auth_v1.py` 不會重新建立/更新既有 admin 密碼）。用 `user_repo.set_password()` 手動重設密碼為 `.env` 內的值以利本輪測試，這只影響本機測試資料庫，非程式碼問題，下一輪如果密碼又對不上可用同樣方式處理或直接刪除 `output/auth.db` + marker 重跑 migration。
 
-## 下一步：Task 13（部署設定）與 Task 14（VPS 上線）
+## Task 13 已完成（本輪，commit `b8b1be7`）
+
+依計畫更新 `.env.example`（新增多租戶登入系統區塊）與 `Dockerfile.backend`（CMD 改 shell form，先跑 `scripts/migrate_auth_v1.py` 再啟動 uvicorn）。同時修正 `.env.example` 裡 `PRISMREEL_CORS_ORIGINS` 的過時說明（原文寫「留空=允許所有來源」，但 Task 10 已改成「留空=只放行 localhost/127.0.0.1」，這行說明從 Task 10 起就沒同步更新）。
+
+**未驗證**：本機沒有安裝 Docker，Step 3-5（本機 docker build/run 驗證）無法執行，已用 AskUserQuestion 跟使用者確認跳過，改為閱讀 `migrate_auth_v1.py`/`auth_db.py` 原始碼確認 `get_connection()` 會自己 `makedirs("output")`，沒有隱含的目錄依賴問題。實際驗證延後到 Task 14 VPS 上（VPS 有 Docker）。
+
+## Task 14 已完成 — 正式上線 `prismreel.soulo-ai.com`（本輪，commit `63ace17` 為關鍵修復）
+
+**已跟使用者確認上線時間點**（本輪內，非之前遠端交辦時就決定）。執行過程：
+
+1. **同步程式碼**：本機沒有 rsync，改用 `git archive HEAD -- <路徑清單> | tar` 打包（只含 git 追蹤檔案，自動排除 `node_modules`/`.env`/`output/`），scp 到 VPS 後 tar 解壓覆蓋 `/opt/prismreel`（保留既有 `.env`、`output/` 不動）。解壓前備份了 `src`/`scripts`/`Dockerfile.backend`/`docker-compose.yml`/`requirements*.txt`/`config` 到 `/root/prismreel_backup_2026-09-08/`（VPS 本機，非本次 git 版控範圍）。
+2. **VPS `.env` 新增變數**：`PRISMREEL_JWT_SECRET`（`openssl rand -hex 32` 在 VPS 上直接產生）、`PRISMREEL_ADMIN_EMAIL=wmzic929@gmail.com`、`PRISMREEL_ADMIN_PASSWORD`（`openssl rand -base64 24` 在 VPS 上直接產生，密碼實際值只存在於 VPS `.env`，未寫入任何 git 版控或 memory 檔案）、`PRISMREEL_JWT_EXPIRE_DAYS=7`。**沒有加 `PRISMREEL_CORS_ORIGINS`**——確認正式站是 frontend nginx 反代到 backend 的同源部署（`prismreel.soulo-ai.com` 對外只有一個 origin），瀏覽器同源請求不觸發 CORS 檢查，不需要這個變數。
+3. **`docker compose build` 第一次失敗**：`npm ci` 報 `Missing: @swc/helpers@0.5.23 from lock file`，命中既有 memory `[[lockfile-must-regenerate-in-build-env]]` 記載的踩坑（本機 npm 版本跟 `Dockerfile.frontend` 的 `node:20-alpine` 內建 npm 版本不一致，lockfile 解析細節有落差）。用該記憶記載的解法在 VPS 上執行 `docker run --rm -v $(pwd)/frontend:/app -w /app node:20-alpine npm install --package-lock-only` 重新產生 lockfile 後 build 成功。
+4. **🔴 部署後發現一個 Task 12 未察覺的路由衝突**（不在原計畫清單裡，是這輪上線才發現）：後端 `GET /admin/users`（API）跟前端 Next.js 靜態匯出頁面 `frontend/src/app/admin/users/page.tsx` 的路徑完全相同。VPS 的 `docker/nginx.conf` 有一個 location 正則白名單把已知 API 路徑前綴轉發到 backend，這份白名單原本沒有 `/admin`，導致 `GET /admin/users` 被 `try_files` 命中靜態頁面、回傳 HTML 而非 JSON，admin 後台使用者清單載入失敗。第一次修法（把 `admin` 整個加進正則白名單）產生新問題：正則是前綴匹配沒有結尾錨點，`/admin/dashboard`（改名後的頁面路徑）一樣會被規則命中转发到 backend，backend 沒有這個路由會 404，導致頁面完全打不開。**最終修法**：把前端頁面路徑從 `/admin/users` 改名為 `/admin/dashboard`（`git mv`，Task 12 commit 的檔案這輪跟著調整），`nginx.conf` 保持不把 `/admin` 加入白名單（只加了 `/auth`，因為它沒有頁面路徑衝突），讓 `/admin/dashboard`（有靜態頁）跟 `/admin/users`/`/admin/invites` 等（無靜態頁，API）都透過既有 `try_files ... @backend` fallback 機制個別正確路由，跟其餘 90+ 個沒有明確列在白名單裡的 API 端點運作方式一致。
+5. **Live 驗證**：`curl` 確認 `/login`（200）、`/auth/login` 錯誤帳密（401+正確錯誤訊息）、`GET /admin/users` 帶 admin cookie（正確回 JSON 使用者清單）、`GET /admin/dashboard`（正確回 HTML）、`POST /admin/invites`（正確產生邀請碼）；**Playwright 對正式網域完整跑一次瀏覽器端到端測試**：未登入訪問 `/admin/dashboard` 被 401 攔截器導向 `/login` → 登入 admin 帳號 → `/admin/dashboard` 正確渲染使用者清單 → 建立邀請連結產生 `https://prismreel.soulo-ai.com/redeem?code=...`。
+
+**已建立邀請連結**（本輪產生，交給使用者本人轉發完成註冊，未代為輸入密碼）：使用者請求新增 `zshwen555@gmail.com`，已用 admin 帳號在正式站建立一個 member 角色邀請連結。這個邀請碼是一次性的，如果使用者忘記轉發或連結過期，下一輪需要重新登入 admin 後台建立新的。
+
+**本機測試環境提醒**：本輪在本機測試用的 `.env`/`output/auth.db`/`.auth_migrated` marker 沒有清除，跟 Task 12 交接時一樣可直接沿用；本機 admin 密碼曾被手動 `set_password` 改成跟 `.env` 一致（Task 12 段落已記錄）。
+
+**部署範圍確認**：VPS `vps_main`（202.182.117.182）SSH 連線正常（已設好 `~/.ssh/config` alias，本輪直接 `ssh vps_main` 可用，不需要額外提供密碼/金鑰路徑）。`/opt/prismreel` 用 `docker-compose.yml` 跑 `backend`（port 17177）+ `frontend`（nginx port 3000，對外由 Cloudflare + 反代到 `prismreel.soulo-ai.com`）。`output/` 是 volume mount，容器重建不會遺失 `auth.db`/`projects.json` 等資料。
+
+## 多租戶登入系統全部 14 個 Task 已完成並上線
+
+Task 1-14 全部完成、commit 到 `feature/multi-tenant-auth` 分支、且已部署驗證於正式站 `https://prismreel.soulo-ai.com`。**尚未把 `feature/multi-tenant-auth` merge 回 `main`**——下一輪或使用者本人決定是否要開 PR / merge，這份交接記憶的任務範圍到此結束。如果之後這個分支要合併，記得帶著這份記憶檔案裡記錄的所有「計畫與現實落差」清單去對照 PR diff，確保沒有遺漏。
 
 計畫全文見 `docs/superpowers/plans/2026-09-08-multi-tenant-auth.md` Task 12 段落（約 1620 行起，Admin 後台+側欄登出按鈕）。**Task 10 Step 4 手動驗證仍未完整通過**——不是頁面不存在的問題（Task 11 已建），是上述 middleware 順序 bug 擋住的，修完 CORS 順序才能重跑這步驗證。
 
