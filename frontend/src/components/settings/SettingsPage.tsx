@@ -434,7 +434,8 @@ export default function SettingsPage() {
           value={locale}
           onChange={(v) => setLocale(v as Locale)}
           options={[
-            { id: "zh", label: t("chinese") },
+            { id: "zh", label: t("chineseSimplified") },
+            { id: "zh-Hant", label: t("chineseTraditional") },
             { id: "en", label: t("english") },
           ]}
         />

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type Locale = 'zh' | 'en';
+export type Locale = 'zh' | 'zh-Hant' | 'en';
 
 /**
  * 5 预设主题（Tasty Sam 主题系统）。

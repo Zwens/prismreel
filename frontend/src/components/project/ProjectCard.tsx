@@ -133,8 +133,9 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
         : typeof rawCreated === "number"
             ? rawCreated * 1000
             : NaN;
+    const dateLocale = locale === "zh" ? "zh-CN" : locale === "zh-Hant" ? "zh-TW" : "en-US";
     const dateStr = Number.isFinite(dateMs)
-        ? new Date(dateMs).toLocaleDateString(locale === "zh" ? "zh-CN" : "en-US")
+        ? new Date(dateMs).toLocaleDateString(dateLocale)
         : "";
 
     return (
