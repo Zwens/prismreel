@@ -162,6 +162,23 @@ app.mount("/files/videos", StaticFiles(directory="output/video"), name="files_vi
 app.mount("/files/assets", StaticFiles(directory="output/assets"), name="files_assets")
 app.mount("/files", StaticFiles(directory="output"), name="files")
 
+os.makedirs("output/users", exist_ok=True)
+app.mount("/files/users", StaticFiles(directory="output/users"), name="files_users")
+
+
+@app.middleware("http")
+async def enforce_file_ownership(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/files/users/"):
+        parts = path.split("/")
+        # ["", "files", "users", "{owner_id}", "{project_id}", ...]
+        if len(parts) >= 4:
+            owner_id = parts[3]
+            user = auth.get_current_user_from_cookie(request)
+            if not user or (user.role != "admin" and user.id != owner_id):
+                return JSONResponse(status_code=403, content={"detail": "Forbidden"})
+    return await call_next(request)
+
 # Ensure playground output directories exist
 os.makedirs("output/playground/images", exist_ok=True)
 os.makedirs("output/playground/videos", exist_ok=True)

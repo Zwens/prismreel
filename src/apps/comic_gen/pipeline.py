@@ -38,6 +38,23 @@ def _validate_safe_id(value: str, label: str = "id") -> str:
     return value
 
 
+def _project_output_dir(script: "Script", *subdirs: str) -> str:
+    """Base directory for newly generated files belonging to a project.
+
+    Owned scripts (owner_id set, i.e. created after the auth migration)
+    write under output/users/{owner_id}/{script_id}/... so the
+    enforce_file_ownership middleware can gate access. Pre-migration
+    scripts (owner_id == "") keep writing to the legacy global output/
+    subdirectories, matching where their existing files already live.
+    """
+    owner_id = getattr(script, "owner_id", "") or ""
+    if not owner_id:
+        return os.path.join("output", *subdirs) if subdirs else "output"
+    _validate_safe_id(owner_id, "owner_id")
+    _validate_safe_id(script.id, "script_id")
+    return os.path.join("output", "users", owner_id, script.id, *subdirs)
+
+
 class LibraryAssetInUseError(Exception):
     """Raised when a global library asset cannot be hard-deleted because it is
     still referenced by one or more storyboard frames (design Q2 reference
@@ -2229,7 +2246,7 @@ class ComicGenPipeline:
         if not ffmpeg_path:
             raise RuntimeError("FFmpeg is required for frame extraction but was not found.")
 
-        output_dir = os.path.join("output", "storyboard")
+        output_dir = _project_output_dir(script, "storyboard")
         os.makedirs(output_dir, exist_ok=True)
         _validate_safe_id(frame_id, "frame_id")
         output_filename = f"frame_{frame_id}_lastframe_{uuid.uuid4().hex[:8]}.jpg"
@@ -2567,15 +2584,16 @@ class ComicGenPipeline:
         logger.warning("[DUB] Demucs output not found, falling back to simple replacement")
         return None
 
-    def _ensure_bg_audio_cached(self, frame, video_path: str, video_url: str) -> Optional[str]:
+    def _ensure_bg_audio_cached(self, script, frame, video_path: str, video_url: str) -> Optional[str]:
         """Ensure background audio is separated and cached for this frame's video.
 
         Returns absolute path to bg audio WAV, or None if video has no audio.
-        Caches result to output/audio/bg_{frame_id}.wav — only re-runs Demucs
-        if video source changed.
+        Caches result under the project's output dir (output/audio/bg_{frame_id}.wav
+        for legacy pre-migration scripts, output/users/{owner_id}/{script_id}/audio/...
+        for owned ones) — only re-runs Demucs if video source changed.
         """
         if frame.bg_audio_url and frame.bg_audio_source_video == video_url:
-            cached_path = _safe_resolve_path("output", frame.bg_audio_url)
+            cached_path = _safe_resolve_path(_project_output_dir(script), frame.bg_audio_url)
             if os.path.exists(cached_path):
                 logger.info(f"[DUB] Background audio cache hit: {frame.bg_audio_url}")
                 return cached_path
@@ -2591,7 +2609,7 @@ class ComicGenPipeline:
                 return None
 
             cache_filename = f"bg_{frame.id}.wav"
-            cache_path = _safe_resolve_path(os.path.join("output", "audio"), cache_filename)
+            cache_path = _safe_resolve_path(_project_output_dir(script, "audio"), cache_filename)
             os.makedirs(os.path.dirname(cache_path), exist_ok=True)
             shutil.copy2(bg_path, cache_path)
 
@@ -2648,11 +2666,11 @@ class ComicGenPipeline:
                     pass
 
         output_filename = f"preview_{frame_id}_{int(time.time())}.mp4"
-        output_path = _safe_resolve_path(os.path.join("output", "video"), output_filename)
+        output_path = _safe_resolve_path(_project_output_dir(script, "video"), output_filename)
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         # Ensure background audio is cached (Demucs runs only on first call or video change)
-        bg_audio_path = self._ensure_bg_audio_cached(frame, video_path, video_task.video_url)
+        bg_audio_path = self._ensure_bg_audio_cached(script, frame, video_path, video_task.video_url)
 
         import tempfile
         work_dir = tempfile.mkdtemp(prefix="dub_mix_")
@@ -2904,7 +2922,7 @@ class ComicGenPipeline:
 
         # Output path
         output_filename = f"merged_{script_id}_{int(time.time())}.mp4"
-        output_path = _safe_resolve_path(os.path.join("output", "video"), output_filename)
+        output_path = _safe_resolve_path(_project_output_dir(script, "video"), output_filename)
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
         logger.debug(f"[MERGE] Output path: {output_path}")
@@ -3179,7 +3197,7 @@ class ComicGenPipeline:
             script.frames, segments, resolve=lambda u: _safe_resolve_path("output", u)
         )
 
-        out_dir = _safe_resolve_path("output", "subtitles")
+        out_dir = _safe_resolve_path(_project_output_dir(script, "subtitles"))
         os.makedirs(out_dir, exist_ok=True)
         out_path = os.path.join(out_dir, f"{script_id}.{fmt}")
 
