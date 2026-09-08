@@ -320,16 +320,24 @@ adaptive。**仅对 2.5 下发**该参数；`auto` 通过不发送表达。源�
 **读不到就放行**——OSS 上的要下载才能探测，Ark 本来就会同步校验，在这里猜只会拦住
 合法请求。UI 选「编辑」时自动锁定画幅与时长，不锁的话用户能组装出必然被拒的请求。
 
-**一处未经验证的推断**：content 里 video 项的形状
-`{"type":"video_url","video_url":{"url":...},"role":"reference_video"}` 是照
-`image_url` 加 spec §6.1 推出来的，厂商文档快照只写了 `content.role = reference_video`，
-没给确切 JSON 结构。代码注释已标注，**只有真实调用能确认**。
+**那处推断已实调验证（2026-09-08）**：content 里 video 项的形状
+`{"type":"video_url","video_url":{"url":...},"role":"reference_video"}` 被 Ark 接受，
+`omni_reference_task_type: "edit"` 亦被接受，任务 `cgt-20260908173854-tqf85` 成功出片。
+`adaptive` 解析为源片比例、`duration: -1` 保持源片长度，两条 edit 语义均如文档所述。
+详见 `docs/api-reference/byteplus-ark-seedance-seedream.md` §2.4 的验证记录。
+
+**成本估算失误，记录以免重蹈**：我给出的 0.7–1.5 USD 是按 5 秒源视频算的，实际那段 5 秒
+的素材 OSS 上传超时，改用了一段 20.6 秒的，而**换素材时没有重算**。edit 保持源片长度，
+输出 20 秒，实花 **5.58 USD**，约 5 倍。两个可推广的教训：v2v 的成本由**源片长度**决定
+而非由参数决定；官方那张"典型场景"折算表的前提是无视频输入，套用到 v2v 会低估。
 
 ### 8.2 还剩什么
 
-- **实调验证**（未做，需用户批准）：一次 5 秒 720p 编辑约 0.7–1.5 USD，edit + extend
-  各验一次约 1.5–3 USD。要确认的是上面那个 video 项形状，以及
-  `InvalidParameter.TaskTypeConstraint` / `TaskTypeMismatch` 两个异步错误码的实际文案
+- **extend 的实调**（未做）：edit 已验证，extend 走同一条 content 通路、只差
+  `omni_reference_task_type` 的取值与"不强制 duration=-1"一条，风险低。若要验，
+  应挑一段 4–6 秒的源片（成本随源片长度走，20 秒那次花了 5.58 USD）
+- **两个异步错误码的实际文案**（未取到）：`InvalidParameter.TaskTypeConstraint` /
+  `TaskTypeMismatch` 需要故意构造失败任务才能拿到，而失败任务同样计费
 - 创作台的空模态行为（§8 第 1 条），要不要一并修，是产品决策
 
 ---

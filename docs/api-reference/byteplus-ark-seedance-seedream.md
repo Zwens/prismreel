@@ -93,6 +93,25 @@ Seedance 2.5 的 1080p 与 2.0 的 4K 输出使用 10-bit 色深 + H.265/HEVC，
 显式指定时在建任务阶段同步校验并立即报错；`auto` 则可能建成任务后才异步失败。
 即使显式指定，模型仍会依据 prompt 二次判定，不一致会抛 `InvalidParameter.TaskTypeMismatch`。
 
+**已实调验证（2026-09-08）**。此前 content 里 video 项的确切 JSON 结构在文档中缺失，
+只写了 `content.role = reference_video`。以下形状经真实建任务确认被接受：
+
+```json
+{"type": "video_url", "video_url": {"url": "<可 GET 的 URL>"}, "role": "reference_video"}
+```
+
+同一次请求确认：`omni_reference_task_type: "edit"` 被接受；`--ratio adaptive` 解析为
+源视频自身的比例（源为 9:16，返回 `ratio: "9:16"`）；`--duration -1` 使输出保持源片长度
+（源 20.6 秒，返回 `duration: 20`）。任务 `cgt-20260908173854-tqf85`，约 3.5 分钟完成。
+
+**实测计价**：一次 720p、20 秒、含视频输入的编辑 = `usage.total_tokens` 872,100，
+按 6.40 USD/百万 token 计 **5.58 USD**。即约 **0.28 USD/输出秒**，明显高于官方"典型场景"
+折算表里 720p 的 0.231 USD/秒——那张表的前提是**无视频输入**，源视频本身也计入输入 token。
+估算 v2v 成本时不能套用那张表。
+
+源视频必须是厂商可 GET 的地址。OSS 签名 URL 可用，但签名绑定 HTTP 方法：
+`sign_url('GET', ...)` 签出的地址对 HEAD 返回 403，验证可达性要用带 Range 的 GET。
+
 `content.role = reference_video` 支持的模型：**Seedance 2.5 与 Seedance 2.0 系列**。
 也就是 2.0 系列可以做编辑/续写，但**没有** `omni_reference_task_type` 参数可用，只能靠自动判定。
 
