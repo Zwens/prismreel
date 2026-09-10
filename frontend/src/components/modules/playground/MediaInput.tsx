@@ -537,7 +537,7 @@ export default function MediaInput() {
             {inputMedia.map((path, index) => (
               <div
                 key={path + index}
-                className="group relative w-[72px] h-[72px] rounded-[14px] overflow-hidden bg-elevated border border-border-subtle"
+                className="group relative w-24 h-24 rounded-[14px] overflow-hidden bg-elevated border border-border-subtle"
               >
                 {isVideoPath(path) ? (
                   <video
@@ -554,7 +554,7 @@ export default function MediaInput() {
                 )}
 
                 {/* Reference index badge — lets the prompt refer to "Image N" unambiguously */}
-                <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[0.5625rem] font-medium leading-none">
+                <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[0.625rem] font-medium leading-none">
                   {t('media.imageIndex', { index: index + 1 })}
                 </span>
 
@@ -575,7 +575,7 @@ export default function MediaInput() {
                 </button>
 
                 {/* File name — bottom gradient scrim (functional, theme-agnostic) */}
-                <div className="absolute bottom-0 left-0 right-0 px-1 py-0.5 bg-gradient-to-t from-black/75 to-transparent text-[0.5625rem] text-white truncate">
+                <div className="absolute bottom-0 left-0 right-0 px-1.5 py-1 bg-gradient-to-t from-black/75 to-transparent text-[0.6875rem] text-white truncate">
                   {getFileName(path)}
                 </div>
               </div>
@@ -588,7 +588,7 @@ export default function MediaInput() {
                 onClick={handleClick}
                 disabled={uploading}
                 className="
-                  w-[72px] h-[72px] rounded-[14px] bg-input-bg
+                  w-24 h-24 rounded-[14px] bg-input-bg
                   border border-dashed border-border-subtle
                   flex items-center justify-center
                   text-text-muted hover:text-foreground hover:border-foreground/30 hover:bg-hover-bg
