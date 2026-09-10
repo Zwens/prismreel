@@ -535,47 +535,49 @@ export default function MediaInput() {
           {/* Thumbnail row */}
           <div className="flex flex-wrap gap-2">
             {inputMedia.map((path, index) => (
-              <div
-                key={path + index}
-                className="group relative w-24 h-24 rounded-[14px] overflow-hidden bg-elevated border border-border-subtle"
-              >
-                {isVideoPath(path) ? (
-                  <video
-                    src={resolveMediaSrc(path)}
-                    className="w-full h-full object-cover"
-                    muted
-                  />
-                ) : (
-                  <img
-                    src={resolveMediaSrc(path)}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                )}
+              <div key={path + index} className="w-24">
+                <div className="group relative w-24 h-24 rounded-[14px] overflow-hidden bg-elevated border border-border-subtle">
+                  {isVideoPath(path) ? (
+                    <video
+                      src={resolveMediaSrc(path)}
+                      className="w-full h-full object-cover"
+                      muted
+                    />
+                  ) : (
+                    <img
+                      src={resolveMediaSrc(path)}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  )}
 
-                {/* Reference index badge — lets the prompt refer to "Image N" unambiguously */}
-                <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[0.625rem] font-medium leading-none">
-                  {t('media.imageIndex', { index: index + 1 })}
-                </span>
+                  {/* Reference index badge — lets the prompt refer to "Image N" unambiguously */}
+                  <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[0.625rem] font-medium leading-none">
+                    {t('media.imageIndex', { index: index + 1 })}
+                  </span>
 
-                {/* Remove badge on hover (functional black corner scrim) */}
-                <button
-                  type="button"
-                  onClick={() => handleRemove(index)}
-                  className="
-                    absolute top-1 right-1
-                    w-4 h-4 rounded-full
-                    bg-black/70 text-white
-                    flex items-center justify-center
-                    opacity-0 group-hover:opacity-100
-                    transition-opacity
-                  "
+                  {/* Remove badge on hover (functional black corner scrim) */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(index)}
+                    className="
+                      absolute top-1 right-1
+                      w-4 h-4 rounded-full
+                      bg-black/70 text-white
+                      flex items-center justify-center
+                      opacity-0 group-hover:opacity-100
+                      transition-opacity
+                    "
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {/* File name — plain text below the thumbnail, selectable/copyable */}
+                <div
+                  className="mt-1 text-[0.6875rem] text-text-muted truncate select-text"
+                  title={getFileName(path)}
                 >
-                  <X className="w-3 h-3" />
-                </button>
-
-                {/* File name — bottom gradient scrim (functional, theme-agnostic) */}
-                <div className="absolute bottom-0 left-0 right-0 px-1.5 py-1 bg-gradient-to-t from-black/75 to-transparent text-[0.6875rem] text-white truncate">
                   {getFileName(path)}
                 </div>
               </div>
