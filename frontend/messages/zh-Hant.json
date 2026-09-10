@@ -1925,6 +1925,7 @@
       "parametersLabel": "引數",
       "mediaReference": "參考圖片",
       "mediaFirstFrame": "首幀圖片",
+      "mediaFrames": "首尾幀",
       "mediaRefMaterial": "參考素材",
       "mediaSourceVideo": "源影片",
       "generate": "生成",
@@ -1959,8 +1960,8 @@
         "description": "用文字描述畫面，從零生成一段影片。"
       },
       "i2v": {
-        "title": "圖片生成影片",
-        "description": "上傳一張首幀圖，讓它動起來變成影片。"
+        "title": "首尾幀生成影片",
+        "description": "上傳首幀圖，選填末幀圖，讓畫面動起來變成影片。"
       },
       "r2v": {
         "title": "多參考圖生成影片",
@@ -2017,7 +2018,12 @@
         "r2vSeedance": "Seedance 支援圖片、影片、音訊作為參考素材"
       },
       "labelReferenceOptional": "參考圖片（可選）",
-      "labelRefMaterialAV": "參考素材（圖片/影片/音訊）"
+      "labelRefMaterialAV": "參考素材（圖片/影片/音訊）",
+      "firstFrame": "首幀",
+      "lastFrame": "末幀",
+      "lastFrameOptional": "末幀（可選）",
+      "addLastFrame": "加入末幀圖片",
+      "imageIndex": "Image {index}"
     },
     "prompt": {
       "placeholder": "描述你想生成的內容...",

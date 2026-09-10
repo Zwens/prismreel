@@ -1925,6 +1925,7 @@
       "parametersLabel": "Parameters",
       "mediaReference": "Reference image",
       "mediaFirstFrame": "First frame",
+      "mediaFrames": "First & last frame",
       "mediaRefMaterial": "Reference material",
       "mediaSourceVideo": "Source video",
       "generate": "Generate",
@@ -1959,8 +1960,8 @@
         "description": "Describe a scene in words and generate a video from scratch."
       },
       "i2v": {
-        "title": "Image to video",
-        "description": "Upload a starting frame and animate it into a video."
+        "title": "First & last frame to video",
+        "description": "Upload a first frame, optionally a last frame, and animate it into a video."
       },
       "r2v": {
         "title": "Multi-reference video",
@@ -2017,7 +2018,12 @@
         "r2vSeedance": "Seedance accepts image, video, and audio as reference material"
       },
       "labelReferenceOptional": "Reference image (optional)",
-      "labelRefMaterialAV": "Reference material (image/video/audio)"
+      "labelRefMaterialAV": "Reference material (image/video/audio)",
+      "firstFrame": "First frame",
+      "lastFrame": "Last frame",
+      "lastFrameOptional": "Last frame (optional)",
+      "addLastFrame": "Add last frame image",
+      "imageIndex": "Image {index}"
     },
     "prompt": {
       "placeholder": "Describe what you want to generate…",

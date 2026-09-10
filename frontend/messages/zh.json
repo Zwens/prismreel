@@ -1925,6 +1925,7 @@
       "parametersLabel": "参数",
       "mediaReference": "参考图片",
       "mediaFirstFrame": "首帧图片",
+      "mediaFrames": "首尾帧",
       "mediaRefMaterial": "参考素材",
       "mediaSourceVideo": "源视频",
       "generate": "生成",
@@ -1959,8 +1960,8 @@
         "description": "用文字描述画面，从零生成一段视频。"
       },
       "i2v": {
-        "title": "图片生成视频",
-        "description": "上传一张首帧图，让它动起来变成视频。"
+        "title": "首尾帧生成视频",
+        "description": "上传首帧图，选填尾帧图，让画面动起来变成视频。"
       },
       "r2v": {
         "title": "多参考图生成视频",
@@ -2017,7 +2018,12 @@
         "r2vSeedance": "Seedance 支持图片、视频、音频作为参考素材"
       },
       "labelReferenceOptional": "参考图片（可选）",
-      "labelRefMaterialAV": "参考素材（图片/视频/音频）"
+      "labelRefMaterialAV": "参考素材（图片/视频/音频）",
+      "firstFrame": "首帧",
+      "lastFrame": "尾帧",
+      "lastFrameOptional": "尾帧（可选）",
+      "addLastFrame": "加入尾帧图片",
+      "imageIndex": "Image {index}"
     },
     "prompt": {
       "placeholder": "描述你想生成的内容...",

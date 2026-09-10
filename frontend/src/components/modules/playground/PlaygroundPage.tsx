@@ -300,7 +300,7 @@ export default function PlaygroundPage() {
                         : mode === 'r2v'
                           ? 'compose.mediaRefMaterial'
                           : mode === 'i2v'
-                            ? 'compose.mediaFirstFrame'
+                            ? 'compose.mediaFrames'
                             : 'compose.mediaReference'
                     )}
                   </div>
@@ -380,7 +380,7 @@ export default function PlaygroundPage() {
                       : mode === 'r2v'
                         ? 'compose.mediaRefMaterial'
                         : mode === 'i2v'
-                          ? 'compose.mediaFirstFrame'
+                          ? 'compose.mediaFrames'
                           : 'compose.mediaReference'
                   )}
                 </div>
