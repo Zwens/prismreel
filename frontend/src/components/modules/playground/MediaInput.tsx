@@ -575,8 +575,7 @@ export default function MediaInput() {
 
                 {/* File name — plain text below the thumbnail, selectable/copyable */}
                 <div
-                  className="mt-1 text-[0.6875rem] text-text-muted truncate select-text"
-                  title={getFileName(path)}
+                  className="mt-1 w-24 text-[0.6875rem] text-text-muted break-all select-text"
                 >
                   {getFileName(path)}
                 </div>
