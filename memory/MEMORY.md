@@ -17,3 +17,7 @@
 ## 待辦：多租戶登入系統
 - [**登入系統實作進度交接（2026-09-08）**](project_auth_implementation_handoff_2026-09-08.md) — Task 1-5/14 已完成並commit於`feature/multi-tenant-auth`分支，claude-wmzic-83接手Task 6起；含3項偏離計畫的技術細節（bcrypt版本坑/弱密鑰檢查/本機Python路徑）
 - [**登入系統spec交接（已過時，見上方進度交接）**](project_auth_handoff.md) — spec本身已審閱通過，此檔僅保留spec歷史脈絡
+
+## Playground 體驗直覺化改造（2026-09-10 完成）
+- [**✅ Playground UX改造已完成（2026-09-10）**](project_playground_ux_overhaul_2026-09-10.md) — 兩份plan-review清單皆已實作+瀏覽器驗收通過：卡片選模式+雙狀態全寬工作區、Ark/Seedance Key表單缺口；OSS雲端儲存開通仍擱置未購買
+- [**🔴 EnvConfigDialog.tsx 與 SettingsPage.tsx 是兩份平行環境設定表單，改欄位需兩處同步**](feedback_env_config_settings_duplicate_surfaces_must_sync.md) — 2026-09-10首次踩坑，交接記憶只判定其中一處缺欄位，另一處同樣缺但被漏查
