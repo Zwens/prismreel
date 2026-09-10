@@ -56,6 +56,8 @@ let queueSeq = 0;
 
 export type PlaygroundMode = 't2i' | 'i2i' | 't2v' | 'i2v' | 'r2v' | 'v2v';
 
+export type PlaygroundStage = 'select' | 'compose' | 'results';
+
 export interface PlaygroundOutput {
   id: string;
   media_path: string;
@@ -134,6 +136,10 @@ interface PlaygroundState {
   showAdvancedParams: boolean;
   showTemplateModal: boolean;
   showHistoryDrawer: boolean;
+
+  // Page-level stage (select mode -> compose inputs -> view results)
+  playgroundStage: PlaygroundStage;
+  setPlaygroundStage: (stage: PlaygroundStage) => void;
 
   // Template favorites (local, not persisted to backend)
   favoriteTemplateIds: string[];
@@ -232,6 +238,10 @@ export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
   showAdvancedParams: false,
   showTemplateModal: false,
   showHistoryDrawer: false,
+
+  // -- Page-level stage --------------------------------------------------------
+  playgroundStage: 'select',
+  setPlaygroundStage: (playgroundStage) => set({ playgroundStage }),
 
   // -- Template favorites ----------------------------------------------------
   favoriteTemplateIds: [],

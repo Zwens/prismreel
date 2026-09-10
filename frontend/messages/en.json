@@ -679,6 +679,11 @@
     "klingSecretKeyPlaceholder": "Kling API Secret Key",
     "viduProvider": "Vidu Provider",
     "viduApiKeyPlaceholder": "Vidu API Key",
+    "arkProvider": "Seedance / Ark",
+    "arkProviderSub": "Used by the Seedance model family",
+    "arkApiKeyLabel": "Ark API Key",
+    "arkApiKeyPlaceholder": "Required to use Seedance models",
+    "arkRegionLabel": "Region",
     "apiKeyLabel": "API Key",
     "createTitle": "Create New Project",
     "projectTitle": "Project Title",
@@ -1923,7 +1928,8 @@
       "mediaRefMaterial": "Reference material",
       "mediaSourceVideo": "Source video",
       "generate": "Generate",
-      "generateBatch": "Generate ×{count}"
+      "generateBatch": "Generate ×{count}",
+      "switchMode": "Switch mode"
     },
     "mode": {
       "image": "Image",
@@ -1936,6 +1942,34 @@
       "i2v": "Image",
       "r2v": "Reference",
       "v2v": "Edit"
+    },
+    "modeCard": {
+      "heading": "What do you want to create?",
+      "subheading": "Pick a starting point — you can always switch later.",
+      "t2i": {
+        "title": "Text to image",
+        "description": "Describe a scene in words and generate an image from scratch."
+      },
+      "i2i": {
+        "title": "Edit an image",
+        "description": "Upload a reference image and describe how to change it."
+      },
+      "t2v": {
+        "title": "Text to video",
+        "description": "Describe a scene in words and generate a video from scratch."
+      },
+      "i2v": {
+        "title": "Image to video",
+        "description": "Upload a starting frame and animate it into a video."
+      },
+      "r2v": {
+        "title": "Multi-reference video",
+        "description": "Combine up to 9 reference images with a prompt to guide the video."
+      },
+      "v2v": {
+        "title": "Edit a video",
+        "description": "Upload a source video and describe how to transform it."
+      }
     },
     "results": {
       "eyebrow": "Results",

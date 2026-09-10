@@ -679,6 +679,11 @@
     "klingSecretKeyPlaceholder": "可灵 API Secret Key",
     "viduProvider": "Vidu 服务商",
     "viduApiKeyPlaceholder": "Vidu API Key",
+    "arkProvider": "Seedance / Ark",
+    "arkProviderSub": "Seedance 模型家族使用",
+    "arkApiKeyLabel": "Ark API Key",
+    "arkApiKeyPlaceholder": "使用 Seedance 模型时必填",
+    "arkRegionLabel": "地区",
     "apiKeyLabel": "API 密钥",
     "createTitle": "创建新项目",
     "projectTitle": "项目标题",
@@ -1923,7 +1928,8 @@
       "mediaRefMaterial": "参考素材",
       "mediaSourceVideo": "源视频",
       "generate": "生成",
-      "generateBatch": "生成 ×{count}"
+      "generateBatch": "生成 ×{count}",
+      "switchMode": "切换生成类型"
     },
     "mode": {
       "image": "图像生成",
@@ -1936,6 +1942,34 @@
       "i2v": "图生",
       "r2v": "参考生",
       "v2v": "编辑"
+    },
+    "modeCard": {
+      "heading": "你想创作什么？",
+      "subheading": "先选一个起点，之后随时可以切换。",
+      "t2i": {
+        "title": "文字生成图片",
+        "description": "用文字描述画面，从零生成一张图片。"
+      },
+      "i2i": {
+        "title": "编辑图片",
+        "description": "上传一张参考图，描述你想怎么修改它。"
+      },
+      "t2v": {
+        "title": "文字生成视频",
+        "description": "用文字描述画面，从零生成一段视频。"
+      },
+      "i2v": {
+        "title": "图片生成视频",
+        "description": "上传一张首帧图，让它动起来变成视频。"
+      },
+      "r2v": {
+        "title": "多参考图生成视频",
+        "description": "最多结合 9 张参考图加上一段 Prompt，共同引导视频生成。"
+      },
+      "v2v": {
+        "title": "编辑视频",
+        "description": "上传一段源视频，描述你想怎么转换它。"
+      }
     },
     "results": {
       "eyebrow": "生成结果",

@@ -3,12 +3,14 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Sparkles } from 'lucide-react';
+import ModeCardSelector from './ModeCardSelector';
 import ModeSelector from './ModeSelector';
 import ModelSelector from './ModelSelector';
 import MediaInput from './MediaInput';
 import PromptInput from './PromptInput';
 import ParameterBar from './ParameterBar';
 import ResultGallery from './ResultGallery';
+import { ArrowLeft } from 'lucide-react';
 import { usePlaygroundStore, type PlaygroundMode, type PlaygroundGeneration, type QueuedRequest } from './usePlaygroundStore';
 import { playgroundApi, type PlaygroundGenerationResponse } from '@/lib/api';
 
@@ -86,6 +88,8 @@ export default function PlaygroundPage() {
   const queue = usePlaygroundStore((s) => s.queue);
   const activeCount = usePlaygroundStore((s) => s.activeGenerationIds.length);
   const maxConcurrent = usePlaygroundStore((s) => s.maxConcurrent);
+  const playgroundStage = usePlaygroundStore((s) => s.playgroundStage);
+  const setPlaygroundStage = usePlaygroundStore((s) => s.setPlaygroundStage);
 
   const pollTimers = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
 
@@ -172,7 +176,8 @@ export default function PlaygroundPage() {
       parameters,
       batchSize,
     });
-  }, [mode, modelId, prompt, negativePrompt, inputMedia, parameters, batchSize, enqueueRequest]);
+    setPlaygroundStage('results');
+  }, [mode, modelId, prompt, negativePrompt, inputMedia, parameters, batchSize, enqueueRequest, setPlaygroundStage]);
 
   // ─── Queue dispatcher — POST a queued request, then poll for status ────────
 
@@ -249,68 +254,77 @@ export default function PlaygroundPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="atelier-badge rounded border border-glass-border bg-glass px-2 py-1 text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
-            {MODE_LABELS[mode]}
-          </span>
+          {playgroundStage !== 'select' && (
+            <button
+              type="button"
+              onClick={() => setPlaygroundStage('select')}
+              className="flex items-center gap-1.5 rounded-full border border-glass-border bg-glass px-3 py-1.5 text-[0.6875rem] font-medium text-text-muted transition-colors hover:text-foreground hover:bg-hover-bg cursor-pointer"
+            >
+              <ArrowLeft size={13} aria-hidden="true" />
+              {t('compose.switchMode')}
+            </button>
+          )}
+          {playgroundStage !== 'select' && (
+            <span className="atelier-badge rounded border border-glass-border bg-glass px-2 py-1 text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
+              {MODE_LABELS[mode]}
+            </span>
+          )}
         </div>
       </header>
 
-      {/* ═══ SPLIT LAYOUT ═══ */}
-      <div className="flex flex-1 overflow-hidden min-h-0">
-        {/* ─── LEFT: INPUT PANEL ─── */}
-        <aside className="flex w-[420px] shrink-0 flex-col gap-3 overflow-y-auto border-r border-glass-border px-4 py-4 scrollbar-thin">
-          {/* Mode */}
-          <section className="glass-panel atelier-card rounded-[20px] px-5 py-5">
-            <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
-              {t('compose.modeLabel')}
+      {/* ═══ STAGE: SELECT ═══ */}
+      {playgroundStage === 'select' && (
+        <div className="flex-1 overflow-y-auto scrollbar-thin">
+          <ModeCardSelector />
+        </div>
+      )}
+
+      {/* ═══ STAGE: COMPOSE (full-width, no scroll) ═══ */}
+      {playgroundStage === 'compose' && (
+        <div className="flex flex-1 flex-col overflow-y-auto scrollbar-thin px-7 py-6">
+          <div className="mx-auto grid w-full max-w-5xl flex-1 grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="flex flex-col gap-5">
+              <section className="glass-panel atelier-card rounded-[20px] px-5 py-5">
+                <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
+                  {t('compose.promptLabel')}
+                </div>
+                <PromptInput />
+              </section>
+
+              {showMediaInput && (
+                <section className="glass-panel atelier-card rounded-[20px] px-5 py-5">
+                  <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
+                    {t(
+                      mode === 'v2v'
+                        ? 'compose.mediaSourceVideo'
+                        : mode === 'r2v'
+                          ? 'compose.mediaRefMaterial'
+                          : mode === 'i2v'
+                            ? 'compose.mediaFirstFrame'
+                            : 'compose.mediaReference'
+                    )}
+                  </div>
+                  <MediaInput />
+                </section>
+              )}
             </div>
-            <ModeSelector />
-          </section>
 
-          {/* Prompt — first, the primary input */}
-          <section className="glass-panel atelier-card rounded-[20px] px-5 py-5">
-            <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
-              {t('compose.promptLabel')}
+            <div className="flex flex-col gap-5">
+              <section className="glass-panel atelier-card rounded-[20px] px-5 py-5 relative z-30">
+                <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
+                  {t('compose.modelLabel')}
+                </div>
+                <ModelSelector />
+                <div className="my-4 h-px bg-border-subtle" />
+                <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
+                  {t('compose.parametersLabel')}
+                </div>
+                <ParameterBar />
+              </section>
             </div>
-            <PromptInput />
-          </section>
+          </div>
 
-          {/* Media Input (conditional) */}
-          {showMediaInput && (
-            <section className="glass-panel atelier-card rounded-[20px] px-5 py-5">
-              <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
-                {t(
-                  mode === 'v2v'
-                    ? 'compose.mediaSourceVideo'
-                    : mode === 'r2v'
-                      ? 'compose.mediaRefMaterial'
-                      : mode === 'i2v'
-                        ? 'compose.mediaFirstFrame'
-                        : 'compose.mediaReference'
-                )}
-              </div>
-              <MediaInput />
-            </section>
-          )}
-
-          {/* Model & Parameters — merged into one card (mockup) */}
-          <section className="glass-panel atelier-card rounded-[20px] px-5 py-5 relative z-30">
-            <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
-              {t('compose.modelLabel')}
-            </div>
-            <ModelSelector />
-            <div className="my-4 h-px bg-border-subtle" />
-            <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
-              {t('compose.parametersLabel')}
-            </div>
-            <ParameterBar />
-          </section>
-
-          {/* Spacer to push generate button to bottom */}
-          <div className="flex-1" />
-
-          {/* Generate CTA (sticky) */}
-          <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-glass-border bg-transparent backdrop-blur-md px-4 pb-4 pt-4">
+          <div className="mx-auto mt-5 w-full max-w-5xl">
             <button
               type="button"
               onClick={handleGenerate}
@@ -332,13 +346,95 @@ export default function PlaygroundPage() {
               </span>
             </button>
           </div>
-        </aside>
+        </div>
+      )}
 
-        {/* ─── RIGHT: RESULT GALLERY ─── */}
-        <main className="flex flex-1 flex-col overflow-hidden min-w-0">
-          <ResultGallery />
-        </main>
-      </div>
+      {/* ═══ STAGE: RESULTS (split layout) ═══ */}
+      {playgroundStage === 'results' && (
+        <div className="flex flex-1 overflow-hidden min-h-0">
+          {/* ─── LEFT: INPUT PANEL ─── */}
+          <aside className="flex w-[420px] shrink-0 flex-col gap-3 overflow-y-auto border-r border-glass-border px-4 py-4 scrollbar-thin">
+            {/* Mode */}
+            <section className="glass-panel atelier-card rounded-[20px] px-5 py-5">
+              <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
+                {t('compose.modeLabel')}
+              </div>
+              <ModeSelector />
+            </section>
+
+            {/* Prompt — first, the primary input */}
+            <section className="glass-panel atelier-card rounded-[20px] px-5 py-5">
+              <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
+                {t('compose.promptLabel')}
+              </div>
+              <PromptInput />
+            </section>
+
+            {/* Media Input (conditional) */}
+            {showMediaInput && (
+              <section className="glass-panel atelier-card rounded-[20px] px-5 py-5">
+                <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
+                  {t(
+                    mode === 'v2v'
+                      ? 'compose.mediaSourceVideo'
+                      : mode === 'r2v'
+                        ? 'compose.mediaRefMaterial'
+                        : mode === 'i2v'
+                          ? 'compose.mediaFirstFrame'
+                          : 'compose.mediaReference'
+                  )}
+                </div>
+                <MediaInput />
+              </section>
+            )}
+
+            {/* Model & Parameters — merged into one card (mockup) */}
+            <section className="glass-panel atelier-card rounded-[20px] px-5 py-5 relative z-30">
+              <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
+                {t('compose.modelLabel')}
+              </div>
+              <ModelSelector />
+              <div className="my-4 h-px bg-border-subtle" />
+              <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
+                {t('compose.parametersLabel')}
+              </div>
+              <ParameterBar />
+            </section>
+
+            {/* Spacer to push generate button to bottom */}
+            <div className="flex-1" />
+
+            {/* Generate CTA (sticky) */}
+            <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-glass-border bg-transparent backdrop-blur-md px-4 pb-4 pt-4">
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={!canGenerate}
+                className={[
+                  'inline-flex w-full items-center justify-center gap-[7px] rounded-full px-6 py-[13px]',
+                  "font-['Space_Grotesk',sans-serif] text-sm font-semibold",
+                  'bg-primary text-on-accent shadow-[var(--glow-primary)] transition-all duration-150 disabled:opacity-40 disabled:shadow-none',
+                  canGenerate
+                    ? 'hover:bg-primary-hover hover:-translate-y-px cursor-pointer'
+                    : 'cursor-not-allowed',
+                ].join(' ')}
+              >
+                <Sparkles size={16} aria-hidden="true" />
+                <span>
+                  {batchSize > 1
+                    ? t('compose.generateBatch', { count: batchSize })
+                    : t('compose.generate')}
+                </span>
+              </button>
+            </div>
+          </aside>
+
+          {/* ─── RIGHT: RESULT GALLERY ─── */}
+          <main className="flex flex-1 flex-col overflow-hidden min-w-0">
+            <ResultGallery />
+          </main>
+        </div>
+      )}
     </div>
   );
 }

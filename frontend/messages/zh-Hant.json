@@ -679,6 +679,11 @@
     "klingSecretKeyPlaceholder": "可靈 API Secret Key",
     "viduProvider": "Vidu 服務商",
     "viduApiKeyPlaceholder": "Vidu API Key",
+    "arkProvider": "Seedance / Ark",
+    "arkProviderSub": "Seedance 模型家族使用",
+    "arkApiKeyLabel": "Ark API Key",
+    "arkApiKeyPlaceholder": "使用 Seedance 模型時必填",
+    "arkRegionLabel": "地區",
     "apiKeyLabel": "API 金鑰",
     "createTitle": "建立新專案",
     "projectTitle": "專案標題",
@@ -1923,7 +1928,8 @@
       "mediaRefMaterial": "參考素材",
       "mediaSourceVideo": "源影片",
       "generate": "生成",
-      "generateBatch": "生成 ×{count}"
+      "generateBatch": "生成 ×{count}",
+      "switchMode": "切換生成類型"
     },
     "mode": {
       "image": "影像生成",
@@ -1936,6 +1942,34 @@
       "i2v": "圖生",
       "r2v": "參考生",
       "v2v": "編輯"
+    },
+    "modeCard": {
+      "heading": "你想創作什麼？",
+      "subheading": "先選一個起點，之後隨時可以切換。",
+      "t2i": {
+        "title": "文字生成圖片",
+        "description": "用文字描述畫面，從零生成一張圖片。"
+      },
+      "i2i": {
+        "title": "編輯圖片",
+        "description": "上傳一張參考圖，描述你想怎麼修改它。"
+      },
+      "t2v": {
+        "title": "文字生成影片",
+        "description": "用文字描述畫面，從零生成一段影片。"
+      },
+      "i2v": {
+        "title": "圖片生成影片",
+        "description": "上傳一張首幀圖，讓它動起來變成影片。"
+      },
+      "r2v": {
+        "title": "多參考圖生成影片",
+        "description": "最多結合 9 張參考圖加上一段 Prompt，共同引導影片生成。"
+      },
+      "v2v": {
+        "title": "編輯影片",
+        "description": "上傳一段來源影片，描述你想怎麼轉換它。"
+      }
     },
     "results": {
       "eyebrow": "生成結果",
