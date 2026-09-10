@@ -27,6 +27,7 @@ type EnvConfig = EnvConfigPayload & {
   VIDU_API_KEY: string;
   ARK_API_KEY: string;
   ARK_REGION: string;
+  ARK_BASE_URL: string;
   endpoint_overrides: Record<string, string>;
 };
 
@@ -34,6 +35,7 @@ const ENDPOINT_PROVIDERS = [
   { key: "DASHSCOPE_BASE_URL", label: "DashScope", placeholder: "https://dashscope.aliyuncs.com" },
   { key: "KLING_BASE_URL", label: "Kling", placeholder: "https://api-beijing.klingai.com/v1" },
   { key: "VIDU_BASE_URL", label: "Vidu", placeholder: "https://api.vidu.cn/ent/v2" },
+  { key: "ARK_BASE_URL", label: "Ark (Seedance)", placeholder: "https://ark.ap-southeast.bytepluses.com/api/v3" },
 ];
 
 const DEFAULT_CONFIG: EnvConfig = {
@@ -51,6 +53,7 @@ const DEFAULT_CONFIG: EnvConfig = {
   VIDU_API_KEY: "",
   ARK_API_KEY: "",
   ARK_REGION: "",
+  ARK_BASE_URL: "",
   endpoint_overrides: {},
 };
 
@@ -426,6 +429,48 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                         />
                       </div>
                     )}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-glass-border">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-foreground">{t("arkProvider")}</h3>
+                    <span className="text-[0.625rem] text-text-muted">{t("arkProviderSub")}</span>
+                  </div>
+                  <div className="bg-glass border border-glass-border rounded-lg p-4 space-y-4">
+                    <div>
+                      <label className="flex items-center justify-between text-sm font-medium text-foreground mb-2">
+                        <span>{t("arkApiKeyLabel")}</span>
+                        <span className="text-text-muted font-normal text-xs">e.g. sk-xxx</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={config.ARK_API_KEY}
+                        onChange={(e) => handleChange("ARK_API_KEY", e.target.value)}
+                        placeholder={t("arkApiKeyPlaceholder")}
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">{t("arkRegionLabel")}</label>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleChange("ARK_REGION", "intl")}
+                          className={modeButtonClass(config.ARK_REGION !== "cn")}
+                        >
+                          Intl
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleChange("ARK_REGION", "cn")}
+                          className={modeButtonClass(config.ARK_REGION === "cn")}
+                        >
+                          CN
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

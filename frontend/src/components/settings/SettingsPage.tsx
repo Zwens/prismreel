@@ -48,6 +48,7 @@ type EnvConfig = EnvConfigPayload & {
   VIDU_API_KEY: string;
   ARK_API_KEY: string;
   ARK_REGION: string;
+  ARK_BASE_URL: string;
   endpoint_overrides: Record<string, string>;
 };
 
@@ -55,6 +56,7 @@ const ENDPOINT_PROVIDERS = [
   { key: "DASHSCOPE_BASE_URL", label: "DashScope", placeholder: "https://dashscope.aliyuncs.com" },
   { key: "KLING_BASE_URL", label: "Kling", placeholder: "https://api-beijing.klingai.com/v1" },
   { key: "VIDU_BASE_URL", label: "Vidu", placeholder: "https://api.vidu.cn/ent/v2" },
+  { key: "ARK_BASE_URL", label: "Ark (Seedance)", placeholder: "https://ark.ap-southeast.bytepluses.com/api/v3" },
 ];
 
 const DEFAULT_CONFIG: EnvConfig = {
@@ -73,6 +75,7 @@ const DEFAULT_CONFIG: EnvConfig = {
   VIDU_API_KEY: "",
   ARK_API_KEY: "",
   ARK_REGION: "",
+  ARK_BASE_URL: "",
   endpoint_overrides: {},
 };
 
