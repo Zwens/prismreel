@@ -4141,7 +4141,7 @@ def _polish_error_response(err) -> Dict[str, Any]:
 
 
 @app.post("/video/polish_prompt")
-def polish_video_prompt(request: PolishVideoPromptRequest):
+def polish_video_prompt(request: PolishVideoPromptRequest, user=Depends(auth.require_login)):
     """Polishes a video generation prompt using LLM. Returns bilingual prompts.
 
     NOTE: Defined as a SYNC handler on purpose. The body calls
@@ -4171,6 +4171,7 @@ def polish_video_prompt(request: PolishVideoPromptRequest):
             request.prev_cn,
             image_urls=request.image_urls or None,
             polish_model=polish_model,
+            user_id=user.id,
         )
         return {
             "prompt_cn": result.get("prompt_cn", ""),
@@ -4201,7 +4202,7 @@ class PolishR2VPromptRequest(BaseModel):
 
 
 @app.post("/video/polish_r2v_prompt")
-def polish_r2v_prompt(request: PolishR2VPromptRequest):
+def polish_r2v_prompt(request: PolishR2VPromptRequest, user=Depends(auth.require_login)):
     """Polishes a R2V (Reference-to-Video) prompt using LLM. Returns bilingual prompts.
     错误约定同 /video/polish_prompt。
     SYNC handler on purpose — see polish_video_prompt for rationale."""
@@ -4219,6 +4220,7 @@ def polish_r2v_prompt(request: PolishR2VPromptRequest):
             request.prev_cn,
             image_urls=request.image_urls or None,
             polish_model=polish_model,
+            user_id=user.id,
         )
         return {
             "prompt_cn": result.get("prompt_cn", ""),
