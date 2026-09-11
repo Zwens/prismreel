@@ -84,3 +84,64 @@ def test_get_all_users_usage_summary_groups_by_user():
     all_summary = usage_repo.get_all_users_usage_summary()
     ids = {u["user_id"] for u in all_summary}
     assert {"u1", "u2"}.issubset(ids)
+
+
+def test_record_llm_usage_computes_cost():
+    from src.apps.comic_gen import usage_repo
+
+    usage_repo.record_llm_usage(
+        user_id="u1", provider="dashscope", model="qwen3.7-plus",
+        tokens_prompt=1_000_000, tokens_completion=0, total_tokens=1_000_000,
+    )
+    summary = usage_repo.get_user_usage_summary("u1")
+    cost = summary["llm"]["dashscope"]["qwen3.7-plus"]["cost_usd"]
+    assert cost == pytest.approx(6.4, rel=1e-6)  # 1M/10M * 64
+
+
+def test_record_seedance_usage_computes_cost_no_video_input():
+    from src.apps.comic_gen import usage_repo
+
+    usage_repo.record_generation_usage(
+        user_id="u1", kind="video", provider="byteplus",
+        model="dreamina-seedance-2-0-260128", resolution="720p",
+        input_has_video=False, total_tokens=1_000_000,
+    )
+    summary = usage_repo.get_user_usage_summary("u1")
+    cost = summary["video"]["byteplus"]["dreamina-seedance-2-0-260128"]["cost_usd"]
+    assert cost == pytest.approx(7.0, rel=1e-6)
+
+
+def test_record_seedance_usage_computes_cost_with_video_input():
+    from src.apps.comic_gen import usage_repo
+
+    usage_repo.record_generation_usage(
+        user_id="u1", kind="video", provider="byteplus",
+        model="dreamina-seedance-2-0-260128", resolution="4k",
+        input_has_video=True, total_tokens=2_000_000,
+    )
+    summary = usage_repo.get_user_usage_summary("u1")
+    cost = summary["video"]["byteplus"]["dreamina-seedance-2-0-260128"]["cost_usd"]
+    assert cost == pytest.approx(4.8, rel=1e-6)  # 2 * 2.4
+
+
+def test_record_seedance_usage_unknown_resolution_no_cost():
+    from src.apps.comic_gen import usage_repo
+
+    usage_repo.record_generation_usage(
+        user_id="u1", kind="video", provider="byteplus",
+        model="dreamina-seedance-2-0-260128", resolution="does-not-exist",
+        input_has_video=False, total_tokens=1_000_000,
+    )
+    summary = usage_repo.get_user_usage_summary("u1")
+    assert summary["video"]["byteplus"]["dreamina-seedance-2-0-260128"]["cost_usd"] is None
+
+
+def test_record_generation_usage_non_byteplus_no_cost():
+    from src.apps.comic_gen import usage_repo
+
+    usage_repo.record_generation_usage(
+        user_id="u1", kind="video", provider="wanx", model="wanx-t2v",
+        total_tokens=1_000_000,
+    )
+    summary = usage_repo.get_user_usage_summary("u1")
+    assert summary["video"]["wanx"]["wanx-t2v"]["cost_usd"] is None

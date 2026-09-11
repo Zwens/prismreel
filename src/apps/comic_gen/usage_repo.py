@@ -6,6 +6,60 @@ from typing import Optional
 from .auth_db import get_connection
 
 
+LLM_USD_PER_10M_TOKENS = 64.0
+
+# USD per 1,000,000 tokens, (price_without_video_input, price_with_video_input).
+# "Time limited" discounted rows use the discounted price directly — this is
+# a live rate table, not a historical record; update it when BytePlus's
+# published pricing changes. See docs/plans/2026-09-11-usage-tracking-design.md
+# for the source and date this was captured (2026-09-11).
+SEEDANCE_PRICING: dict[str, dict[str, tuple[float, float]]] = {
+    "dreamina-seedance-2-5-260628": {
+        "480p": (10.70, 6.40),
+        "720p": (10.70, 6.40),
+        "1080p": (11.7, 7.0),
+    },
+    "dreamina-seedance-2-0-260128": {
+        "480p": (7.0, 4.3),
+        "720p": (7.0, 4.3),
+        "1080p": (7.7, 4.7),
+        "4k": (4.0, 2.4),
+    },
+    "dreamina-seedance-2-0-fast-260128": {
+        "480p": (5.6, 3.3),
+        "720p": (5.6, 3.3),
+    },
+    "dreamina-seedance-2-0-mini-260615": {
+        "480p": (3.5, 2.1),
+        "720p": (3.5, 2.1),
+    },
+}
+
+
+def _llm_cost_usd(total_tokens: Optional[int]) -> Optional[float]:
+    if total_tokens is None:
+        return None
+    return total_tokens / 10_000_000 * LLM_USD_PER_10M_TOKENS
+
+
+def _seedance_cost_usd(
+    model: str,
+    resolution: Optional[str],
+    input_has_video: Optional[bool],
+    total_tokens: Optional[int],
+) -> Optional[float]:
+    if total_tokens is None or resolution is None:
+        return None
+    model_prices = SEEDANCE_PRICING.get(model)
+    if not model_prices:
+        return None
+    price_pair = model_prices.get(resolution.lower())
+    if not price_pair:
+        return None
+    price_per_million = price_pair[1] if input_has_video else price_pair[0]
+    return total_tokens / 1_000_000 * price_per_million
+
+
 @dataclass
 class UsageEvent:
     id: str
@@ -67,7 +121,7 @@ def record_llm_usage(
     _insert(
         user_id=user_id, kind="llm", provider=provider, model=model,
         tokens_prompt=tokens_prompt, tokens_completion=tokens_completion,
-        total_tokens=total_tokens,
+        total_tokens=total_tokens, cost_usd=_llm_cost_usd(total_tokens),
     )
 
 
@@ -80,10 +134,13 @@ def record_generation_usage(
     input_has_video: Optional[bool] = None,
     total_tokens: Optional[int] = None,
 ) -> None:
+    cost_usd = None
+    if provider == "byteplus":
+        cost_usd = _seedance_cost_usd(model, resolution, input_has_video, total_tokens)
     _insert(
         user_id=user_id, kind=kind, provider=provider, model=model,
         resolution=resolution, input_has_video=input_has_video,
-        total_tokens=total_tokens,
+        total_tokens=total_tokens, cost_usd=cost_usd,
     )
 
 
