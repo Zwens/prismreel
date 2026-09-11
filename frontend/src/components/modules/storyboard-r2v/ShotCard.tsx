@@ -217,13 +217,13 @@ export default function ShotCard({
             const slotN = parseInt(match[1], 10);
             if (bySlot.has(slotN)) continue;
             const name = match[2];
-            const char = characters.find((c: any) => c.name === name);
+            const char: any = resolveAssetByTagName(name, [characters, scenes, props]);
             bySlot.set(slotN, char?.description ? `${name}: ${char.description}` : name);
         }
         return Array.from(bySlot.entries())
             .sort((a, b) => a[0] - b[0])
             .map(([, description]) => ({ description }));
-    }, [shot.tabMode, shot.prompt, characters])();
+    }, [shot.tabMode, shot.prompt, characters, scenes, props])();
 
     // polishImageUrls — feed vision-capable polish (Issue 13) with the
     // images the polish actually needs to "see":
@@ -239,7 +239,7 @@ export default function ShotCard({
             let m;
             while ((m = tagPattern.exec(shot.prompt)) !== null) {
                 const [, name] = m;
-                const char = characters.find((c: any) => c.name === name);
+                const char: any = resolveAssetByTagName(name, [characters, scenes, props]);
                 if (!char || seen.has(char.id)) continue;
                 seen.add(char.id);
                 const url = char.headshot_image_url || char.image_url || char.full_body_image_url
@@ -254,7 +254,7 @@ export default function ShotCard({
             ? shot.t2iImageUrls[Math.max(0, Math.min(shot.t2iSelectedIndex ?? 0, shot.t2iImageUrls.length - 1))]
             : (shot.t2iImageUrl || shot.imageUrl);
         return active ? [active] : [];
-    }, [shot.tabMode, shot.prompt, shot.t2iImageUrls, shot.t2iSelectedIndex, shot.t2iImageUrl, shot.imageUrl, characters])();
+    }, [shot.tabMode, shot.prompt, shot.t2iImageUrls, shot.t2iSelectedIndex, shot.t2iImageUrl, shot.imageUrl, characters, scenes, props])();
 
     // castAvatars — character avatar group for the "Cast:" row above
     // the prompt textarea (L5 borrow from 火山剧创's 出镜角色). De-
@@ -267,7 +267,7 @@ export default function ShotCard({
         let match;
         while ((match = tagPattern.exec(shot.prompt)) !== null) {
             const [, name] = match;
-            const char = characters.find((c: any) => c.name === name);
+            const char: any = resolveAssetByTagName(name, [characters, scenes, props]);
             if (!char || seen.has(char.id)) continue;
             seen.add(char.id);
             const avatarUrl =
@@ -280,7 +280,7 @@ export default function ShotCard({
             out.push({ id: char.id, name: char.name, avatarUrl });
         }
         return out;
-    }, [shot.prompt, characters])();
+    }, [shot.prompt, characters, scenes, props])();
 
     const assembledPromptPreview = useMemo(() => buildAssembledPrompt(shot), [
         shot.prompt, shot.shotSize, shot.cameraAngle, shot.cameraMovementStructured, shot.transitionHint,

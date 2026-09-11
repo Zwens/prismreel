@@ -29,6 +29,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import requests
 
 from .base import VideoGenModel
+from ..utils.oss_utils import OSSImageUploader
+from ..utils.provider_media import resolve_media_input
 
 logger = logging.getLogger(__name__)
 
@@ -168,11 +170,33 @@ class BytePlusVideoModel(VideoGenModel):
 
     # -- generation ------------------------------------------------------
 
+    def _resolve_ark_image_url(self, ref: Optional[str], *, model_name: Optional[str]) -> Optional[str]:
+        """Resolve a first/last-frame reference to a URL Ark can fetch.
+
+        ``ref`` may already be a remote URL (pass through) or a local file
+        path (upload to OSS and sign). Ark's `image_url.url` field only
+        accepts a fetchable URL, unlike Kling's vendor path which takes
+        base64."""
+        if not ref:
+            return None
+        if ref.startswith(("http://", "https://")):
+            return ref
+        resolved = resolve_media_input(
+            ref,
+            model_name=model_name or "",
+            modality="image",
+            backend="byteplus",
+            uploader=OSSImageUploader(),
+        )
+        return resolved.value
+
     def generate(self, prompt: str, output_path: str, img_url: Optional[str] = None,
                  img_path: Optional[str] = None, **kwargs) -> Tuple[str, float, Optional[dict]]:
         start = time.time()
 
-        last_frame_url = kwargs.get("last_frame_url")
+        model_name = kwargs.get("model_name")
+        last_frame_url = self._resolve_ark_image_url(kwargs.get("last_frame_url"), model_name=model_name)
+        first_frame_url = self._resolve_ark_image_url(img_url or img_path, model_name=model_name)
         ref_image_urls = kwargs.get("ref_image_urls") or []
 
         images: List[Tuple[str, Optional[str]]] = []
@@ -184,13 +208,12 @@ class BytePlusVideoModel(VideoGenModel):
                 if ref and ref not in seen:
                     seen.add(ref)
                     images.append((ref, "reference_image"))
-        elif img_url:
+        elif first_frame_url:
             role = "first_frame" if last_frame_url else None
-            images.append((img_url, role))
+            images.append((first_frame_url, role))
             if last_frame_url:
                 images.append((last_frame_url, "last_frame"))
 
-        model_name = kwargs.get("model_name")
         wire_model_id = self.resolve_model_id(model_name)
         if wire_model_id is None:
             # Fail before the network call: a None model id would otherwise
