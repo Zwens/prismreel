@@ -311,6 +311,11 @@ function CompletedCard({ generation, outputIndex, onGenerateVideo, onOpenDetail 
           <span className="font-mono text-[0.5625rem] bg-primary/10 text-primary/70 rounded px-[6px] py-[2px] uppercase">
             {MODE_LABELS[mode] || mode}
           </span>
+          {typeof output?.cost_usd === 'number' && (
+            <span className="font-mono text-[0.5625rem] bg-glass text-text-muted rounded px-[6px] py-[2px]" title={t('card.costEstimateNote')}>
+              ${output.cost_usd.toFixed(3)}
+            </span>
+          )}
           <span className="font-mono text-[0.5625rem] text-text-muted ml-auto">{formatTime(created_at)}</span>
           {saved && (
             <span className="flex items-center gap-0.5 text-[0.5625rem] text-primary">

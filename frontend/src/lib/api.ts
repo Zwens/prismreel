@@ -1799,10 +1799,25 @@ export interface PlaygroundGenerationResponse {
     media_type: string;
     thumbnail_path?: string;
     saved_to_library: boolean;
+    total_tokens?: number;
+    cost_usd?: number;
   }>;
   status: string;
   error?: string;
   created_at: string;
+}
+
+export interface PlaygroundEstimateCostRequest {
+  mode: string;
+  model_id: string;
+  parameters?: Record<string, any>;
+  batch_size?: number;
+}
+
+export interface PlaygroundEstimateCostResponse {
+  cost_usd?: number;
+  per_unit_cost_usd?: number;
+  priced: boolean;
 }
 
 export interface PlaygroundTemplateResponse {
@@ -1821,6 +1836,9 @@ export interface PlaygroundTemplateResponse {
 export const playgroundApi = {
   generate: (data: PlaygroundGenerateRequest) =>
     axios.post<PlaygroundGenerationResponse>(API_URL + "/playground/generate", data).then(r => r.data),
+
+  estimateCost: (data: PlaygroundEstimateCostRequest) =>
+    axios.post<PlaygroundEstimateCostResponse>(API_URL + "/playground/estimate-cost", data).then(r => r.data),
 
   getHistory: (limit = 50, offset = 0) =>
     axios.get<PlaygroundGenerationResponse[]>(API_URL + "/playground/history", { params: { limit, offset } }).then(r => r.data),

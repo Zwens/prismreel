@@ -1932,6 +1932,7 @@
       "mediaSourceVideo": "源影片",
       "generate": "生成",
       "generateBatch": "生成 ×{count}",
+      "estimatedCost": "預估費用：${amount}",
       "switchMode": "切換生成類型"
     },
     "mode": {
@@ -1990,6 +1991,7 @@
     "card": {
       "saveToLibrary": "儲存到資產庫",
       "saved": "已儲存",
+      "costEstimateNote": "供應商實際計費金額",
       "featured": "精選",
       "useAsReference": "用作參考圖",
       "download": "下載",

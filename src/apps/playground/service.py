@@ -50,11 +50,12 @@ class PlaygroundService:
     # Public API
     # ------------------------------------------------------------------
 
-    def create_generation(self, request: GenerateRequest) -> PlaygroundGeneration:
+    def create_generation(self, request: GenerateRequest, owner_id: str = "") -> PlaygroundGeneration:
         """Create a :class:`PlaygroundGeneration` record with *status=pending*,
         persist it via storage, and return it."""
         gen = PlaygroundGeneration(
             id=str(uuid.uuid4()),
+            owner_id=owner_id,
             mode=request.mode,
             model_id=request.model_id,
             prompt=request.prompt,
@@ -69,6 +70,38 @@ class PlaygroundService:
         )
         self.storage.add_generation(gen)
         return gen
+
+    def estimate_cost(
+        self, mode: PlaygroundMode, model_id: str, parameters: Optional[dict], batch_size: int = 1
+    ) -> "tuple[Optional[float], Optional[float], bool]":
+        """Pre-generation cost estimate: (total_cost, per_unit_cost, priced).
+
+        Only Seedance (BytePlus) has a confirmed price table; every other
+        provider returns (None, None, False) -- count-only, no cost known
+        until pricing is confirmed (see usage-tracking design doc scope)."""
+        model_lower = (model_id or "").lower()
+        if not model_lower.startswith("seedance"):
+            return None, None, False
+
+        from ..comic_gen import usage_repo
+        from ...models.byteplus import resolve_ark_model_id
+
+        wire_model_id = resolve_ark_model_id(model_id)
+        if wire_model_id is None:
+            return None, None, False
+
+        params = parameters or {}
+        resolution = params.get("resolution", "720p")
+        duration = params.get("duration", 5)
+        per_unit = usage_repo.estimate_seedance_cost_usd(
+            model=wire_model_id,
+            resolution=resolution,
+            duration=duration,
+            input_has_video=(mode == PlaygroundMode.R2V),
+        )
+        if per_unit is None:
+            return None, None, False
+        return per_unit * max(batch_size, 1), per_unit, True
 
     def process_generation(self, generation_id: str) -> None:
         """Execute the actual generation.  Intended to run in a background
@@ -283,23 +316,26 @@ class PlaygroundService:
 
             try:
                 if model_lower.startswith("seedance"):
-                    self._generate_video_seedance(gen, out_path)
+                    usage = self._generate_video_seedance(gen, out_path)
                 elif model_lower.startswith("kling"):
-                    self._generate_video_kling(gen, out_path)
+                    usage = self._generate_video_kling(gen, out_path)
                 elif model_lower.startswith("vidu") or model_lower.startswith("viduq"):
-                    self._generate_video_vidu(gen, out_path)
+                    usage = self._generate_video_vidu(gen, out_path)
                 elif model_lower.startswith("happyhorse"):
-                    self._generate_video_wanx(gen, out_path)
+                    usage = self._generate_video_wanx(gen, out_path)
                 elif model_lower.startswith("pixverse"):
-                    self._generate_video_wanx(gen, out_path)
+                    usage = self._generate_video_wanx(gen, out_path)
                 else:
-                    self._generate_video_wanx(gen, out_path)
+                    usage = self._generate_video_wanx(gen, out_path)
 
+                total_tokens, cost_usd = self._record_video_usage(gen, usage)
                 output_entry = PlaygroundOutput(
                     id=str(uuid.uuid4()),
                     media_path=out_path,
                     media_type="video",
                     thumbnail_path=self._extract_video_thumbnail(out_path),
+                    total_tokens=total_tokens,
+                    cost_usd=cost_usd,
                 )
                 gen.outputs.append(output_entry)
                 self.storage.update_generation(gen)
@@ -309,6 +345,44 @@ class PlaygroundService:
 
         if failures and not gen.outputs:
             raise RuntimeError(f"All {len(failures)} batch items failed: {failures[0]}")
+
+    def _record_video_usage(
+        self, gen: PlaygroundGeneration, usage: Optional[dict]
+    ) -> "tuple[Optional[int], Optional[float]]":
+        """Best-effort usage_events write; never fails the generation itself.
+
+        Returns (total_tokens, cost_usd) so the caller can surface the same
+        numbers on the PlaygroundOutput record, regardless of whether the
+        usage_events write itself succeeds.
+        """
+        if usage is None:
+            return None, None
+
+        from ..comic_gen import usage_repo
+
+        total_tokens = usage.get("total_tokens")
+        cost_usd = None
+        try:
+            cost_usd = usage_repo.record_generation_usage(
+                user_id=gen.owner_id or "",
+                kind="video",
+                provider=usage.get("provider", "unknown"),
+                model=self._resolve_wire_model_id(gen.model_id) or gen.model_id,
+                resolution=usage.get("resolution"),
+                input_has_video=usage.get("input_has_video"),
+                duration=usage.get("duration"),
+                total_tokens=total_tokens,
+            )
+        except Exception:
+            logger.warning("Failed to record generation usage for %s", gen.id, exc_info=True)
+
+        return total_tokens, cost_usd
+
+    @staticmethod
+    def _resolve_wire_model_id(model_id: str) -> Optional[str]:
+        from ...models.byteplus import resolve_ark_model_id
+
+        return resolve_ark_model_id(model_id)
 
     def _extract_video_thumbnail(self, video_path: str) -> Optional[str]:
         """Grab a frame just past the start of the clip as a gallery thumbnail.
@@ -347,7 +421,7 @@ class PlaygroundService:
 
     # -- adapter delegates ------------------------------------------------
 
-    def _generate_video_wanx(self, gen: PlaygroundGeneration, out_path: str) -> None:
+    def _generate_video_wanx(self, gen: PlaygroundGeneration, out_path: str) -> Optional[dict]:
         """Delegate to :class:`WanxModel` (DashScope video generation -- wan2.x / happyhorse)."""
         from ...models.wanx import WanxModel
 
@@ -384,8 +458,9 @@ class PlaygroundService:
             img_url=img_url,
             **kwargs,
         )
+        return None  # count-only -- no confirmed price table for wanx yet
 
-    def _generate_video_seedance(self, gen: PlaygroundGeneration, out_path: str) -> None:
+    def _generate_video_seedance(self, gen: PlaygroundGeneration, out_path: str) -> Optional[dict]:
         """Seedance runs entirely on BytePlus Ark.
 
         The family used to straddle two gateways; MuleRouter is gone, so there
@@ -426,15 +501,22 @@ class PlaygroundService:
             self._byteplus_video_model = BytePlusVideoModel({})
         model = self._byteplus_video_model
 
-        model.generate(
+        _, _, usage = model.generate(
             prompt=gen.prompt,
             output_path=out_path,
             img_url=img_url,
             img_path=img_path,
             **kwargs,
         )
+        return {
+            "provider": "byteplus",
+            "resolution": kwargs["resolution"],
+            "input_has_video": gen.mode == PlaygroundMode.R2V,
+            "duration": kwargs["duration"],
+            "total_tokens": (usage or {}).get("total_tokens"),
+        }
 
-    def _generate_video_kling(self, gen: PlaygroundGeneration, out_path: str) -> None:
+    def _generate_video_kling(self, gen: PlaygroundGeneration, out_path: str) -> Optional[dict]:
         """Delegate to :class:`KlingModel`."""
         from ...models.kling import KlingModel
 
@@ -457,8 +539,9 @@ class PlaygroundService:
             sound=params.get("sound", "off"),
             cfg_scale=params.get("cfg_scale"),
         )
+        return None  # count-only -- no confirmed price table for kling yet
 
-    def _generate_video_vidu(self, gen: PlaygroundGeneration, out_path: str) -> None:
+    def _generate_video_vidu(self, gen: PlaygroundGeneration, out_path: str) -> Optional[dict]:
         """Delegate to :class:`ViduModel`."""
         from ...models.vidu import ViduModel
 
@@ -481,6 +564,7 @@ class PlaygroundService:
             audio=params.get("audio", True),
             movement_amplitude=params.get("movement_amplitude", "auto"),
         )
+        return None  # count-only -- no confirmed price table for vidu yet
 
     # ------------------------------------------------------------------
     # Helpers

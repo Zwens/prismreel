@@ -36,6 +36,50 @@ SEEDANCE_PRICING: dict[str, dict[str, tuple[float, float]]] = {
 }
 
 
+# Approximate pixel area per resolution tier, used only for pre-generation
+# cost estimates. Ark's actual token count depends on the real output
+# width/height (which itself depends on aspect_ratio, e.g. a portrait ratio
+# yields a different width/height split than 1280x720 for the same "720p"
+# tier), so this is a best-effort estimate, not the billed value — verified
+# against one live Ark response (720p, 5s, 24fps -> 108654 tokens vs this
+# formula's 108000, ~0.6% off).
+SEEDANCE_RESOLUTION_PIXELS: dict[str, int] = {
+    "480p": 854 * 480,
+    "720p": 1280 * 720,
+    "1080p": 1920 * 1080,
+    "4k": 3840 * 2160,
+}
+SEEDANCE_FPS = 24
+
+
+def estimate_seedance_tokens(resolution: Optional[str], duration: Optional[int]) -> Optional[int]:
+    """Best-effort pre-generation token estimate: duration * pixels * fps / 1024.
+
+    Returns None when the resolution tier isn't in the pixel table (nothing
+    to estimate from) or duration is missing.
+    """
+    if not resolution or not duration:
+        return None
+    pixels = SEEDANCE_RESOLUTION_PIXELS.get(resolution.lower())
+    if not pixels:
+        return None
+    return int(duration * pixels * SEEDANCE_FPS / 1024)
+
+
+def estimate_seedance_cost_usd(
+    model: str,
+    resolution: Optional[str],
+    duration: Optional[int],
+    input_has_video: Optional[bool] = False,
+) -> Optional[float]:
+    """Pre-generation cost estimate for a Seedance call, or None when the
+    model/resolution isn't in the price table."""
+    estimated_tokens = estimate_seedance_tokens(resolution, duration)
+    if estimated_tokens is None:
+        return None
+    return _seedance_cost_usd(model, resolution, input_has_video, estimated_tokens)
+
+
 def _llm_cost_usd(total_tokens: Optional[int]) -> Optional[float]:
     if total_tokens is None:
         return None
@@ -137,7 +181,10 @@ def record_generation_usage(
     input_has_video: Optional[bool] = None,
     duration: Optional[int] = None,
     total_tokens: Optional[int] = None,
-) -> None:
+) -> Optional[float]:
+    """Records the event and returns the computed cost_usd (or None when no
+    price table entry exists), so callers can surface the same figure
+    without recomputing it or reaching into this module's private helpers."""
     cost_usd = None
     if provider == "byteplus":
         cost_usd = _seedance_cost_usd(model, resolution, input_has_video, total_tokens)
@@ -146,6 +193,7 @@ def record_generation_usage(
         resolution=resolution, input_has_video=input_has_video, duration=duration,
         total_tokens=total_tokens, cost_usd=cost_usd,
     )
+    return cost_usd
 
 
 def _rows_to_summary(rows) -> dict:
