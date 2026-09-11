@@ -67,7 +67,7 @@ def test_t2v_content_is_text_only():
 
 
 def test_i2v_content_appends_a_single_image_item():
-    content = build_ark_content("a shot", images=["https://x/first.png"], flags="")
+    content = build_ark_content("a shot", images=[("https://x/first.png", None)], flags="")
 
     assert content[0] == {"type": "text", "text": "a shot"}
     assert content[1] == {
@@ -76,13 +76,34 @@ def test_i2v_content_appends_a_single_image_item():
     }
 
 
+def test_i2v_first_and_last_frame_carry_their_roles():
+    content = build_ark_content(
+        "a shot",
+        images=[("https://x/first.png", "first_frame"), ("https://x/last.png", "last_frame")],
+        flags="",
+    )
+
+    assert content[1] == {
+        "type": "image_url",
+        "image_url": {"url": "https://x/first.png"},
+        "role": "first_frame",
+    }
+    assert content[2] == {
+        "type": "image_url",
+        "image_url": {"url": "https://x/last.png"},
+        "role": "last_frame",
+    }
+
+
 def test_r2v_content_carries_every_reference_in_order():
-    images = [f"https://x/{i}.png" for i in range(4)]
+    urls = [f"https://x/{i}.png" for i in range(4)]
+    images = [(url, "reference_image") for url in urls]
 
     content = build_ark_content("a shot", images=images, flags="")
 
-    urls = [c["image_url"]["url"] for c in content if c["type"] == "image_url"]
-    assert urls == images
+    result_urls = [c["image_url"]["url"] for c in content if c["type"] == "image_url"]
+    assert result_urls == urls
+    assert all(c["role"] == "reference_image" for c in content if c["type"] == "image_url")
 
 
 def test_prompt_and_flags_are_joined_with_a_single_space():

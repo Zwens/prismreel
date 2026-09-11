@@ -8,5 +8,5 @@ export const SUPPORTED_LOCALES: Locale[] = ['zh', 'zh-Hant', 'en'];
 const messages: Record<Locale, typeof zh> = { zh, 'zh-Hant': zhHant, en };
 
 export function getMessages(locale: Locale) {
-    return messages[locale] ?? messages.zh;
+    return messages[locale] ?? messages['zh-Hant'];
 }

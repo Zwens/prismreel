@@ -438,6 +438,7 @@
     "library": "资产库",
     "playground": "创作台",
     "settings": "设置",
+    "logout": "登出",
     "workspaceAria": "PrismReel Studio · 工作区",
     "mainNavAria": "主导航"
   },
@@ -662,7 +663,8 @@
     "arkRegionLabel": "区域",
     "arkRegionIntl": "国际版 (BytePlus)",
     "arkRegionCn": "国内版 (火山引擎)",
-    "arkRegionHint": "国际版走 ark.ap-southeast.bytepluses.com，国内版走 ark.cn-beijing.volces.com。"
+    "arkRegionHint": "国际版走 ark.ap-southeast.bytepluses.com，国内版走 ark.cn-beijing.volces.com。",
+    "usageLinkLabel": "查看用量与预估费用"
   },
   "project": {
     "dashscopeApiKeyLabel": "DashScope API Key",
@@ -678,6 +680,11 @@
     "klingSecretKeyPlaceholder": "可灵 API Secret Key",
     "viduProvider": "Vidu 服务商",
     "viduApiKeyPlaceholder": "Vidu API Key",
+    "arkProvider": "Seedance / Ark",
+    "arkProviderSub": "Seedance 模型家族使用",
+    "arkApiKeyLabel": "Ark API Key",
+    "arkApiKeyPlaceholder": "使用 Seedance 模型时必填",
+    "arkRegionLabel": "地区",
     "apiKeyLabel": "API 密钥",
     "createTitle": "创建新项目",
     "projectTitle": "项目标题",
@@ -760,7 +767,8 @@
     "resetToDefault": "恢复默认",
     "viewDefault": "查看完整默认提示词",
     "promptConfigTitle": "提示词配置",
-    "modelSettingsTitle": "模型设置"
+    "modelSettingsTitle": "模型设置",
+    "usageLinkLabel": "查看用量与预估费用"
   },
   "series": {
     "characterLabel": "角色",
@@ -1919,10 +1927,12 @@
       "parametersLabel": "参数",
       "mediaReference": "参考图片",
       "mediaFirstFrame": "首帧图片",
+      "mediaFrames": "首尾帧",
       "mediaRefMaterial": "参考素材",
       "mediaSourceVideo": "源视频",
       "generate": "生成",
-      "generateBatch": "生成 ×{count}"
+      "generateBatch": "生成 ×{count}",
+      "switchMode": "切换生成类型"
     },
     "mode": {
       "image": "图像生成",
@@ -1935,6 +1945,34 @@
       "i2v": "图生",
       "r2v": "参考生",
       "v2v": "编辑"
+    },
+    "modeCard": {
+      "heading": "你想创作什么？",
+      "subheading": "先选一个起点，之后随时可以切换。",
+      "t2i": {
+        "title": "文字生成图片",
+        "description": "用文字描述画面，从零生成一张图片。"
+      },
+      "i2i": {
+        "title": "编辑图片",
+        "description": "上传一张参考图，描述你想怎么修改它。"
+      },
+      "t2v": {
+        "title": "文字生成视频",
+        "description": "用文字描述画面，从零生成一段视频。"
+      },
+      "i2v": {
+        "title": "首尾帧生成视频",
+        "description": "上传首帧图，选填尾帧图，让画面动起来变成视频。"
+      },
+      "r2v": {
+        "title": "多参考图生成视频",
+        "description": "最多结合 9 张参考图加上一段 Prompt，共同引导视频生成。"
+      },
+      "v2v": {
+        "title": "编辑视频",
+        "description": "上传一段源视频，描述你想怎么转换它。"
+      }
     },
     "results": {
       "eyebrow": "生成结果",
@@ -1982,7 +2020,12 @@
         "r2vSeedance": "Seedance 支持图片、视频、音频作为参考素材"
       },
       "labelReferenceOptional": "参考图片（可选）",
-      "labelRefMaterialAV": "参考素材（图片/视频/音频）"
+      "labelRefMaterialAV": "参考素材（图片/视频/音频）",
+      "firstFrame": "首帧",
+      "lastFrame": "尾帧",
+      "lastFrameOptional": "尾帧（可选）",
+      "addLastFrame": "加入尾帧图片",
+      "imageIndex": "Image {index}"
     },
     "prompt": {
       "placeholder": "描述你想生成的内容...",
@@ -2077,5 +2120,28 @@
     "genFailed": "生成失败",
     "noMedia": "暂无媒体",
     "seedLabel": "随机种子"
+  },
+  "usage": {
+    "pageTitle": "用量",
+    "myUsageTitle": "我的用量",
+    "adminUsageTitle": "所有用户用量",
+    "llmSection": "LLM 文本生成",
+    "videoSection": "视频生成",
+    "otherSection": "其他生成（仅计次数）",
+    "columnProvider": "供应商",
+    "columnModel": "模型",
+    "columnResolution": "画质",
+    "columnMode": "模式",
+    "columnDuration": "时长",
+    "columnCount": "调用次数",
+    "columnTokens": "Token 数",
+    "columnCost": "预估费用（美元）",
+    "modeI2v": "首帧生视频",
+    "modeR2v": "参考图生视频",
+    "durationSeconds": "{seconds}秒",
+    "costEstimateNote": "费用为依官方公开价目表估算，可能与实际账单有出入。",
+    "noCostAvailable": "—",
+    "loading": "加载中...",
+    "backToSettings": "返回设置"
   }
 }

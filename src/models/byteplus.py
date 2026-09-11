@@ -123,15 +123,22 @@ def build_param_flags(
     return " ".join(parts)
 
 
-def build_ark_content(prompt: str, images: List[str], flags: str) -> List[Dict[str, Any]]:
+def build_ark_content(
+    prompt: str, images: List[Tuple[str, Optional[str]]], flags: str
+) -> List[Dict[str, Any]]:
     """The `content` array: one text item, then one image_url item per
-    reference. Order is preserved — for R2V it is what the model maps to its
-    reference slots."""
+    reference. Each image carries its Ark `role` (`first_frame`,
+    `last_frame`, or `reference_image`) — Ark's first-frame, first+last-frame,
+    and omni-reference scenarios are mutually exclusive, so role is what
+    tells it which scenario this request is."""
     text = " ".join(part for part in [(prompt or "").strip(), flags.strip()] if part)
     content: List[Dict[str, Any]] = [{"type": "text", "text": text}]
-    for url in images:
+    for url, role in images:
         if url:
-            content.append({"type": "image_url", "image_url": {"url": url}})
+            item: Dict[str, Any] = {"type": "image_url", "image_url": {"url": url}}
+            if role:
+                item["role"] = role
+            content.append(item)
     return content
 
 
@@ -162,15 +169,26 @@ class BytePlusVideoModel(VideoGenModel):
     # -- generation ------------------------------------------------------
 
     def generate(self, prompt: str, output_path: str, img_url: Optional[str] = None,
-                 img_path: Optional[str] = None, **kwargs) -> Tuple[str, float]:
+                 img_path: Optional[str] = None, **kwargs) -> Tuple[str, float, Optional[dict]]:
         start = time.time()
 
-        images: List[str] = []
-        if img_url:
-            images.append(img_url)
-        for ref in kwargs.get("ref_image_urls") or []:
-            if ref and ref not in images:
-                images.append(ref)
+        last_frame_url = kwargs.get("last_frame_url")
+        ref_image_urls = kwargs.get("ref_image_urls") or []
+
+        images: List[Tuple[str, Optional[str]]] = []
+        if ref_image_urls:
+            # Omni reference-to-video: every image is a reference_image.
+            # Mutually exclusive with first_frame/last_frame per Ark's contract.
+            seen = set()
+            for ref in ref_image_urls:
+                if ref and ref not in seen:
+                    seen.add(ref)
+                    images.append((ref, "reference_image"))
+        elif img_url:
+            role = "first_frame" if last_frame_url else None
+            images.append((img_url, role))
+            if last_frame_url:
+                images.append((last_frame_url, "last_frame"))
 
         model_name = kwargs.get("model_name")
         wire_model_id = self.resolve_model_id(model_name)
@@ -200,14 +218,14 @@ class BytePlusVideoModel(VideoGenModel):
         if not task_id:
             raise RuntimeError(f"Ark task create returned no id: {resp.text[:300]}")
 
-        video_url = self._poll(task_id)
+        video_url, usage = self._poll(task_id)
         self._download(video_url, output_path)
 
         elapsed = time.time() - start
         logger.info("[BytePlus/Seedance] done in %.1fs -> %s", elapsed, output_path)
-        return output_path, elapsed
+        return output_path, elapsed, usage
 
-    def _poll(self, task_id: str) -> str:
+    def _poll(self, task_id: str) -> Tuple[str, Optional[dict]]:
         url = f"{self._tasks_url()}/{task_id}"
         deadline = time.time() + MAX_WAIT
         while time.time() < deadline:
@@ -219,7 +237,7 @@ class BytePlusVideoModel(VideoGenModel):
                 video_url = ((data.get("content") or {}).get("video_url"))
                 if not video_url:
                     raise RuntimeError(f"Ark task succeeded without a video url: {data}")
-                return video_url
+                return video_url, data.get("usage")
             if status == "failed":
                 raise RuntimeError(f"Ark generation failed: {data.get('error')}")
             time.sleep(POLL_INTERVAL)

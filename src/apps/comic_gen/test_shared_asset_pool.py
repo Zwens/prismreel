@@ -276,7 +276,7 @@ def test_empty_library_is_byte_for_byte_noop():
 # --------------------------------------------------------------------------
 # integration: GET /projects/{id} tags global-only assets source="global"
 # --------------------------------------------------------------------------
-def test_get_project_merges_global_source():
+def test_get_project_merges_global_source(monkeypatch):
     try:
         from fastapi.testclient import TestClient
         from src.apps.comic_gen import api
@@ -287,6 +287,13 @@ def test_get_project_merges_global_source():
     import uuid
     sid = "ep-" + uuid.uuid4().hex[:8]
     script = _script(sid=sid, characters=[_char("epc", "ep-char")])
+
+    class _FakeUser:
+        id = "test-owner"
+        role = "admin"
+        is_active = True
+
+    monkeypatch.setattr(api.auth, "get_current_user_from_cookie", lambda request: _FakeUser())
 
     # Inject in-memory only; get_project performs no disk writes. Snapshot
     # and restore the singleton's state so other tests are unaffected.

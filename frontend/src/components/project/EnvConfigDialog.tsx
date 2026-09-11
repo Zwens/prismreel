@@ -27,6 +27,7 @@ type EnvConfig = EnvConfigPayload & {
   VIDU_API_KEY: string;
   ARK_API_KEY: string;
   ARK_REGION: string;
+  ARK_BASE_URL: string;
   endpoint_overrides: Record<string, string>;
 };
 
@@ -34,6 +35,7 @@ const ENDPOINT_PROVIDERS = [
   { key: "DASHSCOPE_BASE_URL", label: "DashScope", placeholder: "https://dashscope.aliyuncs.com" },
   { key: "KLING_BASE_URL", label: "Kling", placeholder: "https://api-beijing.klingai.com/v1" },
   { key: "VIDU_BASE_URL", label: "Vidu", placeholder: "https://api.vidu.cn/ent/v2" },
+  { key: "ARK_BASE_URL", label: "Ark (Seedance)", placeholder: "https://ark.ap-southeast.bytepluses.com/api/v3" },
 ];
 
 const DEFAULT_CONFIG: EnvConfig = {
@@ -51,6 +53,7 @@ const DEFAULT_CONFIG: EnvConfig = {
   VIDU_API_KEY: "",
   ARK_API_KEY: "",
   ARK_REGION: "",
+  ARK_BASE_URL: "",
   endpoint_overrides: {},
 };
 
@@ -430,6 +433,48 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                 </div>
 
                 <div className="pt-4 border-t border-glass-border">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-foreground">{t("arkProvider")}</h3>
+                    <span className="text-[0.625rem] text-text-muted">{t("arkProviderSub")}</span>
+                  </div>
+                  <div className="bg-glass border border-glass-border rounded-lg p-4 space-y-4">
+                    <div>
+                      <label className="flex items-center justify-between text-sm font-medium text-foreground mb-2">
+                        <span>{t("arkApiKeyLabel")}</span>
+                        <span className="text-text-muted font-normal text-xs">e.g. sk-xxx</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={config.ARK_API_KEY}
+                        onChange={(e) => handleChange("ARK_API_KEY", e.target.value)}
+                        placeholder={t("arkApiKeyPlaceholder")}
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">{t("arkRegionLabel")}</label>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleChange("ARK_REGION", "intl")}
+                          className={modeButtonClass(config.ARK_REGION !== "cn")}
+                        >
+                          Intl
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleChange("ARK_REGION", "cn")}
+                          className={modeButtonClass(config.ARK_REGION === "cn")}
+                        >
+                          CN
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-glass-border">
                   <button
                     type="button"
                     onClick={() => setEndpointsOpen(!endpointsOpen)}
@@ -467,31 +512,36 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
             )}
           </div>
 
-          <div className="flex justify-end gap-3 p-6 border-t border-glass-border">
-            <button
-              onClick={requestClose}
-              disabled={!canClose}
-              className="px-4 py-2 text-sm text-text-secondary hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {tc("cancel")}
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving || loading || !!loadError}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-foreground text-sm font-medium rounded-lg transition-all disabled:opacity-50"
-            >
-              {saving ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  {t("savingConfig")}
-                </>
-              ) : (
-                <>
-                  <Save size={16} />
-                  {t("saveConfig")}
-                </>
-              )}
-            </button>
+          <div className="flex justify-between items-center gap-3 p-6 border-t border-glass-border">
+            <a href="/usage" className="text-primary hover:underline text-sm">
+              {t("usageLinkLabel")}
+            </a>
+            <div className="flex gap-3">
+              <button
+                onClick={requestClose}
+                disabled={!canClose}
+                className="px-4 py-2 text-sm text-text-secondary hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {tc("cancel")}
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving || loading || !!loadError}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-foreground text-sm font-medium rounded-lg transition-all disabled:opacity-50"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    {t("savingConfig")}
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} />
+                    {t("saveConfig")}
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </motion.div>
       </motion.div>

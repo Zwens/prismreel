@@ -39,7 +39,7 @@ interface SettingsStore {
 export const useSettingsStore = create<SettingsStore>()(
     persist(
         (set) => ({
-            locale: 'zh',
+            locale: 'zh-Hant',
             theme: DEFAULT_THEME,
             animations: true,
             setLocale: (locale: Locale) => set({ locale }),

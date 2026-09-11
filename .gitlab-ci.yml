@@ -1,0 +1,17 @@
+deploy_production:
+  stage: deploy
+  tags: []
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - rsync -a --delete
+        --exclude='.git'
+        --exclude='.env'
+        --exclude='.env.local'
+        --exclude='output/'
+        --exclude='frontend/.env.local'
+        --exclude='frontend/node_modules/'
+        ./ /opt/prismreel/
+    - cd /opt/prismreel
+    - docker compose build backend frontend
+    - docker compose up -d backend frontend

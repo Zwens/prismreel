@@ -548,6 +548,7 @@ class SubtitleSettings(BaseModel):
 
 class Script(BaseModel):
     id: str = Field(..., description="Unique identifier for the script project")
+    owner_id: str = Field(default="", description="User id that owns this project; empty string for pre-migration legacy records")
     title: str = Field(..., description="Title of the comic/video")
     original_text: str = Field(..., description="The original novel text")
     
@@ -653,6 +654,7 @@ class Script(BaseModel):
 class Series(BaseModel):
     """A Series groups multiple Episodes with shared assets and configuration."""
     id: str = Field(..., description="Unique identifier for the series")
+    owner_id: str = Field(default="", description="User id that owns this series")
     title: str = Field(..., description="Title of the series")
     description: str = Field("", description="Series description/synopsis")
 

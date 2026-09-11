@@ -9,6 +9,7 @@ from difflib import SequenceMatcher
 from typing import List, Dict, Any, Optional
 
 from .models import Script, Character, Scene, Prop, StoryboardFrame, GenerationStatus
+from . import usage_repo
 
 
 def _strip_markdown_json(content: str) -> str:
@@ -396,7 +397,22 @@ class ScriptProcessor:
     def is_configured(self):
         return self.llm.is_configured
 
-    def parse_novel(self, title: str, text: str, custom_extraction_prompt: str = "") -> Script:
+    def _record_llm_usage_safe(self, user_id: Optional[str], usage: Optional[Dict[str, int]], model_used: str) -> None:
+        if not usage:
+            return
+        try:
+            usage_repo.record_llm_usage(
+                user_id=user_id or "",
+                provider=self.llm.provider,
+                model=model_used,
+                tokens_prompt=usage.get("prompt_tokens"),
+                tokens_completion=usage.get("completion_tokens"),
+                total_tokens=usage.get("total_tokens"),
+            )
+        except Exception:
+            logger.warning("Failed to record LLM usage", exc_info=True)
+
+    def parse_novel(self, title: str, text: str, custom_extraction_prompt: str = "", user_id: Optional[str] = None) -> Script:
         """
         Parses the raw novel text into a structured Script object using an LLM.
 
@@ -405,7 +421,7 @@ class ScriptProcessor:
         use the built-in _construct_prompt template.
         """
         logger.info(f"Parsing novel: {title}...")
-        
+
         if not self.is_configured:
              logger.error("LLM API key not configured.")
              raise ValueError("LLM API Key 未配置。请在 API 配置中设置对应的 API Key 后重试。")
@@ -413,9 +429,10 @@ class ScriptProcessor:
         prompt = self._construct_prompt(text, custom_extraction_prompt)
 
         try:
-            content = self.llm.chat(
+            content, usage, model_used = self.llm.chat_with_usage(
                 messages=[{"role": "user", "content": prompt}],
             )
+            self._record_llm_usage_safe(user_id, usage, model_used)
             logger.debug(f"LLM Response Content:\n{content}")
 
             content = _strip_markdown_json(content)
@@ -576,7 +593,7 @@ class ScriptProcessor:
             updated_at=time.time()
         )
 
-    def split_into_episodes(self, text: str, suggested_episodes: int = 3) -> List[Dict[str, Any]]:
+    def split_into_episodes(self, text: str, suggested_episodes: int = 3, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Uses LLM to split a long text into episodes by narrative rhythm.
         Returns a list of episode dicts with title, summary, start/end markers, etc.
@@ -617,9 +634,10 @@ class ScriptProcessor:
 {text}"""
 
         try:
-            content = self.llm.chat(
+            content, usage, model_used = self.llm.chat_with_usage(
                 messages=[{"role": "user", "content": prompt}],
             )
+            self._record_llm_usage_safe(user_id, usage, model_used)
             content = _strip_markdown_json(content)
             data = json.loads(content)
             episodes = data.get("episodes", [])
@@ -748,7 +766,7 @@ class ScriptProcessor:
             return f"{custom_prompt}\n\nText:\n{text}"
         return DEFAULT_ENTITY_EXTRACTION_PROMPT.replace("{text}", text)
 
-    def analyze_script_for_styles(self, script_text: str, custom_style_prompt: str = "") -> List[Dict[str, Any]]:
+    def analyze_script_for_styles(self, script_text: str, custom_style_prompt: str = "", user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """使用 LLM 分析剧本并推荐视觉风格
 
         custom_style_prompt: optional per-project override
@@ -769,13 +787,14 @@ class ScriptProcessor:
         user_prompt = f"剧本内容：\n\n{script_text[:2000]}"  # 限制长度避免 token 限制
         
         try:
-            content = self.llm.chat(
+            content, usage, model_used = self.llm.chat_with_usage(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
                 response_format={'type': 'json_object'},
             )
+            self._record_llm_usage_safe(user_id, usage, model_used)
             logger.debug(f"Style Analysis Response:\n{content}")
 
             # Clean up markdown code blocks if present
@@ -908,7 +927,7 @@ class ScriptProcessor:
             }
         ]
     
-    def analyze_to_storyboard(self, text: str, entities_json: Dict[str, Any], custom_extraction_prompt: str = "") -> List[Dict[str, Any]]:
+    def analyze_to_storyboard(self, text: str, entities_json: Dict[str, Any], custom_extraction_prompt: str = "", user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Analyzes script text and generates storyboard frames using Prompt B (Storyboard Director).
         Returns a list of frame dictionaries with visual atoms.
@@ -942,12 +961,14 @@ class ScriptProcessor:
         system_prompt = template.replace("{entities_str}", entities_str).replace("{text}", text)
 
         try:
-            content = self.llm.chat(
+            content, usage, model_used = self.llm.chat_with_usage(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": "请开始生成分镜帧列表，确保覆盖剧本中的所有内容。"}
                 ],
-            ).strip()
+            )
+            content = content.strip()
+            self._record_llm_usage_safe(user_id, usage, model_used)
             logger.debug(f"Storyboard Analysis Raw Response: {content[:500]}...")
 
             frames = self._parse_storyboard_json(content)
@@ -956,13 +977,15 @@ class ScriptProcessor:
 
             # First parse failed — retry once with response_format constraint
             logger.warning("Storyboard JSON parse failed, retrying with response_format=json_object...")
-            retry_content = self.llm.chat(
+            retry_content, retry_usage, retry_model_used = self.llm.chat_with_usage(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": "请开始生成分镜帧列表，确保覆盖剧本中的所有内容。请务必输出合法的JSON格式。"}
                 ],
                 response_format={'type': 'json_object'},
-            ).strip()
+            )
+            retry_content = retry_content.strip()
+            self._record_llm_usage_safe(user_id, retry_usage, retry_model_used)
             logger.debug(f"Storyboard Analysis Retry Response: {retry_content[:500]}...")
             frames = self._parse_storyboard_json(retry_content)
             if frames is not None:
@@ -1019,6 +1042,7 @@ class ScriptProcessor:
         scene_assets: List[Dict[str, Any]],
         prev_frame_context: Optional[str] = None,
         next_frame_context: Optional[str] = None,
+        user_id: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """Phase 2: Refine a coarse frame into a rich frame with full structured fields."""
         if not self.is_configured:
@@ -1106,13 +1130,15 @@ Return a JSON object with ALL fields below. null is acceptable for optional fiel
 {next_frame_context or "None (this is the last frame)"}
 """
         try:
-            content = self.llm.chat(
+            content, usage, model_used = self.llm.chat_with_usage(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": "Please refine this frame. Output valid JSON only, no markdown fences."}
                 ],
                 response_format={'type': 'json_object'},
-            ).strip()
+            )
+            content = content.strip()
+            self._record_llm_usage_safe(user_id, usage, model_used)
             content = _strip_markdown_json(content)
             result = json.loads(content)
             return result
@@ -1123,7 +1149,7 @@ Return a JSON object with ALL fields below. null is acceptable for optional fiel
             logger.error(f"Frame refine LLM call failed: {e}")
             return None
 
-    def polish_storyboard_prompt(self, draft_prompt: str, assets: List[Dict[str, Any]], feedback: str = "", custom_system_prompt: str = "") -> Dict[str, str]:
+    def polish_storyboard_prompt(self, draft_prompt: str, assets: List[Dict[str, Any]], feedback: str = "", custom_system_prompt: str = "", user_id: Optional[str] = None) -> Dict[str, str]:
         """
         Polishes the storyboard prompt using Qwen-Plus, incorporating asset references.
         Returns a dict with 'prompt_cn' and 'prompt_en'.
@@ -1161,10 +1187,12 @@ Return a JSON object with ALL fields below. null is acceptable for optional fiel
 """
 
         try:
-            content = self.llm.chat(
+            content, usage, model_used = self.llm.chat_with_usage(
                 messages=[{"role": "user", "content": user_content}],
                 response_format={'type': 'json_object'},
-            ).strip()
+            )
+            content = content.strip()
+            self._record_llm_usage_safe(user_id, usage, model_used)
             logger.debug(f"Polished Prompt Raw: {content}")
 
             # Parse JSON response
@@ -1194,6 +1222,7 @@ Return a JSON object with ALL fields below. null is acceptable for optional fiel
         prev_cn: str = "",
         image_urls: Optional[List[str]] = None,
         polish_model: str = "",
+        user_id: Optional[str] = None,
     ) -> Dict[str, str]:
         """
         Polishes a video generation prompt using Qwen.
@@ -1283,14 +1312,18 @@ Return a JSON object with ALL fields below. null is acceptable for optional fiel
                 user_content = parts
 
         try:
-            content = self.llm.chat(
+            content, usage, model_used = self.llm.chat_with_usage(
                 messages=[
                     {'role': 'system', 'content': system_prompt},
                     {'role': 'user', 'content': user_content},
                 ],
                 model=polish_model or None,
                 response_format={'type': 'json_object'},
-            ).strip()
+            )
+            content = content.strip()
+            self._record_llm_usage_safe(user_id, usage, model_used)
+        except PolishError:
+            raise
         except Exception as e:
             logger.exception("Video polish: LLM API error")
             raise PolishError(
@@ -1341,6 +1374,7 @@ Return a JSON object with ALL fields below. null is acceptable for optional fiel
         prev_cn: str = "",
         image_urls: Optional[List[str]] = None,
         polish_model: str = "",
+        user_id: Optional[str] = None,
     ) -> Dict[str, str]:
         """
         Polishes a R2V (Reference-to-Video) prompt using Qwen.
@@ -1427,14 +1461,18 @@ Return a JSON object with ALL fields below. null is acceptable for optional fiel
                 user_content = parts
 
         try:
-            content = self.llm.chat(
+            content, usage, model_used = self.llm.chat_with_usage(
                 messages=[
                     {'role': 'system', 'content': system_prompt},
                     {'role': 'user', 'content': user_content},
                 ],
                 model=polish_model or None,
                 response_format={'type': 'json_object'},
-            ).strip()
+            )
+            content = content.strip()
+            self._record_llm_usage_safe(user_id, usage, model_used)
+        except PolishError:
+            raise
         except Exception as e:
             logger.exception("R2V polish: LLM API error")
             raise PolishError(

@@ -372,6 +372,15 @@ class PlaygroundService:
             kwargs["generation_mode"] = "r2v"
             kwargs["ref_image_urls"] = list(gen.input_media)
 
+        # i2v: optional second entry is the last frame (Ark first_frame +
+        # last_frame scenario). Only img_url is wired through to Ark today
+        # (see note on img_path below), so a local-file last frame is
+        # unsupported the same way a local-file first frame already is.
+        if gen.mode == PlaygroundMode.I2V and len(gen.input_media) > 1:
+            _, last_frame_url = self._resolve_input_media_at(gen, 1)
+            if last_frame_url:
+                kwargs["last_frame_url"] = last_frame_url
+
         from ...models.byteplus import BytePlusVideoModel
 
         if self._byteplus_video_model is None:
@@ -450,24 +459,31 @@ class PlaygroundService:
             return normalized
         return "prop"
 
-    @staticmethod
-    def _resolve_first_input_media(gen: PlaygroundGeneration):
+    @classmethod
+    def _resolve_first_input_media(cls, gen: PlaygroundGeneration):
         """Return ``(img_path, img_url)`` for the first entry in
         :pyattr:`input_media`.  Local files are returned as *img_path*;
         remote URLs as *img_url*."""
-        if not gen.input_media:
+        return cls._resolve_input_media_at(gen, 0)
+
+    @staticmethod
+    def _resolve_input_media_at(gen: PlaygroundGeneration, index: int):
+        """Return ``(path, url)`` for ``input_media[index]``. Local files are
+        returned as *path*; remote URLs (or anything unresolvable locally) as
+        *url*. ``(None, None)`` when there is no entry at that index."""
+        if index >= len(gen.input_media):
             return None, None
 
-        first = gen.input_media[0]
-        if first.startswith(("http://", "https://")):
-            return None, first
+        entry = gen.input_media[index]
+        if entry.startswith(("http://", "https://")):
+            return None, entry
 
         # Try as-is, then relative to output/
-        if os.path.exists(first):
-            return first, None
-        candidate = os.path.join("output", first)
+        if os.path.exists(entry):
+            return entry, None
+        candidate = os.path.join("output", entry)
         if os.path.exists(candidate):
             return candidate, None
 
         # Fall back to treating it as a URL-like reference
-        return None, first
+        return None, entry

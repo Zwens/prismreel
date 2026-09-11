@@ -45,6 +45,80 @@ if (API_KEY) {
     axios.defaults.headers.common["X-API-Key"] = API_KEY;
 }
 
+// Send the login cookie on every request, including dev mode where the
+// frontend and backend run on different ports (cross-origin).
+axios.defaults.withCredentials = true;
+
+export async function login(email: string, password: string) {
+    const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+    return res.data;
+}
+
+export async function redeemInvite(code: string, email: string, password: string) {
+    const res = await axios.post(`${API_URL}/auth/redeem_invite`, { invite_code: code, email, password });
+    return res.data;
+}
+
+export async function logout() {
+    await axios.post(`${API_URL}/auth/logout`);
+}
+
+export async function getCurrentUser() {
+    const res = await axios.get(`${API_URL}/auth/me`);
+    return res.data;
+}
+
+export type AdminUser = {
+    id: string;
+    email: string;
+    role: string;
+    display_name: string | null;
+    is_active: boolean;
+    created_at: number;
+};
+
+export async function adminListUsers(): Promise<AdminUser[]> {
+    const res = await axios.get(`${API_URL}/admin/users`);
+    return res.data;
+}
+
+export async function adminCreateInvite(role: string = "member", emailHint?: string) {
+    const res = await axios.post(`${API_URL}/admin/invites`, { role, email_hint: emailHint });
+    return res.data;
+}
+
+export async function adminResetPassword(userId: string, newPassword: string) {
+    const res = await axios.post(`${API_URL}/admin/users/${userId}/reset_password`, { new_password: newPassword });
+    return res.data;
+}
+
+export async function adminDeactivateUser(userId: string) {
+    const res = await axios.post(`${API_URL}/admin/users/${userId}/deactivate`);
+    return res.data;
+}
+
+export type UsageBucket = {
+    model: string;
+    resolution: string | null;
+    input_has_video: boolean | null;
+    duration: number | null;
+    count: number;
+    total_tokens: number | null;
+    cost_usd: number | null;
+};
+
+export type UsageSummary = Record<string, Record<string, Record<string, UsageBucket>>>;
+
+export async function getMyUsage(): Promise<{ user_id: string; summary: UsageSummary }> {
+    const res = await axios.get(`${API_URL}/usage/me`);
+    return res.data;
+}
+
+export async function getAllUsersUsage(): Promise<{ user_id: string; summary: UsageSummary }[]> {
+    const res = await axios.get(`${API_URL}/admin/usage`);
+    return res.data;
+}
+
 export type ProviderMode = "dashscope" | "vendor";
 
 /**
@@ -98,6 +172,9 @@ export interface EnvConfigPayload {
     KLING_ACCESS_KEY?: string;
     KLING_SECRET_KEY?: string;
     VIDU_API_KEY?: string;
+    ARK_API_KEY?: string;
+    ARK_REGION?: string;
+    ARK_BASE_URL?: string;
     endpoint_overrides?: Record<string, string>;
     // Secrets from GET are masked (bullets + last 4 chars). This map reports
     // which credential fields are actually configured on the backend.

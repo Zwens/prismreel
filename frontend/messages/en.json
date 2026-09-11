@@ -438,6 +438,7 @@
     "library": "Library",
     "playground": "Playground",
     "settings": "Settings",
+    "logout": "Log out",
     "workspaceAria": "PrismReel Studio · Workspace",
     "mainNavAria": "Main navigation"
   },
@@ -662,7 +663,8 @@
     "arkRegionLabel": "Region",
     "arkRegionIntl": "International (BytePlus)",
     "arkRegionCn": "China (Volcano Engine)",
-    "arkRegionHint": "International uses ark.ap-southeast.bytepluses.com; China uses ark.cn-beijing.volces.com."
+    "arkRegionHint": "International uses ark.ap-southeast.bytepluses.com; China uses ark.cn-beijing.volces.com.",
+    "usageLinkLabel": "View usage & estimated cost"
   },
   "project": {
     "dashscopeApiKeyLabel": "DashScope API Key",
@@ -678,6 +680,11 @@
     "klingSecretKeyPlaceholder": "Kling API Secret Key",
     "viduProvider": "Vidu Provider",
     "viduApiKeyPlaceholder": "Vidu API Key",
+    "arkProvider": "Seedance / Ark",
+    "arkProviderSub": "Used by the Seedance model family",
+    "arkApiKeyLabel": "Ark API Key",
+    "arkApiKeyPlaceholder": "Required to use Seedance models",
+    "arkRegionLabel": "Region",
     "apiKeyLabel": "API Key",
     "createTitle": "Create New Project",
     "projectTitle": "Project Title",
@@ -760,7 +767,8 @@
     "resetToDefault": "Reset to default",
     "viewDefault": "View full default prompt",
     "promptConfigTitle": "Prompt Configuration",
-    "modelSettingsTitle": "Model Settings"
+    "modelSettingsTitle": "Model Settings",
+    "usageLinkLabel": "View usage & estimated cost"
   },
   "series": {
     "characterLabel": "Characters",
@@ -1919,10 +1927,12 @@
       "parametersLabel": "Parameters",
       "mediaReference": "Reference image",
       "mediaFirstFrame": "First frame",
+      "mediaFrames": "First & last frame",
       "mediaRefMaterial": "Reference material",
       "mediaSourceVideo": "Source video",
       "generate": "Generate",
-      "generateBatch": "Generate ×{count}"
+      "generateBatch": "Generate ×{count}",
+      "switchMode": "Switch mode"
     },
     "mode": {
       "image": "Image",
@@ -1935,6 +1945,34 @@
       "i2v": "Image",
       "r2v": "Reference",
       "v2v": "Edit"
+    },
+    "modeCard": {
+      "heading": "What do you want to create?",
+      "subheading": "Pick a starting point — you can always switch later.",
+      "t2i": {
+        "title": "Text to image",
+        "description": "Describe a scene in words and generate an image from scratch."
+      },
+      "i2i": {
+        "title": "Edit an image",
+        "description": "Upload a reference image and describe how to change it."
+      },
+      "t2v": {
+        "title": "Text to video",
+        "description": "Describe a scene in words and generate a video from scratch."
+      },
+      "i2v": {
+        "title": "First & last frame to video",
+        "description": "Upload a first frame, optionally a last frame, and animate it into a video."
+      },
+      "r2v": {
+        "title": "Multi-reference video",
+        "description": "Combine up to 9 reference images with a prompt to guide the video."
+      },
+      "v2v": {
+        "title": "Edit a video",
+        "description": "Upload a source video and describe how to transform it."
+      }
     },
     "results": {
       "eyebrow": "Results",
@@ -1982,7 +2020,12 @@
         "r2vSeedance": "Seedance accepts image, video, and audio as reference material"
       },
       "labelReferenceOptional": "Reference image (optional)",
-      "labelRefMaterialAV": "Reference material (image/video/audio)"
+      "labelRefMaterialAV": "Reference material (image/video/audio)",
+      "firstFrame": "First frame",
+      "lastFrame": "Last frame",
+      "lastFrameOptional": "Last frame (optional)",
+      "addLastFrame": "Add last frame image",
+      "imageIndex": "Image {index}"
     },
     "prompt": {
       "placeholder": "Describe what you want to generate…",
@@ -2077,5 +2120,28 @@
     "genFailed": "Generation failed",
     "noMedia": "No media",
     "seedLabel": "Seed"
+  },
+  "usage": {
+    "pageTitle": "Usage",
+    "myUsageTitle": "My Usage",
+    "adminUsageTitle": "All Users' Usage",
+    "llmSection": "LLM Text Generation",
+    "videoSection": "Video Generation",
+    "otherSection": "Other Generation (count only)",
+    "columnProvider": "Provider",
+    "columnModel": "Model",
+    "columnResolution": "Resolution",
+    "columnMode": "Mode",
+    "columnDuration": "Duration",
+    "columnCount": "Calls",
+    "columnTokens": "Tokens",
+    "columnCost": "Est. Cost (USD)",
+    "modeI2v": "Image-to-Video",
+    "modeR2v": "Reference-to-Video",
+    "durationSeconds": "{seconds}s",
+    "costEstimateNote": "Costs are estimates based on published pricing and may not reflect your exact bill.",
+    "noCostAvailable": "—",
+    "loading": "Loading...",
+    "backToSettings": "Back to Settings"
   }
 }

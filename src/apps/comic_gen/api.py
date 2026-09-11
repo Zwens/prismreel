@@ -20,7 +20,7 @@
 # import_file_preview, import_file_confirm, upload_t2i_frame,
 # analyze_script_for_styles. All others are `def` for a reason.
 # ─────────────────────────────────────────────────────────────────────────────
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Request
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError
@@ -66,7 +66,10 @@ env_path = os.path.join(_project_root, ".env")
 if os.path.exists(env_path):
     load_dotenv(env_path, override=True)
 
-# Mount playground router AFTER .env is loaded (adapters read API keys from env)
+# auth and playground router import AFTER .env is loaded — auth.py reads
+# JWT_SECRET at module scope, so importing it before load_dotenv() caches an
+# empty secret in clean environments (see memory: JWT_SECRET import order bug)
+from . import auth, user_repo
 from ..playground.api import router as playground_router
 app.include_router(playground_router, prefix="/playground")
 
@@ -78,14 +81,22 @@ logger.info(f"STARTUP: OSS_ENDPOINT={os.getenv('OSS_ENDPOINT')}, OSS_BUCKET_NAME
 _cors_origins_env = os.getenv("PRISMREEL_CORS_ORIGINS", "").strip()
 _cors_allow_origins = [o.strip() for o in _cors_origins_env.split(",") if o.strip()] if _cors_origins_env else ["*"]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_cors_allow_origins,
-    allow_credentials=bool(_cors_origins_env),  # credentials only make sense with an explicit origin allowlist
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["Content-Disposition"],  # Allow browsers to access Content-Disposition for downloads
-)
+# The login cookie (Task 9/10) needs allow_credentials=True to cross the
+# frontend<->backend port gap in `next dev` — but that's incompatible with
+# allow_origins=["*"] by browser spec, so with no explicit allowlist we fall
+# back to a localhost-only regex (any port) instead of leaving credentialed
+# requests silently dropped in the default dev setup.
+_cors_allow_credentials = bool(_cors_origins_env)
+_cors_allow_origin_regex = None
+if not _cors_origins_env:
+    _cors_allow_origin_regex = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+    _cors_allow_credentials = True
+
+# `Secure` cookies are only stored by browsers over HTTPS. Same dev/prod
+# signal as the CORS block above: no explicit PRISMREEL_CORS_ORIGINS means
+# local `next dev` over plain http, where Secure=True would silently drop
+# the login cookie on every request.
+_cookie_secure = bool(_cors_origins_env)
 
 # --- API key gate ---
 # Set PRISMREEL_API_KEY to require this header on every request except the
@@ -99,6 +110,21 @@ async def enforce_api_key(request: Request, call_next):
     if _API_KEY and not request.url.path.startswith(_API_KEY_EXEMPT_PREFIXES):
         if request.headers.get("x-api-key") != _API_KEY:
             return JSONResponse(status_code=401, content={"detail": "Missing or invalid API key"})
+    return await call_next(request)
+
+_AUTH_PUBLIC_PREFIXES = ("/health", "/files/", "/static/", "/docs", "/openapi.json", "/redoc", "/auth/login", "/auth/redeem_invite")
+
+
+@app.middleware("http")
+async def enforce_login(request: Request, call_next):
+    if not auth.JWT_SECRET:
+        return await call_next(request)
+    path = request.url.path
+    if path.startswith(_AUTH_PUBLIC_PREFIXES):
+        return await call_next(request)
+    user = auth.get_current_user_from_cookie(request)
+    if user is None or not user.is_active:
+        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
     return await call_next(request)
 
 # --- Rate limit for AI-cost-triggering generation endpoints ---
@@ -161,6 +187,41 @@ app.mount("/files/videos", StaticFiles(directory="output/video"), name="files_vi
 app.mount("/files/assets", StaticFiles(directory="output/assets"), name="files_assets")
 app.mount("/files", StaticFiles(directory="output"), name="files")
 
+os.makedirs("output/users", exist_ok=True)
+app.mount("/files/users", StaticFiles(directory="output/users"), name="files_users")
+
+
+@app.middleware("http")
+async def enforce_file_ownership(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/files/users/"):
+        parts = path.split("/")
+        # ["", "files", "users", "{owner_id}", "{project_id}", ...]
+        if len(parts) >= 4:
+            owner_id = parts[3]
+            user = auth.get_current_user_from_cookie(request)
+            if not user or (user.role != "admin" and user.id != owner_id):
+                return JSONResponse(status_code=403, content={"detail": "Forbidden"})
+    return await call_next(request)
+
+# CORSMiddleware must be added last: Starlette's middleware stack executes
+# in reverse-registration order, so the most-recently-added middleware runs
+# outermost. Every @app.middleware("http") function above can short-circuit
+# with a 401/403/429 response (enforce_login, enforce_api_key,
+# enforce_file_ownership, rate_limit_generation_endpoints) — those responses
+# must still pass through CORSMiddleware or the browser drops them entirely
+# for lacking an Access-Control-Allow-Origin header before axios ever sees
+# the status code.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_allow_origins if _cors_origins_env else [],
+    allow_origin_regex=_cors_allow_origin_regex,
+    allow_credentials=_cors_allow_credentials,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Content-Disposition"],  # Allow browsers to access Content-Disposition for downloads
+)
+
 # Ensure playground output directories exist
 os.makedirs("output/playground/images", exist_ok=True)
 os.makedirs("output/playground/videos", exist_ok=True)
@@ -169,6 +230,133 @@ app.mount("/files/playground", StaticFiles(directory="output/playground"), name=
 
 # Initialize pipeline
 pipeline = ComicGenPipeline()
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Multi-tenant auth — /auth/* (public) and /admin/* (admin-only)
+# ─────────────────────────────────────────────────────────────────────
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class RedeemInviteRequest(BaseModel):
+    invite_code: str
+    email: str
+    password: str
+
+
+class CreateInviteRequest(BaseModel):
+    role: str = "member"
+    email_hint: Optional[str] = None
+
+
+class ResetPasswordRequest(BaseModel):
+    new_password: str
+
+
+def get_owned_script(script_id: str, user=Depends(auth.require_login)):
+    script = pipeline.get_script(script_id)
+    if not script:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if user.role != "admin" and script.owner_id and script.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return script
+
+
+def get_owned_series(series_id: str, user=Depends(auth.require_login)):
+    series = pipeline.get_series(series_id)
+    if not series:
+        raise HTTPException(status_code=404, detail="Series not found")
+    if user.role != "admin" and series.owner_id and series.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Series not found")
+    return series
+
+
+@app.post("/auth/login")
+def login(body: LoginRequest):
+    user = user_repo.get_user_by_email(body.email)
+    if not user or not user.is_active or not auth.verify_password(body.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="帳號或密碼錯誤")
+    token = auth.create_access_token(user.id, user.role)
+    resp = JSONResponse({"id": user.id, "email": user.email, "role": user.role, "display_name": user.display_name})
+    resp.set_cookie(
+        "access_token", token,
+        httponly=True, secure=_cookie_secure, samesite="lax",
+        max_age=auth.JWT_EXPIRE_DAYS * 86400,
+    )
+    return resp
+
+
+@app.post("/auth/logout")
+def logout(_user=Depends(auth.require_login)):
+    resp = JSONResponse({"status": "logged_out"})
+    resp.delete_cookie("access_token")
+    return resp
+
+
+@app.get("/auth/me")
+def auth_me(user=Depends(auth.require_login)):
+    return {"id": user.id, "email": user.email, "role": user.role, "display_name": user.display_name}
+
+
+@app.post("/auth/redeem_invite")
+def redeem_invite(body: RedeemInviteRequest):
+    try:
+        user = user_repo.redeem_invite(body.invite_code, body.email, body.password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    token = auth.create_access_token(user.id, user.role)
+    resp = JSONResponse({"id": user.id, "email": user.email, "role": user.role})
+    resp.set_cookie(
+        "access_token", token,
+        httponly=True, secure=_cookie_secure, samesite="lax",
+        max_age=auth.JWT_EXPIRE_DAYS * 86400,
+    )
+    return resp
+
+
+@app.post("/admin/invites")
+def admin_create_invite(body: CreateInviteRequest, admin=Depends(auth.require_admin)):
+    code = user_repo.create_invite(created_by=admin.id, role=body.role, email_hint=body.email_hint)
+    return {"invite_code": code}
+
+
+@app.get("/admin/users")
+def admin_list_users(_admin=Depends(auth.require_admin)):
+    return [
+        {"id": u.id, "email": u.email, "role": u.role, "display_name": u.display_name, "is_active": u.is_active, "created_at": u.created_at}
+        for u in user_repo.list_users()
+    ]
+
+
+@app.post("/admin/users/{user_id}/reset_password")
+def admin_reset_password(user_id: str, body: ResetPasswordRequest, _admin=Depends(auth.require_admin)):
+    if not user_repo.get_user_by_id(user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+    user_repo.set_password(user_id, body.new_password)
+    return {"status": "password_reset"}
+
+
+@app.post("/admin/users/{user_id}/deactivate")
+def admin_deactivate_user(user_id: str, _admin=Depends(auth.require_admin)):
+    if not user_repo.get_user_by_id(user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+    user_repo.set_active(user_id, False)
+    return {"status": "deactivated"}
+
+
+@app.get("/usage/me")
+def get_my_usage(user=Depends(auth.require_login)):
+    from . import usage_repo
+    return {"user_id": user.id, "summary": usage_repo.get_user_usage_summary(user.id)}
+
+
+@app.get("/admin/usage")
+def admin_get_all_usage(_admin=Depends(auth.require_admin)):
+    from . import usage_repo
+    return usage_repo.get_all_users_usage_summary()
+
 
 @app.get("/debug/config")
 def debug_config():
@@ -342,21 +530,22 @@ class UploadAssetRequest(BaseModel):
 
 @app.post("/projects/{script_id}/assets/{asset_type}/{asset_id}/upload")
 def upload_asset(
-    script_id: str,
     asset_type: str,
     asset_id: str,
     upload_type: str,
     description: Optional[str] = None,
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    script: Script = Depends(get_owned_script),
 ):
     """
     Uploads an image as a new variant for an asset.
     The uploaded image is marked as the 'upload source' for reverse generation.
-    
+
     - asset_type: "character", "scene", or "prop"
     - upload_type: "full_body", "head_shot", "three_views", or "image" (for scene/prop)
     - description: Optional modified description for the asset
     """
+    script_id = script.id
     try:
         # 1. Save file locally first
         data, ext = validate_image_upload(file)
@@ -407,7 +596,7 @@ class CreateProjectRequest(BaseModel):
 
 
 @app.post("/projects", response_model=Script)
-async def create_project(request: CreateProjectRequest, skip_analysis: bool = False):
+async def create_project(request: CreateProjectRequest, skip_analysis: bool = False, user=Depends(auth.require_login)):
     """Creates a new project from a novel text.
 
     When `series_id` is provided the project is bound as the next episode
@@ -419,7 +608,7 @@ async def create_project(request: CreateProjectRequest, skip_analysis: bool = Fa
     try:
         result = await loop.run_in_executor(
             None,  # Use default executor
-            partial(pipeline.create_project, request.title, request.text, skip_analysis, request.workflow_mode, request.series_id)
+            partial(pipeline.create_project, request.title, request.text, skip_analysis, request.workflow_mode, request.series_id, user.id)
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -436,16 +625,13 @@ class UpdateScriptTextRequest(BaseModel):
 
 
 @app.put("/projects/{script_id}/text")
-def update_script_text(script_id: str, request: UpdateScriptTextRequest):
+def update_script_text(request: UpdateScriptTextRequest, script: Script = Depends(get_owned_script)):
     """Persist `original_text` without re-parsing entities.
 
     Used by ScriptProcessor's onBlur so typing survives reload/navigation
     without triggering an LLM round-trip. Heavy reparse stays bound to the
     explicit "提取实体" CTA.
     """
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Script not found")
     script.original_text = request.text or ""
     script.updated_at = time.time()
     pipeline._save_data()
@@ -453,14 +639,14 @@ def update_script_text(script_id: str, request: UpdateScriptTextRequest):
 
 
 @app.put("/projects/{script_id}/reparse")
-async def reparse_project(script_id: str, request: ReparseProjectRequest):
+async def reparse_project(request: ReparseProjectRequest, script: Script = Depends(get_owned_script)):
     """Re-parses the text for an existing project, replacing all entities."""
     try:
         # Run the blocking LLM call in a thread pool to avoid blocking the event loop (Python 3.8 compatible)
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,  # Use default executor
-            partial(pipeline.reparse_project, script_id, request.text)
+            partial(pipeline.reparse_project, script.id, request.text)
         )
         return signed_response(merged_project_payload(result))
     except ValueError as e:
@@ -471,13 +657,13 @@ async def reparse_project(script_id: str, request: ReparseProjectRequest):
 
 
 @app.post("/projects/{script_id}/extract_preview")
-async def extract_preview(script_id: str, request: ReparseProjectRequest):
+async def extract_preview(request: ReparseProjectRequest, script: Script = Depends(get_owned_script)):
     """Dry-run entity extraction — returns entities without saving."""
     try:
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
-            partial(pipeline.extract_preview, script_id, request.text)
+            partial(pipeline.extract_preview, script.id, request.text)
         )
         return {
             "characters": [c.dict() for c in result.characters],
@@ -491,17 +677,19 @@ async def extract_preview(script_id: str, request: ReparseProjectRequest):
 
 
 @app.get("/projects/", response_model=List[dict])
-def list_projects():
+def list_projects(user=Depends(auth.require_login)):
     """Lists all projects from backend storage."""
     scripts = list(pipeline.scripts.values())
+    if user.role != "admin":
+        scripts = [s for s in scripts if not s.owner_id or s.owner_id == user.id]
     return signed_response(scripts)
 
 
 @app.post("/projects/{script_id}/toggle_starred")
-def toggle_project_starred(script_id: str):
+def toggle_project_starred(_owned: Script = Depends(get_owned_script)):
     """Toggle the user-starred (featured shortlist) flag on a project."""
     try:
-        script = pipeline.toggle_project_starred(script_id)
+        script = pipeline.toggle_project_starred(_owned.id)
         return signed_response(merged_project_payload(script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -537,7 +725,7 @@ class UpdateSeriesRequest(BaseModel):
 
 
 @app.post("/series")
-def create_series(request: CreateSeriesRequest):
+def create_series(request: CreateSeriesRequest, user=Depends(auth.require_login)):
     """Create a new Series."""
     series = pipeline.create_series(
         request.title,
@@ -545,23 +733,24 @@ def create_series(request: CreateSeriesRequest):
         request.workflow_mode,
         request.content_mode,
         request.default_generation_mode,
+        owner_id=user.id,
     )
     return signed_response(series)
 
 
 @app.get("/series")
-def list_series():
+def list_series(user=Depends(auth.require_login)):
     """List all Series."""
     series_list = pipeline.list_series()
+    if user.role != "admin":
+        series_list = [s for s in series_list if not s.owner_id or s.owner_id == user.id]
     return signed_response(series_list)
 
 
 @app.get("/series/{series_id}")
-def get_series(series_id: str):
+def get_series(series: Series = Depends(get_owned_series)):
     """Get Series details including assets and episode list."""
-    series = pipeline.get_series(series_id)
-    if not series:
-        raise HTTPException(status_code=404, detail="Series not found")
+    series_id = series.id
     # Include episode summaries
     episodes = pipeline.get_series_episodes(series_id)
     result = series.model_dump()
@@ -579,23 +768,23 @@ def get_series(series_id: str):
 
 
 @app.put("/series/{series_id}")
-def update_series(series_id: str, request: UpdateSeriesRequest):
+def update_series(request: UpdateSeriesRequest, _owned: Series = Depends(get_owned_series)):
     """Update Series fields. Uses `exclude_unset=True` so explicitly-null
     values (e.g. `{"art_direction": null}` to clear baseline) are honored,
     while fields the client didn't send remain untouched."""
     try:
         updates = request.model_dump(exclude_unset=True)
-        series = pipeline.update_series(series_id, updates)
+        series = pipeline.update_series(_owned.id, updates)
         return signed_response(series)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.delete("/series/{series_id}")
-def delete_series(series_id: str):
+def delete_series(_owned: Series = Depends(get_owned_series)):
     """Delete a Series and disassociate its episodes."""
     try:
-        pipeline.delete_series(series_id)
+        pipeline.delete_series(_owned.id)
         return {"status": "deleted"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -607,41 +796,38 @@ class AddEpisodeRequest(BaseModel):
 
 
 @app.post("/series/{series_id}/episodes")
-def add_episode_to_series(series_id: str, request: AddEpisodeRequest):
+def add_episode_to_series(request: AddEpisodeRequest, _owned: Series = Depends(get_owned_series)):
     """Add an existing project as an episode to a Series."""
     try:
-        series = pipeline.add_episode_to_series(series_id, request.script_id, request.episode_number)
+        series = pipeline.add_episode_to_series(_owned.id, request.script_id, request.episode_number)
         return signed_response(series)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.delete("/series/{series_id}/episodes/{script_id}")
-def remove_episode_from_series(series_id: str, script_id: str):
+def remove_episode_from_series(script_id: str, _owned: Series = Depends(get_owned_series)):
     """Remove an episode from a Series (does not delete the project)."""
     try:
-        series = pipeline.remove_episode_from_series(series_id, script_id)
+        series = pipeline.remove_episode_from_series(_owned.id, script_id)
         return signed_response(series)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.get("/series/{series_id}/episodes")
-def get_series_episodes(series_id: str):
+def get_series_episodes(_owned: Series = Depends(get_owned_series)):
     """Get all episodes in a Series."""
     try:
-        episodes = pipeline.get_series_episodes(series_id)
+        episodes = pipeline.get_series_episodes(_owned.id)
         return signed_response(episodes)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.get("/series/{series_id}/prompt_config")
-def get_series_prompt_config(series_id: str):
+def get_series_prompt_config(series: Series = Depends(get_owned_series)):
     """Get Series prompt config with system defaults."""
-    series = pipeline.get_series(series_id)
-    if not series:
-        raise HTTPException(status_code=404, detail="Series not found")
     return {
         "prompt_config": series.prompt_config.model_dump(),
         "defaults": {
@@ -654,10 +840,10 @@ def get_series_prompt_config(series_id: str):
 
 
 @app.put("/series/{series_id}/prompt_config")
-def update_series_prompt_config(series_id: str, config: PromptConfig):
+def update_series_prompt_config(config: PromptConfig, _owned: Series = Depends(get_owned_series)):
     """Update Series-level prompt config."""
     try:
-        series = pipeline.update_series(series_id, {"prompt_config": config})
+        series = pipeline.update_series(_owned.id, {"prompt_config": config})
         return signed_response(series)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -679,30 +865,21 @@ class UpdateModelSettingsRequest(BaseModel):
     storyboard_aspect_ratio: Optional[str] = None
 
 @app.get("/series/{series_id}/model_settings")
-def get_series_model_settings(series_id: str):
+def get_series_model_settings(series: Series = Depends(get_owned_series)):
     """Get Series model settings."""
-    series = pipeline.get_series(series_id)
-    if not series:
-        raise HTTPException(status_code=404, detail="Series not found")
     return series.model_settings.model_dump()
 
 
 @app.put("/series/{series_id}/model_settings")
-def update_series_model_settings(series_id: str, settings: UpdateModelSettingsRequest):
+def update_series_model_settings(settings: UpdateModelSettingsRequest, series: Series = Depends(get_owned_series)):
     """Update Series-level model settings."""
     updates = {k: v for k, v in settings.model_dump().items() if v is not None}
     if not updates:
-        series = pipeline.get_series(series_id)
-        if not series:
-            raise HTTPException(status_code=404, detail="Series not found")
         return signed_response(series)
     try:
-        current_series = pipeline.get_series(series_id)
-        if not current_series:
-            raise HTTPException(status_code=404, detail="Series not found")
-        ms = current_series.model_settings.model_copy(update=updates)
-        series = pipeline.update_series(series_id, {"model_settings": ms})
-        return signed_response(series)
+        ms = series.model_settings.model_copy(update=updates)
+        updated_series = pipeline.update_series(series.id, {"model_settings": ms})
+        return signed_response(updated_series)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -712,11 +889,8 @@ def update_series_model_settings(series_id: str, settings: UpdateModelSettingsRe
 # ============================================================
 
 @app.get("/series/{series_id}/assets")
-def get_series_assets(series_id: str):
+def get_series_assets(series: Series = Depends(get_owned_series)):
     """Get all shared assets from a Series."""
-    series = pipeline.get_series(series_id)
-    if not series:
-        raise HTTPException(status_code=404, detail="Series not found")
     return signed_response({
         "characters": [c.model_dump() for c in series.characters],
         "scenes": [s.model_dump() for s in series.scenes],
@@ -725,8 +899,9 @@ def get_series_assets(series_id: str):
 
 
 @app.post("/series/{series_id}/assets/generate")
-def generate_series_asset(series_id: str, request: GenerateAssetRequest, background_tasks: BackgroundTasks):
+def generate_series_asset(request: GenerateAssetRequest, background_tasks: BackgroundTasks, _owned: Series = Depends(get_owned_series)):
     """Generate a single asset for a Series (async)."""
+    series_id = _owned.id
     try:
         series, task_id = pipeline.generate_series_asset(
             series_id,
@@ -753,10 +928,10 @@ def generate_series_asset(series_id: str, request: GenerateAssetRequest, backgro
 
 
 @app.post("/series/{series_id}/assets/toggle_lock")
-def toggle_series_asset_lock(series_id: str, request: ToggleLockRequest):
+def toggle_series_asset_lock(request: ToggleLockRequest, _owned: Series = Depends(get_owned_series)):
     """Toggle the locked status of a Series asset."""
     try:
-        series = pipeline.toggle_series_asset_lock(series_id, request.asset_id, request.asset_type)
+        series = pipeline.toggle_series_asset_lock(_owned.id, request.asset_id, request.asset_type)
         return signed_response(series)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -765,10 +940,10 @@ def toggle_series_asset_lock(series_id: str, request: ToggleLockRequest):
 
 
 @app.post("/series/{series_id}/assets/toggle_starred")
-def toggle_series_asset_starred(series_id: str, request: ToggleLockRequest):
+def toggle_series_asset_starred(request: ToggleLockRequest, _owned: Series = Depends(get_owned_series)):
     """Toggle the starred (library shortlist) status of a Series asset."""
     try:
-        series = pipeline.toggle_series_asset_starred(series_id, request.asset_id, request.asset_type)
+        series = pipeline.toggle_series_asset_starred(_owned.id, request.asset_id, request.asset_type)
         return signed_response(series)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -777,10 +952,10 @@ def toggle_series_asset_starred(series_id: str, request: ToggleLockRequest):
 
 
 @app.post("/series/{series_id}/assets/update_image")
-def update_series_asset_image(series_id: str, request: UpdateAssetImageRequest):
+def update_series_asset_image(request: UpdateAssetImageRequest, _owned: Series = Depends(get_owned_series)):
     """Update a Series asset's image URL."""
     try:
-        series = pipeline.update_series_asset_image(series_id, request.asset_id, request.asset_type, request.image_url)
+        series = pipeline.update_series_asset_image(_owned.id, request.asset_id, request.asset_type, request.image_url)
         return signed_response(series)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -789,11 +964,11 @@ def update_series_asset_image(series_id: str, request: UpdateAssetImageRequest):
 
 
 @app.post("/series/{series_id}/assets/update_attributes")
-def update_series_asset_attributes(series_id: str, request: UpdateAssetAttributesRequest):
+def update_series_asset_attributes(request: UpdateAssetAttributesRequest, _owned: Series = Depends(get_owned_series)):
     """Update arbitrary attributes of a Series asset."""
     try:
         series = pipeline.update_series_asset_attributes(
-            series_id, request.asset_id, request.asset_type, request.attributes
+            _owned.id, request.asset_id, request.asset_type, request.attributes
         )
         return signed_response(series)
     except ValueError as e:
@@ -825,12 +1000,10 @@ def _new_id(prefix: str) -> str:
 
 
 @app.post("/series/{series_id}/characters")
-def create_series_character(series_id: str, request: CreateSeriesAssetRequest):
+def create_series_character(request: CreateSeriesAssetRequest, series: Series = Depends(get_owned_series)):
     """Create a new Character at series scope."""
     from .models import Character, AssetUnit, ImageVariant
-    series = pipeline.get_series(series_id)
-    if not series:
-        raise HTTPException(status_code=404, detail="Series not found")
+    series_id = series.id
     char_id = _new_id("char")
     ref_sheet = AssetUnit()
     if request.image_url:
@@ -853,11 +1026,9 @@ def create_series_character(series_id: str, request: CreateSeriesAssetRequest):
 
 
 @app.post("/series/{series_id}/scenes")
-def create_series_scene(series_id: str, request: CreateSeriesAssetRequest):
+def create_series_scene(request: CreateSeriesAssetRequest, series: Series = Depends(get_owned_series)):
     from .models import Scene
-    series = pipeline.get_series(series_id)
-    if not series:
-        raise HTTPException(status_code=404, detail="Series not found")
+    series_id = series.id
     sid = _new_id("scene")
     scene = Scene(
         id=sid,
@@ -873,11 +1044,9 @@ def create_series_scene(series_id: str, request: CreateSeriesAssetRequest):
 
 
 @app.post("/series/{series_id}/props")
-def create_series_prop(series_id: str, request: CreateSeriesAssetRequest):
+def create_series_prop(request: CreateSeriesAssetRequest, series: Series = Depends(get_owned_series)):
     from .models import Prop
-    series = pipeline.get_series(series_id)
-    if not series:
-        raise HTTPException(status_code=404, detail="Series not found")
+    series_id = series.id
     pid = _new_id("prop")
     prop = Prop(
         id=pid,
@@ -893,10 +1062,10 @@ def create_series_prop(series_id: str, request: CreateSeriesAssetRequest):
 
 
 @app.post("/series/{series_id}/assets/import")
-def import_series_assets(series_id: str, request: ImportAssetsRequest):
+def import_series_assets(request: ImportAssetsRequest, _owned: Series = Depends(get_owned_series)):
     """Deep-copy assets from another Series into this one."""
     try:
-        series, imported_ids, skipped_ids = pipeline.import_assets_from_series(series_id, request.source_series_id, request.asset_ids)
+        series, imported_ids, skipped_ids = pipeline.import_assets_from_series(_owned.id, request.source_series_id, request.asset_ids)
         return signed_response(series)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -947,7 +1116,7 @@ class ForkFromLibraryRequest(BaseModel):
 
 
 @app.get("/library/assets")
-def get_library_assets():
+def get_library_assets(_user=Depends(auth.require_login)):
     """List all assets in the global shared pool."""
     lib = pipeline.list_library_assets()
     return signed_response({
@@ -958,7 +1127,7 @@ def get_library_assets():
 
 
 @app.post("/library/assets")
-def create_library_asset(request: CreateLibraryAssetRequest):
+def create_library_asset(request: CreateLibraryAssetRequest, _user=Depends(auth.require_login)):
     """Create a new asset in the global shared pool."""
     try:
         payload = request.model_dump(exclude={"asset_type"})
@@ -971,7 +1140,7 @@ def create_library_asset(request: CreateLibraryAssetRequest):
 
 
 @app.post("/library/assets/upload")
-def upload_library_asset_image(file: UploadFile = File(...)):
+def upload_library_asset_image(file: UploadFile = File(...), _user=Depends(auth.require_login)):
     """Upload an image to use as a global library asset's master image.
 
     Saves the file under output/uploads/ (served via the /files static mount)
@@ -1002,7 +1171,7 @@ def upload_library_asset_image(file: UploadFile = File(...)):
 
 
 @app.api_route("/library/assets/{asset_type}/{asset_id}", methods=["PUT", "PATCH"])
-def update_library_asset(asset_type: str, asset_id: str, request: UpdateLibraryAssetRequest):
+def update_library_asset(asset_type: str, asset_id: str, request: UpdateLibraryAssetRequest, _user=Depends(auth.require_login)):
     """Patch a global library asset (only the provided fields are applied)."""
     try:
         patch = request.model_dump(exclude_unset=True)
@@ -1015,7 +1184,7 @@ def update_library_asset(asset_type: str, asset_id: str, request: UpdateLibraryA
 
 
 @app.delete("/library/assets/{asset_type}/{asset_id}")
-def delete_library_asset(asset_type: str, asset_id: str, force: bool = False):
+def delete_library_asset(asset_type: str, asset_id: str, force: bool = False, _user=Depends(auth.require_login)):
     """Delete an asset from the global shared pool.
 
     Reference-integrity (design Q2): if any storyboard frame in any project or
@@ -1046,7 +1215,7 @@ def delete_library_asset(asset_type: str, asset_id: str, force: bool = False):
 
 
 @app.post("/library/assets/promote")
-def promote_asset_to_library(request: PromoteAssetRequest):
+def promote_asset_to_library(request: PromoteAssetRequest, _user=Depends(auth.require_login)):
     """Deep-copy an asset from a project or series into the global pool."""
     try:
         asset = pipeline.promote_asset_to_library(
@@ -1060,7 +1229,7 @@ def promote_asset_to_library(request: PromoteAssetRequest):
 
 
 @app.post("/projects/{script_id}/assets/fork_from_library")
-def fork_asset_from_library(script_id: str, request: ForkFromLibraryRequest):
+def fork_asset_from_library(request: ForkFromLibraryRequest, _owned: Script = Depends(get_owned_script)):
     """Fork (deep-copy) a global library asset into this project as an
     independent, editable local copy with a fresh id (design Q3, 按需 fork).
 
@@ -1071,7 +1240,7 @@ def fork_asset_from_library(script_id: str, request: ForkFromLibraryRequest):
     """
     try:
         asset = pipeline.fork_library_asset_to_project(
-            script_id, request.asset_type, request.library_asset_id
+            _owned.id, request.asset_type, request.library_asset_id
         )
         return signed_response(asset.model_dump())
     except ValueError as e:
@@ -1088,6 +1257,7 @@ def fork_asset_from_library(script_id: str, request: ForkFromLibraryRequest):
 async def import_file_preview(
     file: UploadFile = File(...),
     suggested_episodes: int = 3,
+    user=Depends(auth.require_login),
 ):
     """Upload a txt/md file and get LLM episode split preview."""
     if suggested_episodes < 1 or suggested_episodes > 50:
@@ -1103,7 +1273,7 @@ async def import_file_preview(
         loop = asyncio.get_event_loop()
         episodes = await loop.run_in_executor(
             None,
-            partial(pipeline.import_file_and_split, text, suggested_episodes)
+            partial(pipeline.import_file_and_split, text, suggested_episodes, user.id)
         )
         # Store text in pipeline cache, return import_id instead of full text
         import_id = str(uuid.uuid4())
@@ -1131,7 +1301,7 @@ class ConfirmImportRequest(BaseModel):
 
 
 @app.post("/series/import/confirm")
-async def import_file_confirm(request: ConfirmImportRequest):
+async def import_file_confirm(request: ConfirmImportRequest, user=Depends(auth.require_login)):
     """Confirm the episode split and create Series + Episodes."""
     try:
         # Prefer import_id from cache, fallback to request.text
@@ -1151,6 +1321,7 @@ async def import_file_confirm(request: ConfirmImportRequest):
                 text,
                 request.episodes,
                 request.description,
+                user.id,
             )
         )
         return signed_response(result)
@@ -1449,26 +1620,20 @@ def merged_project_payload(script) -> dict:
 
 
 @app.get("/projects/{script_id}")
-def get_project(script_id: str):
+def get_project(script: Script = Depends(get_owned_script)):
     """Retrieves a project by ID, with series-shared and global assets
     merged in (see merged_project_payload).
 
     Response model dropped from `Script` because of the added `source`
     field."""
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
     return signed_response(merged_project_payload(script))
 
 
 
 @app.delete("/projects/{script_id}")
-def delete_project(script_id: str):
+def delete_project(script: Script = Depends(get_owned_script)):
     """Deletes a project by ID. WARNING: This permanently removes the project from backend storage."""
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
-    
+    script_id = script.id
     try:
         # If project belongs to a Series, remove from episode_ids
         if script.series_id:
@@ -1503,7 +1668,7 @@ def _name_match_confidence(local_name: str, series_name: str) -> int:
 
 
 @app.get("/projects/{script_id}/reconcile/suggestions")
-def reconcile_suggestions(script_id: str):
+def reconcile_suggestions(script: Script = Depends(get_owned_script)):
     """Compute match suggestions for the current episode's just-extracted
     entities vs the parent series's shared asset library.
 
@@ -1517,9 +1682,6 @@ def reconcile_suggestions(script_id: str):
     }
     Frontend uses this to render the ReconcileModal after script parse.
     """
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
     if not script.series_id:
         # Standalone projects have no series library to reconcile against
         return {"characters": [], "scenes": [], "props": []}
@@ -1569,16 +1731,14 @@ class ApplyReconcileRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/reconcile/apply")
-def reconcile_apply(script_id: str, request: ApplyReconcileRequest):
+def reconcile_apply(request: ApplyReconcileRequest, script: Script = Depends(get_owned_script)):
     """Apply user-confirmed reconcile decisions.
     - merge_into_series: drop the local episode entity, replace all
       frame references with target_series_id (the series-shared asset).
     - create_new_in_series: promote the local entity to series scope.
     - skip: no-op (keep local-only).
     """
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
+    script_id = script.id
     if not script.series_id:
         raise HTTPException(status_code=400, detail="Project not in a series")
     series = pipeline.get_series(script.series_id)
@@ -1644,7 +1804,7 @@ def _prev_text_revision(prev_text: str) -> str:
 
 
 @app.get("/projects/{script_id}/previous_episode")
-def get_previous_episode_summary(script_id: str):
+def get_previous_episode_summary(script: Script = Depends(get_owned_script)):
     """Return previous-episode raw snippet + AI summary cache state for
     the "Previously on..." right rail in the Script step.
 
@@ -1658,9 +1818,6 @@ def get_previous_episode_summary(script_id: str):
           "ai_summary_stale": bool  (true when prev text changed since cache),
         }
     """
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
     if not script.series_id:
         return {
             "has_previous": False,
@@ -1751,15 +1908,13 @@ def get_previous_episode_summary(script_id: str):
 
 
 @app.post("/projects/{script_id}/previous_episode/summary")
-def generate_previous_episode_summary(script_id: str):
+def generate_previous_episode_summary(script: Script = Depends(get_owned_script)):
     """On-demand AI summary of the previous episode (qwen3.6-plus).
     Per Q7-followup design: this is *user-triggered*, not auto, to
     respect LLM quota and user intent. Result is cached on the current
     episode's Script record with a revision marker for invalidation.
     """
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
+    script_id = script.id
     if not script.series_id:
         raise HTTPException(status_code=400, detail="Episode not in a series")
     series = pipeline.get_series(script.series_id)
@@ -1809,14 +1964,11 @@ def generate_previous_episode_summary(script_id: str):
 
 
 @app.get("/series/{series_id}/characters/{character_id}/appearances")
-def get_character_appearances(series_id: str, character_id: str):
+def get_character_appearances(character_id: str, series: Series = Depends(get_owned_series)):
     """R2V v2 P1-c — Cross-episode character appearance summary.
     Used by Script step's @mention helper popover. Returns chronological
     list of episodes where the character appears + per-episode frame
     count + aggregated 'last seen' info."""
-    series = pipeline.get_series(series_id)
-    if not series:
-        raise HTTPException(status_code=404, detail="Series not found")
     char = next((c for c in series.characters if c.id == character_id), None)
     if not char:
         # Try as episode-local character — maybe id is from any episode
@@ -1858,13 +2010,10 @@ def get_character_appearances(series_id: str, character_id: str):
 
 # R2V v2 P2-b — "Next episode hook" prediction (forward-looking).
 @app.get("/projects/{script_id}/next_hook")
-def get_next_episode_hook(script_id: str):
+def get_next_episode_hook(script: Script = Depends(get_owned_script)):
     """Return cached hook prediction state for the Script step's
     'Hook for next' panel. Always returns the current revision marker
     so the frontend can decide if a refresh is warranted."""
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
     current_text = script.original_text or ""
     current_rev = _prev_text_revision(current_text)
     is_stale = (
@@ -1879,13 +2028,11 @@ def get_next_episode_hook(script_id: str):
 
 
 @app.post("/projects/{script_id}/next_hook")
-def generate_next_episode_hook(script_id: str):
+def generate_next_episode_hook(script: Script = Depends(get_owned_script)):
     """On-demand AI prediction of the next-episode opening hook based
     on THIS episode's ending. User-triggered (no auto-generate to
     respect LLM quota)."""
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
+    script_id = script.id
     text = script.original_text or ""
     if not text.strip():
         raise HTTPException(status_code=400, detail="Episode has no script text yet")
@@ -1920,11 +2067,9 @@ def generate_next_episode_hook(script_id: str):
 
 
 @app.put("/projects/{script_id}/next_hook")
-def update_next_episode_hook(script_id: str, payload: dict):
+def update_next_episode_hook(payload: dict, script: Script = Depends(get_owned_script)):
     """Manually edit / clear the next-hook cache."""
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
+    script_id = script.id
     hook = payload.get("hook")
     if hook is None:
         script.next_hook_cache = None
@@ -1939,17 +2084,17 @@ def update_next_episode_hook(script_id: str, payload: dict):
 
 
 @app.post("/projects/{script_id}/sync_descriptions")
-def sync_descriptions(script_id: str):
+def sync_descriptions(_owned: Script = Depends(get_owned_script)):
     """
     Syncs entity descriptions from Script module to Assets module.
-    
+
     This endpoint forces a refresh of the project data, ensuring that any
     description changes made in the Script module are reflected in Assets.
-    
+
     Note: This only syncs descriptions; generated images/videos are preserved.
     """
     try:
-        updated_script = pipeline.sync_descriptions_from_script_entities(script_id)
+        updated_script = pipeline.sync_descriptions_from_script_entities(_owned.id)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -1962,10 +2107,10 @@ class AddCharacterRequest(BaseModel):
     description: str
 
 @app.post("/projects/{script_id}/characters")
-def add_character(script_id: str, request: AddCharacterRequest):
+def add_character(request: AddCharacterRequest, script: Script = Depends(get_owned_script)):
     """Adds a new character."""
     try:
-        updated_script = pipeline.add_character(script_id, request.name, request.description)
+        updated_script = pipeline.add_character(script.id, request.name, request.description)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -1973,10 +2118,10 @@ def add_character(script_id: str, request: AddCharacterRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/projects/{script_id}/characters/{char_id}")
-def delete_character(script_id: str, char_id: str):
+def delete_character(char_id: str, script: Script = Depends(get_owned_script)):
     """Deletes a character."""
     try:
-        updated_script = pipeline.delete_character(script_id, char_id)
+        updated_script = pipeline.delete_character(script.id, char_id)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -1988,10 +2133,10 @@ class AddSceneRequest(BaseModel):
     description: str
 
 @app.post("/projects/{script_id}/scenes")
-def add_scene(script_id: str, request: AddSceneRequest):
+def add_scene(request: AddSceneRequest, script: Script = Depends(get_owned_script)):
     """Adds a new scene."""
     try:
-        updated_script = pipeline.add_scene(script_id, request.name, request.description)
+        updated_script = pipeline.add_scene(script.id, request.name, request.description)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -1999,10 +2144,10 @@ def add_scene(script_id: str, request: AddSceneRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/projects/{script_id}/scenes/{scene_id}")
-def delete_scene(script_id: str, scene_id: str):
+def delete_scene(scene_id: str, script: Script = Depends(get_owned_script)):
     """Deletes a scene."""
     try:
-        updated_script = pipeline.delete_scene(script_id, scene_id)
+        updated_script = pipeline.delete_scene(script.id, scene_id)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -2015,11 +2160,11 @@ class UpdateStyleRequest(BaseModel):
 
 
 @app.patch("/projects/{script_id}/style")
-def update_project_style(script_id: str, request: UpdateStyleRequest):
+def update_project_style(request: UpdateStyleRequest, script: Script = Depends(get_owned_script)):
     """Updates the global style settings for a project."""
     try:
         updated_script = pipeline.update_project_style(
-            script_id,
+            script.id,
             request.style_preset,
             request.style_prompt
         )
@@ -2031,15 +2176,12 @@ def update_project_style(script_id: str, request: UpdateStyleRequest):
 
 
 @app.post("/projects/{script_id}/generate_assets")
-def generate_assets(script_id: str, background_tasks: BackgroundTasks):
+def generate_assets(background_tasks: BackgroundTasks, script: Script = Depends(get_owned_script)):
     """Triggers asset generation."""
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
-
+    script_id = script.id
     # Run in background to avoid blocking
     # For simplicity in this demo, we run synchronously or use background tasks
-    # pipeline.generate_assets(script_id) 
+    # pipeline.generate_assets(script_id)
     # But since we want to return the updated status, we might want to run it and return.
     # Given the mock nature, it's fast.
 
@@ -2062,8 +2204,9 @@ class GenerateMotionRefRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/assets/generate_motion_ref")
-def generate_motion_ref(script_id: str, request: GenerateMotionRefRequest, background_tasks: BackgroundTasks):
+def generate_motion_ref(request: GenerateMotionRefRequest, background_tasks: BackgroundTasks, _owned: Script = Depends(get_owned_script)):
     """Generates a Motion Reference video for an asset (Character Full Body/Headshot, Scene, or Prop)."""
+    script_id = _owned.id
     try:
         script, task_id = pipeline.create_motion_ref_task(
             script_id=script_id,
@@ -2097,7 +2240,7 @@ class AnalyzeToStoryboardRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/storyboard/analyze")
-def analyze_to_storyboard(script_id: str, request: AnalyzeToStoryboardRequest):
+def analyze_to_storyboard(request: AnalyzeToStoryboardRequest, script: Script = Depends(get_owned_script)):
     """
     Analyzes script text and generates storyboard frames using AI (Prompt B).
     Replaces existing frames with newly generated ones.
@@ -2109,7 +2252,7 @@ def analyze_to_storyboard(script_id: str, request: AnalyzeToStoryboardRequest):
     live in the series pool.
     """
     try:
-        updated_script = pipeline.analyze_text_to_frames(script_id, request.text)
+        updated_script = pipeline.analyze_text_to_frames(script.id, request.text)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -2127,7 +2270,7 @@ class RefinePromptRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/storyboard/refine_prompt")
-def refine_storyboard_prompt(script_id: str, request: RefinePromptRequest):
+def refine_storyboard_prompt(request: RefinePromptRequest, script: Script = Depends(get_owned_script)):
     """
     Refines a raw prompt into bilingual (CN/EN) prompts using AI (Prompt C).
     Returns the refined prompts and optionally updates the frame.
@@ -2138,7 +2281,7 @@ def refine_storyboard_prompt(script_id: str, request: RefinePromptRequest):
     """
     try:
         result = pipeline.refine_frame_prompt(
-            script_id,
+            script.id,
             request.frame_id,
             request.raw_prompt,
             request.assets,
@@ -2153,10 +2296,10 @@ def refine_storyboard_prompt(script_id: str, request: RefinePromptRequest):
 
 
 @app.post("/projects/{script_id}/frames/{frame_id}/refine")
-def refine_single_frame(script_id: str, frame_id: str):
+def refine_single_frame(frame_id: str, script: Script = Depends(get_owned_script)):
     """Phase 2: Refine a single coarse frame into a rich frame with structured fields."""
     try:
-        frame = pipeline.refine_frame(script_id, frame_id)
+        frame = pipeline.refine_frame(script.id, frame_id)
         if not frame:
             raise HTTPException(status_code=500, detail="Refine returned no result")
         return frame.model_dump() if hasattr(frame, 'model_dump') else frame.dict()
@@ -2168,13 +2311,11 @@ def refine_single_frame(script_id: str, frame_id: str):
 
 
 @app.post("/projects/{script_id}/storyboard/refine_batch")
-def refine_storyboard_batch(script_id: str):
+def refine_storyboard_batch(script: Script = Depends(get_owned_script)):
     """Phase 2: Batch refine all coarse frames. Streams SSE events."""
     from fastapi.responses import StreamingResponse
 
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Script not found")
+    script_id = script.id
 
     def event_stream():
         for event_type, data in pipeline.refine_batch_generator(script_id):
@@ -2184,10 +2325,10 @@ def refine_storyboard_batch(script_id: str):
 
 
 @app.post("/projects/{script_id}/generate_storyboard")
-def generate_storyboard(script_id: str):
+def generate_storyboard(script: Script = Depends(get_owned_script)):
     """Triggers storyboard generation."""
     try:
-        updated_script = pipeline.generate_storyboard(script_id)
+        updated_script = pipeline.generate_storyboard(script.id)
         return signed_response(merged_project_payload(updated_script))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -2195,10 +2336,10 @@ def generate_storyboard(script_id: str):
 
 
 @app.post("/projects/{script_id}/generate_video")
-def generate_video(script_id: str):
+def generate_video(script: Script = Depends(get_owned_script)):
     """Triggers video generation."""
     try:
-        updated_script = pipeline.generate_video(script_id)
+        updated_script = pipeline.generate_video(script.id)
         return signed_response(merged_project_payload(updated_script))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -2206,10 +2347,10 @@ def generate_video(script_id: str):
 
 
 @app.post("/projects/{script_id}/generate_audio")
-def generate_audio(script_id: str):
+def generate_audio(script: Script = Depends(get_owned_script)):
     """Triggers audio generation."""
     try:
-        updated_script = pipeline.generate_audio(script_id)
+        updated_script = pipeline.generate_audio(script.id)
         return signed_response(merged_project_payload(updated_script))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -2286,12 +2427,12 @@ class AnnotateVideoTaskRequest(BaseModel):
 
 
 @app.patch("/projects/{script_id}/video_tasks/{task_id}/annotate", response_model=VideoTask)
-def annotate_video_task(script_id: str, task_id: str, request: AnnotateVideoTaskRequest):
+def annotate_video_task(task_id: str, request: AnnotateVideoTaskRequest, script: Script = Depends(get_owned_script)):
     """Set the user's star + label on a video task. Used by Storyboard's
     candidates panel for shortlist marking (multi-select) and short
     free-text notes (≤20 chars, truncated server-side)."""
     task = pipeline.annotate_video_task(
-        script_id,
+        script.id,
         task_id,
         is_starred=request.is_starred,
         label=request.label,
@@ -2314,14 +2455,14 @@ class UpdateFrameWorkbenchRequest(BaseModel):
 
 @app.patch("/projects/{script_id}/frames/{frame_id}/workbench", response_model=StoryboardFrame)
 def update_frame_workbench(
-    script_id: str, frame_id: str, request: UpdateFrameWorkbenchRequest
+    frame_id: str, request: UpdateFrameWorkbenchRequest, script: Script = Depends(get_owned_script)
 ):
     """Persist Storyboard R2V workbench state onto a frame so it
     survives refresh and cross-device opens. Previously this state
     lived only in React component state and got lost on reload."""
     try:
         frame = pipeline.update_frame_workbench(
-            script_id,
+            script.id,
             frame_id,
             workbench_tab_mode=request.workbench_tab_mode,
             t2i_image_urls=request.t2i_image_urls,
@@ -2336,21 +2477,21 @@ def update_frame_workbench(
 
 
 @app.post("/projects/{script_id}/video_tasks/{task_id}/cancel", response_model=VideoTask)
-def cancel_video_task(script_id: str, task_id: str):
+def cancel_video_task(task_id: str, script: Script = Depends(get_owned_script)):
     """Mark a video task as failed-by-cancel. We can't actually yank a
     running provider call mid-flight (the provider keeps rendering on
     its side), but flipping the local status to "failed" unblocks the
     UI and puts the user back in control. Treats already-completed
     tasks as a no-op."""
-    ok = pipeline.mark_video_task_failed(script_id, task_id, "Canceled by user")
+    ok = pipeline.mark_video_task_failed(script.id, task_id, "Canceled by user")
     if not ok:
         raise HTTPException(
             status_code=404,
             detail="Video task not found or already completed",
         )
-    script = pipeline.get_script(script_id)
+    updated_script = pipeline.get_script(script.id)
     task = next(
-        (t for t in (script.video_tasks if script else []) if t.id == task_id),
+        (t for t in (updated_script.video_tasks if updated_script else []) if t.id == task_id),
         None,
     )
     if not task:
@@ -2359,8 +2500,9 @@ def cancel_video_task(script_id: str, task_id: str):
 
 
 @app.post("/projects/{script_id}/video_tasks", response_model=List[VideoTask])
-def create_video_task(script_id: str, request: CreateVideoTaskRequest, background_tasks: BackgroundTasks):
+def create_video_task(request: CreateVideoTaskRequest, background_tasks: BackgroundTasks, _owned: Script = Depends(get_owned_script)):
     """Creates new video generation tasks."""
+    script_id = _owned.id
     try:
         tasks = []
         for _ in range(request.batch_size):
@@ -2414,12 +2556,12 @@ def create_video_task(script_id: str, request: CreateVideoTaskRequest, backgroun
 
 
 @app.post("/projects/{script_id}/assets/generate")
-def generate_single_asset(script_id: str, request: GenerateAssetRequest, background_tasks: BackgroundTasks):
+def generate_single_asset(request: GenerateAssetRequest, background_tasks: BackgroundTasks, _owned: Script = Depends(get_owned_script)):
     """Generates a single asset with specific options (async).
     Returns immediately with task_id for polling progress."""
     try:
         script, task_id = pipeline.create_asset_generation_task(
-            script_id,
+            _owned.id,
             request.asset_id,
             request.asset_type,
             request.style_preset,
@@ -2471,8 +2613,9 @@ class GenerateAssetVideoRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/assets/{asset_type}/{asset_id}/generate_video")
-def generate_asset_video(script_id: str, asset_type: str, asset_id: str, request: GenerateAssetVideoRequest, background_tasks: BackgroundTasks):
+def generate_asset_video(asset_type: str, asset_id: str, request: GenerateAssetVideoRequest, background_tasks: BackgroundTasks, _owned: Script = Depends(get_owned_script)):
     """Generates a video for a specific asset (I2V)."""
+    script_id = _owned.id
     try:
         script, task_id = pipeline.create_asset_video_task(
             script_id,
@@ -2495,11 +2638,11 @@ def generate_asset_video(script_id: str, asset_type: str, asset_id: str, request
 
 
 @app.delete("/projects/{script_id}/assets/{asset_type}/{asset_id}/videos/{video_id}")
-def delete_asset_video(script_id: str, asset_type: str, asset_id: str, video_id: str):
+def delete_asset_video(asset_type: str, asset_id: str, video_id: str, script: Script = Depends(get_owned_script)):
     """Deletes a video from an asset."""
     try:
         updated_script = pipeline.delete_asset_video(
-            script_id,
+            script.id,
             asset_id,
             asset_type,
             video_id
@@ -2513,11 +2656,11 @@ def delete_asset_video(script_id: str, asset_type: str, asset_id: str, video_id:
 
 
 @app.post("/projects/{script_id}/assets/toggle_lock")
-def toggle_asset_lock(script_id: str, request: ToggleLockRequest):
+def toggle_asset_lock(request: ToggleLockRequest, script: Script = Depends(get_owned_script)):
     """Toggles the locked status of an asset."""
     try:
         updated_script = pipeline.toggle_asset_lock(
-            script_id,
+            script.id,
             request.asset_id,
             request.asset_type
         )
@@ -2529,11 +2672,11 @@ def toggle_asset_lock(script_id: str, request: ToggleLockRequest):
 
 
 @app.post("/projects/{script_id}/assets/toggle_starred")
-def toggle_asset_starred(script_id: str, request: ToggleLockRequest):
+def toggle_asset_starred(request: ToggleLockRequest, script: Script = Depends(get_owned_script)):
     """Toggles the starred (library shortlist) status of an asset."""
     try:
         updated_script = pipeline.toggle_asset_starred(
-            script_id,
+            script.id,
             request.asset_id,
             request.asset_type
         )
@@ -2546,11 +2689,11 @@ def toggle_asset_starred(script_id: str, request: ToggleLockRequest):
 
 
 @app.post("/projects/{script_id}/assets/update_image")
-def update_asset_image(script_id: str, request: UpdateAssetImageRequest):
+def update_asset_image(request: UpdateAssetImageRequest, script: Script = Depends(get_owned_script)):
     """Updates an asset's image URL manually."""
     try:
         updated_script = pipeline.update_asset_image(
-            script_id,
+            script.id,
             request.asset_id,
             request.asset_type,
             request.image_url
@@ -2564,11 +2707,11 @@ def update_asset_image(script_id: str, request: UpdateAssetImageRequest):
 
 
 @app.post("/projects/{script_id}/assets/update_attributes")
-def update_asset_attributes(script_id: str, request: UpdateAssetAttributesRequest):
+def update_asset_attributes(request: UpdateAssetAttributesRequest, script: Script = Depends(get_owned_script)):
     """Updates arbitrary attributes of an asset."""
     try:
         updated_script = pipeline.update_asset_attributes(
-            script_id,
+            script.id,
             request.asset_id,
             request.asset_type,
             request.attributes
@@ -2588,11 +2731,11 @@ class UpdateAssetDescriptionRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/assets/update_description")
-def update_asset_description(script_id: str, request: UpdateAssetDescriptionRequest):
+def update_asset_description(request: UpdateAssetDescriptionRequest, script: Script = Depends(get_owned_script)):
     """Updates an asset's description."""
     try:
         updated_script = pipeline.update_asset_description(
-            script_id,
+            script.id,
             request.asset_id,
             request.asset_type,
             request.description
@@ -2612,11 +2755,11 @@ class SelectVariantRequest(BaseModel):
     generation_type: str = None  # For character: "full_body", "three_view", "headshot"
 
 @app.post("/projects/{script_id}/assets/variant/select")
-def select_asset_variant(script_id: str, request: SelectVariantRequest):
+def select_asset_variant(request: SelectVariantRequest, script: Script = Depends(get_owned_script)):
     """Selects a specific variant for an asset."""
     try:
         updated_script = pipeline.select_asset_variant(
-            script_id,
+            script.id,
             request.asset_id,
             request.asset_type,
             request.variant_id,
@@ -2634,11 +2777,11 @@ class DeleteVariantRequest(BaseModel):
     variant_id: str
 
 @app.post("/projects/{script_id}/assets/variant/delete")
-def delete_asset_variant(script_id: str, request: DeleteVariantRequest):
+def delete_asset_variant(request: DeleteVariantRequest, script: Script = Depends(get_owned_script)):
     """Deletes a specific variant from an asset."""
     try:
         updated_script = pipeline.delete_asset_variant(
-            script_id,
+            script.id,
             request.asset_id,
             request.asset_type,
             request.variant_id
@@ -2658,11 +2801,11 @@ class FavoriteVariantRequest(BaseModel):
     is_favorited: bool
 
 @app.post("/projects/{script_id}/assets/variant/favorite")
-def toggle_variant_favorite(script_id: str, request: FavoriteVariantRequest):
+def toggle_variant_favorite(request: FavoriteVariantRequest, script: Script = Depends(get_owned_script)):
     """Toggles the favorite status of a variant. Favorited variants won't be auto-deleted when limit is reached."""
     try:
         updated_script = pipeline.toggle_variant_favorite(
-            script_id,
+            script.id,
             request.asset_id,
             request.asset_type,
             request.variant_id,
@@ -2676,11 +2819,11 @@ def toggle_variant_favorite(script_id: str, request: FavoriteVariantRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/projects/{script_id}/model_settings")
-def update_model_settings(script_id: str, request: UpdateModelSettingsRequest):
+def update_model_settings(request: UpdateModelSettingsRequest, script: Script = Depends(get_owned_script)):
     """Updates project's model settings for T2I/I2I/I2V and aspect ratios."""
     try:
         updated_script = pipeline.update_model_settings(
-            script_id,
+            script.id,
             request.t2i_model,
             request.i2i_model,
             request.i2v_model,
@@ -2708,12 +2851,9 @@ class UpdatePromptConfigRequest(BaseModel):
 
 
 @app.get("/projects/{script_id}/prompt_config")
-def get_prompt_config(script_id: str):
+def get_prompt_config(script: Script = Depends(get_owned_script)):
     """Returns project prompt_config and system default prompts for reference."""
     try:
-        script = pipeline.get_script(script_id)
-        if not script:
-            raise HTTPException(status_code=404, detail="Project not found")
         config = script.prompt_config if hasattr(script, 'prompt_config') else PromptConfig()
         return {
             "prompt_config": config.model_dump(),
@@ -2731,12 +2871,9 @@ def get_prompt_config(script_id: str):
 
 
 @app.put("/projects/{script_id}/prompt_config")
-def update_prompt_config(script_id: str, request: UpdatePromptConfigRequest):
+def update_prompt_config(request: UpdatePromptConfigRequest, script: Script = Depends(get_owned_script)):
     """Updates project custom prompt configuration. Empty string = use system default."""
     try:
-        script = pipeline.get_script(script_id)
-        if not script:
-            raise HTTPException(status_code=404, detail="Project not found")
         existing = getattr(script, "prompt_config", None)
         preserved_polish_model = getattr(existing, "polish_model", "") if existing else ""
         script.prompt_config = PromptConfig(
@@ -2780,7 +2917,7 @@ class BindVoiceRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/characters/{char_id}/voice")
-def bind_voice(script_id: str, char_id: str, request: BindVoiceRequest):
+def bind_voice(char_id: str, request: BindVoiceRequest, script: Script = Depends(get_owned_script)):
     """Binds a voice to a character.
 
     Works on series-shared characters too, so the response goes through
@@ -2789,7 +2926,7 @@ def bind_voice(script_id: str, char_id: str, request: BindVoiceRequest):
     model dropped from `Script` for the same `source` field reason as
     GET /projects/{id}."""
     try:
-        updated_script = pipeline.bind_voice(script_id, char_id, request.voice_id, request.voice_name)
+        updated_script = pipeline.bind_voice(script.id, char_id, request.voice_id, request.voice_name)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -2804,11 +2941,8 @@ class UpdateVoiceParamsRequest(BaseModel):
 
 
 @app.put("/projects/{script_id}/characters/{char_id}/voice_params")
-def update_voice_params(script_id: str, char_id: str, request: UpdateVoiceParamsRequest):
+def update_voice_params(char_id: str, request: UpdateVoiceParamsRequest, script: Script = Depends(get_owned_script)):
     """Updates voice parameters for a character."""
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Script not found")
     char = next((c for c in script.characters if c.id == char_id), None)
     if not char:
         raise HTTPException(status_code=404, detail="Character not found")
@@ -2938,21 +3072,21 @@ def voice_clone(request: VoiceCloneRequest):
 
 
 @app.get("/series/{series_id}/custom_voices")
-def list_series_custom_voices(series_id: str):
+def list_series_custom_voices(series: Series = Depends(get_owned_series)):
     """Return all custom voices (clones + designs) in a series."""
-    voices = pipeline.list_custom_voices(series_id)
+    voices = pipeline.list_custom_voices(series.id)
     return signed_response(voices)
 
 
 @app.delete("/series/{series_id}/custom_voices/{voice_id}")
-def delete_series_custom_voice(series_id: str, voice_id: str):
+def delete_series_custom_voice(voice_id: str, series: Series = Depends(get_owned_series)):
     """Remove a custom voice from a series.
 
     Note: does NOT delete on dashscope side (24h retention is best-effort).
     If a character has this voice_id bound, the binding becomes orphaned
     (frontend should warn before delete in v2).
     """
-    removed = pipeline.delete_custom_voice(series_id, voice_id)
+    removed = pipeline.delete_custom_voice(series.id, voice_id)
     if not removed:
         raise HTTPException(status_code=404, detail="Custom voice not found")
     return signed_response({"removed": True})
@@ -3038,11 +3172,11 @@ class GenerateLineAudioRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/frames/{frame_id}/audio")
-def generate_line_audio(script_id: str, frame_id: str, request: GenerateLineAudioRequest):
+def generate_line_audio(frame_id: str, request: GenerateLineAudioRequest, script: Script = Depends(get_owned_script)):
     """Generates audio for a specific frame with parameters."""
     try:
         updated_script = pipeline.generate_dialogue_line(
-            script_id, frame_id,
+            script.id, frame_id,
             request.speed, request.pitch, request.volume,
             instructions=request.instructions,
         )
@@ -3083,16 +3217,16 @@ def list_subtitle_templates():
 
 
 @app.get("/projects/{script_id}/subtitle/preview")
-def preview_subtitles(script_id: str):
+def preview_subtitles(script: Script = Depends(get_owned_script)):
     """Cue list derived from dialogue + TTS timing. No rendering, no ASR."""
     try:
-        return pipeline.get_subtitle_preview(script_id)
+        return pipeline.get_subtitle_preview(script.id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.put("/projects/{script_id}/subtitle/settings")
-def update_subtitle_settings(script_id: str, request: UpdateSubtitleSettingsRequest):
+def update_subtitle_settings(request: UpdateSubtitleSettingsRequest, script: Script = Depends(get_owned_script)):
     from .models import SubtitleSettings, SubtitleStyle
     from .subtitle import SUBTITLE_TEMPLATES
 
@@ -3120,20 +3254,20 @@ def update_subtitle_settings(script_id: str, request: UpdateSubtitleSettingsRequ
         raise HTTPException(status_code=400, detail=f"Invalid subtitle style: {e}")
 
     try:
-        script = pipeline.update_subtitle_settings(script_id, settings)
-        return signed_response(merged_project_payload(script))
+        updated_script = pipeline.update_subtitle_settings(script.id, settings)
+        return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.get("/projects/{script_id}/subtitle/export")
-def export_subtitle(script_id: str, fmt: str = "ass"):
+def export_subtitle(fmt: str = "ass", script: Script = Depends(get_owned_script)):
     from fastapi.responses import FileResponse
 
     if fmt not in ("ass", "srt"):
         raise HTTPException(status_code=400, detail="fmt must be 'ass' or 'srt'")
     try:
-        path = pipeline.export_subtitle_file(script_id, fmt)
+        path = pipeline.export_subtitle_file(script.id, fmt)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return FileResponse(path, filename=os.path.basename(path))
@@ -3147,7 +3281,7 @@ class AudioMixRequest(BaseModel):
 
 
 @app.put("/projects/{script_id}/audio_mix")
-def update_audio_mix(script_id: str, request: AudioMixRequest):
+def update_audio_mix(request: AudioMixRequest, script: Script = Depends(get_owned_script)):
     """Set BGM + per-track mix levels for the final merge.
 
     PATCH-style: only fields explicitly present in the request body are
@@ -3155,9 +3289,6 @@ def update_audio_mix(script_id: str, request: AudioMixRequest):
     "omitted" from "explicit null" — clients pass `bgm_url: null` to clear
     the BGM, which the old `is not None` check silently swallowed.
     """
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Script not found")
     fields_set = request.model_fields_set
     if "bgm_url" in fields_set:
         script.bgm_url = request.bgm_url or None  # null and "" both clear
@@ -3179,7 +3310,7 @@ def update_audio_mix(script_id: str, request: AudioMixRequest):
 
 
 @app.get("/projects/{script_id}/beats")
-def analyze_project_beats(script_id: str):
+def analyze_project_beats(script: Script = Depends(get_owned_script)):
     """Detect tempo and the beat grid of this project's BGM.
 
     The BPM is a suggestion, not a verdict — tempo estimation hits an octave
@@ -3190,9 +3321,6 @@ def analyze_project_beats(script_id: str):
 
     from .beats import BeatAnalysisError, analyze
 
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Script not found")
     if not script.bgm_url:
         raise HTTPException(
             status_code=400,
@@ -3247,7 +3375,7 @@ class AlignBeatsRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/beats/align")
-def align_shots_to_beats(script_id: str, request: AlignBeatsRequest):
+def align_shots_to_beats(request: AlignBeatsRequest, script: Script = Depends(get_owned_script)):
     """Snap every shot's length to a whole number of beats at the given BPM.
 
     The BPM comes from the client rather than being re-detected, because the
@@ -3262,10 +3390,6 @@ def align_shots_to_beats(script_id: str, request: AlignBeatsRequest):
 
     if request.bpm <= 0:
         raise HTTPException(status_code=400, detail=f"BPM 必须为正数，收到 {request.bpm}")
-
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Script not found")
 
     interval = 60.0 / request.bpm
     segments = collect_render_segments(
@@ -3295,17 +3419,13 @@ class UpdateFrameTrimsRequest(BaseModel):
 
 
 @app.put("/projects/{script_id}/frames/trims")
-def update_frame_trims(script_id: str, request: UpdateFrameTrimsRequest):
+def update_frame_trims(request: UpdateFrameTrimsRequest, script: Script = Depends(get_owned_script)):
     """Set per-shot trimmed durations for beat sync.
 
     Batched on purpose: "align everything to the beat" writes every frame at
     once, and one request per shot would leave the project half-aligned if any
     of them failed.
     """
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Script not found")
-
     by_id = {f.id: f for f in script.frames}
     unknown = [fid for fid in request.trims if fid not in by_id]
     if unknown:
@@ -3329,11 +3449,11 @@ class DubPreviewRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/frames/{frame_id}/dub/preview")
-def preview_dub(script_id: str, frame_id: str, request: DubPreviewRequest):
+def preview_dub(frame_id: str, request: DubPreviewRequest, script: Script = Depends(get_owned_script)):
     """Generate a preview dub (cached Demucs + fast adelay+amix+mux)."""
     try:
         updated_script = pipeline.preview_dub(
-            script_id, frame_id,
+            script.id, frame_id,
             video_task_id=request.video_task_id,
             offset_ms=request.offset_ms,
         )
@@ -3345,27 +3465,27 @@ def preview_dub(script_id: str, frame_id: str, request: DubPreviewRequest):
 
 
 @app.post("/projects/{script_id}/frames/{frame_id}/dub/apply")
-def apply_dub(script_id: str, frame_id: str):
+def apply_dub(frame_id: str, script: Script = Depends(get_owned_script)):
     """Promote current preview to official dubbed video."""
     try:
-        updated_script = pipeline.apply_dub(script_id, frame_id)
+        updated_script = pipeline.apply_dub(script.id, frame_id)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.delete("/projects/{script_id}/frames/{frame_id}/dub")
-def revert_frame_dub(script_id: str, frame_id: str):
+def revert_frame_dub(frame_id: str, script: Script = Depends(get_owned_script)):
     """Revert dubbing — remove dubbed+preview, keep bg cache."""
     try:
-        updated_script = pipeline.revert_dub(script_id, frame_id)
+        updated_script = pipeline.revert_dub(script.id, frame_id)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.post("/projects/{script_id}/dialogue_audio/batch")
-def generate_dialogue_audio_batch(script_id: str):
+def generate_dialogue_audio_batch(script: Script = Depends(get_owned_script)):
     """PR-3j · Generate audio for every frame that has dialogue.
 
     Idempotent re-use: frames whose audio is already up-to-date (matching
@@ -3375,10 +3495,8 @@ def generate_dialogue_audio_batch(script_id: str):
     Returns the updated script plus _batch_stats with generated/skipped/failed counts.
     """
     from .audio import dialogue_audio_is_stale
+    script_id = script.id
     try:
-        script = pipeline.get_script(script_id)
-        if not script:
-            raise HTTPException(status_code=404, detail="Script not found")
         generated = 0
         skipped = 0
         failed = 0
@@ -3429,23 +3547,23 @@ def generate_dialogue_audio_batch(script_id: str):
 
 
 @app.post("/projects/{script_id}/mix/generate_sfx")
-def generate_mix_sfx(script_id: str):
+def generate_mix_sfx(script: Script = Depends(get_owned_script)):
     """Triggers Video-to-Audio SFX generation for all frames."""
-    # Re-using generate_audio for now as it covers everything, 
+    # Re-using generate_audio for now as it covers everything,
     # but ideally we'd have granular methods in pipeline.
     # Let's just call generate_audio again, it's idempotent-ish.
     try:
-        updated_script = pipeline.generate_audio(script_id)
+        updated_script = pipeline.generate_audio(script.id)
         return signed_response(merged_project_payload(updated_script))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/projects/{script_id}/mix/generate_bgm")
-def generate_mix_bgm(script_id: str):
+def generate_mix_bgm(script: Script = Depends(get_owned_script)):
     """Triggers BGM generation."""
     try:
-        updated_script = pipeline.generate_audio(script_id)
+        updated_script = pipeline.generate_audio(script.id)
         return signed_response(merged_project_payload(updated_script))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -3456,11 +3574,11 @@ class ToggleFrameLockRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/frames/toggle_lock")
-def toggle_frame_lock(script_id: str, request: ToggleFrameLockRequest):
+def toggle_frame_lock(request: ToggleFrameLockRequest, script: Script = Depends(get_owned_script)):
     """Toggles the locked status of a frame."""
     try:
         updated_script = pipeline.toggle_frame_lock(
-            script_id,
+            script.id,
             request.frame_id
         )
         return signed_response(merged_project_payload(updated_script))
@@ -3488,11 +3606,11 @@ class UpdateFrameRequest(BaseModel):
     transition_hint: Optional[str] = None
 
 @app.post("/projects/{script_id}/frames/update")
-def update_frame(script_id: str, request: UpdateFrameRequest):
+def update_frame(request: UpdateFrameRequest, script: Script = Depends(get_owned_script)):
     """Updates frame data (prompt, scene, characters, etc.)."""
     try:
         updated_script = pipeline.update_frame(
-            script_id,
+            script.id,
             request.frame_id,
             image_prompt=request.image_prompt,
             action_description=request.action_description,
@@ -3519,13 +3637,13 @@ class AddFrameRequest(BaseModel):
     insert_at: Optional[int] = None
 
 @app.post("/projects/{script_id}/frames")
-def add_frame(script_id: str, request: AddFrameRequest):
+def add_frame(request: AddFrameRequest, script: Script = Depends(get_owned_script)):
     """Adds a new storyboard frame."""
     try:
         updated_script = pipeline.add_frame(
-            script_id, 
-            request.scene_id, 
-            request.action_description, 
+            script.id,
+            request.scene_id,
+            request.action_description,
             request.camera_angle,
             request.insert_at
         )
@@ -3536,10 +3654,10 @@ def add_frame(script_id: str, request: AddFrameRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/projects/{script_id}/frames/{frame_id}")
-def delete_frame(script_id: str, frame_id: str):
+def delete_frame(frame_id: str, script: Script = Depends(get_owned_script)):
     """Deletes a storyboard frame."""
     try:
-        updated_script = pipeline.delete_frame(script_id, frame_id)
+        updated_script = pipeline.delete_frame(script.id, frame_id)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -3551,10 +3669,10 @@ class CopyFrameRequest(BaseModel):
     insert_at: Optional[int] = None
 
 @app.post("/projects/{script_id}/frames/copy")
-def copy_frame(script_id: str, request: CopyFrameRequest):
+def copy_frame(request: CopyFrameRequest, script: Script = Depends(get_owned_script)):
     """Copies a storyboard frame."""
     try:
-        updated_script = pipeline.copy_frame(script_id, request.frame_id, request.insert_at)
+        updated_script = pipeline.copy_frame(script.id, request.frame_id, request.insert_at)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -3565,10 +3683,10 @@ class ReorderFramesRequest(BaseModel):
     frame_ids: List[str]
 
 @app.put("/projects/{script_id}/frames/reorder")
-def reorder_frames(script_id: str, request: ReorderFramesRequest):
+def reorder_frames(request: ReorderFramesRequest, script: Script = Depends(get_owned_script)):
     """Reorders storyboard frames."""
     try:
-        updated_script = pipeline.reorder_frames(script_id, request.frame_ids)
+        updated_script = pipeline.reorder_frames(script.id, request.frame_ids)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -3583,13 +3701,13 @@ class RenderFrameRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/storyboard/render")
-def render_frame(script_id: str, request: RenderFrameRequest):
+def render_frame(request: RenderFrameRequest, script: Script = Depends(get_owned_script)):
     """Renders a specific frame using composition data (I2I)."""
     try:
         logger.info(f"Rendering frame {request.frame_id}")
-        
+
         updated_script = pipeline.generate_storyboard_render(
-            script_id,
+            script.id,
             request.frame_id,
             request.composition_data,
             request.prompt,
@@ -3608,10 +3726,10 @@ class SelectVideoRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/frames/{frame_id}/select_video")
-def select_video(script_id: str, frame_id: str, request: SelectVideoRequest):
+def select_video(frame_id: str, request: SelectVideoRequest, script: Script = Depends(get_owned_script)):
     """Selects a video variant for a specific frame."""
     try:
-        updated_script = pipeline.select_video_for_frame(script_id, frame_id, request.video_id)
+        updated_script = pipeline.select_video_for_frame(script.id, frame_id, request.video_id)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -3620,7 +3738,7 @@ def select_video(script_id: str, frame_id: str, request: SelectVideoRequest):
 
 
 @app.post("/projects/{script_id}/frames/{frame_id}/auto_select_latest_video")
-def auto_select_latest_video(script_id: str, frame_id: str):
+def auto_select_latest_video(frame_id: str, script: Script = Depends(get_owned_script)):
     """Auto-pick the latest completed video as this frame's active take.
 
     Idempotent; skipped when the frame is pinned (is_video_pinned=True).
@@ -3629,7 +3747,7 @@ def auto_select_latest_video(script_id: str, frame_id: str):
     pinned a different take.
     """
     try:
-        updated_script = pipeline.auto_select_latest_video(script_id, frame_id)
+        updated_script = pipeline.auto_select_latest_video(script.id, frame_id)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -3638,7 +3756,7 @@ def auto_select_latest_video(script_id: str, frame_id: str):
 
 
 @app.post("/projects/{script_id}/frames/{frame_id}/unpin_video")
-def unpin_video(script_id: str, frame_id: str):
+def unpin_video(frame_id: str, script: Script = Depends(get_owned_script)):
     """Clear the manual pin; auto_select_latest_video resumes on next poll.
 
     Leaves selected_video_id / video_url untouched — the user keeps seeing
@@ -3646,7 +3764,7 @@ def unpin_video(script_id: str, frame_id: str):
     task.
     """
     try:
-        updated_script = pipeline.unpin_video(script_id, frame_id)
+        updated_script = pipeline.unpin_video(script.id, frame_id)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -3659,10 +3777,10 @@ class ExtractLastFrameRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/frames/{frame_id}/extract_last_frame")
-def extract_last_frame(script_id: str, frame_id: str, request: ExtractLastFrameRequest):
+def extract_last_frame(frame_id: str, request: ExtractLastFrameRequest, script: Script = Depends(get_owned_script)):
     """Extract the last frame from a completed video and add it as a variant to the frame's rendered_image_asset."""
     try:
-        updated_script = pipeline.extract_last_frame(script_id, frame_id, request.video_task_id)
+        updated_script = pipeline.extract_last_frame(script.id, frame_id, request.video_task_id)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -3674,7 +3792,7 @@ def extract_last_frame(script_id: str, frame_id: str, request: ExtractLastFrameR
 
 
 @app.post("/projects/{script_id}/frames/{frame_id}/upload_image")
-def upload_frame_image(script_id: str, frame_id: str, file: UploadFile = File(...)):
+def upload_frame_image(frame_id: str, file: UploadFile = File(...), script: Script = Depends(get_owned_script)):
     """Upload an image as a variant for a frame's rendered_image_asset."""
     try:
         # Save file locally first
@@ -3685,7 +3803,7 @@ def upload_frame_image(script_id: str, frame_id: str, file: UploadFile = File(..
         with open(file_path, "wb") as buffer:
             buffer.write(data)
 
-        updated_script = pipeline.upload_frame_image(script_id, frame_id, file_path)
+        updated_script = pipeline.upload_frame_image(script.id, frame_id, file_path)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -3705,7 +3823,7 @@ _T2I_UPLOAD_ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 @app.post("/projects/{script_id}/frames/{frame_id}/upload_t2i")
-async def upload_t2i_frame(script_id: str, frame_id: str, file: UploadFile = File(...)):
+async def upload_t2i_frame(frame_id: str, file: UploadFile = File(...), script: Script = Depends(get_owned_script)):
     """Upload an external image as a T2I首帧 candidate for an I2V flow.
 
     Validation:
@@ -3764,7 +3882,7 @@ async def upload_t2i_frame(script_id: str, frame_id: str, file: UploadFile = Fil
         loop = asyncio.get_event_loop()
         frame = await loop.run_in_executor(
             None,
-            partial(pipeline.upload_t2i_frame, script_id, frame_id, rel_path),
+            partial(pipeline.upload_t2i_frame, script.id, frame_id, rel_path),
         )
         if frame is None:
             # Roll back the file — frame/script gone, no reference will exist
@@ -3783,11 +3901,11 @@ async def upload_t2i_frame(script_id: str, frame_id: str, file: UploadFile = Fil
 
 
 @app.post("/projects/{script_id}/merge")
-def merge_videos(script_id: str):
+def merge_videos(script: Script = Depends(get_owned_script)):
     """Merge all selected frame videos into final output"""
     import traceback
     try:
-        merged_script = pipeline.merge_videos(script_id)
+        merged_script = pipeline.merge_videos(script.id)
         return signed_response(merged_project_payload(merged_script))
     except ValueError as e:
         # Known validation errors (no videos, etc.)
@@ -3813,7 +3931,7 @@ class ExportRequest(BaseModel):
     subtitles: str = "none"
 
 @app.post("/projects/{script_id}/export")
-def export_project(script_id: str, request: ExportRequest):
+def export_project(request: ExportRequest, script: Script = Depends(get_owned_script)):
     """Export project video by merging all selected frame videos.
 
     Currently delegates to the existing merge_videos pipeline.
@@ -3821,16 +3939,12 @@ def export_project(script_id: str, request: ExportRequest):
     (requires FFmpeg pipeline iteration).
     """
     try:
-        script = pipeline.get_script(script_id)
-        if not script:
-            raise HTTPException(status_code=404, detail="Project not found")
-
         # If already merged, return existing URL directly
         if script.merged_video_url:
             return signed_response({"url": script.merged_video_url})
 
         # Otherwise, run merge pipeline
-        merged_script = pipeline.merge_videos(script_id)
+        merged_script = pipeline.merge_videos(script.id)
         return signed_response({"url": merged_script.merged_video_url})
     except HTTPException:
         raise
@@ -3858,20 +3972,15 @@ class SaveArtDirectionRequest(BaseModel):
 
 
 @app.post("/projects/{script_id}/art_direction/analyze")
-async def analyze_script_for_styles(script_id: str, request: AnalyzeStyleRequest):
+async def analyze_script_for_styles(request: AnalyzeStyleRequest, script: Script = Depends(get_owned_script)):
     """Analyze script content and recommend visual styles using LLM"""
     try:
-        # Get the script to ensure it exists
-        script = pipeline.get_script(script_id)
-        if not script:
-            raise HTTPException(status_code=404, detail="Script not found")
-
         # Use LLM to analyze and recommend styles (run in thread pool to avoid blocking, Python 3.8 compatible)
         custom_style = getattr(getattr(script, "prompt_config", None), "style_analysis", "")
         loop = asyncio.get_event_loop()
         recommendations = await loop.run_in_executor(
             None,  # Use default executor
-            partial(pipeline.script_processor.analyze_script_for_styles, request.script_text, custom_style)
+            partial(pipeline.script_processor.analyze_script_for_styles, request.script_text, custom_style, user_id=script.owner_id or None)
         )
 
         return {"recommendations": recommendations}
@@ -3884,13 +3993,11 @@ async def analyze_script_for_styles(script_id: str, request: AnalyzeStyleRequest
 
 
 @app.post("/projects/{script_id}/art_direction/clear")
-def clear_project_art_direction(script_id: str):
+def clear_project_art_direction(script: Script = Depends(get_owned_script)):
     """R2V v2 Phase 2 — clear project-level art_direction so the
     episode falls back to series baseline (inherit). Used by the
     Style step '重置为系列' button."""
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
+    script_id = script.id
     script.art_direction = None
     script.updated_at = time.time()
     pipeline.scripts[script_id] = script
@@ -3899,12 +4006,10 @@ def clear_project_art_direction(script_id: str):
 
 
 @app.put("/projects/{script_id}/last_episode_summary")
-def update_last_episode_summary(script_id: str, payload: dict):
+def update_last_episode_summary(payload: dict, script: Script = Depends(get_owned_script)):
     """R2V v2 Phase P1-b — manually edit the cached AI summary.
     Body: {"ai_summary": "user-edited text"} or null to clear."""
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
+    script_id = script.id
     summary = payload.get("ai_summary")
     if summary is None:
         script.last_episode_summary_cache = None
@@ -3931,11 +4036,11 @@ def update_last_episode_summary(script_id: str, payload: dict):
 
 
 @app.post("/projects/{script_id}/art_direction/save")
-def save_art_direction(script_id: str, request: SaveArtDirectionRequest):
+def save_art_direction(request: SaveArtDirectionRequest, script: Script = Depends(get_owned_script)):
     """Save Art Direction configuration to the project"""
     try:
         updated_script = pipeline.save_art_direction(
-            script_id,
+            script.id,
             request.selected_style_id,
             request.style_config,
             request.custom_styles,
@@ -4050,7 +4155,7 @@ def _polish_error_response(err) -> Dict[str, Any]:
 
 
 @app.post("/video/polish_prompt")
-def polish_video_prompt(request: PolishVideoPromptRequest):
+def polish_video_prompt(request: PolishVideoPromptRequest, user=Depends(auth.require_login)):
     """Polishes a video generation prompt using LLM. Returns bilingual prompts.
 
     NOTE: Defined as a SYNC handler on purpose. The body calls
@@ -4080,6 +4185,7 @@ def polish_video_prompt(request: PolishVideoPromptRequest):
             request.prev_cn,
             image_urls=request.image_urls or None,
             polish_model=polish_model,
+            user_id=user.id,
         )
         return {
             "prompt_cn": result.get("prompt_cn", ""),
@@ -4110,7 +4216,7 @@ class PolishR2VPromptRequest(BaseModel):
 
 
 @app.post("/video/polish_r2v_prompt")
-def polish_r2v_prompt(request: PolishR2VPromptRequest):
+def polish_r2v_prompt(request: PolishR2VPromptRequest, user=Depends(auth.require_login)):
     """Polishes a R2V (Reference-to-Video) prompt using LLM. Returns bilingual prompts.
     错误约定同 /video/polish_prompt。
     SYNC handler on purpose — see polish_video_prompt for rationale."""
@@ -4128,6 +4234,7 @@ def polish_r2v_prompt(request: PolishR2VPromptRequest):
             request.prev_cn,
             image_urls=request.image_urls or None,
             polish_model=polish_model,
+            user_id=user.id,
         )
         return {
             "prompt_cn": result.get("prompt_cn", ""),
@@ -4236,12 +4343,8 @@ class CreatePropRequest(BaseModel):
     description: str = ""
 
 @app.post("/projects/{script_id}/props")
-def create_prop(script_id: str, request: CreatePropRequest):
+def create_prop(request: CreatePropRequest, script: Script = Depends(get_owned_script)):
     """Creates a new prop in the project."""
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
-
     import uuid
     from .models import Prop, GenerationStatus
 
@@ -4260,12 +4363,8 @@ def create_prop(script_id: str, request: CreatePropRequest):
 
 
 @app.delete("/projects/{script_id}/props/{prop_id}")
-def delete_prop(script_id: str, prop_id: str):
+def delete_prop(prop_id: str, script: Script = Depends(get_owned_script)):
     """Deletes a prop from the project."""
-    script = pipeline.get_script(script_id)
-    if not script:
-        raise HTTPException(status_code=404, detail="Project not found")
-
     original_count = len(script.props)
     script.props = [p for p in script.props if p.id != prop_id]
 
