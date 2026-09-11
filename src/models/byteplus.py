@@ -197,14 +197,18 @@ class BytePlusVideoModel(VideoGenModel):
         model_name = kwargs.get("model_name")
         last_frame_url = self._resolve_ark_image_url(kwargs.get("last_frame_url"), model_name=model_name)
         first_frame_url = self._resolve_ark_image_url(img_url or img_path, model_name=model_name)
-        ref_image_urls = kwargs.get("ref_image_urls") or []
+        raw_ref_image_urls = kwargs.get("ref_image_urls") or []
 
         images: List[Tuple[str, Optional[str]]] = []
-        if ref_image_urls:
+        if raw_ref_image_urls:
             # Omni reference-to-video: every image is a reference_image.
             # Mutually exclusive with first_frame/last_frame per Ark's contract.
+            # Each ref may be a local upload path same as first/last frame —
+            # route it through the same resolver instead of trusting it's
+            # already a fetchable URL.
             seen = set()
-            for ref in ref_image_urls:
+            for raw_ref in raw_ref_image_urls:
+                ref = self._resolve_ark_image_url(raw_ref, model_name=model_name)
                 if ref and ref not in seen:
                     seen.add(ref)
                     images.append((ref, "reference_image"))
