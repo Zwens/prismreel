@@ -1271,7 +1271,7 @@ async def import_file_preview(
         loop = asyncio.get_event_loop()
         episodes = await loop.run_in_executor(
             None,
-            partial(pipeline.import_file_and_split, text, suggested_episodes)
+            partial(pipeline.import_file_and_split, text, suggested_episodes, user.id)
         )
         # Store text in pipeline cache, return import_id instead of full text
         import_id = str(uuid.uuid4())
@@ -3978,7 +3978,7 @@ async def analyze_script_for_styles(request: AnalyzeStyleRequest, script: Script
         loop = asyncio.get_event_loop()
         recommendations = await loop.run_in_executor(
             None,  # Use default executor
-            partial(pipeline.script_processor.analyze_script_for_styles, request.script_text, custom_style)
+            partial(pipeline.script_processor.analyze_script_for_styles, request.script_text, custom_style, user_id=script.owner_id or None)
         )
 
         return {"recommendations": recommendations}

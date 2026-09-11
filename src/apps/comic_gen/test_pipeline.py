@@ -83,5 +83,19 @@ def test_video_generation_records_usage_for_byteplus(monkeypatch, tmp_path):
     assert summary["video"]["byteplus"]["dreamina-seedance-2-0-260128"]["total_tokens"] == 500000
 
 
+def test_extract_preview_forwards_owner_id_as_user_id_to_parse_novel():
+    from src.apps.comic_gen.pipeline import ComicGenPipeline
+
+    pipeline = ComicGenPipeline()
+    script = pipeline.create_project("Title", "text", skip_analysis=True, owner_id="user-preview")
+
+    with patch.object(pipeline.script_processor, "parse_novel") as mock_parse_novel:
+        mock_parse_novel.return_value = pipeline.script_processor.create_draft_script("Title", "new text")
+        pipeline.extract_preview(script.id, "new text")
+
+    _, kwargs = mock_parse_novel.call_args
+    assert kwargs.get("user_id") == "user-preview"
+
+
 if __name__ == "__main__":
     test_pipeline()

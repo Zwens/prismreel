@@ -464,7 +464,7 @@ class ComicGenPipeline:
         if not existing_script:
             raise ValueError("Script not found")
         custom_extraction = getattr(getattr(existing_script, "prompt_config", None), "entity_extraction", "")
-        new_script = self.script_processor.parse_novel(existing_script.title, text, custom_extraction)
+        new_script = self.script_processor.parse_novel(existing_script.title, text, custom_extraction, user_id=existing_script.owner_id or None)
         self._extraction_cache[script_id] = (time.time(), new_script)
         return new_script
 
@@ -480,8 +480,8 @@ class ComicGenPipeline:
             new_script = cached[1]
         else:
             custom_extraction = getattr(getattr(existing_script, "prompt_config", None), "entity_extraction", "")
-            new_script = self.script_processor.parse_novel(existing_script.title, text, custom_extraction)
-        
+            new_script = self.script_processor.parse_novel(existing_script.title, text, custom_extraction, user_id=existing_script.owner_id or None)
+
         # Preserve the original script ID and timestamps
         new_script.id = existing_script.id
         new_script.created_at = existing_script.created_at
@@ -3368,7 +3368,9 @@ class ComicGenPipeline:
                 )
                 self._record_generation_usage_safe(
                     script.owner_id, "byteplus", resolve_ark_model_id(task.model) or task.model, task.resolution,
-                    input_has_video=bool(task.reference_image_urls) if task.generation_mode == "r2v" else False,
+                    # byteplus branch never sends video reference input to Ark (only ref_image_urls above);
+                    # input_has_video is always False here until video-reference support is added.
+                    input_has_video=False,
                     total_tokens=(gen_usage or {}).get("total_tokens"),
                 )
             elif use_vendor_kling:
