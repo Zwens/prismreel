@@ -32,15 +32,49 @@ def test_polish_video_prompt_works_when_logged_in(monkeypatch):
     from src.apps.comic_gen import user_repo
     from unittest.mock import patch
 
-    user_repo.create_user("polish@example.com", "pw123456")
+    user = user_repo.create_user("polish@example.com", "pw123456")
     client = _client()
     client.post("/auth/login", json={"email": "polish@example.com", "password": "pw123456"})
 
     with patch(
         "src.apps.comic_gen.llm.ScriptProcessor.polish_video_prompt",
         return_value={"prompt_cn": "一只猫在走路", "prompt_en": "a cat walking"},
-    ):
+    ) as mock_polish:
         resp = client.post("/video/polish_prompt", json={"draft_prompt": "a cat walking"})
 
     assert resp.status_code == 200
     assert resp.json()["prompt_en"] == "a cat walking"
+    mock_polish.assert_called_once()
+    assert mock_polish.call_args.kwargs["user_id"] == user.id
+
+
+def test_polish_r2v_prompt_requires_login():
+    client = _client()
+    resp = client.post(
+        "/video/polish_r2v_prompt",
+        json={"draft_prompt": "a cat walking", "slots": [{"description": "雷震"}]},
+    )
+    assert resp.status_code == 401
+
+
+def test_polish_r2v_prompt_works_when_logged_in(monkeypatch):
+    from src.apps.comic_gen import user_repo
+    from unittest.mock import patch
+
+    user = user_repo.create_user("polishr2v@example.com", "pw123456")
+    client = _client()
+    client.post("/auth/login", json={"email": "polishr2v@example.com", "password": "pw123456"})
+
+    with patch(
+        "src.apps.comic_gen.llm.ScriptProcessor.polish_r2v_prompt",
+        return_value={"prompt_cn": "一只猫在走路", "prompt_en": "a cat walking"},
+    ) as mock_polish:
+        resp = client.post(
+            "/video/polish_r2v_prompt",
+            json={"draft_prompt": "a cat walking", "slots": [{"description": "雷震"}]},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["prompt_en"] == "a cat walking"
+    mock_polish.assert_called_once()
+    assert mock_polish.call_args.kwargs["user_id"] == user.id
