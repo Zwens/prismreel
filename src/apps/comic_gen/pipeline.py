@@ -437,7 +437,7 @@ class ComicGenPipeline:
         if skip_analysis:
             script = self.script_processor.create_draft_script(title, text)
         else:
-            script = self.script_processor.parse_novel(title, text)
+            script = self.script_processor.parse_novel(title, text, user_id=owner_id or None)
 
         script.workflow_mode = workflow_mode
         script.owner_id = owner_id
@@ -1364,7 +1364,8 @@ class ComicGenPipeline:
 
         # Call LLM to analyze text (may raise RuntimeError on parse failure)
         raw_frames = self.script_processor.analyze_to_storyboard(
-            text, entities_json, custom_extraction_prompt=storyboard_extraction_prompt
+            text, entities_json, custom_extraction_prompt=storyboard_extraction_prompt,
+            user_id=script.owner_id or None,
         )
 
         if not raw_frames:
@@ -1484,7 +1485,8 @@ class ComicGenPipeline:
             next_ctx = f"Action: {nf.action_description}. Shot: {nf.shot_size}, {nf.camera_angle}."
 
         result = self.script_processor.refine_frame_to_rich(
-            coarse, char_assets, scene_assets, prev_ctx, next_ctx
+            coarse, char_assets, scene_assets, prev_ctx, next_ctx,
+            user_id=script.owner_id or None,
         )
         if not result:
             return frame
@@ -1629,7 +1631,9 @@ class ComicGenPipeline:
             custom_prompt = ""
 
         # Call LLM to refine prompt
-        result = self.script_processor.polish_storyboard_prompt(raw_prompt, assets, feedback, custom_prompt)
+        result = self.script_processor.polish_storyboard_prompt(
+            raw_prompt, assets, feedback, custom_prompt, user_id=script.owner_id or None
+        )
         
         # Find and update the frame
         frame_found = False
@@ -3345,10 +3349,10 @@ class ComicGenPipeline:
             use_byteplus = backend == "byteplus" or model_name_lower.startswith("seedance")
 
             if use_byteplus:
+                from ...models.byteplus import BytePlusVideoModel, resolve_ark_model_id
                 if self._byteplus_video_model is None:
-                    from ...models.byteplus import BytePlusVideoModel
                     self._byteplus_video_model = BytePlusVideoModel({})
-                video_path, _ = self._byteplus_video_model.generate(
+                video_path, _, gen_usage = self._byteplus_video_model.generate(
                     prompt=task.prompt,
                     output_path=output_path,
                     img_url=img_url,
@@ -3361,6 +3365,11 @@ class ComicGenPipeline:
                     generation_mode=task.generation_mode,
                     ref_image_urls=task.reference_image_urls if task.generation_mode == "r2v" else None,
                     model_name=task.model,
+                )
+                self._record_generation_usage_safe(
+                    script.owner_id, "byteplus", resolve_ark_model_id(task.model) or task.model, task.resolution,
+                    input_has_video=bool(task.reference_image_urls) if task.generation_mode == "r2v" else False,
+                    total_tokens=(gen_usage or {}).get("total_tokens"),
                 )
             elif use_vendor_kling:
                 # Use Kling model (cached)
@@ -3380,6 +3389,7 @@ class ComicGenPipeline:
                     sound=task.sound or "off",
                     cfg_scale=task.cfg_scale,
                 )
+                self._record_generation_usage_safe(script.owner_id, "kling", task.model, task.resolution)
             elif use_vendor_vidu:
                 # Use Vidu model (cached)
                 if self._vidu_model is None:
@@ -3405,6 +3415,7 @@ class ComicGenPipeline:
                     ref_image_urls=task.reference_image_urls if task.generation_mode == "r2v" else None,
                     watermark=bool(task.watermark) if task.watermark is not None else False,
                 )
+                self._record_generation_usage_safe(script.owner_id, "vidu", task.model, task.resolution)
             else:
                 # Default: Wanx model
                 # Issue 17: persist provider IDs (Bailian / DashScope task_id +
@@ -3445,7 +3456,8 @@ class ComicGenPipeline:
                     subject_motion=None,
                     on_provider_ids=_capture_provider_ids,
                 )
-            
+                self._record_generation_usage_safe(script.owner_id, "wanx", task.model, task.resolution)
+
             task.video_url = to_project_media_ref(output_path)
             task.status = "completed"
             
@@ -3466,6 +3478,21 @@ class ComicGenPipeline:
                 self._sync_asset_video_task(script, task)
             
         self._save_data()
+
+    def _record_generation_usage_safe(
+        self, owner_id: str, provider: str, model: Optional[str],
+        resolution: Optional[str] = None, input_has_video: Optional[bool] = None,
+        total_tokens: Optional[int] = None,
+    ) -> None:
+        try:
+            from . import usage_repo
+            usage_repo.record_generation_usage(
+                user_id=owner_id or "", kind="video", provider=provider,
+                model=model or "unknown", resolution=resolution,
+                input_has_video=input_has_video, total_tokens=total_tokens,
+            )
+        except Exception:
+            logger.warning("Failed to record generation usage", exc_info=True)
 
     def _sync_asset_video_task(self, script: Script, task: VideoTask):
         """Syncs the updated task status/url back to the asset's video_assets list."""
@@ -4727,9 +4754,9 @@ class ComicGenPipeline:
     # File Import & Episode Splitting
     # ============================================================
 
-    def import_file_and_split(self, text: str, suggested_episodes: int = 3) -> List[Dict]:
+    def import_file_and_split(self, text: str, suggested_episodes: int = 3, owner_id: str = "") -> List[Dict]:
         """Split text into episodes using LLM. Returns episode preview data."""
-        return self.script_processor.split_into_episodes(text, suggested_episodes)
+        return self.script_processor.split_into_episodes(text, suggested_episodes, user_id=owner_id or None)
 
     def create_series_from_import(self, title: str, text: str, episodes_data: List[Dict],
                                    description: str = "", owner_id: str = "") -> Dict:
