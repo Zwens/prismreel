@@ -41,4 +41,23 @@ def init_schema(conn: sqlite3.Connection) -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS usage_events (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                model TEXT,
+                resolution TEXT,
+                input_has_video INTEGER,
+                tokens_prompt INTEGER,
+                tokens_completion INTEGER,
+                total_tokens INTEGER,
+                cost_usd REAL,
+                count INTEGER NOT NULL DEFAULT 1,
+                created_at REAL NOT NULL
+            )
+            """
+        )
         conn.commit()
