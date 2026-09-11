@@ -512,31 +512,36 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
             )}
           </div>
 
-          <div className="flex justify-end gap-3 p-6 border-t border-glass-border">
-            <button
-              onClick={requestClose}
-              disabled={!canClose}
-              className="px-4 py-2 text-sm text-text-secondary hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {tc("cancel")}
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving || loading || !!loadError}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-foreground text-sm font-medium rounded-lg transition-all disabled:opacity-50"
-            >
-              {saving ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  {t("savingConfig")}
-                </>
-              ) : (
-                <>
-                  <Save size={16} />
-                  {t("saveConfig")}
-                </>
-              )}
-            </button>
+          <div className="flex justify-between items-center gap-3 p-6 border-t border-glass-border">
+            <a href="/usage" className="text-primary hover:underline text-sm">
+              {t("usageLinkLabel")}
+            </a>
+            <div className="flex gap-3">
+              <button
+                onClick={requestClose}
+                disabled={!canClose}
+                className="px-4 py-2 text-sm text-text-secondary hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {tc("cancel")}
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving || loading || !!loadError}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-foreground text-sm font-medium rounded-lg transition-all disabled:opacity-50"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    {t("savingConfig")}
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} />
+                    {t("saveConfig")}
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </motion.div>
       </motion.div>

@@ -2,21 +2,26 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
     adminListUsers,
     adminCreateInvite,
     adminResetPassword,
     adminDeactivateUser,
     getCurrentUser,
+    getAllUsersUsage,
     type AdminUser,
+    type UsageSummary,
 } from "@/lib/api";
 
 export default function AdminUsersPage() {
     const router = useRouter();
+    const t = useTranslations("usage");
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [inviteLink, setInviteLink] = useState("");
     const [loading, setLoading] = useState(true);
     const [authorized, setAuthorized] = useState(false);
+    const [usageData, setUsageData] = useState<{ user_id: string; summary: UsageSummary }[]>([]);
 
     useEffect(() => {
         getCurrentUser()
@@ -26,6 +31,7 @@ export default function AdminUsersPage() {
                     return;
                 }
                 setAuthorized(true);
+                getAllUsersUsage().then(setUsageData).catch(() => {});
                 return adminListUsers();
             })
             .then((data) => {
@@ -112,6 +118,36 @@ export default function AdminUsersPage() {
                                     </td>
                                 </tr>
                             ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="glass-panel atelier-card p-6">
+                    <h2 className="text-lg font-display mb-3">{t("adminUsageTitle")}</h2>
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="text-left border-b border-glass-border">
+                                <th className="pb-2">User ID</th>
+                                <th className="pb-2">{t("columnCost")}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {usageData.map((u) => {
+                                let totalCost = 0;
+                                for (const providers of Object.values(u.summary)) {
+                                    for (const models of Object.values(providers)) {
+                                        for (const bucket of Object.values(models)) {
+                                            if (bucket.cost_usd != null) totalCost += bucket.cost_usd;
+                                        }
+                                    }
+                                }
+                                return (
+                                    <tr key={u.user_id} className="border-b border-glass-border last:border-0">
+                                        <td className="py-2 font-mono text-xs">{u.user_id || "unknown"}</td>
+                                        <td className="py-2">${totalCost.toFixed(4)}</td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

@@ -968,6 +968,11 @@ export default function SettingsPage() {
             </span>
           </div>
         </div>
+        <div className="pt-2">
+            <a href="/usage" className="text-primary hover:underline text-sm">
+                {t("usageLinkLabel")}
+            </a>
+        </div>
         <div className="flex justify-end pt-4">
           <button
             type="button"
