@@ -169,7 +169,7 @@ class BytePlusVideoModel(VideoGenModel):
     # -- generation ------------------------------------------------------
 
     def generate(self, prompt: str, output_path: str, img_url: Optional[str] = None,
-                 img_path: Optional[str] = None, **kwargs) -> Tuple[str, float]:
+                 img_path: Optional[str] = None, **kwargs) -> Tuple[str, float, Optional[dict]]:
         start = time.time()
 
         last_frame_url = kwargs.get("last_frame_url")
@@ -218,14 +218,14 @@ class BytePlusVideoModel(VideoGenModel):
         if not task_id:
             raise RuntimeError(f"Ark task create returned no id: {resp.text[:300]}")
 
-        video_url = self._poll(task_id)
+        video_url, usage = self._poll(task_id)
         self._download(video_url, output_path)
 
         elapsed = time.time() - start
         logger.info("[BytePlus/Seedance] done in %.1fs -> %s", elapsed, output_path)
-        return output_path, elapsed
+        return output_path, elapsed, usage
 
-    def _poll(self, task_id: str) -> str:
+    def _poll(self, task_id: str) -> Tuple[str, Optional[dict]]:
         url = f"{self._tasks_url()}/{task_id}"
         deadline = time.time() + MAX_WAIT
         while time.time() < deadline:
@@ -237,7 +237,7 @@ class BytePlusVideoModel(VideoGenModel):
                 video_url = ((data.get("content") or {}).get("video_url"))
                 if not video_url:
                     raise RuntimeError(f"Ark task succeeded without a video url: {data}")
-                return video_url
+                return video_url, data.get("usage")
             if status == "failed":
                 raise RuntimeError(f"Ark generation failed: {data.get('error')}")
             time.sleep(POLL_INTERVAL)
