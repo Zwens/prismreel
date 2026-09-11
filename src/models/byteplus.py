@@ -125,6 +125,33 @@ def build_param_flags(
     return " ".join(parts)
 
 
+def explain_ark_error(status_code: int, body_text: str) -> str:
+    """Turn an Ark error body into a message worth showing the user.
+
+    Ark returns structured JSON ({"error": {"code", "message", ...}}) even on
+    4xx, but raise_for_status()'s default message ("400 Client Error") throws
+    that away — e.g. a content-policy rejection (real-person detection in the
+    reference image) reads identically to a malformed request, leaving the
+    user with no idea what to actually fix.
+    """
+    try:
+        import json as _json
+        data = _json.loads(body_text) if body_text else {}
+    except (ValueError, TypeError):
+        data = {}
+
+    error = data.get("error") if isinstance(data, dict) else None
+    if isinstance(error, dict):
+        code = error.get("code") or ""
+        message = error.get("message") or ""
+        detail = f"{code}: {message}" if code else message
+        if detail:
+            return f"HTTP {status_code} {detail}"
+
+    detail = (body_text or "")[:300]
+    return f"HTTP {status_code}: {detail}" if detail else f"HTTP {status_code}"
+
+
 def build_ark_content(
     prompt: str, images: List[Tuple[str, Optional[str]]], flags: str
 ) -> List[Dict[str, Any]]:
@@ -240,7 +267,10 @@ class BytePlusVideoModel(VideoGenModel):
         logger.info("[BytePlus/Seedance] POST %s model=%s images=%d",
                     url, body["model"], len(images))
         resp = requests.post(url, json=body, headers=self._headers(), timeout=60)
-        resp.raise_for_status()
+        if not resp.ok:
+            raise RuntimeError(
+                f"Ark task create failed — {explain_ark_error(resp.status_code, resp.text)}"
+            )
         task_id = (resp.json() or {}).get("id")
         if not task_id:
             raise RuntimeError(f"Ark task create returned no id: {resp.text[:300]}")
@@ -257,7 +287,10 @@ class BytePlusVideoModel(VideoGenModel):
         deadline = time.time() + MAX_WAIT
         while time.time() < deadline:
             resp = requests.get(url, headers=self._headers(), timeout=30)
-            resp.raise_for_status()
+            if not resp.ok:
+                raise RuntimeError(
+                    f"Ark task poll failed — {explain_ark_error(resp.status_code, resp.text)}"
+                )
             data = resp.json() or {}
             status = data.get("status")
             if status == "succeeded":
