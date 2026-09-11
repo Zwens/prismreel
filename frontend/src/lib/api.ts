@@ -97,6 +97,24 @@ export async function adminDeactivateUser(userId: string) {
     return res.data;
 }
 
+export type UsageBucket = {
+    count: number;
+    total_tokens: number | null;
+    cost_usd: number | null;
+};
+
+export type UsageSummary = Record<string, Record<string, Record<string, UsageBucket>>>;
+
+export async function getMyUsage(): Promise<{ user_id: string; summary: UsageSummary }> {
+    const res = await axios.get(`${API_URL}/usage/me`);
+    return res.data;
+}
+
+export async function getAllUsersUsage(): Promise<{ user_id: string; summary: UsageSummary }[]> {
+    const res = await axios.get(`${API_URL}/admin/usage`);
+    return res.data;
+}
+
 export type ProviderMode = "dashscope" | "vendor";
 
 /**
