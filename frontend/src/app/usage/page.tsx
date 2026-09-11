@@ -58,8 +58,9 @@ export default function UsagePage() {
     useEffect(() => {
         getMyUsage()
             .then((data) => setSummary(data.summary))
+            .catch(() => router.push("/"))
             .finally(() => setLoading(false));
-    }, []);
+    }, [router]);
 
     if (loading) {
         return (
