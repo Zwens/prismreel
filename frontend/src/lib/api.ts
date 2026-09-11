@@ -98,6 +98,10 @@ export async function adminDeactivateUser(userId: string) {
 }
 
 export type UsageBucket = {
+    model: string;
+    resolution: string | null;
+    input_has_video: boolean | null;
+    duration: number | null;
     count: number;
     total_tokens: number | null;
     cost_usd: number | null;

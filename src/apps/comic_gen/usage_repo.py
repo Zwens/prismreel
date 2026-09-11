@@ -69,6 +69,7 @@ class UsageEvent:
     model: Optional[str]
     resolution: Optional[str]
     input_has_video: Optional[bool]
+    duration: Optional[int]
     tokens_prompt: Optional[int]
     tokens_completion: Optional[int]
     total_tokens: Optional[int]
@@ -84,6 +85,7 @@ def _insert(
     model: Optional[str],
     resolution: Optional[str] = None,
     input_has_video: Optional[bool] = None,
+    duration: Optional[int] = None,
     tokens_prompt: Optional[int] = None,
     tokens_completion: Optional[int] = None,
     total_tokens: Optional[int] = None,
@@ -94,13 +96,14 @@ def _insert(
         conn.execute(
             """
             INSERT INTO usage_events
-                (id, user_id, kind, provider, model, resolution, input_has_video,
+                (id, user_id, kind, provider, model, resolution, input_has_video, duration,
                  tokens_prompt, tokens_completion, total_tokens, cost_usd, count, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
             """,
             (
                 str(uuid.uuid4()), user_id, kind, provider, model, resolution,
                 None if input_has_video is None else int(input_has_video),
+                duration,
                 tokens_prompt, tokens_completion, total_tokens, cost_usd,
                 time.time(),
             ),
@@ -132,6 +135,7 @@ def record_generation_usage(
     model: str,
     resolution: Optional[str] = None,
     input_has_video: Optional[bool] = None,
+    duration: Optional[int] = None,
     total_tokens: Optional[int] = None,
 ) -> None:
     cost_usd = None
@@ -139,7 +143,7 @@ def record_generation_usage(
         cost_usd = _seedance_cost_usd(model, resolution, input_has_video, total_tokens)
     _insert(
         user_id=user_id, kind=kind, provider=provider, model=model,
-        resolution=resolution, input_has_video=input_has_video,
+        resolution=resolution, input_has_video=input_has_video, duration=duration,
         total_tokens=total_tokens, cost_usd=cost_usd,
     )
 
@@ -150,10 +154,29 @@ def _rows_to_summary(rows) -> dict:
         kind = row["kind"]
         provider = row["provider"]
         model = row["model"] or "unknown"
-        summary.setdefault(kind, {}).setdefault(provider, {}).setdefault(
-            model, {"count": 0, "total_tokens": None, "cost_usd": None}
+        # Video rows are split further by spec (resolution/input mode/duration)
+        # since cost and duration vary per spec even for the same model.
+        if kind == "video":
+            spec_bits = [
+                row["resolution"] or "unknown",
+                "r2v" if row["input_has_video"] else "i2v",
+                f"{row['duration']}s" if row["duration"] else "unknown",
+            ]
+            model_key = f"{model}__{'|'.join(spec_bits)}"
+        else:
+            model_key = model
+        bucket = summary.setdefault(kind, {}).setdefault(provider, {}).setdefault(
+            model_key,
+            {
+                "model": model,
+                "resolution": row["resolution"] if kind == "video" else None,
+                "input_has_video": bool(row["input_has_video"]) if kind == "video" else None,
+                "duration": row["duration"] if kind == "video" else None,
+                "count": 0,
+                "total_tokens": None,
+                "cost_usd": None,
+            },
         )
-        bucket = summary[kind][provider][model]
         bucket["count"] += row["count"]
         if row["total_tokens"] is not None:
             bucket["total_tokens"] = (bucket["total_tokens"] or 0) + row["total_tokens"]

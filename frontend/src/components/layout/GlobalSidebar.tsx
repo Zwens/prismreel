@@ -1,7 +1,8 @@
 "use client";
 
-import { LayoutGrid, Layers, Wand2, Settings, LogOut } from "lucide-react";
+import { LayoutGrid, Layers, Wand2, Settings, LogOut, Gauge } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import PrismReelBranding from "./PrismReelBranding";
 import { logout } from "@/lib/api";
@@ -74,6 +75,8 @@ function NavButton({
  */
 export default function GlobalSidebar({ activeTab, onTabChange }: GlobalSidebarProps) {
   const t = useTranslations("nav");
+  const tUsage = useTranslations("usage");
+  const router = useRouter();
 
   const handleNav = (id: GlobalTab, hash: string) => {
     onTabChange(id);
@@ -115,6 +118,12 @@ export default function GlobalSidebar({ activeTab, onTabChange }: GlobalSidebarP
 
       {/* Settings + logout pinned bottom + version */}
       <div className="p-2.5 border-t border-glass-border">
+        <NavButton
+          active={false}
+          label={tUsage("myUsageTitle")}
+          icon={Gauge}
+          onClick={() => router.push("/usage")}
+        />
         <NavButton
           active={activeTab === "settings"}
           label={t("settings")}

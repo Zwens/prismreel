@@ -5,13 +5,13 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { getMyUsage, type UsageSummary } from "@/lib/api";
 
-function UsageTable({ summary, kind, title, showCost }: { summary: UsageSummary; kind: string; title: string; showCost: boolean }) {
+function UsageTable({ summary, kind, title, showCost, showSpec }: { summary: UsageSummary; kind: string; title: string; showCost: boolean; showSpec: boolean }) {
     const t = useTranslations("usage");
     const providers = summary[kind] || {};
-    const rows: { provider: string; model: string; count: number; total_tokens: number | null; cost_usd: number | null }[] = [];
+    const rows: { provider: string; bucketKey: string; model: string; resolution: string | null; input_has_video: boolean | null; duration: number | null; count: number; total_tokens: number | null; cost_usd: number | null }[] = [];
     for (const [provider, models] of Object.entries(providers)) {
-        for (const [model, bucket] of Object.entries(models)) {
-            rows.push({ provider, model, ...bucket });
+        for (const [bucketKey, bucket] of Object.entries(models)) {
+            rows.push({ provider, bucketKey, ...bucket });
         }
     }
     if (rows.length === 0) return null;
@@ -24,6 +24,9 @@ function UsageTable({ summary, kind, title, showCost }: { summary: UsageSummary;
                     <tr className="text-left border-b border-glass-border">
                         <th className="pb-2">{t("columnProvider")}</th>
                         <th className="pb-2">{t("columnModel")}</th>
+                        {showSpec && <th className="pb-2">{t("columnResolution")}</th>}
+                        {showSpec && <th className="pb-2">{t("columnMode")}</th>}
+                        {showSpec && <th className="pb-2">{t("columnDuration")}</th>}
                         <th className="pb-2">{t("columnCount")}</th>
                         <th className="pb-2">{t("columnTokens")}</th>
                         {showCost && <th className="pb-2">{t("columnCost")}</th>}
@@ -31,9 +34,12 @@ function UsageTable({ summary, kind, title, showCost }: { summary: UsageSummary;
                 </thead>
                 <tbody>
                     {rows.map((r) => (
-                        <tr key={`${r.provider}-${r.model}`} className="border-b border-glass-border last:border-0">
+                        <tr key={`${r.provider}-${r.bucketKey}`} className="border-b border-glass-border last:border-0">
                             <td className="py-2">{r.provider}</td>
                             <td className="py-2">{r.model}</td>
+                            {showSpec && <td className="py-2">{r.resolution ?? t("noCostAvailable")}</td>}
+                            {showSpec && <td className="py-2">{r.input_has_video == null ? t("noCostAvailable") : r.input_has_video ? t("modeR2v") : t("modeI2v")}</td>}
+                            {showSpec && <td className="py-2">{r.duration != null ? t("durationSeconds", { seconds: r.duration }) : t("noCostAvailable")}</td>}
                             <td className="py-2">{r.count}</td>
                             <td className="py-2">{r.total_tokens ?? t("noCostAvailable")}</td>
                             {showCost && (
@@ -82,9 +88,9 @@ export default function UsagePage() {
                 <p className="text-xs text-text-muted">{t("costEstimateNote")}</p>
                 {summary && (
                     <>
-                        <UsageTable summary={summary} kind="llm" title={t("llmSection")} showCost={true} />
-                        <UsageTable summary={summary} kind="video" title={t("videoSection")} showCost={true} />
-                        <UsageTable summary={summary} kind="image" title={t("otherSection")} showCost={false} />
+                        <UsageTable summary={summary} kind="llm" title={t("llmSection")} showCost={true} showSpec={false} />
+                        <UsageTable summary={summary} kind="video" title={t("videoSection")} showCost={true} showSpec={true} />
+                        <UsageTable summary={summary} kind="image" title={t("otherSection")} showCost={false} showSpec={false} />
                     </>
                 )}
             </div>

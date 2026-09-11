@@ -3371,6 +3371,7 @@ class ComicGenPipeline:
                     # byteplus branch never sends video reference input to Ark (only ref_image_urls above);
                     # input_has_video is always False here until video-reference support is added.
                     input_has_video=False,
+                    duration=task.duration,
                     total_tokens=(gen_usage or {}).get("total_tokens"),
                 )
             elif use_vendor_kling:
@@ -3391,7 +3392,7 @@ class ComicGenPipeline:
                     sound=task.sound or "off",
                     cfg_scale=task.cfg_scale,
                 )
-                self._record_generation_usage_safe(script.owner_id, "kling", task.model, task.resolution)
+                self._record_generation_usage_safe(script.owner_id, "kling", task.model, task.resolution, duration=task.duration)
             elif use_vendor_vidu:
                 # Use Vidu model (cached)
                 if self._vidu_model is None:
@@ -3417,7 +3418,7 @@ class ComicGenPipeline:
                     ref_image_urls=task.reference_image_urls if task.generation_mode == "r2v" else None,
                     watermark=bool(task.watermark) if task.watermark is not None else False,
                 )
-                self._record_generation_usage_safe(script.owner_id, "vidu", task.model, task.resolution)
+                self._record_generation_usage_safe(script.owner_id, "vidu", task.model, task.resolution, duration=task.duration)
             else:
                 # Default: Wanx model
                 # Issue 17: persist provider IDs (Bailian / DashScope task_id +
@@ -3458,7 +3459,7 @@ class ComicGenPipeline:
                     subject_motion=None,
                     on_provider_ids=_capture_provider_ids,
                 )
-                self._record_generation_usage_safe(script.owner_id, "wanx", task.model, task.resolution)
+                self._record_generation_usage_safe(script.owner_id, "wanx", task.model, task.resolution, duration=task.duration)
 
             task.video_url = to_project_media_ref(output_path)
             task.status = "completed"
@@ -3484,14 +3485,15 @@ class ComicGenPipeline:
     def _record_generation_usage_safe(
         self, owner_id: str, provider: str, model: Optional[str],
         resolution: Optional[str] = None, input_has_video: Optional[bool] = None,
-        total_tokens: Optional[int] = None,
+        duration: Optional[int] = None, total_tokens: Optional[int] = None,
     ) -> None:
         try:
             from . import usage_repo
             usage_repo.record_generation_usage(
                 user_id=owner_id or "", kind="video", provider=provider,
                 model=model or "unknown", resolution=resolution,
-                input_has_video=input_has_video, total_tokens=total_tokens,
+                input_has_video=input_has_video, duration=duration,
+                total_tokens=total_tokens,
             )
         except Exception:
             logger.warning("Failed to record generation usage", exc_info=True)

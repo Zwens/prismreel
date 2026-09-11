@@ -1,6 +1,15 @@
 import pytest
 
 
+def _only_video_bucket(summary, provider):
+    """Video buckets are keyed by `model__spec`, not the bare model name —
+    tests that only care about a single recorded event fetch it by provider
+    instead of hardcoding the composite key."""
+    buckets = summary["video"][provider]
+    assert len(buckets) == 1
+    return next(iter(buckets.values()))
+
+
 @pytest.fixture(autouse=True)
 def isolated_db(monkeypatch, tmp_path):
     monkeypatch.setenv("PRISMREEL_JWT_SECRET", "test-secret-needs-32-chars-minimum")
@@ -53,9 +62,10 @@ def test_record_generation_usage_count_only():
         user_id="u1", kind="video", provider="kling", model="kling-v2",
     )
     summary = usage_repo.get_user_usage_summary("u1")
-    assert summary["video"]["kling"]["kling-v2"]["count"] == 2
-    assert summary["video"]["kling"]["kling-v2"]["total_tokens"] is None
-    assert summary["video"]["kling"]["kling-v2"]["cost_usd"] is None
+    bucket = _only_video_bucket(summary, "kling")
+    assert bucket["count"] == 2
+    assert bucket["total_tokens"] is None
+    assert bucket["cost_usd"] is None
 
 
 def test_empty_user_id_recorded_under_unknown_bucket():
@@ -107,7 +117,7 @@ def test_record_seedance_usage_computes_cost_no_video_input():
         input_has_video=False, total_tokens=1_000_000,
     )
     summary = usage_repo.get_user_usage_summary("u1")
-    cost = summary["video"]["byteplus"]["dreamina-seedance-2-0-260128"]["cost_usd"]
+    cost = _only_video_bucket(summary, "byteplus")["cost_usd"]
     assert cost == pytest.approx(7.0, rel=1e-6)
 
 
@@ -120,7 +130,7 @@ def test_record_seedance_usage_computes_cost_with_video_input():
         input_has_video=True, total_tokens=2_000_000,
     )
     summary = usage_repo.get_user_usage_summary("u1")
-    cost = summary["video"]["byteplus"]["dreamina-seedance-2-0-260128"]["cost_usd"]
+    cost = _only_video_bucket(summary, "byteplus")["cost_usd"]
     assert cost == pytest.approx(4.8, rel=1e-6)  # 2 * 2.4
 
 
@@ -133,7 +143,7 @@ def test_record_seedance_usage_unknown_resolution_no_cost():
         input_has_video=False, total_tokens=1_000_000,
     )
     summary = usage_repo.get_user_usage_summary("u1")
-    assert summary["video"]["byteplus"]["dreamina-seedance-2-0-260128"]["cost_usd"] is None
+    assert _only_video_bucket(summary, "byteplus")["cost_usd"] is None
 
 
 def test_record_generation_usage_non_byteplus_no_cost():
@@ -144,4 +154,4 @@ def test_record_generation_usage_non_byteplus_no_cost():
         total_tokens=1_000_000,
     )
     summary = usage_repo.get_user_usage_summary("u1")
-    assert summary["video"]["wanx"]["wanx-t2v"]["cost_usd"] is None
+    assert _only_video_bucket(summary, "wanx")["cost_usd"] is None

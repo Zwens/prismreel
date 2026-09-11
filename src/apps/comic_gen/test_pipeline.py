@@ -80,7 +80,8 @@ def test_video_generation_records_usage_for_byteplus(monkeypatch, tmp_path):
         pipeline.process_video_task(script.id, "task-1")
 
     summary = usage_repo.get_user_usage_summary("user-xyz")
-    assert summary["video"]["byteplus"]["dreamina-seedance-2-0-260128"]["total_tokens"] == 500000
+    bucket = next(iter(summary["video"]["byteplus"].values()))
+    assert bucket["total_tokens"] == 500000
 
 
 def test_extract_preview_forwards_owner_id_as_user_id_to_parse_novel():

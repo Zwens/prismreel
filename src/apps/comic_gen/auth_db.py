@@ -51,6 +51,7 @@ def init_schema(conn: sqlite3.Connection) -> None:
                 model TEXT,
                 resolution TEXT,
                 input_has_video INTEGER,
+                duration INTEGER,
                 tokens_prompt INTEGER,
                 tokens_completion INTEGER,
                 total_tokens INTEGER,
@@ -60,4 +61,9 @@ def init_schema(conn: sqlite3.Connection) -> None:
             )
             """
         )
+        existing_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(usage_events)").fetchall()
+        }
+        if "duration" not in existing_columns:
+            conn.execute("ALTER TABLE usage_events ADD COLUMN duration INTEGER")
         conn.commit()
