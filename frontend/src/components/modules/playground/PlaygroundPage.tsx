@@ -10,6 +10,7 @@ import MediaInput from './MediaInput';
 import PromptInput from './PromptInput';
 import ParameterBar from './ParameterBar';
 import ResultGallery from './ResultGallery';
+import CostEstimate from './CostEstimate';
 import { ArrowLeft } from 'lucide-react';
 import { usePlaygroundStore, type PlaygroundMode, type PlaygroundGeneration, type QueuedRequest } from './usePlaygroundStore';
 import { playgroundApi, type PlaygroundGenerationResponse } from '@/lib/api';
@@ -56,6 +57,8 @@ function toGeneration(resp: PlaygroundGenerationResponse): PlaygroundGeneration 
       media_type: o.media_type as 'image' | 'video',
       thumbnail_path: o.thumbnail_path,
       saved_to_library: o.saved_to_library,
+      total_tokens: o.total_tokens,
+      cost_usd: o.cost_usd,
     })),
     status: resp.status as PlaygroundGeneration['status'],
     error: resp.error,
@@ -325,6 +328,7 @@ export default function PlaygroundPage() {
           </div>
 
           <div className="mx-auto mt-5 w-full max-w-5xl">
+            <CostEstimate />
             <button
               type="button"
               onClick={handleGenerate}
@@ -406,6 +410,7 @@ export default function PlaygroundPage() {
 
             {/* Generate CTA (sticky) */}
             <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-glass-border bg-transparent backdrop-blur-md px-4 pb-4 pt-4">
+              <CostEstimate />
               <button
                 type="button"
                 onClick={handleGenerate}

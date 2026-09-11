@@ -5,10 +5,12 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File
 
 from .models import (
     CreateTemplateRequest,
+    EstimateCostRequest,
+    EstimateCostResponse,
     GenerateRequest,
     PlaygroundTemplate,
     SaveToLibraryRequest,
@@ -16,6 +18,7 @@ from .models import (
 )
 from .service import PlaygroundService
 from .storage import PlaygroundStorage
+from ..comic_gen import auth
 from ...utils import get_logger
 from ...utils.upload_guard import validate_image_upload
 
@@ -32,14 +35,27 @@ _service = PlaygroundService(_storage)
 # ---------------------------------------------------------------------------
 
 
-def generate(request: GenerateRequest, background_tasks: BackgroundTasks):
+def generate(
+    request: GenerateRequest,
+    background_tasks: BackgroundTasks,
+    user=Depends(auth.require_login),
+):
     """Create a generation record and kick off processing in the background."""
-    gen = _service.create_generation(request)
+    gen = _service.create_generation(request, owner_id=user.id)
     background_tasks.add_task(_service.process_generation, gen.id)
     return gen
 
 
+def estimate_cost(request: EstimateCostRequest, _user=Depends(auth.require_login)):
+    """Pre-generation cost estimate for the given mode/model/parameters."""
+    cost_usd, per_unit_cost_usd, priced = _service.estimate_cost(
+        request.mode, request.model_id, request.parameters, request.batch_size or 1
+    )
+    return EstimateCostResponse(cost_usd=cost_usd, per_unit_cost_usd=per_unit_cost_usd, priced=priced)
+
+
 router.add_api_route("/generate", generate, methods=["POST"])
+router.add_api_route("/estimate-cost", estimate_cost, methods=["POST"])
 
 # ---------------------------------------------------------------------------
 # History

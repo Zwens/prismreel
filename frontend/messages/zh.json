@@ -1932,6 +1932,7 @@
       "mediaSourceVideo": "源视频",
       "generate": "生成",
       "generateBatch": "生成 ×{count}",
+      "estimatedCost": "预估费用：${amount}",
       "switchMode": "切换生成类型"
     },
     "mode": {
@@ -1990,6 +1991,7 @@
     "card": {
       "saveToLibrary": "保存到资产库",
       "saved": "已保存",
+      "costEstimateNote": "供应商实际计费金额",
       "featured": "精选",
       "useAsReference": "用作参考图",
       "download": "下载",

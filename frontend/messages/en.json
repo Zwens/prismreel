@@ -1932,6 +1932,7 @@
       "mediaSourceVideo": "Source video",
       "generate": "Generate",
       "generateBatch": "Generate ×{count}",
+      "estimatedCost": "Estimated cost: ${amount}",
       "switchMode": "Switch mode"
     },
     "mode": {
@@ -1990,6 +1991,7 @@
     "card": {
       "saveToLibrary": "Save to library",
       "saved": "Saved",
+      "costEstimateNote": "Actual billed cost from the provider",
       "featured": "Featured",
       "useAsReference": "Use as reference",
       "download": "Download",

@@ -64,6 +64,8 @@ export interface PlaygroundOutput {
   media_type: 'image' | 'video';
   thumbnail_path?: string;
   saved_to_library: boolean;
+  total_tokens?: number;
+  cost_usd?: number;
 }
 
 export interface PlaygroundGeneration {
