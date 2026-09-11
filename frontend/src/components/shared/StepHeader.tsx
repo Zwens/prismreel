@@ -52,7 +52,7 @@ export default function StepHeader({
     className,
 }: StepHeaderProps) {
     const stepStr = String(stepNumber).padStart(2, "0");
-    const isCJK = useLocale() === "zh";
+    const isCJK = useLocale() !== "en";
 
     // Progress bar fill 计算：当前 step 之前的所有 segments 完整填满，
     // 当前 step 用 current node。totalSteps=4 时，stepNumber=2 → fill 1/3 段。

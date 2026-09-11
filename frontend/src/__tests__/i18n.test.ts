@@ -55,9 +55,9 @@ describe('i18n configuration', () => {
         expect(zhKeys).toEqual(enKeys);
     });
 
-    it('getMessages falls back to zh for unknown locale', () => {
+    it('getMessages falls back to zh-Hant for unknown locale', () => {
         // @ts-expect-error testing invalid input
         const messages = getMessages('fr');
-        expect(messages.common.save).toBe('保存');
+        expect(messages.common.save).toBe('儲存');
     });
 });

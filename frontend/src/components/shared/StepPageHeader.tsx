@@ -39,7 +39,7 @@ export default function StepPageHeader({
     trailing,
 }: StepPageHeaderProps) {
     const tp = useTranslations("pipeline");
-    const isCJK = useLocale() === "zh";
+    const isCJK = useLocale() !== "en";
     return (
         <header className="shrink-0 border-b border-border-subtle px-7 pt-[22px] pb-4">
             <div className="flex items-start gap-5">
