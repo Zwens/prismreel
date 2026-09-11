@@ -36,7 +36,6 @@ import uuid
 import logging
 import traceback
 from .pipeline import ComicGenPipeline, LibraryAssetInUseError
-from . import auth, user_repo
 from .models import (
     ArtDirection,
     PromptConfig,
@@ -67,7 +66,10 @@ env_path = os.path.join(_project_root, ".env")
 if os.path.exists(env_path):
     load_dotenv(env_path, override=True)
 
-# Mount playground router AFTER .env is loaded (adapters read API keys from env)
+# auth and playground router import AFTER .env is loaded — auth.py reads
+# JWT_SECRET at module scope, so importing it before load_dotenv() caches an
+# empty secret in clean environments (see memory: JWT_SECRET import order bug)
+from . import auth, user_repo
 from ..playground.api import router as playground_router
 app.include_router(playground_router, prefix="/playground")
 
