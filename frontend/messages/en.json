@@ -663,7 +663,8 @@
     "arkRegionLabel": "Region",
     "arkRegionIntl": "International (BytePlus)",
     "arkRegionCn": "China (Volcano Engine)",
-    "arkRegionHint": "International uses ark.ap-southeast.bytepluses.com; China uses ark.cn-beijing.volces.com."
+    "arkRegionHint": "International uses ark.ap-southeast.bytepluses.com; China uses ark.cn-beijing.volces.com.",
+    "usageLinkLabel": "View usage & estimated cost"
   },
   "project": {
     "dashscopeApiKeyLabel": "DashScope API Key",
@@ -766,7 +767,8 @@
     "resetToDefault": "Reset to default",
     "viewDefault": "View full default prompt",
     "promptConfigTitle": "Prompt Configuration",
-    "modelSettingsTitle": "Model Settings"
+    "modelSettingsTitle": "Model Settings",
+    "usageLinkLabel": "View usage & estimated cost"
   },
   "series": {
     "characterLabel": "Characters",
@@ -2118,5 +2120,22 @@
     "genFailed": "Generation failed",
     "noMedia": "No media",
     "seedLabel": "Seed"
+  },
+  "usage": {
+    "pageTitle": "Usage",
+    "myUsageTitle": "My Usage",
+    "adminUsageTitle": "All Users' Usage",
+    "llmSection": "LLM Text Generation",
+    "videoSection": "Video Generation",
+    "otherSection": "Other Generation (count only)",
+    "columnProvider": "Provider",
+    "columnModel": "Model",
+    "columnCount": "Calls",
+    "columnTokens": "Tokens",
+    "columnCost": "Est. Cost (USD)",
+    "costEstimateNote": "Costs are estimates based on published pricing and may not reflect your exact bill.",
+    "noCostAvailable": "—",
+    "loading": "Loading...",
+    "backToSettings": "Back to Settings"
   }
 }

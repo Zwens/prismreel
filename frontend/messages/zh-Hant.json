@@ -663,7 +663,8 @@
     "arkRegionLabel": "區域",
     "arkRegionIntl": "國際版 (BytePlus)",
     "arkRegionCn": "國內版 (火山引擎)",
-    "arkRegionHint": "國際版走 ark.ap-southeast.bytepluses.com，國內版走 ark.cn-beijing.volces.com。"
+    "arkRegionHint": "國際版走 ark.ap-southeast.bytepluses.com，國內版走 ark.cn-beijing.volces.com。",
+    "usageLinkLabel": "查看用量與預估費用"
   },
   "project": {
     "dashscopeApiKeyLabel": "DashScope API Key",
@@ -766,7 +767,8 @@
     "resetToDefault": "恢復預設",
     "viewDefault": "檢視完整預設提示詞",
     "promptConfigTitle": "提示詞配置",
-    "modelSettingsTitle": "模型設定"
+    "modelSettingsTitle": "模型設定",
+    "usageLinkLabel": "查看用量與預估費用"
   },
   "series": {
     "characterLabel": "角色",
@@ -2118,5 +2120,22 @@
     "genFailed": "生成失敗",
     "noMedia": "暫無媒體",
     "seedLabel": "隨機種子"
+  },
+  "usage": {
+    "pageTitle": "用量",
+    "myUsageTitle": "我的用量",
+    "adminUsageTitle": "所有使用者用量",
+    "llmSection": "LLM 文字生成",
+    "videoSection": "影片生成",
+    "otherSection": "其他生成（僅計次數）",
+    "columnProvider": "供應商",
+    "columnModel": "模型",
+    "columnCount": "呼叫次數",
+    "columnTokens": "Token 數",
+    "columnCost": "預估費用（美元）",
+    "costEstimateNote": "費用為依官方公開價目表估算，可能與實際帳單有出入。",
+    "noCostAvailable": "—",
+    "loading": "載入中...",
+    "backToSettings": "返回設定"
   }
 }

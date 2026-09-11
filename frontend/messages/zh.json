@@ -663,7 +663,8 @@
     "arkRegionLabel": "区域",
     "arkRegionIntl": "国际版 (BytePlus)",
     "arkRegionCn": "国内版 (火山引擎)",
-    "arkRegionHint": "国际版走 ark.ap-southeast.bytepluses.com，国内版走 ark.cn-beijing.volces.com。"
+    "arkRegionHint": "国际版走 ark.ap-southeast.bytepluses.com，国内版走 ark.cn-beijing.volces.com。",
+    "usageLinkLabel": "查看用量与预估费用"
   },
   "project": {
     "dashscopeApiKeyLabel": "DashScope API Key",
@@ -766,7 +767,8 @@
     "resetToDefault": "恢复默认",
     "viewDefault": "查看完整默认提示词",
     "promptConfigTitle": "提示词配置",
-    "modelSettingsTitle": "模型设置"
+    "modelSettingsTitle": "模型设置",
+    "usageLinkLabel": "查看用量与预估费用"
   },
   "series": {
     "characterLabel": "角色",
@@ -2118,5 +2120,22 @@
     "genFailed": "生成失败",
     "noMedia": "暂无媒体",
     "seedLabel": "随机种子"
+  },
+  "usage": {
+    "pageTitle": "用量",
+    "myUsageTitle": "我的用量",
+    "adminUsageTitle": "所有用户用量",
+    "llmSection": "LLM 文本生成",
+    "videoSection": "视频生成",
+    "otherSection": "其他生成（仅计次数）",
+    "columnProvider": "供应商",
+    "columnModel": "模型",
+    "columnCount": "调用次数",
+    "columnTokens": "Token 数",
+    "columnCost": "预估费用（美元）",
+    "costEstimateNote": "费用为依官方公开价目表估算，可能与实际账单有出入。",
+    "noCostAvailable": "—",
+    "loading": "加载中...",
+    "backToSettings": "返回设置"
   }
 }
