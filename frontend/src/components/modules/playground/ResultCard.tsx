@@ -192,9 +192,22 @@ function CompletedCard({ generation, outputIndex, onGenerateVideo, onOpenDetail 
       <div className="relative overflow-hidden bg-elevated" style={{ aspectRatio: '16/9' }}>
         {mediaUrl ? (
           isVideo ? (
-            <div className="w-full h-full bg-gradient-to-br from-elevated to-surface flex items-center justify-center">
-              <Video className="w-8 h-8 text-text-muted" />
-            </div>
+            output?.thumbnail_path ? (
+              <div className="relative w-full h-full">
+                <img
+                  src={getMediaUrl(output.thumbnail_path)}
+                  alt={prompt}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <Video className="w-8 h-8 text-white drop-shadow" />
+                </div>
+              </div>
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-elevated to-surface flex items-center justify-center">
+                <Video className="w-8 h-8 text-text-muted" />
+              </div>
+            )
           ) : (
             <img src={mediaUrl} alt={prompt} className="w-full h-full object-cover" />
           )

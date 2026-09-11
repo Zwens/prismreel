@@ -7,6 +7,7 @@ routing logic in ``src/apps/comic_gen/pipeline.py:process_video_task()``.
 
 import os
 import shutil
+import subprocess
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -19,6 +20,7 @@ from .models import (
 )
 from .storage import PlaygroundStorage
 from ...utils import get_logger
+from ...utils.system_check import get_ffmpeg_path
 
 logger = get_logger(__name__)
 
@@ -27,6 +29,7 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 IMAGE_OUTPUT_DIR = os.path.join("output", "playground", "images")
 VIDEO_OUTPUT_DIR = os.path.join("output", "playground", "videos")
+VIDEO_THUMBNAIL_DIR = os.path.join("output", "playground", "thumbnails")
 
 
 class PlaygroundService:
@@ -296,6 +299,7 @@ class PlaygroundService:
                     id=str(uuid.uuid4()),
                     media_path=out_path,
                     media_type="video",
+                    thumbnail_path=self._extract_video_thumbnail(out_path),
                 )
                 gen.outputs.append(output_entry)
                 self.storage.update_generation(gen)
@@ -305,6 +309,41 @@ class PlaygroundService:
 
         if failures and not gen.outputs:
             raise RuntimeError(f"All {len(failures)} batch items failed: {failures[0]}")
+
+    def _extract_video_thumbnail(self, video_path: str) -> Optional[str]:
+        """Grab a frame just past the start of the clip as a gallery thumbnail.
+
+        Best-effort: a thumbnail failure must not fail the generation itself,
+        since the video is already saved by the time this runs.
+        """
+        ffmpeg_path = get_ffmpeg_path()
+        if not ffmpeg_path:
+            logger.warning("FFmpeg not found; skipping thumbnail for %s", video_path)
+            return None
+
+        os.makedirs(VIDEO_THUMBNAIL_DIR, exist_ok=True)
+        thumb_filename = f"{os.path.splitext(os.path.basename(video_path))[0]}.jpg"
+        thumb_path = os.path.join(VIDEO_THUMBNAIL_DIR, thumb_filename)
+
+        cmd = [
+            ffmpeg_path, "-ss", "0.1",
+            "-i", video_path,
+            "-frames:v", "1",
+            "-q:v", "3",
+            "-y", thumb_path,
+        ]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            if result.returncode != 0 or not os.path.exists(thumb_path):
+                logger.warning(
+                    "Thumbnail extraction failed for %s: %s", video_path, result.stderr[:300]
+                )
+                return None
+        except subprocess.TimeoutExpired:
+            logger.warning("Thumbnail extraction timed out for %s", video_path)
+            return None
+
+        return thumb_path
 
     # -- adapter delegates ------------------------------------------------
 
