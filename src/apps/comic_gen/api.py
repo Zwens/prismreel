@@ -344,6 +344,18 @@ def admin_deactivate_user(user_id: str, _admin=Depends(auth.require_admin)):
     return {"status": "deactivated"}
 
 
+@app.get("/usage/me")
+def get_my_usage(user=Depends(auth.require_login)):
+    from . import usage_repo
+    return {"user_id": user.id, "summary": usage_repo.get_user_usage_summary(user.id)}
+
+
+@app.get("/admin/usage")
+def admin_get_all_usage(_admin=Depends(auth.require_admin)):
+    from . import usage_repo
+    return usage_repo.get_all_users_usage_summary()
+
+
 @app.get("/debug/config")
 def debug_config():
     """Diagnostic endpoint to check OSS and path configuration."""
