@@ -15,11 +15,19 @@ class PlaygroundStorage:
     HISTORY_PATH = "output/playground_history.json"
     TEMPLATES_PATH = "output/playground_templates.json"
 
+    _ORPHAN_RECOVERY_REASON = (
+        "Backend was restarted while this task was running. Click Retry to run it again."
+    )
+
     def __init__(self):
         self._history: List[PlaygroundGeneration] = []
         self._templates: List[PlaygroundTemplate] = []
         self._lock = threading.RLock()
         self._load()
+        try:
+            self._recover_orphan_generations()
+        except Exception as exc:  # pragma: no cover — defensive
+            logger.warning("Orphan generation recovery failed: %s", exc)
 
     # ------------------------------------------------------------------
     # Internal persistence
@@ -29,6 +37,31 @@ class PlaygroundStorage:
         """Load both JSON files, creating them if missing."""
         self._history = self._load_file(self.HISTORY_PATH, PlaygroundGeneration)
         self._templates = self._load_file(self.TEMPLATES_PATH, PlaygroundTemplate)
+
+    def _recover_orphan_generations(self) -> None:
+        """Mark generations stuck in pending/processing as failed on boot.
+
+        generate() runs in a FastAPI BackgroundTasks thread that lives
+        entirely in process memory: if the backend restarts mid-generation
+        (deploy, OOM, crash) the record on disk is frozen at "pending" or
+        "processing" forever, and the history UI shows an eternal spinner.
+        We do NOT auto-resume — a half-run video generation may have
+        already incurred provider cost, and re-running could double-charge.
+        """
+        STUCK = ("pending", "processing")
+        recovered = 0
+        for gen in self._history:
+            if gen.status in STUCK:
+                gen.status = "failed"
+                if not gen.error:
+                    gen.error = self._ORPHAN_RECOVERY_REASON
+                recovered += 1
+        if recovered > 0:
+            self._save_history()
+            logger.warning(
+                "Orphan generation recovery: marked %d stuck generation(s) as failed.",
+                recovered,
+            )
 
     @staticmethod
     def _load_file(path: str, model_cls):
