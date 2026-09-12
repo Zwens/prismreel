@@ -434,12 +434,13 @@
     "offlineBannerText": "网络已断开 — 重新连接后可继续操作"
   },
   "nav": {
-    "workspace": "工作区",
-    "library": "资产库",
-    "playground": "创作台",
+    "workspace": "漫画生成",
+    "library": "素材库",
+    "playground": "视频生成",
+    "history": "生成历史",
     "settings": "设置",
     "logout": "登出",
-    "workspaceAria": "PrismReel Studio · 工作区",
+    "workspaceAria": "PrismReel Studio · 漫画生成",
     "mainNavAria": "主导航"
   },
   "workspace": {
@@ -1144,14 +1145,14 @@
     "saving": "保存中..."
   },
   "library": {
-    "title": "资产库",
+    "title": "素材库",
     "characterLabel": "角色",
     "sceneLabel": "场景",
     "propLabel": "道具",
     "searchPlaceholder": "搜索资产...",
     "assetCount": "{count} 个资产",
     "noAssets": "暂无资产",
-    "noAssetsHint": "在系列或项目中生成资产后，它们会出现在这里",
+    "noAssetsHint": "仅收录「漫画生成」的角色/场景/道具；在系列或项目中生成资产后，它们会出现在这里。视频生成的内容请至「生成历史」查看",
     "series": "系列",
     "project": "项目",
     "gallery": "画廊",
@@ -1913,14 +1914,14 @@
   },
   "playground": {
     "header": {
-      "title": "创作台",
+      "title": "视频生成",
       "resultsCount": "{count} 结果",
       "subtitle": "自由生成 · 不绑定项目",
       "eyebrowAccent": "结果画廊"
     },
     "compose": {
       "eyebrow": "创作输入",
-      "title": "创作台",
+      "title": "视频生成",
       "modeLabel": "生成模式",
       "modelLabel": "模型",
       "promptLabel": "Prompt",

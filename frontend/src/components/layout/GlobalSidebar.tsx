@@ -1,25 +1,26 @@
 "use client";
 
-import { LayoutGrid, Layers, Wand2, Settings, LogOut, Gauge } from "lucide-react";
+import { LayoutGrid, Layers, Wand2, Clock, Settings, LogOut, Gauge } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import PrismReelBranding from "./PrismReelBranding";
 import { logout } from "@/lib/api";
 
-export type GlobalTab = "workspace" | "library" | "playground" | "settings";
+export type GlobalTab = "workspace" | "library" | "playground" | "history" | "settings";
 
 interface GlobalSidebarProps {
   activeTab: GlobalTab;
   onTabChange: (tab: GlobalTab) => void;
 }
 
-// Shared global nav model (workspace/library/playground + settings). Reused by
+// Shared global nav model (workspace/library/playground/history + settings). Reused by
 // the desktop GlobalSidebar (below) and the mobile BottomTabBar (md:hidden).
 export const GLOBAL_NAV_ITEMS: { id: GlobalTab; icon: typeof LayoutGrid; hash: string }[] = [
   { id: "workspace", icon: LayoutGrid, hash: "#/" },
   { id: "library", icon: Layers, hash: "#/library" },
   { id: "playground", icon: Wand2, hash: "#/playground" },
+  { id: "history", icon: Clock, hash: "#/history" },
   { id: "settings", icon: Settings, hash: "#/settings" },
 ];
 
@@ -105,7 +106,7 @@ export default function GlobalSidebar({ activeTab, onTabChange }: GlobalSidebarP
 
       {/* Primary navigation */}
       <nav className="flex-1 flex flex-col gap-0.5 p-2.5" aria-label={t("mainNavAria")}>
-        {GLOBAL_NAV_ITEMS.slice(0, 3).map((item) => (
+        {GLOBAL_NAV_ITEMS.slice(0, 4).map((item) => (
           <NavButton
             key={item.id}
             active={activeTab === item.id}

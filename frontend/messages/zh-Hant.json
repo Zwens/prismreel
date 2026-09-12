@@ -434,12 +434,13 @@
     "offlineBannerText": "網路已斷開 — 重新連線後可繼續操作"
   },
   "nav": {
-    "workspace": "工作區",
-    "library": "資產庫",
-    "playground": "創作臺",
+    "workspace": "漫畫生成",
+    "library": "素材庫",
+    "playground": "影片生成",
+    "history": "生成歷史",
     "settings": "設定",
     "logout": "登出",
-    "workspaceAria": "PrismReel Studio · 工作區",
+    "workspaceAria": "PrismReel Studio · 漫畫生成",
     "mainNavAria": "主導航"
   },
   "workspace": {
@@ -1144,14 +1145,14 @@
     "saving": "儲存中..."
   },
   "library": {
-    "title": "資產庫",
+    "title": "素材庫",
     "characterLabel": "角色",
     "sceneLabel": "場景",
     "propLabel": "道具",
     "searchPlaceholder": "搜尋資產...",
     "assetCount": "{count} 個資產",
     "noAssets": "暫無資產",
-    "noAssetsHint": "在系列或專案中生成資產後，它們會出現在這裡",
+    "noAssetsHint": "僅收錄「漫畫生成」的角色/場景/道具；在系列或專案中生成資產後，它們會出現在這裡。影片生成的內容請至「生成歷史」查看",
     "series": "系列",
     "project": "專案",
     "gallery": "畫廊",
@@ -1913,14 +1914,14 @@
   },
   "playground": {
     "header": {
-      "title": "創作臺",
+      "title": "影片生成",
       "resultsCount": "{count} 結果",
       "subtitle": "自由生成 · 不繫結專案",
       "eyebrowAccent": "結果畫廊"
     },
     "compose": {
       "eyebrow": "創作輸入",
-      "title": "創作臺",
+      "title": "影片生成",
       "modeLabel": "生成模式",
       "modelLabel": "模型",
       "promptLabel": "Prompt",

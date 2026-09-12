@@ -434,12 +434,13 @@
     "offlineBannerText": "You're offline — you can continue once reconnected"
   },
   "nav": {
-    "workspace": "Workspace",
-    "library": "Library",
-    "playground": "Playground",
+    "workspace": "Comic Generator",
+    "library": "Asset Library",
+    "playground": "Video Generator",
+    "history": "Generation History",
     "settings": "Settings",
     "logout": "Log out",
-    "workspaceAria": "PrismReel Studio · Workspace",
+    "workspaceAria": "PrismReel Studio · Comic Generator",
     "mainNavAria": "Main navigation"
   },
   "workspace": {
@@ -1151,7 +1152,7 @@
     "searchPlaceholder": "Search assets...",
     "assetCount": "{count} assets",
     "noAssets": "No assets yet",
-    "noAssetsHint": "Assets will appear here after being generated in series or projects",
+    "noAssetsHint": "Only holds characters/scenes/props from Comic Generator; they'll appear here once generated in a series or project. For Video Generator content, check Generation History instead",
     "series": "Series",
     "project": "Project",
     "gallery": "Gallery",
@@ -1913,14 +1914,14 @@
   },
   "playground": {
     "header": {
-      "title": "Playground",
+      "title": "Video Generator",
       "resultsCount": "{count} results",
       "subtitle": "Freeform · not tied to a project",
       "eyebrowAccent": "GALLERY"
     },
     "compose": {
       "eyebrow": "Compose",
-      "title": "Playground",
+      "title": "Video Generator",
       "modeLabel": "Mode",
       "modelLabel": "Model",
       "promptLabel": "Prompt",

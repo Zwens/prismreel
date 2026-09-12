@@ -41,7 +41,7 @@ const POLL_INTERVAL = 2000;
 // ---------------------------------------------------------------------------
 
 /** Convert API response to store-compatible PlaygroundGeneration */
-function toGeneration(resp: PlaygroundGenerationResponse): PlaygroundGeneration {
+export function toGeneration(resp: PlaygroundGenerationResponse): PlaygroundGeneration {
   return {
     id: resp.id,
     mode: resp.mode as PlaygroundMode,
