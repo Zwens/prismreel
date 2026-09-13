@@ -678,8 +678,8 @@
     "arkRegionHint": "国际版走 ark.ap-southeast.bytepluses.com，国内版走 ark.cn-beijing.volces.com。"
   },
   "project": {
-    "dashscopeApiKeyLabel": "DashScope API Key",
-    "dashscopeKeyPlaceholder": "DashScope 优先路由必填",
+    "dashscopeApiKeyLabel": "Gemini API Key",
+    "dashscopeKeyPlaceholder": "必填，驱动剧本分析、图像生成与配音",
     "ossCredentialPlaceholder": "可选，启用 OSS 镜像时填写",
     "ossBucketLabel": "OSS Bucket 名称",
     "ossBucketPlaceholder": "your_bucket_name（可选）",

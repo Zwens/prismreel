@@ -678,8 +678,8 @@
     "arkRegionHint": "International uses ark.ap-southeast.bytepluses.com; China uses ark.cn-beijing.volces.com."
   },
   "project": {
-    "dashscopeApiKeyLabel": "DashScope API Key",
-    "dashscopeKeyPlaceholder": "Required for DashScope-first model routing",
+    "dashscopeApiKeyLabel": "Gemini API Key",
+    "dashscopeKeyPlaceholder": "Required - powers script analysis, image generation and TTS",
     "ossCredentialPlaceholder": "Optional, used when OSS mirror is enabled",
     "ossBucketLabel": "OSS Bucket Name",
     "ossBucketPlaceholder": "your_bucket_name (optional)",

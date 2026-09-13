@@ -59,7 +59,7 @@ const getValidationErrors = (env: EnvConfig): string[] => {
   const errors: string[] = [];
 
   if (!env.GEMINI_API_KEY?.trim()) {
-    errors.push("DashScope API Key");
+    errors.push("Gemini API Key");
   }
 
 
@@ -205,7 +205,7 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                 <div>
                   <label className="flex items-center justify-between text-sm font-medium text-foreground mb-2">
                     <span>{t("dashscopeApiKeyLabel")} <span className="text-red-500">*</span></span>
-                    <span className="text-text-muted font-normal text-xs">e.g. sk-xxx</span>
+                    <span className="text-text-muted font-normal text-xs">e.g. AIza...</span>
                   </label>
                   <input
                     type="password"
