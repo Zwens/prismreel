@@ -304,7 +304,7 @@ export default function AssetSourcePicker({
           onClick={handleBackdropClick}
         >
           <motion.div
-            className="w-[720px] max-h-[80vh] bg-elevated border border-glass-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="w-[min(1120px,92vw)] h-[min(760px,86vh)] bg-elevated border border-glass-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
             variants={modalVariants}
             initial="hidden"
             animate="visible"
@@ -420,7 +420,7 @@ export default function AssetSourcePicker({
               )}
 
               {!loading && !failed && showGrid && visibleItems.length > 0 && (
-                <div role="listbox" className="grid grid-cols-4 gap-3">
+                <div role="listbox" className="grid grid-cols-5 gap-3 2xl:grid-cols-6">
                   {visibleItems.map((item) => {
                     const isSelected = selected === item.path;
                     const url = toDisplayUrl(item.path);
