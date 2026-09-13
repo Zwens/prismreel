@@ -444,7 +444,7 @@
     "noModels": "該模式暫無可用模型",
     "noModelsHint": "模型目錄裡沒有支援該模式的可用模型，請改選其他模式",
     "generate": "生成",
-    "generateBatch": "生成 ×{count}",
+    "generateBatch": "生成 {count} 條",
     "resultsCount": "{count} 條結果",
     "taskType": {
       "label": "任務類型",
@@ -592,10 +592,12 @@
     "secPromptsDesc": "新建專案的預設系統提示詞（留空使用內建預設）。",
     "promptPlaceholder": "留空使用系統預設…",
     "secApiTitle": "供應商憑證",
-    "secApiDesc": "DashScope 優先；按需開啟供應商直連。",
+    "secApiDesc": "Gemini 承擔文本與提示詞潤色，Ark 承擔影片生成；DashScope 正在下線。",
     "loadingConfig": "載入配置中…",
+    "geminiKeyLabel": "Gemini 金鑰",
+    "geminiKeyHint": "Google Gemini 官網直連憑證（必填）。承擔劇本、分鏡與提示詞潤色。",
     "dashscopeKeyLabel": "DashScope 金鑰",
-    "dashscopeKeyHint": "阿里雲百鍊 / 通義系列服務憑證（必填）。",
+    "dashscopeKeyHint": "下線中：LLM 已切至 Gemini，影像生成尚未遷移，暫時仍需填寫。",
     "filled": "已填寫",
     "notConfiguredUnavailable": "未配置 · 模型不可用",
     "klingLabel": "可靈 Kling",
@@ -677,13 +679,11 @@
     "arkRegionIntl": "國際版 (BytePlus)",
     "arkRegionCn": "國內版 (火山引擎)",
     "arkRegionHint": "國際版走 ark.ap-southeast.bytepluses.com，國內版走 ark.cn-beijing.volces.com。",
-    "usageLinkLabel": "查看用量與預估費用",
-    "geminiKeyLabel": "Gemini 密鑰",
-    "geminiKeyHint": "Google Gemini 官網直連憑證（必填）。承擔劇本、分鏡與提示詞潤色。"
+    "usageLinkLabel": "檢視用量與預估費用"
   },
   "project": {
-    "dashscopeApiKeyLabel": "DashScope API Key",
-    "dashscopeKeyPlaceholder": "DashScope 優先路由必填",
+    "dashscopeApiKeyLabel": "Gemini API Key",
+    "dashscopeKeyPlaceholder": "必填，驅動劇本分析、影像生成與配音",
     "ossCredentialPlaceholder": "可選，啟用 OSS 映象時填寫",
     "ossBucketLabel": "OSS Bucket 名稱",
     "ossBucketPlaceholder": "your_bucket_name（可選）",
@@ -783,7 +783,7 @@
     "viewDefault": "檢視完整預設提示詞",
     "promptConfigTitle": "提示詞配置",
     "modelSettingsTitle": "模型設定",
-    "usageLinkLabel": "查看用量與預估費用"
+    "usageLinkLabel": "檢視用量與預估費用"
   },
   "series": {
     "characterLabel": "角色",
@@ -1166,7 +1166,7 @@
     "searchPlaceholder": "搜尋資產...",
     "assetCount": "{count} 個資產",
     "noAssets": "暫無資產",
-    "noAssetsHint": "僅收錄「漫畫生成」的角色/場景/道具；在系列或專案中生成資產後，它們會出現在這裡。影片生成的內容請至「生成歷史」查看",
+    "noAssetsHint": "僅收錄「漫畫生成」的角色/場景/道具；在系列或專案中生成資產後，它們會出現在這裡。影片生成的內容請至「生成歷史」檢視",
     "series": "系列",
     "project": "專案",
     "gallery": "畫廊",
@@ -1979,7 +1979,7 @@
       },
       "i2v": {
         "title": "首尾幀生成影片",
-        "description": "上傳首幀圖，選填末幀圖，讓畫面動起來變成影片。"
+        "description": "上傳首幀圖，選填尾幀圖，讓畫面動起來變成影片。"
       },
       "r2v": {
         "title": "多參考圖生成影片",
@@ -1987,7 +1987,7 @@
       },
       "v2v": {
         "title": "編輯影片",
-        "description": "上傳一段來源影片，描述你想怎麼轉換它。"
+        "description": "上傳一段源影片，描述你想怎麼轉換它。"
       }
     },
     "results": {
@@ -2039,9 +2039,9 @@
       "labelReferenceOptional": "參考圖片（可選）",
       "labelRefMaterialAV": "參考素材（圖片/影片/音訊）",
       "firstFrame": "首幀",
-      "lastFrame": "末幀",
-      "lastFrameOptional": "末幀（可選）",
-      "addLastFrame": "加入末幀圖片",
+      "lastFrame": "尾幀",
+      "lastFrameOptional": "尾幀（可選）",
+      "addLastFrame": "加入尾幀圖片",
       "imageIndex": "Image {index}"
     },
     "prompt": {
@@ -2090,6 +2090,25 @@
       "daysAgo": "{count} 天前",
       "monthsAgo": "{count} 個月前"
     },
+    "assetSourcePicker": {
+      "title": "選擇素材",
+      "close": "關閉",
+      "tabLibrary": "素材庫",
+      "tabSeries": "系列",
+      "tabProject": "專案",
+      "tabHistory": "生成歷史",
+      "loading": "載入中...",
+      "retry": "重試",
+      "loadFailed": "載入失敗",
+      "empty": "暫無可用素材",
+      "pickSeries": "先選擇一個系列",
+      "pickProject": "先選擇一個專案",
+      "noSeries": "還沒有系列",
+      "noProject": "還沒有專案",
+      "shotLabel": "鏡頭 {index}",
+      "cancel": "取消",
+      "select": "選擇"
+    },
     "parameters": {
       "imageSize": "影像尺寸",
       "aspectRatio": "畫面比例",
@@ -2124,32 +2143,13 @@
     "noResults": "暫無結果",
     "genFailed": "生成失敗",
     "noMedia": "暫無媒體",
-    "seedLabel": "隨機種子",
-    "assetSourcePicker": {
-      "title": "選擇素材",
-      "close": "關閉",
-      "tabLibrary": "素材庫",
-      "tabSeries": "系列",
-      "tabProject": "專案",
-      "tabHistory": "生成歷史",
-      "loading": "載入中...",
-      "retry": "重試",
-      "loadFailed": "載入失敗",
-      "empty": "暫無可用素材",
-      "pickSeries": "先選擇一個系列",
-      "pickProject": "先選擇一個專案",
-      "noSeries": "還沒有系列",
-      "noProject": "還沒有專案",
-      "shotLabel": "鏡頭 {index}",
-      "cancel": "取消",
-      "select": "選擇"
-    }
+    "seedLabel": "隨機種子"
   },
   "usage": {
     "pageTitle": "用量",
     "myUsageTitle": "我的用量",
     "adminUsageTitle": "所有使用者用量",
-    "llmSection": "LLM 文字生成",
+    "llmSection": "LLM 文本生成",
     "videoSection": "影片生成",
     "otherSection": "其他生成（僅計次數）",
     "columnProvider": "供應商",
@@ -2163,7 +2163,7 @@
     "modeI2v": "首幀生影片",
     "modeR2v": "參考圖生影片",
     "durationSeconds": "{seconds}秒",
-    "costEstimateNote": "費用為依官方公開價目表估算，可能與實際帳單有出入。",
+    "costEstimateNote": "費用為依官方公開價目表估算，可能與實際賬單有出入。",
     "noCostAvailable": "—",
     "loading": "載入中...",
     "backToSettings": "返回設定"
