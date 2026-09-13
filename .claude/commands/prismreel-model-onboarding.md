@@ -8,7 +8,7 @@ description: PrismReel 模型接入与文档更新流程 - 厂商文档抓取、
 
 - 接入新模型或新模型家族
 - 更新模型文档、版本、默认值、参数、展示范围
-- 更新 Wan / Kling / Vidu / PixVerse 等模型家族的 catalog 定义
+- 更新 Gemini / Seedance / Kling / Vidu 等模型家族的 catalog 定义
 - 判断某次模型变更到底只是 catalog 变更，还是还要改运行时逻辑 / 前端 UI
 - 使用 `/prismreel-model-onboarding`
 

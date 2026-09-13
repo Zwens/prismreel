@@ -23,12 +23,13 @@
 
 PrismReel is an **AI-native motion comic & video creation platform**. It transforms creative text into publishable dynamic videos, providing a complete workflow from script analysis to final export, while also supporting standalone image/video generation.
 
-PrismReel currently includes two core modules:
+PrismReel currently includes three core modules:
 
 | Module | Purpose |
 |--------|---------|
 | **PrismReel Studio** | Pipeline-first comic/video production (Script → Storyboard → Assets → Video → Export) |
 | **PrismReel Playground** | Standalone image/video generation workbench (no project context required) |
+| **AI Video** | One-shot video page limited to T2V / I2V / V2V, drawing on assets that already exist in the app |
 
 ---
 
@@ -44,7 +45,7 @@ PrismReel currently includes two core modules:
 - **Art Direction Control** — Custom visual styles with global consistency
 - **Multi-model Asset Generation** — Character turnarounds, scene establishing shots, prop references
 - **AI Video Generation** — I2V / R2V multi-mode video generation + batch candidates
-- **Smart Dubbing** — CosyVoice / Qwen3-TTS multi-voice dialogue synthesis
+- **Smart Dubbing** — Gemini TTS with 30 voices; delivery is steered by a natural-language style directive
 - **One-click Export** — Timeline editing + FFmpeg merging
 
 </td>
@@ -52,8 +53,8 @@ PrismReel currently includes two core modules:
 
 ### 🎨 Playground — Standalone Generation Workbench
 
-- **6 Generation Modes** — Image, Text-to-Video, Image-to-Video, Reference-to-Video, Video Editing
-- **10+ AI Models** — Wan 2.7, Seedance 2.0/2.0 Fast/2.0 Mini/2.5, Kling V3, Vidu Q3, HappyHorse, etc.
+- **6 Generation Modes** — T2I / I2I / T2V / I2V / R2V / V2V
+- **13 Model Lines** — Nano Banana Pro / 2 / 2 Lite, Seedance 2.5 / 2.0 / 2.0 Fast / 2.0 Mini, Kling V3, Vidu Q3 Pro / Turbo / Drama, Vidu Q3 Fast / Lite Image
 - **Dynamic Parameters** — Per-model parameter configuration (size/resolution/duration/quality)
 - **Concurrent Tasks** — Multiple tasks execute simultaneously with real-time status tracking
 - **Prompt Templates** — Save/reuse/favorite/history
@@ -94,15 +95,20 @@ PrismReel currently includes two core modules:
 
 | Provider | Models | Capabilities |
 |----------|--------|--------------|
-| **DashScope** | Wan 2.7 Image/Video, Qwen Image 2.0, HappyHorse 1.0 | T2I, I2I, I2V, R2V, T2V, V2V |
-| **DashScope** | Kling V3 | I2V, R2V |
-| **DashScope** | Vidu Q3 Pro / Turbo | I2V, R2V |
-| **DashScope** | PixVerse V6 / C1 | I2V, R2V |
-| **BytePlus ModelArk** | Seedance 2.0 / 2.0 Fast / 2.0 Mini / 2.5 | T2V, I2V, R2V |
+| **Google Gemini** | Nano Banana 2 `gemini-3.1-flash-image` — default image model | T2I, I2I |
+| **Google Gemini** | Nano Banana Pro `gemini-3-pro-image` | T2I, I2I |
+| **Google Gemini** | Nano Banana 2 Lite `gemini-3.1-flash-lite-image` | T2I, I2I |
+| **Google Gemini** | Gemini 3.8 Flash (falls back to 3.5 / 2.5 Flash) | Script Analysis, Prompt Polish |
+| **Google Gemini** | `gemini-3.1-flash-tts-preview` — 30 voices | TTS Dubbing |
+| **BytePlus ModelArk** | Seedance 2.5 — default I2V / R2V model | T2V, I2V, R2V, V2V<sup>†</sup> |
+| **BytePlus ModelArk** | Seedance 2.0 / 2.0 Fast / 2.0 Mini | T2V, I2V, R2V |
 | **Kling Direct** | Kling V3 | I2V, R2V |
-| **Vidu Direct** | Vidu Q3 Pro / Turbo | I2V, R2V |
-| **DashScope** | CosyVoice, Qwen3-TTS | TTS Dubbing |
-| **DashScope** | Qwen 3.7 Plus | Script Analysis, Prompt Polish |
+| **Vidu Direct** | Vidu Q3 Pro / Turbo / Drama | I2V, R2V |
+| **Vidu Direct** | Vidu Q3 Fast Image / Lite Image | T2I, I2I |
+
+<sup>†</sup> Seedance 2.5 V2V (edit / extend) is wired up at runtime but still marked `hidden` in the catalog, so it does not appear in the model picker by default.
+
+> Since the Gemini + Ark migration, DashScope is gone from the model layer entirely; Kling and Vidu no longer have a proxy backend and require vendor credentials.
 
 ---
 
@@ -123,7 +129,7 @@ cd prismreel
 
 # Configure API Key
 cp .env.example .env
-# Edit .env, fill in DASHSCOPE_API_KEY (required)
+# Edit .env, fill in GEMINI_API_KEY (required); add ARK_API_KEY for video generation
 
 # Start (backend on 17177 + frontend on 3008, auto-opens browser)
 npm run dev
@@ -147,6 +153,7 @@ cd frontend && npm install && npm run dev  # http://localhost:3008
 
 - **Studio**: http://localhost:3008
 - **Playground**: http://localhost:3008/#/playground
+- **AI Video**: http://localhost:3008/#/ai-video
 - **API Docs**: http://localhost:17177/docs
 
 ---
@@ -157,10 +164,10 @@ PrismReel uses a **local-first** architecture. The minimal setup requires only o
 
 | Mode | Required | Available Capabilities |
 |------|----------|----------------------|
-| **Basic** | `DASHSCOPE_API_KEY` | Wan/Qwen/HappyHorse/PixVerse/Kling(proxy)/Vidu(proxy) + TTS |
-| **+ BytePlus ModelArk** | + `ARK_API_KEY` | + Seedance 2.0 / 2.0 Fast / 2.0 Mini / 2.5 |
-| **+ Kling Direct** | + `KLING_ACCESS_KEY` + `KLING_SECRET_KEY` | Kling direct connection |
-| **+ Vidu Direct** | + `VIDU_API_KEY` | Vidu direct connection |
+| **Basic** | `GEMINI_API_KEY` | Script analysis / prompt polish + image generation (Nano Banana) + TTS dubbing |
+| **+ BytePlus ModelArk** | + `ARK_API_KEY` | + Seedance 2.5 / 2.0 / 2.0 Fast / 2.0 Mini video generation |
+| **+ Kling Direct** | + `KLING_ACCESS_KEY` + `KLING_SECRET_KEY` | + Kling V3 video generation |
+| **+ Vidu Direct** | + `VIDU_API_KEY` | + Vidu Q3 video and image generation |
 | **+ OSS** | + Alibaba Cloud OSS credentials | Cloud media mirror + signed URLs |
 
 <details>
@@ -194,7 +201,7 @@ prismreel/
 ├── src/
 │   ├── apps/comic_gen/        # Studio backend (API + Pipeline)
 │   ├── apps/playground/       # Playground backend (API + Service)
-│   ├── models/                # AI model adapters (Wanx/Kling/Vidu/BytePlus)
+│   ├── models/                # AI model adapters (Gemini/Kling/Vidu/BytePlus)
 │   └── audio/                 # TTS voice synthesis
 ├── config/model_catalog/      # Model catalog (YAML → JSON)
 └── output/                    # Generated outputs (local storage)

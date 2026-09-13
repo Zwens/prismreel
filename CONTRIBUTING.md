@@ -51,13 +51,13 @@ When contributing to media upload/generation flows, please keep these invariants
 
 - **Local-first storage**: files under `output/` are always written first and remain the durable project source.
 - **OSS is optional**: OSS acts as an optional mirror and signed-URL service, not a mandatory storage backend.
-- **DashScope-first backend**: for supported model families, DashScope is the default provider backend.
-- **Vendor-direct remains available**: Kling/Vidu vendor APIs are still supported when users opt in and configure vendor credentials.
+- **Per-family backend**: each model family declares its own `default_backend` in `config/model_catalog/families/*.yaml` — `google` for Gemini, `byteplus` for Seedance, `vendor` for Kling and Vidu. There is no cross-family default proxy any more; DashScope has been removed.
+- **Vendor-direct is the only path for Kling/Vidu**: those families ship `supported_backends: [vendor]`, so they require vendor credentials rather than being opt-in.
 
 Use the following vocabulary consistently in PRs, code, and docs:
 
 - `storage_mode`: `local_only` or `local_plus_oss`
-- `provider_backend`: `dashscope` or `vendor`
+- `provider_backend`: `google`, `byteplus`, or `vendor`
 - `media_ref`: stable project-side media reference (for example local relative path or OSS object key)
 - `resolved_media_input`: request-side provider-ready payload derived from `media_ref`
 

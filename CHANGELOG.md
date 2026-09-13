@@ -6,6 +6,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [Unreleased]
+
+尚未发版。
+
+### Added
+- **独立「AI 视频」页** — 单发视频生成，只做 T2V / I2V / V2V，素材取自应用内已有资产；路由 `#/ai-video`，含导航与页面文案
+- **Seedance V2V 的编辑与续写子类型** — 接入 Ark `omni_reference_task_type`，页面上提供「自动 / 编辑 / 续写」选择器
+- **四来源素材选择器** — 替换原先只认历史记录的资产弹窗
+
+### Changed
+- **LLM 切到 Gemini 官网直连** — 经其 OpenAI 兼容层调用，默认 `gemini-3.8-flash`，不可用时依次回退 3.5 / 2.5 Flash；`LLM_PROVIDER=openai` 仍可接第三方兼容端点
+- **图像生成迁移到 Gemini** — Nano Banana Pro / 2 / 2 Lite，默认图像模型为 `gemini-3.1-flash-image`
+- **配音迁移到 Gemini TTS** — `gemini-3.1-flash-tts-preview` 共 30 个音色，语气改由自然语言指令控制；存量 CosyVoice 音色按性别映射，映射表在 `config/voice_migration.yaml`
+- **Playground store 改为工厂 + context 注入** — 让「AI 视频」页能独立持有一份状态
+- **队列与轮询编排抽成 `useGenerationRunner`**
+- **设置页首个 API Key 输入框改称 Gemini** — 该框写入的一直是 `GEMINI_API_KEY`，但标签与占位符此前仍写着 DashScope
+
+### Removed
+- **拔除 DashScope**（breaking）— 模型侧收敛到 Gemini + BytePlus Ark。Wan、Qwen Image、HappyHorse、PixVerse 系列一并下架；Kling 与 Vidu 不再有代理后端，只能用原厂凭证直连；`DASHSCOPE_API_KEY` 从 `.env.example` 移除
+- **音色克隆与音色设计** — 音色选择器改为按性别分组
+
+### Fixed
+- **切换模态后提交了上一个模态的模型** — 新模态没有可用模型时不再沿用旧值
+
+---
+
 ## [1.5.0] - 2026-09-02
 
 ### Added
