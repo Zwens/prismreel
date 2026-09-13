@@ -30,6 +30,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import requests
 
 from .base import VideoGenModel
+from ..utils.oss_utils import OSSImageUploader
+from ..utils.provider_media import resolve_media_input
 
 logger = logging.getLogger(__name__)
 
@@ -209,20 +211,59 @@ def validate_omni_task(
             )
 
 
-def build_ark_content(prompt: str, images: List[str], flags: str,
-                      videos: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+def explain_ark_error(status_code: int, body_text: str) -> str:
+    """Turn an Ark error body into a message worth showing the user.
+
+    Ark returns structured JSON ({"error": {"code", "message", ...}}) even on
+    4xx, but raise_for_status()'s default message ("400 Client Error") throws
+    that away — e.g. a content-policy rejection (real-person detection in the
+    reference image) reads identically to a malformed request, leaving the
+    user with no idea what to actually fix.
+    """
+    try:
+        import json as _json
+        data = _json.loads(body_text) if body_text else {}
+    except (ValueError, TypeError):
+        data = {}
+
+    error = data.get("error") if isinstance(data, dict) else None
+    if isinstance(error, dict):
+        code = error.get("code") or ""
+        message = error.get("message") or ""
+        detail = f"{code}: {message}" if code else message
+        if detail:
+            return f"HTTP {status_code} {detail}"
+
+    detail = (body_text or "")[:300]
+    return f"HTTP {status_code}: {detail}" if detail else f"HTTP {status_code}"
+
+
+def build_ark_content(
+    prompt: str,
+    images: List[Tuple[str, Optional[str]]],
+    flags: str,
+    videos: Optional[List[str]] = None,
+) -> List[Dict[str, Any]]:
     """The `content` array: one text item, then one image_url item per
     reference, then one video_url item per source video. Order is preserved —
     for R2V it is what the model maps to its reference slots.
+
+    Each image carries its Ark `role` (`first_frame`, `last_frame`, or
+    `reference_image`) — Ark's first-frame, first+last-frame, and
+    omni-reference scenarios are mutually exclusive, so role is what tells it
+    which scenario this request is.
 
     The video item carries role=reference_video, which is what marks it as the
     subject of an edit or extension rather than another reference.
     """
     text = " ".join(part for part in [(prompt or "").strip(), flags.strip()] if part)
     content: List[Dict[str, Any]] = [{"type": "text", "text": text}]
-    for url in images:
+    for url, role in images:
         if url:
-            content.append({"type": "image_url", "image_url": {"url": url}})
+            item: Dict[str, Any] = {"type": "image_url", "image_url": {"url": url}}
+            if role:
+                item["role"] = role
+            content.append(item)
     for url in videos or []:
         if url:
             content.append({
@@ -259,18 +300,54 @@ class BytePlusVideoModel(VideoGenModel):
 
     # -- generation ------------------------------------------------------
 
+    def _resolve_ark_image_url(self, ref: Optional[str], *, model_name: Optional[str]) -> Optional[str]:
+        """Resolve a first/last-frame reference to a URL Ark can fetch.
+
+        ``ref`` may already be a remote URL (pass through) or a local file
+        path (upload to OSS and sign). Ark's `image_url.url` field only
+        accepts a fetchable URL, unlike Kling's vendor path which takes
+        base64."""
+        if not ref:
+            return None
+        if ref.startswith(("http://", "https://")):
+            return ref
+        resolved = resolve_media_input(
+            ref,
+            model_name=model_name or "",
+            modality="image",
+            backend="byteplus",
+            uploader=OSSImageUploader(),
+        )
+        return resolved.value
+
     def generate(self, prompt: str, output_path: str, img_url: Optional[str] = None,
-                 img_path: Optional[str] = None, **kwargs) -> Tuple[str, float]:
+                 img_path: Optional[str] = None, **kwargs) -> Tuple[str, float, Optional[dict]]:
         start = time.time()
 
-        images: List[str] = []
-        if img_url:
-            images.append(img_url)
-        for ref in kwargs.get("ref_image_urls") or []:
-            if ref and ref not in images:
-                images.append(ref)
-
         model_name = kwargs.get("model_name")
+        last_frame_url = self._resolve_ark_image_url(kwargs.get("last_frame_url"), model_name=model_name)
+        first_frame_url = self._resolve_ark_image_url(img_url or img_path, model_name=model_name)
+        raw_ref_image_urls = kwargs.get("ref_image_urls") or []
+
+        images: List[Tuple[str, Optional[str]]] = []
+        if raw_ref_image_urls:
+            # Omni reference-to-video: every image is a reference_image.
+            # Mutually exclusive with first_frame/last_frame per Ark's contract.
+            # Each ref may be a local upload path same as first/last frame —
+            # route it through the same resolver instead of trusting it's
+            # already a fetchable URL.
+            seen = set()
+            for raw_ref in raw_ref_image_urls:
+                ref = self._resolve_ark_image_url(raw_ref, model_name=model_name)
+                if ref and ref not in seen:
+                    seen.add(ref)
+                    images.append((ref, "reference_image"))
+        elif first_frame_url:
+            role = "first_frame" if last_frame_url else None
+            images.append((first_frame_url, role))
+            if last_frame_url:
+                images.append((last_frame_url, "last_frame"))
+
         wire_model_id = self.resolve_model_id(model_name)
         if wire_model_id is None:
             # Fail before the network call: a None model id would otherwise
@@ -311,31 +388,37 @@ class BytePlusVideoModel(VideoGenModel):
         logger.info("[BytePlus/Seedance] POST %s model=%s images=%d",
                     url, body["model"], len(images))
         resp = requests.post(url, json=body, headers=self._headers(), timeout=60)
-        resp.raise_for_status()
+        if not resp.ok:
+            raise RuntimeError(
+                f"Ark task create failed — {explain_ark_error(resp.status_code, resp.text)}"
+            )
         task_id = (resp.json() or {}).get("id")
         if not task_id:
             raise RuntimeError(f"Ark task create returned no id: {resp.text[:300]}")
 
-        video_url = self._poll(task_id)
+        video_url, usage = self._poll(task_id)
         self._download(video_url, output_path)
 
         elapsed = time.time() - start
         logger.info("[BytePlus/Seedance] done in %.1fs -> %s", elapsed, output_path)
-        return output_path, elapsed
+        return output_path, elapsed, usage
 
-    def _poll(self, task_id: str) -> str:
+    def _poll(self, task_id: str) -> Tuple[str, Optional[dict]]:
         url = f"{self._tasks_url()}/{task_id}"
         deadline = time.time() + MAX_WAIT
         while time.time() < deadline:
             resp = requests.get(url, headers=self._headers(), timeout=30)
-            resp.raise_for_status()
+            if not resp.ok:
+                raise RuntimeError(
+                    f"Ark task poll failed — {explain_ark_error(resp.status_code, resp.text)}"
+                )
             data = resp.json() or {}
             status = data.get("status")
             if status == "succeeded":
                 video_url = ((data.get("content") or {}).get("video_url"))
                 if not video_url:
                     raise RuntimeError(f"Ark task succeeded without a video url: {data}")
-                return video_url
+                return video_url, data.get("usage")
             if status == "failed":
                 raise RuntimeError(f"Ark generation failed: {data.get('error')}")
             time.sleep(POLL_INTERVAL)

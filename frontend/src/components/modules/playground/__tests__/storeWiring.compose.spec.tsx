@@ -131,14 +131,15 @@ describe('PromptInput ↔ store', () => {
         expect(store().prompt).toBe('一只在屋顶行走的猫');
     });
 
-    it('clamps the prompt to 2000 characters on the way into the store', () => {
+    it('passes a long prompt into the store untruncated', () => {
+        // main 的 6af0f0a（unbounded prompt）移除了 2000 字截断
         renderWithIntl(<PromptInput />);
 
         fireEvent.change(screen.getByPlaceholderText('描述你想生成的内容...'), {
             target: { value: 'x'.repeat(2500) },
         });
 
-        expect(store().prompt).toHaveLength(2000);
+        expect(store().prompt).toHaveLength(2500);
     });
 
     it('opens the template modal through the store, not local state', () => {
@@ -174,7 +175,7 @@ describe('MediaInput ↔ store', () => {
         playgroundStore.setState({ mode: 'i2v' });
         renderWithIntl(<MediaInput />);
 
-        fireEvent.click(screen.getByRole('button', { name: '从资产库选取' }));
+        fireEvent.click(screen.getAllByRole('button', { name: '从资产库选取' })[0]);
         fireEvent.click(await screen.findByRole('option', { name: /林晚/ }));
         fireEvent.click(screen.getByRole('button', { name: '选择' }));
 

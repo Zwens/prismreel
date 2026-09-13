@@ -15,6 +15,12 @@ python-dotenv>=1.0.0
 requests>=2.31.0
 pyyaml>=6.0
 PyJWT>=2.8.0
+# passlib 1.7.4（最後一版，已停止維護）透過已移除的 bcrypt.__about__.__version__
+# 探測版本，bcrypt>=4.1 拿掉這個屬性後 passlib 的自我檢測會炸成
+# "password cannot be longer than 72 bytes"，即使密碼很短也一樣。
+# 釘住 4.0.1 是目前唯一可行的相容版本。
+passlib[bcrypt]>=1.7.4
+bcrypt==4.0.1
 
 # Cloud Services
 alibabacloud-videoenhan20200320>=1.0.0

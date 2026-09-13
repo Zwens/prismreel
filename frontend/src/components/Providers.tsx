@@ -7,12 +7,17 @@ import { getMessages } from '@/lib/i18n';
 import { LightboxProvider } from '@/components/shared/preview/LightboxProvider';
 import ToastContainer from '@/components/shared/ToastContainer';
 import { MotionConfig } from 'framer-motion';
+import { installAuthInterceptor } from '@/lib/authInterceptor';
 
 export function Providers({ children }: { children: React.ReactNode }) {
     const locale = useSettingsStore((s) => s.locale);
     const theme = useSettingsStore((s) => s.theme);
     const animations = useSettingsStore((s) => s.animations);
     const messages = getMessages(locale);
+
+    useEffect(() => {
+        installAuthInterceptor();
+    }, []);
 
     useEffect(() => {
         const html = document.documentElement;

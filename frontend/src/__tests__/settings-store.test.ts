@@ -23,9 +23,11 @@ describe('settingsStore', () => {
     });
 
     it('setLocale rejects invalid values at type level', () => {
-        // Verify type constraint works - both valid locales are accepted
+        // Verify type constraint works - all three valid locales are accepted
         useSettingsStore.getState().setLocale('zh');
         expect(useSettingsStore.getState().locale).toBe('zh');
+        useSettingsStore.getState().setLocale('zh-Hant');
+        expect(useSettingsStore.getState().locale).toBe('zh-Hant');
         useSettingsStore.getState().setLocale('en');
         expect(useSettingsStore.getState().locale).toBe('en');
     });

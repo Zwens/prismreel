@@ -192,9 +192,22 @@ function CompletedCard({ generation, outputIndex, onGenerateVideo, onOpenDetail 
       <div className="relative overflow-hidden bg-elevated" style={{ aspectRatio: '16/9' }}>
         {mediaUrl ? (
           isVideo ? (
-            <div className="w-full h-full bg-gradient-to-br from-elevated to-surface flex items-center justify-center">
-              <Video className="w-8 h-8 text-text-muted" />
-            </div>
+            output?.thumbnail_path ? (
+              <div className="relative w-full h-full">
+                <img
+                  src={getMediaUrl(output.thumbnail_path)}
+                  alt={prompt}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <Video className="w-8 h-8 text-white drop-shadow" />
+                </div>
+              </div>
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-elevated to-surface flex items-center justify-center">
+                <Video className="w-8 h-8 text-text-muted" />
+              </div>
+            )
           ) : (
             <img src={mediaUrl} alt={prompt} className="w-full h-full object-cover" />
           )
@@ -298,6 +311,11 @@ function CompletedCard({ generation, outputIndex, onGenerateVideo, onOpenDetail 
           <span className="font-mono text-[0.5625rem] bg-primary/10 text-primary/70 rounded px-[6px] py-[2px] uppercase">
             {MODE_LABELS[mode] || mode}
           </span>
+          {typeof output?.cost_usd === 'number' && (
+            <span className="font-mono text-[0.5625rem] bg-glass text-text-muted rounded px-[6px] py-[2px]" title={t('card.costEstimateNote')}>
+              ${output.cost_usd.toFixed(3)}
+            </span>
+          )}
           <span className="font-mono text-[0.5625rem] text-text-muted ml-auto">{formatTime(created_at)}</span>
           {saved && (
             <span className="flex items-center gap-0.5 text-[0.5625rem] text-primary">

@@ -211,9 +211,22 @@ export default function GalleryView({
                     <AlertCircle className="w-4 h-4 text-status-failed-fg" />
                   </div>
                 ) : genIsVideo ? (
-                  <div className="w-full h-full bg-gradient-to-br from-elevated to-surface flex items-center justify-center">
-                    <Video className="w-4 h-4 text-text-muted" />
-                  </div>
+                  genOutput?.thumbnail_path ? (
+                    <div className="relative w-full h-full">
+                      <img
+                        src={getMediaUrl(genOutput.thumbnail_path)}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <Video className="w-3 h-3 text-white drop-shadow" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-elevated to-surface flex items-center justify-center">
+                      <Video className="w-4 h-4 text-text-muted" />
+                    </div>
+                  )
                 ) : genMediaUrl ? (
                   <img
                     src={genMediaUrl}

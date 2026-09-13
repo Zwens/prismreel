@@ -25,7 +25,7 @@ const POLL_INTERVAL = 2000;
 // ---------------------------------------------------------------------------
 
 /** Convert API response to store-compatible PlaygroundGeneration */
-function toGeneration(resp: PlaygroundGenerationResponse): PlaygroundGeneration {
+export function toGeneration(resp: PlaygroundGenerationResponse): PlaygroundGeneration {
   return {
     id: resp.id,
     mode: resp.mode as PlaygroundMode,
@@ -41,6 +41,9 @@ function toGeneration(resp: PlaygroundGenerationResponse): PlaygroundGeneration 
       media_type: o.media_type as 'image' | 'video',
       thumbnail_path: o.thumbnail_path,
       saved_to_library: o.saved_to_library,
+      // 用量计费字段：main 的 usage tracking 依赖它们，抽出 runner 时漏掉了
+      total_tokens: o.total_tokens,
+      cost_usd: o.cost_usd,
     })),
     status: resp.status as PlaygroundGeneration['status'],
     error: resp.error,

@@ -1,24 +1,27 @@
 "use client";
 
-import { LayoutGrid, Layers, Clapperboard, Wand2, Settings } from "lucide-react";
+import { LayoutGrid, Layers, Clapperboard, Wand2, Clock, Settings, LogOut, Gauge } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import PrismReelBranding from "./PrismReelBranding";
+import { logout } from "@/lib/api";
 
-export type GlobalTab = "workspace" | "library" | "aivideo" | "playground" | "settings";
+export type GlobalTab = "workspace" | "library" | "aivideo" | "playground" | "history" | "settings";
 
 interface GlobalSidebarProps {
   activeTab: GlobalTab;
   onTabChange: (tab: GlobalTab) => void;
 }
 
-// Shared global nav model (workspace/library/playground + settings). Reused by
+// Shared global nav model (workspace/library/playground/history + settings). Reused by
 // the desktop GlobalSidebar (below) and the mobile BottomTabBar (md:hidden).
 export const GLOBAL_NAV_ITEMS: { id: GlobalTab; icon: typeof LayoutGrid; hash: string }[] = [
   { id: "workspace", icon: LayoutGrid, hash: "#/" },
   { id: "library", icon: Layers, hash: "#/library" },
   { id: "aivideo", icon: Clapperboard, hash: "#/ai-video" },
   { id: "playground", icon: Wand2, hash: "#/playground" },
+  { id: "history", icon: Clock, hash: "#/history" },
   { id: "settings", icon: Settings, hash: "#/settings" },
 ];
 
@@ -74,10 +77,17 @@ function NavButton({
  */
 export default function GlobalSidebar({ activeTab, onTabChange }: GlobalSidebarProps) {
   const t = useTranslations("nav");
+  const tUsage = useTranslations("usage");
+  const router = useRouter();
 
   const handleNav = (id: GlobalTab, hash: string) => {
     onTabChange(id);
     window.location.hash = hash;
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    window.location.href = "/login";
   };
 
   return (
@@ -108,14 +118,21 @@ export default function GlobalSidebar({ activeTab, onTabChange }: GlobalSidebarP
         ))}
       </nav>
 
-      {/* Settings pinned bottom + version */}
+      {/* Settings + logout pinned bottom + version */}
       <div className="p-2.5 border-t border-glass-border">
+        <NavButton
+          active={false}
+          label={tUsage("myUsageTitle")}
+          icon={Gauge}
+          onClick={() => router.push("/usage")}
+        />
         <NavButton
           active={activeTab === "settings"}
           label={t("settings")}
           icon={Settings}
           onClick={() => handleNav("settings", "#/settings")}
         />
+        <NavButton active={false} label={t("logout")} icon={LogOut} onClick={handleLogout} />
         <div className="px-3 pt-2.5 font-mono text-[0.6875rem] tracking-wide text-text-muted">
           {APP_VERSION}
         </div>

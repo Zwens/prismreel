@@ -27,6 +27,7 @@ const SettingsPage = dynamic(() => import("@/components/settings/SettingsPage"),
 const AssetLibraryPage = dynamic(() => import("@/components/library/AssetLibraryPage"), { ssr: false });
 const PlaygroundPage = dynamic(() => import("@/components/modules/playground/PlaygroundPage"), { ssr: false });
 const AiVideoPage = dynamic(() => import("@/components/modules/aivideo/AiVideoPage"), { ssr: false });
+const PlaygroundHistoryPage = dynamic(() => import("@/components/modules/playground/PlaygroundHistoryPage"), { ssr: false });
 
 // ── Create Series Dialog ──
 function CreateSeriesDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -461,7 +462,7 @@ export default function Home() {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
-  const [currentView, setCurrentView] = useState<'home' | 'project' | 'series' | 'series-episode' | 'library' | 'settings' | 'aivideo' | 'playground'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'project' | 'series' | 'series-episode' | 'library' | 'settings' | 'aivideo' | 'playground' | 'history'>('home');
   const [activeTab, setActiveTab] = useState<GlobalTab>("workspace");
   const [wsSearch, setWsSearch] = useState("");
   const online = useOnline();
@@ -620,6 +621,14 @@ export default function Home() {
         setEpisodeId(null);
         return;
       }
+      if (hash === '#/history') {
+        setCurrentView('history');
+        setActiveTab('history');
+        setProjectId(null);
+        setSeriesId(null);
+        setEpisodeId(null);
+        return;
+      }
       // Default: workspace
       setCurrentView('home');
       setActiveTab('workspace');
@@ -676,6 +685,9 @@ export default function Home() {
     }
     if (currentView === 'playground') {
       return <PlaygroundPage />;
+    }
+    if (currentView === 'history') {
+      return <PlaygroundHistoryPage />;
     }
 
     // Workspace view — Line B skeleton

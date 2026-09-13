@@ -14,6 +14,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY src/ src/
 
+# Auth migration script, run once on container start (see CMD below) to
+# create the admin account and backfill owner_id on first launch.
+COPY scripts/migrate_auth_v1.py scripts/migrate_auth_v1.py
+
 # Ship the model catalog config (see config/model_catalog/catalog.meta.yaml —
 # get_default_model_settings() reads it at import time in models.py; without
 # this the container dies with FileNotFoundError before uvicorn ever binds).
@@ -34,4 +38,4 @@ ENV PYTHONUNBUFFERED=1
 
 EXPOSE 17177
 
-CMD ["python", "-m", "uvicorn", "src.apps.comic_gen.api:app", "--host", "0.0.0.0", "--port", "17177"]
+CMD python scripts/migrate_auth_v1.py && python -m uvicorn src.apps.comic_gen.api:app --host 0.0.0.0 --port 17177

@@ -133,12 +133,19 @@ def test_local_only_pipeline_flow_without_oss(monkeypatch):
 
     pipeline.process_video_task(script.id, task_id)
 
-    assert task.status == "completed"
-    assert task.video_url.startswith("video/video_")
+    # Ark 只接受厂商可 GET 的地址（见 docs/api-reference/byteplus-ark-seedance-
+    # seedream.md），没有 base64 内联这条路。所以不配 OSS 时，一张本地首帧根本
+    # 递不到 Seedance 手里——适配器在发请求前就拒绝，并指明要配 OSS。
+    #
+    # 这个用例此前断言 completed，只是因为 requests.post 被 mock 掉了：真实调用
+    # 会把 'video_inputs/xxx.png' 原样塞进 image_url，由 Ark 侧失败。现在改为钉住
+    # 那条可操作的错误。
+    assert task.status == "failed"
+    assert "OSS" in (task.error or "")
 
     # DashScope 专属的临时 URL / OssResourceResolve 头随 wanx 适配器一并消失，
-    # 相关断言不再适用。本用例保留的价值是下面这条：请求期的地址变换不得回写
-    # 进项目数据。
+    # 相关断言不再适用。本用例保留的核心价值是下面这条：请求期的地址变换不得
+    # 回写进项目数据——任务失败时同样不许回写。
 
     # Stable project refs remain local refs; request-side transforms are not persisted.
     assert script.characters[0].image_url == "uploads/local_only_uploaded.png"

@@ -113,6 +113,8 @@ function generation(overrides: Partial<PlaygroundGeneration> = {}): PlaygroundGe
 beforeEach(() => {
     vi.clearAllMocks();
     playgroundStore.setState({
+        // 三段式 UI 默认停在 select；这些用例测的是 compose 的提交行为
+        playgroundStage: 'compose',
         mode: 't2i',
         modelId: 'gemini-3.1-flash-image',
         prompt: '',
@@ -289,7 +291,7 @@ describe('PlaygroundPage ↔ store', () => {
         });
         renderWithIntl(<PlaygroundPage />);
 
-        fireEvent.click(screen.getByRole('button', { name: /生成/ }));
+        fireEvent.click(screen.getByRole('button', { name: '生成' }));
 
         await waitFor(() => expect(store().queue).toHaveLength(1));
         expect(store().queue[0]).toMatchObject({
@@ -309,7 +311,7 @@ describe('PlaygroundPage ↔ store', () => {
         });
         renderWithIntl(<PlaygroundPage />);
 
-        fireEvent.click(screen.getByRole('button', { name: /生成/ }));
+        fireEvent.click(screen.getByRole('button', { name: '生成' }));
 
         await waitFor(() => expect(store().queue).toHaveLength(1));
         expect(store().queue[0].mode).toBe('i2i');
@@ -321,7 +323,7 @@ describe('PlaygroundPage ↔ store', () => {
         playgroundStore.setState({ prompt: '雨夜的天台', maxConcurrent: 2 });
         renderWithIntl(<PlaygroundPage />);
 
-        fireEvent.click(screen.getByRole('button', { name: /生成/ }));
+        fireEvent.click(screen.getByRole('button', { name: '生成' }));
 
         await waitFor(() => expect(mockGenerate).toHaveBeenCalledTimes(1));
         expect(mockGenerate).toHaveBeenCalledWith(
@@ -340,7 +342,7 @@ describe('PlaygroundPage ↔ store', () => {
         });
         renderWithIntl(<PlaygroundPage />);
 
-        fireEvent.click(screen.getByRole('button', { name: /生成/ }));
+        fireEvent.click(screen.getByRole('button', { name: '生成' }));
 
         await waitFor(() => expect(store().queue).toHaveLength(1));
         expect(store().queue[0].status).toBe('pending');
@@ -350,7 +352,7 @@ describe('PlaygroundPage ↔ store', () => {
     it('refuses to enqueue when the store holds no prompt', () => {
         renderWithIntl(<PlaygroundPage />);
 
-        fireEvent.click(screen.getByRole('button', { name: /生成/ }));
+        fireEvent.click(screen.getByRole('button', { name: '生成' }));
 
         expect(store().queue).toHaveLength(0);
     });

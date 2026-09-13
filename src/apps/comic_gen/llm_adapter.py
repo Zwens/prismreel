@@ -20,7 +20,7 @@ Configuration via environment variables:
 """
 import os
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 
 from ...utils.endpoints import get_provider_base_url
 
@@ -120,20 +120,57 @@ class LLMAdapter:
         Raises:
             RuntimeError: If the API call fails.
         """
+        content, _usage, _model_used = self._chat_with_usage_impl(messages, model, response_format)
+        return content
+
+    def chat_with_usage(
+        self,
+        messages: List[Dict[str, str]],
+        model: Optional[str] = None,
+        response_format: Optional[Dict[str, str]] = None,
+    ) -> Tuple[str, Optional[Dict[str, int]], str]:
+        """
+        Send a chat completion request and return content, usage, and the
+        actual model id that served the request.
+
+        Args:
+            messages: List of {"role": ..., "content": ...} dicts
+            model: Model name override (uses provider default if None)
+            response_format: Optional {"type": "json_object"} constraint
+
+        Returns:
+            Tuple of (content, usage_dict_or_None, model_used).
+            usage_dict shape: {"prompt_tokens": int, "completion_tokens": int, "total_tokens": int}
+
+        Raises:
+            RuntimeError: If the API call fails.
+        """
+        return self._chat_with_usage_impl(messages, model, response_format)
+
+    def _chat_with_usage_impl(
+        self,
+        messages: List[Dict[str, str]],
+        model: Optional[str],
+        response_format: Optional[Dict[str, str]],
+    ) -> Tuple[str, Optional[Dict[str, int]], str]:
         client = self._get_client()
 
         # 显式 model override 路径：单次尝试，失败就抛。
         if model:
-            return self._chat_once(client, model, messages, response_format)
+            content, usage = self._chat_once(client, model, messages, response_format)
+            return content, self._normalize_usage(usage), model
 
         # Provider 默认路径：Gemini 走 fallback chain，OpenAI 单次尝试。
         if self.provider == "openai":
-            return self._chat_once(client, self._get_default_model(), messages, response_format)
+            openai_model = self._get_default_model()
+            content, usage = self._chat_once(client, openai_model, messages, response_format)
+            return content, self._normalize_usage(usage), openai_model
 
         last_err: Optional[Exception] = None
         for idx, candidate in enumerate(self._GEMINI_MODEL_FALLBACK_CHAIN):
             try:
-                return self._chat_once(client, candidate, messages, response_format)
+                content, usage = self._chat_once(client, candidate, messages, response_format)
+                return content, self._normalize_usage(usage), candidate
             except RuntimeError as e:
                 # 仅在 "模型不存在 / 不可用" 类错误时回退；其他错误（鉴权、限流、网络）
                 # 直接抛，不浪费第二次重试。关键字宽松匹配，兼容各家措辞。
@@ -161,7 +198,7 @@ class LLMAdapter:
         model: str,
         messages: List[Dict[str, str]],
         response_format: Optional[Dict[str, str]],
-    ) -> str:
+    ):
         kwargs: Dict[str, Any] = {
             "model": model,
             "messages": messages,
@@ -171,7 +208,17 @@ class LLMAdapter:
 
         try:
             response = client.chat.completions.create(**kwargs)
-            return response.choices[0].message.content
+            return response.choices[0].message.content, getattr(response, "usage", None)
         except Exception as e:
             provider_label = "Gemini" if self.provider != "openai" else "OpenAI"
             raise RuntimeError(f"{provider_label} API error: {e}") from e
+
+    @staticmethod
+    def _normalize_usage(usage) -> Optional[Dict[str, int]]:
+        if usage is None:
+            return None
+        return {
+            "prompt_tokens": getattr(usage, "prompt_tokens", 0) or 0,
+            "completion_tokens": getattr(usage, "completion_tokens", 0) or 0,
+            "total_tokens": getattr(usage, "total_tokens", 0) or 0,
+        }

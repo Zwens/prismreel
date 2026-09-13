@@ -41,8 +41,8 @@ const MODE_CONFIG: Partial<Record<PlaygroundMode, ModeConfig>> = {
     labelKey: 'compose.mediaFirstFrame',
     accept: 'image/*',
     hintKey: 'i2v',
-    multiple: false,
-    maxFiles: 1,
+    multiple: true,
+    maxFiles: 2,
     icon: 'image',
   },
   r2v: {
@@ -111,9 +111,11 @@ function resolveMediaSrc(path: string): string {
 function SingleRefPreview({
   path,
   onRemove,
+  badge,
 }: {
   path: string;
   onRemove: () => void;
+  badge?: string;
 }) {
   const [meta, setMeta] = useState<string | null>(null);
   const ext = (path.split('.').pop() || '').toUpperCase();
@@ -122,6 +124,11 @@ function SingleRefPreview({
   return (
     <div className="flex items-center gap-3 p-3 rounded-[14px] bg-surface-inset border border-border-subtle">
       <div className="group relative w-20 h-20 shrink-0 rounded-[12px] overflow-hidden bg-elevated border border-border-subtle">
+        {badge && (
+          <span className="absolute top-1 left-1 z-10 px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[0.5625rem] font-medium leading-none">
+            {badge}
+          </span>
+        )}
         {video ? (
           <video
             src={resolveMediaSrc(path)}
@@ -169,6 +176,130 @@ function SingleRefPreview({
 }
 
 // ---------------------------------------------------------------------------
+// i2v — first frame (required) + last frame (optional) as two independent
+// slots. Ark's `first_frame` / `last_frame` roles are fixed positions, not
+// an arbitrary reference list, so this does not reuse the multi-reference
+// grid — inputMedia[0] is always the first frame, inputMedia[1] the last.
+// ---------------------------------------------------------------------------
+
+function FirstLastFrameInput() {
+  const inputMedia = usePlaygroundStore((s) => s.inputMedia);
+  const setInputMedia = usePlaygroundStore((s) => s.setInputMedia);
+  const t = useTranslations('playground');
+
+  const firstFrameInputRef = useRef<HTMLInputElement>(null);
+  const lastFrameInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState<'first' | 'last' | null>(null);
+  const [showAssetPicker, setShowAssetPicker] = useState<'first' | 'last' | null>(null);
+
+  const firstFrame = inputMedia[0];
+  const lastFrame = inputMedia[1];
+
+  const uploadTo = async (slot: 'first' | 'last', file: File) => {
+    setUploading(slot);
+    try {
+      const result = await playgroundApi.uploadMedia(file);
+      if (slot === 'first') {
+        setInputMedia([result.path, ...(lastFrame ? [lastFrame] : [])]);
+      } else if (firstFrame) {
+        setInputMedia([firstFrame, result.path]);
+      }
+    } catch (err) {
+      console.error('[FirstLastFrameInput] upload failed:', err);
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleFileChange = (slot: 'first' | 'last') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) uploadTo(slot, file);
+    e.target.value = '';
+  };
+
+  const handleAssetSelect = (slot: 'first' | 'last') => (path: string) => {
+    if (slot === 'first') {
+      setInputMedia([path, ...(lastFrame ? [lastFrame] : [])]);
+    } else if (firstFrame) {
+      setInputMedia([firstFrame, path]);
+    }
+    setShowAssetPicker(null);
+  };
+
+  const removeFirstFrame = () => setInputMedia([]);
+  const removeLastFrame = () => setInputMedia(firstFrame ? [firstFrame] : []);
+
+  const renderSlot = (
+    slot: 'first' | 'last',
+    path: string | undefined,
+    ref: React.RefObject<HTMLInputElement>,
+    badge: string,
+    label: string,
+    onRemove: () => void,
+    disabled = false
+  ) => (
+    <div className="space-y-2">
+      <div className="text-xs font-medium text-text-secondary">{label}</div>
+      {path ? (
+        <SingleRefPreview path={path} onRemove={onRemove} badge={badge} />
+      ) : (
+        <div
+          onClick={() => !disabled && ref.current?.click()}
+          className={`border border-dashed rounded-[14px] p-4 bg-input-bg flex flex-col items-center gap-2 text-center transition-colors ${
+            disabled
+              ? 'cursor-not-allowed opacity-40 border-border-subtle'
+              : 'cursor-pointer border-border-subtle hover:border-foreground/30 hover:bg-hover-bg'
+          }`}
+        >
+          <ImagePlus className="w-6 h-6 text-text-muted" />
+          <span className="text-xs text-text-secondary">
+            {uploading === slot ? t('media.uploading') : t('media.dragOrClick')}
+          </span>
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => ref.current?.click()}
+          disabled={uploading === slot || disabled}
+          className={ACTION_BTN_CLASS}
+        >
+          {uploading === slot ? t('media.uploading') : path ? t('media.replaceFile') : t('media.localUpload')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowAssetPicker(slot)}
+          disabled={disabled}
+          className={ACTION_BTN_CLASS}
+        >
+          {t('media.pickFromLibrary')}
+        </button>
+      </div>
+      <input
+        ref={ref}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange(slot)}
+        className="hidden"
+      />
+      <AssetSourcePicker
+        isOpen={showAssetPicker === slot}
+        onClose={() => setShowAssetPicker(null)}
+        onSelect={handleAssetSelect(slot)}
+        accept="image"
+      />
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {renderSlot('first', firstFrame, firstFrameInputRef, t('media.firstFrame'), t('compose.mediaFirstFrame'), removeFirstFrame)}
+      {renderSlot('last', lastFrame, lastFrameInputRef, t('media.lastFrame'), t('media.lastFrameOptional'), removeLastFrame, !firstFrame)}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -183,6 +314,13 @@ export default function MediaInput() {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [showAssetPicker, setShowAssetPicker] = useState(false);
+
+  // i2v has fixed first-frame/last-frame slots (Ark role semantics), not an
+  // arbitrary reference list — it gets its own component instead of sharing
+  // the multi-reference grid below.
+  if (mode === 'i2v') {
+    return <FirstLastFrameInput />;
+  }
 
   const isSeedance = modelId.startsWith('seedance');
 
@@ -399,7 +537,7 @@ export default function MediaInput() {
             {inputMedia.map((path, index) => (
               <div
                 key={path + index}
-                className="group relative w-[72px] h-[72px] rounded-[14px] overflow-hidden bg-elevated border border-border-subtle"
+                className="group relative w-24 h-24 rounded-[14px] overflow-hidden bg-elevated border border-border-subtle"
               >
                 {isVideoPath(path) ? (
                   <video
@@ -414,6 +552,11 @@ export default function MediaInput() {
                     className="w-full h-full object-cover"
                   />
                 )}
+
+                {/* Reference index badge — lets the prompt refer to "Image N" unambiguously */}
+                <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[0.625rem] font-medium leading-none">
+                  {t('media.imageIndex', { index: index + 1 })}
+                </span>
 
                 {/* Remove badge on hover (functional black corner scrim) */}
                 <button
@@ -430,11 +573,6 @@ export default function MediaInput() {
                 >
                   <X className="w-3 h-3" />
                 </button>
-
-                {/* File name — bottom gradient scrim (functional, theme-agnostic) */}
-                <div className="absolute bottom-0 left-0 right-0 px-1 py-0.5 bg-gradient-to-t from-black/75 to-transparent text-[0.5625rem] text-white truncate">
-                  {getFileName(path)}
-                </div>
               </div>
             ))}
 
@@ -445,7 +583,7 @@ export default function MediaInput() {
                 onClick={handleClick}
                 disabled={uploading}
                 className="
-                  w-[72px] h-[72px] rounded-[14px] bg-input-bg
+                  w-24 h-24 rounded-[14px] bg-input-bg
                   border border-dashed border-border-subtle
                   flex items-center justify-center
                   text-text-muted hover:text-foreground hover:border-foreground/30 hover:bg-hover-bg

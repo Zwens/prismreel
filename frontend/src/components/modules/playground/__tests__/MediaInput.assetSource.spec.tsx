@@ -57,7 +57,7 @@ describe('MediaInput — asset source', () => {
     it('opens the four-source picker, which starts on the global library', async () => {
         renderWithIntl(<MediaInput />);
 
-        fireEvent.click(screen.getByRole('button', { name: '从资产库选取' }));
+        fireEvent.click(screen.getAllByRole('button', { name: '从资产库选取' })[0]);
 
         expect(await screen.findByRole('tab', { name: '素材库' })).toBeInTheDocument();
         expect(screen.getByRole('tab', { name: '系列' })).toBeInTheDocument();

@@ -39,6 +39,23 @@ def _validate_safe_id(value: str, label: str = "id") -> str:
     return value
 
 
+def _project_output_dir(script: "Script", *subdirs: str) -> str:
+    """Base directory for newly generated files belonging to a project.
+
+    Owned scripts (owner_id set, i.e. created after the auth migration)
+    write under output/users/{owner_id}/{script_id}/... so the
+    enforce_file_ownership middleware can gate access. Pre-migration
+    scripts (owner_id == "") keep writing to the legacy global output/
+    subdirectories, matching where their existing files already live.
+    """
+    owner_id = getattr(script, "owner_id", "") or ""
+    if not owner_id:
+        return os.path.join("output", *subdirs) if subdirs else "output"
+    _validate_safe_id(owner_id, "owner_id")
+    _validate_safe_id(script.id, "script_id")
+    return os.path.join("output", "users", owner_id, script.id, *subdirs)
+
+
 class LibraryAssetInUseError(Exception):
     """Raised when a global library asset cannot be hard-deleted because it is
     still referenced by one or more storyboard frames (design Q2 reference
@@ -431,7 +448,7 @@ class ComicGenPipeline:
         if repaired:
             self._save_data()
 
-    def create_project(self, title: str, text: str, skip_analysis: bool = False, workflow_mode: str = "i2v_legacy", series_id: Optional[str] = None) -> Script:
+    def create_project(self, title: str, text: str, skip_analysis: bool = False, workflow_mode: str = "i2v_legacy", series_id: Optional[str] = None, owner_id: str = "") -> Script:
         """Step 1: Parse novel and create project.
 
         When `series_id` is provided the new project is bound as the next
@@ -444,9 +461,10 @@ class ComicGenPipeline:
         if skip_analysis:
             script = self.script_processor.create_draft_script(title, text)
         else:
-            script = self.script_processor.parse_novel(title, text)
+            script = self.script_processor.parse_novel(title, text, user_id=owner_id or None)
 
         script.workflow_mode = workflow_mode
+        script.owner_id = owner_id
         self.scripts[script.id] = script
         self._save_data()
 
@@ -470,7 +488,7 @@ class ComicGenPipeline:
         if not existing_script:
             raise ValueError("Script not found")
         custom_extraction = getattr(getattr(existing_script, "prompt_config", None), "entity_extraction", "")
-        new_script = self.script_processor.parse_novel(existing_script.title, text, custom_extraction)
+        new_script = self.script_processor.parse_novel(existing_script.title, text, custom_extraction, user_id=existing_script.owner_id or None)
         self._extraction_cache[script_id] = (time.time(), new_script)
         return new_script
 
@@ -486,8 +504,8 @@ class ComicGenPipeline:
             new_script = cached[1]
         else:
             custom_extraction = getattr(getattr(existing_script, "prompt_config", None), "entity_extraction", "")
-            new_script = self.script_processor.parse_novel(existing_script.title, text, custom_extraction)
-        
+            new_script = self.script_processor.parse_novel(existing_script.title, text, custom_extraction, user_id=existing_script.owner_id or None)
+
         # Preserve the original script ID and timestamps
         new_script.id = existing_script.id
         new_script.created_at = existing_script.created_at
@@ -1370,7 +1388,8 @@ class ComicGenPipeline:
 
         # Call LLM to analyze text (may raise RuntimeError on parse failure)
         raw_frames = self.script_processor.analyze_to_storyboard(
-            text, entities_json, custom_extraction_prompt=storyboard_extraction_prompt
+            text, entities_json, custom_extraction_prompt=storyboard_extraction_prompt,
+            user_id=script.owner_id or None,
         )
 
         if not raw_frames:
@@ -1490,7 +1509,8 @@ class ComicGenPipeline:
             next_ctx = f"Action: {nf.action_description}. Shot: {nf.shot_size}, {nf.camera_angle}."
 
         result = self.script_processor.refine_frame_to_rich(
-            coarse, char_assets, scene_assets, prev_ctx, next_ctx
+            coarse, char_assets, scene_assets, prev_ctx, next_ctx,
+            user_id=script.owner_id or None,
         )
         if not result:
             return frame
@@ -1635,7 +1655,9 @@ class ComicGenPipeline:
             custom_prompt = ""
 
         # Call LLM to refine prompt
-        result = self.script_processor.polish_storyboard_prompt(raw_prompt, assets, feedback, custom_prompt)
+        result = self.script_processor.polish_storyboard_prompt(
+            raw_prompt, assets, feedback, custom_prompt, user_id=script.owner_id or None
+        )
         
         # Find and update the frame
         frame_found = False
@@ -2252,7 +2274,7 @@ class ComicGenPipeline:
         if not ffmpeg_path:
             raise RuntimeError("FFmpeg is required for frame extraction but was not found.")
 
-        output_dir = os.path.join("output", "storyboard")
+        output_dir = _project_output_dir(script, "storyboard")
         os.makedirs(output_dir, exist_ok=True)
         _validate_safe_id(frame_id, "frame_id")
         output_filename = f"frame_{frame_id}_lastframe_{uuid.uuid4().hex[:8]}.jpg"
@@ -2590,15 +2612,16 @@ class ComicGenPipeline:
         logger.warning("[DUB] Demucs output not found, falling back to simple replacement")
         return None
 
-    def _ensure_bg_audio_cached(self, frame, video_path: str, video_url: str) -> Optional[str]:
+    def _ensure_bg_audio_cached(self, script, frame, video_path: str, video_url: str) -> Optional[str]:
         """Ensure background audio is separated and cached for this frame's video.
 
         Returns absolute path to bg audio WAV, or None if video has no audio.
-        Caches result to output/audio/bg_{frame_id}.wav — only re-runs Demucs
-        if video source changed.
+        Caches result under the project's output dir (output/audio/bg_{frame_id}.wav
+        for legacy pre-migration scripts, output/users/{owner_id}/{script_id}/audio/...
+        for owned ones) — only re-runs Demucs if video source changed.
         """
         if frame.bg_audio_url and frame.bg_audio_source_video == video_url:
-            cached_path = _safe_resolve_path("output", frame.bg_audio_url)
+            cached_path = _safe_resolve_path(_project_output_dir(script), frame.bg_audio_url)
             if os.path.exists(cached_path):
                 logger.info(f"[DUB] Background audio cache hit: {frame.bg_audio_url}")
                 return cached_path
@@ -2614,7 +2637,7 @@ class ComicGenPipeline:
                 return None
 
             cache_filename = f"bg_{frame.id}.wav"
-            cache_path = _safe_resolve_path(os.path.join("output", "audio"), cache_filename)
+            cache_path = _safe_resolve_path(_project_output_dir(script, "audio"), cache_filename)
             os.makedirs(os.path.dirname(cache_path), exist_ok=True)
             shutil.copy2(bg_path, cache_path)
 
@@ -2671,11 +2694,11 @@ class ComicGenPipeline:
                     pass
 
         output_filename = f"preview_{frame_id}_{int(time.time())}.mp4"
-        output_path = _safe_resolve_path(os.path.join("output", "video"), output_filename)
+        output_path = _safe_resolve_path(_project_output_dir(script, "video"), output_filename)
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         # Ensure background audio is cached (Demucs runs only on first call or video change)
-        bg_audio_path = self._ensure_bg_audio_cached(frame, video_path, video_task.video_url)
+        bg_audio_path = self._ensure_bg_audio_cached(script, frame, video_path, video_task.video_url)
 
         import tempfile
         work_dir = tempfile.mkdtemp(prefix="dub_mix_")
@@ -2927,7 +2950,7 @@ class ComicGenPipeline:
 
         # Output path
         output_filename = f"merged_{script_id}_{int(time.time())}.mp4"
-        output_path = _safe_resolve_path(os.path.join("output", "video"), output_filename)
+        output_path = _safe_resolve_path(_project_output_dir(script, "video"), output_filename)
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
         logger.debug(f"[MERGE] Output path: {output_path}")
@@ -3202,7 +3225,7 @@ class ComicGenPipeline:
             script.frames, segments, resolve=lambda u: _safe_resolve_path("output", u)
         )
 
-        out_dir = _safe_resolve_path("output", "subtitles")
+        out_dir = _safe_resolve_path(_project_output_dir(script, "subtitles"))
         os.makedirs(out_dir, exist_ok=True)
         out_path = os.path.join(out_dir, f"{script_id}.{fmt}")
 
@@ -3350,10 +3373,10 @@ class ComicGenPipeline:
             use_byteplus = backend == "byteplus" or model_name_lower.startswith("seedance")
 
             if use_byteplus:
+                from ...models.byteplus import BytePlusVideoModel, resolve_ark_model_id
                 if self._byteplus_video_model is None:
-                    from ...models.byteplus import BytePlusVideoModel
                     self._byteplus_video_model = BytePlusVideoModel({})
-                video_path, _ = self._byteplus_video_model.generate(
+                video_path, _, gen_usage = self._byteplus_video_model.generate(
                     prompt=task.prompt,
                     output_path=output_path,
                     img_url=img_url,
@@ -3366,6 +3389,14 @@ class ComicGenPipeline:
                     generation_mode=task.generation_mode,
                     ref_image_urls=task.reference_image_urls if task.generation_mode == "r2v" else None,
                     model_name=task.model,
+                )
+                self._record_generation_usage_safe(
+                    script.owner_id, "byteplus", resolve_ark_model_id(task.model) or task.model, task.resolution,
+                    # byteplus branch never sends video reference input to Ark (only ref_image_urls above);
+                    # input_has_video is always False here until video-reference support is added.
+                    input_has_video=False,
+                    duration=task.duration,
+                    total_tokens=(gen_usage or {}).get("total_tokens"),
                 )
             elif use_vendor_kling:
                 # Use Kling model (cached)
@@ -3385,6 +3416,7 @@ class ComicGenPipeline:
                     sound=task.sound or "off",
                     cfg_scale=task.cfg_scale,
                 )
+                self._record_generation_usage_safe(script.owner_id, "kling", task.model, task.resolution, duration=task.duration)
             elif use_vendor_vidu:
                 # Use Vidu model (cached)
                 if self._vidu_model is None:
@@ -3410,6 +3442,7 @@ class ComicGenPipeline:
                     ref_image_urls=task.reference_image_urls if task.generation_mode == "r2v" else None,
                     watermark=bool(task.watermark) if task.watermark is not None else False,
                 )
+                self._record_generation_usage_safe(script.owner_id, "vidu", task.model, task.resolution, duration=task.duration)
             else:
                 # 兜底：BytePlus Ark（Seedance）
                 # Issue 17: persist provider IDs (Bailian / DashScope task_id +
@@ -3450,7 +3483,8 @@ class ComicGenPipeline:
                     subject_motion=None,
                     on_provider_ids=_capture_provider_ids,
                 )
-            
+                self._record_generation_usage_safe(script.owner_id, "wanx", task.model, task.resolution, duration=task.duration)
+
             task.video_url = to_project_media_ref(output_path)
             task.status = "completed"
             
@@ -3471,6 +3505,22 @@ class ComicGenPipeline:
                 self._sync_asset_video_task(script, task)
             
         self._save_data()
+
+    def _record_generation_usage_safe(
+        self, owner_id: str, provider: str, model: Optional[str],
+        resolution: Optional[str] = None, input_has_video: Optional[bool] = None,
+        duration: Optional[int] = None, total_tokens: Optional[int] = None,
+    ) -> None:
+        try:
+            from . import usage_repo
+            usage_repo.record_generation_usage(
+                user_id=owner_id or "", kind="video", provider=provider,
+                model=model or "unknown", resolution=resolution,
+                input_has_video=input_has_video, duration=duration,
+                total_tokens=total_tokens,
+            )
+        except Exception:
+            logger.warning("Failed to record generation usage", exc_info=True)
 
     def _sync_asset_video_task(self, script: Script, task: VideoTask):
         """Syncs the updated task status/url back to the asset's video_assets list."""
@@ -4274,7 +4324,7 @@ class ComicGenPipeline:
             self._save_data()
             return new_asset
 
-    def create_series(self, title: str, description: str = "", workflow_mode: str = "i2v_legacy", content_mode: str = "scripted", default_generation_mode: str = "r2v") -> Series:
+    def create_series(self, title: str, description: str = "", workflow_mode: str = "i2v_legacy", content_mode: str = "scripted", default_generation_mode: str = "r2v", owner_id: str = "") -> Series:
         """Create a new Series."""
         with self._save_lock:
             series = Series(
@@ -4284,6 +4334,7 @@ class ComicGenPipeline:
                 workflow_mode=workflow_mode,
                 content_mode=content_mode,
                 default_generation_mode=default_generation_mode,
+                owner_id=owner_id,
                 created_at=time.time(),
                 updated_at=time.time(),
             )
@@ -4434,16 +4485,16 @@ class ComicGenPipeline:
     # File Import & Episode Splitting
     # ============================================================
 
-    def import_file_and_split(self, text: str, suggested_episodes: int = 3) -> List[Dict]:
+    def import_file_and_split(self, text: str, suggested_episodes: int = 3, owner_id: str = "") -> List[Dict]:
         """Split text into episodes using LLM. Returns episode preview data."""
-        return self.script_processor.split_into_episodes(text, suggested_episodes)
+        return self.script_processor.split_into_episodes(text, suggested_episodes, user_id=owner_id or None)
 
     def create_series_from_import(self, title: str, text: str, episodes_data: List[Dict],
-                                   description: str = "") -> Dict:
+                                   description: str = "", owner_id: str = "") -> Dict:
         """Create a Series with Episodes from import data.
         episodes_data: list of dicts with episode_number, title, start_marker, end_marker."""
         # Create the Series (already acquires lock internally)
-        series = self.create_series(title, description)
+        series = self.create_series(title, description, owner_id=owner_id)
 
         # Split text into episode chunks based on markers
         episode_texts = self._split_text_by_markers(text, episodes_data)
@@ -4460,6 +4511,7 @@ class ComicGenPipeline:
                 script = self.script_processor.create_draft_script(ep_title, ep_text)
                 script.series_id = series.id
                 script.episode_number = episode_number
+                script.owner_id = owner_id
                 self.scripts[script.id] = script
 
                 series.episode_ids.append(script.id)

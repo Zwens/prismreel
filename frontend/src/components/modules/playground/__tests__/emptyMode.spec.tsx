@@ -103,6 +103,8 @@ const store = () => playgroundStore.getState();
 beforeEach(() => {
     vi.clearAllMocks();
     playgroundStore.setState({
+        // 三段式 UI 默认停在 select；这些用例测的是 compose 的提交行为
+        playgroundStage: 'compose',
         mode: 't2v', modelId: '', prompt: '', negativePrompt: '', inputMedia: [],
         parameters: {}, batchSize: 1, history: [], templates: [], queue: [],
         activeGenerationIds: [], maxConcurrent: 3, modelPreferences: {},
@@ -140,7 +142,7 @@ describe('PlaygroundPage — a mode with nothing to offer', () => {
         playgroundStore.setState({ prompt: '海面上的暴风雨' });
         renderWithIntl(<PlaygroundPage />);
 
-        fireEvent.click(screen.getByRole('button', { name: /生成/ }));
+        fireEvent.click(screen.getByRole('button', { name: '生成' }));
 
         await waitFor(() => expect(mockGenerate).toHaveBeenCalled());
     });
@@ -150,7 +152,7 @@ describe('PlaygroundPage — a mode with nothing to offer', () => {
         renderWithIntl(<PlaygroundPage />);
 
         await waitFor(() => expect(store().modelId).toBe(''));
-        expect(screen.getByRole('button', { name: /生成/ })).toBeDisabled();
+        expect(screen.getByRole('button', { name: '生成' })).toBeDisabled();
     });
 
     it('says why instead of leaving the button dead', () => {

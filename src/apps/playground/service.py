@@ -7,6 +7,7 @@ routing logic in ``src/apps/comic_gen/pipeline.py:process_video_task()``.
 
 import os
 import shutil
+import subprocess
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -19,6 +20,7 @@ from .models import (
 )
 from .storage import PlaygroundStorage
 from ...utils import get_logger
+from ...utils.system_check import get_ffmpeg_path
 
 logger = get_logger(__name__)
 
@@ -27,6 +29,7 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 IMAGE_OUTPUT_DIR = os.path.join("output", "playground", "images")
 VIDEO_OUTPUT_DIR = os.path.join("output", "playground", "videos")
+VIDEO_THUMBNAIL_DIR = os.path.join("output", "playground", "thumbnails")
 
 
 class PlaygroundService:
@@ -47,11 +50,12 @@ class PlaygroundService:
     # Public API
     # ------------------------------------------------------------------
 
-    def create_generation(self, request: GenerateRequest) -> PlaygroundGeneration:
+    def create_generation(self, request: GenerateRequest, owner_id: str = "") -> PlaygroundGeneration:
         """Create a :class:`PlaygroundGeneration` record with *status=pending*,
         persist it via storage, and return it."""
         gen = PlaygroundGeneration(
             id=str(uuid.uuid4()),
+            owner_id=owner_id,
             mode=request.mode,
             model_id=request.model_id,
             prompt=request.prompt,
@@ -66,6 +70,38 @@ class PlaygroundService:
         )
         self.storage.add_generation(gen)
         return gen
+
+    def estimate_cost(
+        self, mode: PlaygroundMode, model_id: str, parameters: Optional[dict], batch_size: int = 1
+    ) -> "tuple[Optional[float], Optional[float], bool]":
+        """Pre-generation cost estimate: (total_cost, per_unit_cost, priced).
+
+        Only Seedance (BytePlus) has a confirmed price table; every other
+        provider returns (None, None, False) -- count-only, no cost known
+        until pricing is confirmed (see usage-tracking design doc scope)."""
+        model_lower = (model_id or "").lower()
+        if not model_lower.startswith("seedance"):
+            return None, None, False
+
+        from ..comic_gen import usage_repo
+        from ...models.byteplus import resolve_ark_model_id
+
+        wire_model_id = resolve_ark_model_id(model_id)
+        if wire_model_id is None:
+            return None, None, False
+
+        params = parameters or {}
+        resolution = params.get("resolution", "720p")
+        duration = params.get("duration", 5)
+        per_unit = usage_repo.estimate_seedance_cost_usd(
+            model=wire_model_id,
+            resolution=resolution,
+            duration=duration,
+            input_has_video=(mode == PlaygroundMode.R2V),
+        )
+        if per_unit is None:
+            return None, None, False
+        return per_unit * max(batch_size, 1), per_unit, True
 
     def process_generation(self, generation_id: str) -> None:
         """Execute the actual generation.  Intended to run in a background
@@ -280,20 +316,24 @@ class PlaygroundService:
 
             try:
                 if model_lower.startswith("seedance"):
-                    self._generate_video_seedance(gen, out_path)
+                    usage = self._generate_video_seedance(gen, out_path)
                 elif model_lower.startswith("kling"):
-                    self._generate_video_kling(gen, out_path)
+                    usage = self._generate_video_kling(gen, out_path)
                 elif model_lower.startswith("vidu") or model_lower.startswith("viduq"):
-                    self._generate_video_vidu(gen, out_path)
+                    usage = self._generate_video_vidu(gen, out_path)
                 else:
                     # happyhorse / pixverse 随 DashScope 下线，专属分支已移除；
                     # 未识别的 id 一并落到 Seedance 兜底。
-                    self._generate_video_default(gen, out_path)
+                    usage = self._generate_video_default(gen, out_path)
 
+                total_tokens, cost_usd = self._record_video_usage(gen, usage)
                 output_entry = PlaygroundOutput(
                     id=str(uuid.uuid4()),
                     media_path=out_path,
                     media_type="video",
+                    thumbnail_path=self._extract_video_thumbnail(out_path),
+                    total_tokens=total_tokens,
+                    cost_usd=cost_usd,
                 )
                 gen.outputs.append(output_entry)
                 self.storage.update_generation(gen)
@@ -304,9 +344,82 @@ class PlaygroundService:
         if failures and not gen.outputs:
             raise RuntimeError(f"All {len(failures)} batch items failed: {failures[0]}")
 
+    def _record_video_usage(
+        self, gen: PlaygroundGeneration, usage: Optional[dict]
+    ) -> "tuple[Optional[int], Optional[float]]":
+        """Best-effort usage_events write; never fails the generation itself.
+
+        Returns (total_tokens, cost_usd) so the caller can surface the same
+        numbers on the PlaygroundOutput record, regardless of whether the
+        usage_events write itself succeeds.
+        """
+        if usage is None:
+            return None, None
+
+        from ..comic_gen import usage_repo
+
+        total_tokens = usage.get("total_tokens")
+        cost_usd = None
+        try:
+            cost_usd = usage_repo.record_generation_usage(
+                user_id=gen.owner_id or "",
+                kind="video",
+                provider=usage.get("provider", "unknown"),
+                model=self._resolve_wire_model_id(gen.model_id) or gen.model_id,
+                resolution=usage.get("resolution"),
+                input_has_video=usage.get("input_has_video"),
+                duration=usage.get("duration"),
+                total_tokens=total_tokens,
+            )
+        except Exception:
+            logger.warning("Failed to record generation usage for %s", gen.id, exc_info=True)
+
+        return total_tokens, cost_usd
+
+    @staticmethod
+    def _resolve_wire_model_id(model_id: str) -> Optional[str]:
+        from ...models.byteplus import resolve_ark_model_id
+
+        return resolve_ark_model_id(model_id)
+
+    def _extract_video_thumbnail(self, video_path: str) -> Optional[str]:
+        """Grab a frame just past the start of the clip as a gallery thumbnail.
+
+        Best-effort: a thumbnail failure must not fail the generation itself,
+        since the video is already saved by the time this runs.
+        """
+        ffmpeg_path = get_ffmpeg_path()
+        if not ffmpeg_path:
+            logger.warning("FFmpeg not found; skipping thumbnail for %s", video_path)
+            return None
+
+        os.makedirs(VIDEO_THUMBNAIL_DIR, exist_ok=True)
+        thumb_filename = f"{os.path.splitext(os.path.basename(video_path))[0]}.jpg"
+        thumb_path = os.path.join(VIDEO_THUMBNAIL_DIR, thumb_filename)
+
+        cmd = [
+            ffmpeg_path, "-ss", "0.1",
+            "-i", video_path,
+            "-frames:v", "1",
+            "-q:v", "3",
+            "-y", thumb_path,
+        ]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            if result.returncode != 0 or not os.path.exists(thumb_path):
+                logger.warning(
+                    "Thumbnail extraction failed for %s: %s", video_path, result.stderr[:300]
+                )
+                return None
+        except subprocess.TimeoutExpired:
+            logger.warning("Thumbnail extraction timed out for %s", video_path)
+            return None
+
+        return thumb_path
+
     # -- adapter delegates ------------------------------------------------
 
-    def _generate_video_default(self, gen: PlaygroundGeneration, out_path: str) -> None:
+    def _generate_video_default(self, gen: PlaygroundGeneration, out_path: str) -> Optional[dict]:
         """Delegate to :class:`BytePlusVideoModel` (Seedance on BytePlus Ark)."""
         from ...models.byteplus import BytePlusVideoModel
 
@@ -343,8 +456,9 @@ class PlaygroundService:
             img_url=img_url,
             **kwargs,
         )
+        return None  # count-only -- no confirmed price table for wanx yet
 
-    def _generate_video_seedance(self, gen: PlaygroundGeneration, out_path: str) -> None:
+    def _generate_video_seedance(self, gen: PlaygroundGeneration, out_path: str) -> Optional[dict]:
         """Seedance runs entirely on BytePlus Ark.
 
         The family used to straddle two gateways; MuleRouter is gone, so there
@@ -380,21 +494,37 @@ class PlaygroundService:
             if task_type:
                 kwargs["task_type"] = task_type
 
+        # i2v: optional second entry is the last frame (Ark first_frame +
+        # last_frame scenario). Only img_url is wired through to Ark today
+        # (see note on img_path below), so a local-file last frame is
+        # unsupported the same way a local-file first frame already is.
+        if gen.mode == PlaygroundMode.I2V and len(gen.input_media) > 1:
+            _, last_frame_url = self._resolve_input_media_at(gen, 1)
+            if last_frame_url:
+                kwargs["last_frame_url"] = last_frame_url
+
         from ...models.byteplus import BytePlusVideoModel
 
         if self._byteplus_video_model is None:
             self._byteplus_video_model = BytePlusVideoModel({})
         model = self._byteplus_video_model
 
-        model.generate(
+        _, _, usage = model.generate(
             prompt=gen.prompt,
             output_path=out_path,
             img_url=img_url,
             img_path=img_path,
             **kwargs,
         )
+        return {
+            "provider": "byteplus",
+            "resolution": kwargs["resolution"],
+            "input_has_video": gen.mode == PlaygroundMode.R2V,
+            "duration": kwargs["duration"],
+            "total_tokens": (usage or {}).get("total_tokens"),
+        }
 
-    def _generate_video_kling(self, gen: PlaygroundGeneration, out_path: str) -> None:
+    def _generate_video_kling(self, gen: PlaygroundGeneration, out_path: str) -> Optional[dict]:
         """Delegate to :class:`KlingModel`."""
         from ...models.kling import KlingModel
 
@@ -417,8 +547,9 @@ class PlaygroundService:
             sound=params.get("sound", "off"),
             cfg_scale=params.get("cfg_scale"),
         )
+        return None  # count-only -- no confirmed price table for kling yet
 
-    def _generate_video_vidu(self, gen: PlaygroundGeneration, out_path: str) -> None:
+    def _generate_video_vidu(self, gen: PlaygroundGeneration, out_path: str) -> Optional[dict]:
         """Delegate to :class:`ViduModel`."""
         from ...models.vidu import ViduModel
 
@@ -441,6 +572,7 @@ class PlaygroundService:
             audio=params.get("audio", True),
             movement_amplitude=params.get("movement_amplitude", "auto"),
         )
+        return None  # count-only -- no confirmed price table for vidu yet
 
     # ------------------------------------------------------------------
     # Helpers
@@ -458,24 +590,31 @@ class PlaygroundService:
             return normalized
         return "prop"
 
-    @staticmethod
-    def _resolve_first_input_media(gen: PlaygroundGeneration):
+    @classmethod
+    def _resolve_first_input_media(cls, gen: PlaygroundGeneration):
         """Return ``(img_path, img_url)`` for the first entry in
         :pyattr:`input_media`.  Local files are returned as *img_path*;
         remote URLs as *img_url*."""
-        if not gen.input_media:
+        return cls._resolve_input_media_at(gen, 0)
+
+    @staticmethod
+    def _resolve_input_media_at(gen: PlaygroundGeneration, index: int):
+        """Return ``(path, url)`` for ``input_media[index]``. Local files are
+        returned as *path*; remote URLs (or anything unresolvable locally) as
+        *url*. ``(None, None)`` when there is no entry at that index."""
+        if index >= len(gen.input_media):
             return None, None
 
-        first = gen.input_media[0]
-        if first.startswith(("http://", "https://")):
-            return None, first
+        entry = gen.input_media[index]
+        if entry.startswith(("http://", "https://")):
+            return None, entry
 
         # Try as-is, then relative to output/
-        if os.path.exists(first):
-            return first, None
-        candidate = os.path.join("output", first)
+        if os.path.exists(entry):
+            return entry, None
+        candidate = os.path.join("output", entry)
         if os.path.exists(candidate):
             return candidate, None
 
         # Fall back to treating it as a URL-like reference
-        return None, first
+        return None, entry

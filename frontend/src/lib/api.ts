@@ -35,6 +35,91 @@ const getApiUrl = (): string => {
 
 export const API_URL = getApiUrl();
 
+// Sent on every request when the backend has PRISMREEL_API_KEY set (see
+// api.py's enforce_api_key middleware). Baked into the client bundle at
+// build time (NEXT_PUBLIC_*), so this only gates casual/automated access
+// from outside the deployment — it does not hide the key from anyone who
+// can already load the page.
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
+if (API_KEY) {
+    axios.defaults.headers.common["X-API-Key"] = API_KEY;
+}
+
+// Send the login cookie on every request, including dev mode where the
+// frontend and backend run on different ports (cross-origin).
+axios.defaults.withCredentials = true;
+
+export async function login(email: string, password: string) {
+    const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+    return res.data;
+}
+
+export async function redeemInvite(code: string, email: string, password: string) {
+    const res = await axios.post(`${API_URL}/auth/redeem_invite`, { invite_code: code, email, password });
+    return res.data;
+}
+
+export async function logout() {
+    await axios.post(`${API_URL}/auth/logout`);
+}
+
+export async function getCurrentUser() {
+    const res = await axios.get(`${API_URL}/auth/me`);
+    return res.data;
+}
+
+export type AdminUser = {
+    id: string;
+    email: string;
+    role: string;
+    display_name: string | null;
+    is_active: boolean;
+    created_at: number;
+};
+
+export async function adminListUsers(): Promise<AdminUser[]> {
+    const res = await axios.get(`${API_URL}/admin/users`);
+    return res.data;
+}
+
+export async function adminCreateInvite(role: string = "member", emailHint?: string) {
+    const res = await axios.post(`${API_URL}/admin/invites`, { role, email_hint: emailHint });
+    return res.data;
+}
+
+export async function adminResetPassword(userId: string, newPassword: string) {
+    const res = await axios.post(`${API_URL}/admin/users/${userId}/reset_password`, { new_password: newPassword });
+    return res.data;
+}
+
+export async function adminDeactivateUser(userId: string) {
+    const res = await axios.post(`${API_URL}/admin/users/${userId}/deactivate`);
+    return res.data;
+}
+
+export type UsageBucket = {
+    model: string;
+    resolution: string | null;
+    input_has_video: boolean | null;
+    duration: number | null;
+    count: number;
+    total_tokens: number | null;
+    cost_usd: number | null;
+};
+
+export type UsageSummary = Record<string, Record<string, Record<string, UsageBucket>>>;
+
+export async function getMyUsage(): Promise<{ user_id: string; summary: UsageSummary }> {
+    const res = await axios.get(`${API_URL}/usage/me`);
+    return res.data;
+}
+
+export async function getAllUsersUsage(): Promise<{ user_id: string; summary: UsageSummary }[]> {
+    const res = await axios.get(`${API_URL}/admin/usage`);
+    return res.data;
+}
+
+export type ProviderMode = "dashscope" | "vendor";
 
 /**
  * PR-3g #3 · TTS voice metadata returned by GET /voices.
@@ -70,6 +155,9 @@ export interface EnvConfigPayload {
     KLING_ACCESS_KEY?: string;
     KLING_SECRET_KEY?: string;
     VIDU_API_KEY?: string;
+    ARK_API_KEY?: string;
+    ARK_REGION?: string;
+    ARK_BASE_URL?: string;
     endpoint_overrides?: Record<string, string>;
     // Secrets from GET are masked (bullets + last 4 chars). This map reports
     // which credential fields are actually configured on the backend.
@@ -1583,10 +1671,25 @@ export interface PlaygroundGenerationResponse {
     media_type: string;
     thumbnail_path?: string;
     saved_to_library: boolean;
+    total_tokens?: number;
+    cost_usd?: number;
   }>;
   status: string;
   error?: string;
   created_at: string;
+}
+
+export interface PlaygroundEstimateCostRequest {
+  mode: string;
+  model_id: string;
+  parameters?: Record<string, any>;
+  batch_size?: number;
+}
+
+export interface PlaygroundEstimateCostResponse {
+  cost_usd?: number;
+  per_unit_cost_usd?: number;
+  priced: boolean;
 }
 
 export interface PlaygroundTemplateResponse {
@@ -1605,6 +1708,9 @@ export interface PlaygroundTemplateResponse {
 export const playgroundApi = {
   generate: (data: PlaygroundGenerateRequest) =>
     axios.post<PlaygroundGenerationResponse>(API_URL + "/playground/generate", data).then(r => r.data),
+
+  estimateCost: (data: PlaygroundEstimateCostRequest) =>
+    axios.post<PlaygroundEstimateCostResponse>(API_URL + "/playground/estimate-cost", data).then(r => r.data),
 
   getHistory: (limit = 50, offset = 0) =>
     axios.get<PlaygroundGenerationResponse[]>(API_URL + "/playground/history", { params: { limit, offset } }).then(r => r.data),

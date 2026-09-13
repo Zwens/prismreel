@@ -7,8 +7,6 @@ import { usePlaygroundStore } from './usePlaygroundStore';
 import PromptTemplateModal from './PromptTemplateModal';
 import PromptHistoryDrawer from './PromptHistoryDrawer';
 
-const MAX_LENGTH = 2000;
-
 export default function PromptInput() {
   const prompt = usePlaygroundStore((s) => s.prompt);
   const negativePrompt = usePlaygroundStore((s) => s.negativePrompt);
@@ -25,7 +23,7 @@ export default function PromptInput() {
       {/* Main prompt textarea */}
       <textarea
         value={prompt}
-        onChange={(e) => setPrompt(e.target.value.slice(0, MAX_LENGTH))}
+        onChange={(e) => setPrompt(e.target.value)}
         placeholder={t('prompt.placeholder')}
         className="w-full min-h-[120px] max-h-[280px] resize-y bg-transparent border-0 rounded-none p-0 text-foreground text-[0.9375rem] leading-[1.65] placeholder-text-muted focus:ring-0"
       />
@@ -49,7 +47,7 @@ export default function PromptInput() {
           {t('prompt.history')}
         </button>
         <span className="ml-auto font-mono text-[0.625rem] text-text-muted">
-          {prompt.length} / {MAX_LENGTH}
+          {prompt.length}
         </span>
       </div>
 

@@ -12,6 +12,17 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
  * silently, and only on one breakpoint. These pin the two against each other.
  */
 
+// 侧栏的登出按钮用到 next/navigation 的 useRouter，测试树里没有挂载 app router。
+vi.mock('next/navigation', () => ({
+    useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+    usePathname: () => '/',
+    useSearchParams: () => new URLSearchParams(),
+}));
+
+vi.mock('@/lib/api', () => ({
+    logout: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('lucide-react', () => {
     const cache = new Map<string, any>();
     return new Proxy({} as Record<string, any>, {
@@ -39,12 +50,13 @@ describe('GlobalSidebar', () => {
     it('renders every nav entry, settings included', () => {
         renderWithIntl(<GlobalSidebar activeTab="workspace" onTabChange={() => {}} />);
 
-        // Derived from the shared model rather than a hard-coded list, so adding
-        // an entry does not need this spec edited — only the slice fixed.
-        for (const label of ['工作区', '资产库', 'AI 视频', '创作台', '设置']) {
+        // Derived from the shared model rather than a hard-coded list. 渲染侧
+        // 已改用 filter(id !== 'settings') 而不是 slice(0, N)，所以新增条目
+        // 不再需要同步改渲染代码——只有下面这条计数断言要跟着走。
+        for (const label of ["漫画生成", "素材库", "AI 视频", "视频生成", "生成历史", "设置"]) {
             expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
         }
-        expect(GLOBAL_NAV_ITEMS).toHaveLength(5);
+        expect(GLOBAL_NAV_ITEMS).toHaveLength(6);
     });
 
     it('gives the AI video entry its own route', () => {
@@ -68,6 +80,6 @@ describe('GlobalSidebar', () => {
             'aria-current',
             'page',
         );
-        expect(screen.getByRole('button', { name: '创作台' })).not.toHaveAttribute('aria-current');
+        expect(screen.getByRole('button', { name: "视频生成" })).not.toHaveAttribute('aria-current');
     });
 });

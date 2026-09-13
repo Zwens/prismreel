@@ -8,7 +8,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh" className="atelier-dark" suppressHydrationWarning>
+    <html lang="zh-Hant" className="atelier-dark" suppressHydrationWarning>
       <head>
         <title>PrismReel Studio</title>
         <meta name="description" content="AI-Native Motion Comic Creation Platform" />

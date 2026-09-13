@@ -18,10 +18,13 @@ class PlaygroundOutput(BaseModel):
     media_type: str = Field(..., description="Output media type: image or video")
     thumbnail_path: Optional[str] = Field(None, description="Thumbnail file path relative to output/")
     saved_to_library: bool = Field(False, description="Whether this output has been saved to the project library")
+    total_tokens: Optional[int] = Field(None, description="Provider-reported token count for this generation, when available")
+    cost_usd: Optional[float] = Field(None, description="Estimated cost in USD for this generation, when a price table entry exists")
 
 
 class PlaygroundGeneration(BaseModel):
     id: str = Field(..., description="Unique identifier (UUID)")
+    owner_id: str = Field("", description="User id of the generation's owner; empty for pre-migration/anonymous records")
     mode: PlaygroundMode = Field(..., description="Generation mode")
     model_id: str = Field(..., description="Model identifier from model catalog")
     prompt: str = Field(..., description="Text prompt for generation")
@@ -60,6 +63,19 @@ class GenerateRequest(BaseModel):
 
 class SaveToLibraryRequest(BaseModel):
     category: str = Field("general", description="Library category for the saved output")
+
+
+class EstimateCostRequest(BaseModel):
+    mode: PlaygroundMode = Field(..., description="Generation mode")
+    model_id: str = Field(..., description="Model identifier from model catalog")
+    parameters: Optional[dict] = Field(None, description="Generation parameters (resolution, duration, etc.)")
+    batch_size: Optional[int] = Field(1, ge=1, le=4, description="Number of outputs to generate (1-4)")
+
+
+class EstimateCostResponse(BaseModel):
+    cost_usd: Optional[float] = Field(None, description="Estimated total cost in USD for batch_size outputs, or null when no price table entry exists for this model/resolution")
+    per_unit_cost_usd: Optional[float] = Field(None, description="Estimated cost in USD for a single output")
+    priced: bool = Field(False, description="Whether a price table entry was found; false means the actual cost is unknown until generation completes")
 
 
 class CreateTemplateRequest(BaseModel):

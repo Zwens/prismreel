@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type Locale = 'zh' | 'en';
+export type Locale = 'zh' | 'zh-Hant' | 'en';
 
 /**
  * 5 预设主题（Tasty Sam 主题系统）。
@@ -39,7 +39,7 @@ interface SettingsStore {
 export const useSettingsStore = create<SettingsStore>()(
     persist(
         (set) => ({
-            locale: 'zh',
+            locale: 'zh-Hant',
             theme: DEFAULT_THEME,
             animations: true,
             setLocale: (locale: Locale) => set({ locale }),
