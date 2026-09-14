@@ -175,3 +175,21 @@ def test_generate_rejects_an_unresolvable_model_id_without_calling_ark(model, mo
         )
 
     assert "some-future-id" in str(excinfo.value)
+
+
+# ---------------------------------------------------------------------------
+# Asset URIs (official Digital Character Library / authorized real-person
+# assets) — resolved by Ark itself, must never be routed through OSS upload.
+# ---------------------------------------------------------------------------
+
+def test_asset_uri_passes_through_without_oss_upload(model, monkeypatch):
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("asset:// refs must not be resolved through OSS")
+
+    monkeypatch.setattr("src.models.byteplus.resolve_media_input", fail_if_called)
+
+    resolved = model._resolve_ark_image_url(
+        "asset://asset-20260225015229-d77t9", model_name="seedance-2.5-r2v"
+    )
+
+    assert resolved == "asset://asset-20260225015229-d77t9"
