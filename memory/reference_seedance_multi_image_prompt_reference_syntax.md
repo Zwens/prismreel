@@ -21,5 +21,10 @@ Prismreel後端API呼叫已把多張圖片放進`content`陣列（多個`image_u
 ## 修正方式
 Prismreel後端組prompt時，若走API直接呼叫（非Playground手動操作），一律使用`Image N`格式（N為該圖片在content陣列image_url元素中的順序，從1開始），不要使用`@Image1`。
 
-## 待辦
-尚未確認：Prismreel後端目前組prompt的實際程式碼位置——下次任務可直接搜尋後端專案中組multi-image prompt的邏輯段落，改成`Image N`格式並實測驗證。
+## ✅ 已查證：後端不做任何prompt自動組裝，問題出在前端UI缺提示（2026-09-14已修復並上線）
+`src/models/byteplus.py`的`build_ark_content()`只是把`prompt`原封不動放進text欄位，**完全沒有自動生成`Image N`或`@ImageN`標籤的邏輯**（一路從`gen.prompt`直傳到`generate()`，中間無轉換）。這代表「待辦：搜尋後端組prompt程式碼位置並修正」這個原始假設方向是錯的——不是後端字串拼接有bug，而是**使用者自己手打prompt時要遵守正確語法，但Prismreel自製的Playground textarea（`PromptInput.tsx`）沒有任何提示**，容易誤用只在Ark官方Playground網頁生效的`@Image1`語法。
+
+（註：R2V/ComicGen產線走的是完全不同的`[characterN:name]`自訂標籤系統，見`frontend/src/lib/assetTags.ts`，跟Seedance官方`Image N`語法互不衝突、不要混淆。）
+
+**修復**：`PromptInput.tsx`讀取`inputMedia.length >= 2`時，在textarea下方顯示提示文字（三語言i18n key `playground.prompt.multiImageHint`），說明正確格式。已commit `60c57e8`、pipeline 44209 success、live bundle已確認含正確中英文案。
+瀏覽器端到端驗證因登入態（DashScope Key對話框+後端401導致登出）卡住，經使用者同意改採程式碼審查+live JS bundle文字比對收尾，未做完整UI截圖。
