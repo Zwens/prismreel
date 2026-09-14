@@ -1833,6 +1833,17 @@ export interface PlaygroundTemplateResponse {
   updated_at: string;
 }
 
+export interface OfficialDigitalCharacterResponse {
+  asset_id: string;
+  group_id: string;
+  thumbnail_url: string;
+  nationality: string;
+  gender: string;
+  age: number;
+  occupation: string;
+  biography: string;
+}
+
 export const playgroundApi = {
   generate: (data: PlaygroundGenerateRequest) =>
     axios.post<PlaygroundGenerationResponse>(API_URL + "/playground/generate", data).then(r => r.data),
@@ -1866,6 +1877,9 @@ export const playgroundApi = {
 
   deleteTemplate: (id: string) =>
     axios.delete(API_URL + "/playground/templates/" + id).then(r => r.data),
+
+  getOfficialCharacters: () =>
+    axios.get<OfficialDigitalCharacterResponse[]>(API_URL + "/playground/official-characters").then(r => r.data),
 
   // Upload media file for playground input (returns file path)
   uploadMedia: (file: File) => {

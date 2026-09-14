@@ -54,6 +54,7 @@ class PlaygroundTemplate(BaseModel):
 class OfficialDigitalCharacter(BaseModel):
     asset_id: str = Field(..., description="Ark asset id; referenced as asset://<asset_id>")
     group_id: str = Field(..., description="Ark asset group id")
+    thumbnail_url: str = Field(..., description="Ark CDN preview image for this character")
     nationality: str = Field(..., description="Character tag: nationality")
     gender: str = Field(..., description="Character tag: gender")
     age: int = Field(..., description="Character tag: age")

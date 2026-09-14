@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Image, Film, Loader2 } from 'lucide-react';
+import { X, Check, Image, Film, Loader2, UserRound } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { API_URL, playgroundApi } from '@/lib/api';
+import { API_URL, playgroundApi, type OfficialDigitalCharacterResponse } from '@/lib/api';
+import { rememberOfficialCharacter } from '@/lib/officialCharacterCache';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,7 +26,7 @@ interface AssetItem {
   label: string;
 }
 
-type FilterTab = 'all' | 'image' | 'video';
+type FilterTab = 'all' | 'image' | 'video' | 'official';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -80,6 +81,10 @@ export default function AssetPickerModal({
   const [activeTab, setActiveTab] = useState<FilterTab>(
     accept === 'all' ? 'all' : accept
   );
+  const [officialCharacters, setOfficialCharacters] = useState<OfficialDigitalCharacterResponse[]>([]);
+  const [officialLoading, setOfficialLoading] = useState(false);
+  const [officialError, setOfficialError] = useState<string | null>(null);
+  const showOfficialTab = accept === 'all' || accept === 'image';
 
   // -------------------------------------------------------------------------
   // Fetch assets from playground history
@@ -135,12 +140,27 @@ export default function AssetPickerModal({
     }
   }, []);
 
+  const fetchOfficialCharacters = useCallback(async () => {
+    setOfficialLoading(true);
+    setOfficialError(null);
+    try {
+      const items = await playgroundApi.getOfficialCharacters();
+      setOfficialCharacters(items);
+    } catch (err) {
+      console.error('[AssetPickerModal] fetch official characters failed:', err);
+      setOfficialError('Failed to load official characters');
+    } finally {
+      setOfficialLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       setSelected(null);
       fetchAssets();
+      if (showOfficialTab) fetchOfficialCharacters();
     }
-  }, [isOpen, fetchAssets]);
+  }, [isOpen, fetchAssets, fetchOfficialCharacters, showOfficialTab]);
 
   // Reset active tab when accept changes
   useEffect(() => {
@@ -211,6 +231,12 @@ export default function AssetPickerModal({
       label: t('assetPicker.tabVideo'),
       icon: <Film className="w-3.5 h-3.5" />,
       show: accept === 'all' || accept === 'video',
+    },
+    {
+      key: 'official',
+      label: t('assetPicker.tabOfficial'),
+      icon: <UserRound className="w-3.5 h-3.5" />,
+      show: showOfficialTab,
     },
   ];
 
@@ -292,6 +318,91 @@ export default function AssetPickerModal({
             {/* Grid                                                            */}
             {/* -------------------------------------------------------------- */}
             <div className="flex-1 overflow-y-auto px-6 pb-2 min-h-0">
+              {activeTab === 'official' ? (
+                <>
+                  {officialLoading && (
+                    <div className="flex flex-col items-center justify-center py-16 gap-3">
+                      <Loader2 className="w-6 h-6 text-text-muted animate-spin" />
+                      <span className="text-xs text-text-muted">{t('assetPicker.loading')}</span>
+                    </div>
+                  )}
+
+                  {officialError && !officialLoading && (
+                    <div className="flex flex-col items-center justify-center py-16 gap-3">
+                      <span className="text-xs text-status-failed-fg">{officialError}</span>
+                      <button
+                        type="button"
+                        onClick={fetchOfficialCharacters}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        {t('assetPicker.retry')}
+                      </button>
+                    </div>
+                  )}
+
+                  {!officialLoading && !officialError && officialCharacters.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-16 gap-2">
+                      <UserRound className="w-8 h-8 text-text-muted" />
+                      <span className="text-xs text-text-muted">{t('assetPicker.empty')}</span>
+                    </div>
+                  )}
+
+                  {!officialLoading && !officialError && officialCharacters.length > 0 && (
+                    <div className="grid grid-cols-4 gap-3">
+                      {officialCharacters.map((char) => {
+                        const path = `asset://${char.asset_id}`;
+                        const isSelected = selected === path;
+                        const label = `${char.nationality} · ${char.occupation}`;
+
+                        return (
+                          <button
+                            key={char.asset_id}
+                            type="button"
+                            onClick={() => {
+                              rememberOfficialCharacter(path, {
+                                thumbnailUrl: char.thumbnail_url,
+                                label,
+                              });
+                              setSelected(isSelected ? null : path);
+                            }}
+                            title={char.biography}
+                            className={`
+                              relative aspect-square rounded-lg overflow-hidden
+                              bg-glass cursor-pointer
+                              transition-all duration-150
+                              ${
+                                isSelected
+                                  ? 'border-2 border-primary ring-2 ring-primary/30'
+                                  : 'border border-border-subtle hover:border-primary/50'
+                              }
+                            `}
+                          >
+                            <img
+                              src={char.thumbnail_url}
+                              alt={label}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+
+                            {isSelected && (
+                              <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                                <Check className="w-3 h-3 text-on-accent" />
+                              </div>
+                            )}
+
+                            <div className="absolute bottom-0 left-0 right-0 px-1.5 py-1 bg-gradient-to-t from-black/70 to-transparent">
+                              <span className="text-[0.625rem] text-foreground/80 truncate block">
+                                {label}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
               {loading && (
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
                   <Loader2 className="w-6 h-6 text-text-muted animate-spin" />
@@ -391,6 +502,8 @@ export default function AssetPickerModal({
                     );
                   })}
                 </div>
+              )}
+                </>
               )}
             </div>
 

@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { API_URL, playgroundApi } from '@/lib/api';
 import { usePlaygroundStore, type PlaygroundMode } from './usePlaygroundStore';
 import AssetPickerModal from './AssetPickerModal';
+import { isOfficialCharacterRef, getOfficialCharacterDisplay } from '@/lib/officialCharacterCache';
 
 // ---------------------------------------------------------------------------
 // Mode config
@@ -79,6 +80,9 @@ const ACTION_BTN_CLASS =
 // ---------------------------------------------------------------------------
 
 function getFileName(path: string): string {
+  if (isOfficialCharacterRef(path)) {
+    return getOfficialCharacterDisplay(path)?.label ?? path;
+  }
   const parts = path.split('/');
   return parts[parts.length - 1] || path;
 }
@@ -92,6 +96,9 @@ function isVideoPath(path: string): boolean {
 // root-relative (/files/...) URLs pass through untouched. The raw path is still kept
 // in store state + the generate payload — only the <img>/<video> src is resolved.
 function resolveMediaSrc(path: string): string {
+  if (isOfficialCharacterRef(path)) {
+    return getOfficialCharacterDisplay(path)?.thumbnailUrl ?? '';
+  }
   if (/^(https?:|blob:|data:|\/)/i.test(path)) return path;
   return `${API_URL}/files/${path.replace(/^output\//, '')}`;
 }
@@ -118,8 +125,9 @@ function SingleRefPreview({
   badge?: string;
 }) {
   const [meta, setMeta] = useState<string | null>(null);
-  const ext = (path.split('.').pop() || '').toUpperCase();
-  const video = isVideoPath(path);
+  const isOfficial = isOfficialCharacterRef(path);
+  const ext = isOfficial ? '' : (path.split('.').pop() || '').toUpperCase();
+  const video = !isOfficial && isVideoPath(path);
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-[14px] bg-surface-inset border border-border-subtle">
