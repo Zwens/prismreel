@@ -2035,7 +2035,8 @@
       "templates": "模板",
       "history": "历史",
       "negativeLabel": "负面提示词",
-      "negativePlaceholder": "不希望出现的内容..."
+      "negativePlaceholder": "不希望出现的内容...",
+      "multiImageHint": "多图引用请用「Image 1」「Image 2」（按上传顺序，需带空格），@Image1 语法仅限官方 Playground 网页，这里不生效"
     },
     "model": {
       "selectPlaceholder": "选择模型",

@@ -10,6 +10,7 @@ import PromptHistoryDrawer from './PromptHistoryDrawer';
 export default function PromptInput() {
   const prompt = usePlaygroundStore((s) => s.prompt);
   const negativePrompt = usePlaygroundStore((s) => s.negativePrompt);
+  const inputMedia = usePlaygroundStore((s) => s.inputMedia);
   const setPrompt = usePlaygroundStore((s) => s.setPrompt);
   const setNegativePrompt = usePlaygroundStore((s) => s.setNegativePrompt);
   const setShowTemplateModal = usePlaygroundStore((s) => s.setShowTemplateModal);
@@ -27,6 +28,12 @@ export default function PromptInput() {
         placeholder={t('prompt.placeholder')}
         className="w-full min-h-[120px] max-h-[280px] resize-y bg-transparent border-0 rounded-none p-0 text-foreground text-[0.9375rem] leading-[1.65] placeholder-text-muted focus:ring-0"
       />
+
+      {inputMedia.length >= 2 && (
+        <p className="mt-1.5 text-[0.6875rem] text-text-muted">
+          {t('prompt.multiImageHint')}
+        </p>
+      )}
 
       {/* Toolbar — below the textarea, not overlapping */}
       <div className="flex items-center gap-[6px] border-t border-border-subtle pt-2.5 mt-3">
