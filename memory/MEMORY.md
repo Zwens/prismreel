@@ -3,7 +3,7 @@
 > 進入本專案工作時 Read 載入。工作區共用規則見根目錄 CLAUDE.md。
 
 ## AI影片生成 API gotcha
-- [**🔄 Seedance真人臉孔審核機制+虛擬肖像庫vs真人肖像庫的正確選用**](reference_seedance_real_person_face_restriction_and_asset_library.md) — 目前所有人打同一支API、image_url直傳原圖網址被誤判真人；已確認走Private Virtual Portrait Library+公司企業認證路徑，**公司已安排驗證中**（CreateAsset實測+免費版門檻），未有結果前不確定最終可行
+- [**✅ Seedance官方Digital Character Library已整合上線（2026-09-14）**](reference_seedance_real_person_face_restriction_and_asset_library.md) — 不需企業認證的官方數位角色庫，asset://<asset_id>直通image_url.url、真實API呼叫已驗證成功生成影片；企業認證+自有虛構角色路徑仍待公司驗證中，見全文「已確認可行路徑」章節
 - [**✅ Seedance多圖prompt引用語法：@Image1僅限Playground網頁UI，API呼叫需用`Image 1`格式（2026-09-14已修復並上線）**](reference_seedance_multi_image_prompt_reference_syntax.md) — 查證後發現後端無自動組裝邏輯，根因是前端PromptInput.tsx缺提示；已補UI提示三語言版本並驗證live bundle生效
 
 ## 圖片抓取踩坑（i2v首末幀 / R2V多圖標籤）

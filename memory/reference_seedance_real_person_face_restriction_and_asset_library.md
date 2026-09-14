@@ -30,12 +30,22 @@ BytePlus ModelArk（國際版，`ark.ap-southeast-1.bytepluses.com`）與火山�
 - 不需要多租戶asset隔離設計，單一/少數Asset Group即可，50 asset額度大機率夠用
 - 目前現狀是後端`image_url`直接傳角色圖網址（原圖URL），完全未經過Asset Library，這是每次呼叫都被真人分類器擋下的根因——改成先建asset_id、之後呼叫改傳`asset://<asset_id>`即可解決，不需要改動「所有人打同一支API」的架構本身
 
-## 待驗證風險（2026-09-14，公司已安排執行，尚未有結果）
+## ✅ 已確認可行路徑：官方Digital Character Library（2026-09-14整合上線，不需企業認證）
+除了Private Virtual Portrait Library（自己上傳虛構角色，仍卡企業認證），官方在ModelArk Playground另外提供一套**現成、免上傳、免審核**的Digital Character Library（~27個角色，跨國籍/性別/年齡/職業，含biography人設敘述）：
+- 進入路徑：ModelArk Playground（`ai.byteplus.com/ark/region:.../experience/gen_video?model=...`）→ 輸入框下方「Digital characters」分頁 → 可用性別/年齡/國籍自然語言搜尋
+- 每個角色點開有固定`group ID`+`asset ID`，可一鍵「Generate and copy asset URIs」
+- 官方文件確認：`asset://<asset_id>`直接塞進現有`image_url.url`欄位（與一般HTTP圖片URL同一欄位），搭配`role: "reference_image"`，**不需要新的API端點或資料結構**
+- **真實驗證（2026-09-14）**：`asset://asset-20260225015229-d77t9`（英國22歲男模）呼叫`seedance-2.5-r2v`成功生成影片（270秒，無真人審核錯誤）
+- 已整合進Prismreel：後端`_resolve_ark_image_url()`對`asset://`開頭直通不經OSS（`src/models/byteplus.py`）、`config/digital_characters/official.json`存角色mapping（目前僅1筆已驗證，其餘~26個角色需要時再點開查asset ID補進去）、`GET /playground/official-characters` API、前端`AssetPickerModal`新增Official Characters分頁
+- **Prompt引用注意**：官方文件明寫prompt必須用「asset type + number」格式引用（如"The beauty influencer in Image 1"），不可直接寫`asset-2026****`字串本身——跟既有[Seedance多圖prompt引用語法](reference_seedance_multi_image_prompt_reference_syntax.md)是同一套機制
+- **另一條免企業認證路徑（未整合，備查）**：「Trust model outputs as input assets」——同帳號30天內Seedance生成過的含臉輸出，可直接重複用作下一次生成輸入，不觸發審核（僅限ModelArk平台自己的輸出，跨平台/跨帳號/二次編輯後失效）
+
+## 待驗證風險（企業認證+自有虛構角色路徑，公司已安排執行，尚未有結果）
 1. **CreateAsset上傳審核是否等同於image-to-video的人臉分類器**：官方文件只確認Private Virtual Portrait Library"要求素材不像真人"，但未查到「上傳asset這一關的審核跟直接呼叫image-to-video那關是否用同一套/同樣寬鬆的分類器」。存在上傳時就被拒的可能性，**必須用實際角色圖跑一次CreateAsset實測**，不能只憑文件描述假設會過
 2. **Basic免費版(非Advanced Entry)是否也需要企業認證**：目前只確認到Advanced Creation Rights系列（含Entry免費版）都寫在同一個要求企業認證的Prerequisites段落下，未獨立查證最基礎的Basic免費層級（50asset/僅限控制台上傳）是否對個人帳號開放，若是則可能有更低成本的過渡方案
 3. `Moderation.Strategy: "Skip"`這個上傳時可跳過部分審核的官方參數，未查證是否涵蓋人臉真人判斷本身，濫用有違反服務條款風險
 
-## API使用方式（開通後）
+## API使用方式（自有虛構角色，企業認證開通後）
 `CreateAssetGroup`→`CreateAsset`上傳圖片(格式jpeg/png/webp/bmp/tiff/gif/heic/heif，寬高比0.4-2.5，長邊300-6000px，單張<30MB)→輪詢`GetAsset`等`Status`變`Active`→呼叫視頻生成API時用`asset://<asset_id>`格式的URI取代原圖URL。
 
 ## 不協助的類別（已向使用者明確劃界）
