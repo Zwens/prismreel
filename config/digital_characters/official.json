@@ -1,16 +1,606 @@
 {
-  "$comment": "BytePlus ModelArk official Digital Character Library entries, curated from the ModelArk Playground (Digital characters tab). Each asset_id resolves server-side by Ark via asset://<asset_id> in image_url.url — no upload, no company real-name authentication required. See AI 短片系統 Prismreel/memory/reference_seedance_real_person_face_restriction_and_asset_library.md",
+  "$comment": "BytePlus ModelArk official Digital Character Library entries, curated from the ModelArk Playground (Digital characters tab). Each asset_id resolves server-side by Ark via asset://<asset_id> in image_url.url -- no upload, no company real-name authentication required. thumbnail_path is a local copy (downloaded 2026-09-15) since BytePlus serves character thumbnails via 12-hour signed URLs that cannot be stored directly. See AI 短片系統 Prismreel/memory/reference_seedance_real_person_face_restriction_and_asset_library.md",
   "source_url": "https://ai.byteplus.com/ark/region:ap-southeast-1/experience/gen_video?model=dreamina-seedance-2-5-260628&projectName=default",
   "characters": [
     {
       "asset_id": "asset-20260225015229-d77t9",
       "group_id": "group-20260225015229-x7pgd",
-      "thumbnail_url": "https://p11-ark-imagex.byteimg.com/tos-cn-i-51fv3nh8ci/0b25c8d286e14a1e8c634c19f25dc738~tplv-51fv3nh8ci-avif-cp:q95.png",
+      "thumbnail_path": "thumbnails/asset-20260225015229-d77t9.jpg",
       "nationality": "United Kingdom",
       "gender": "male",
       "age": 22,
       "occupation": "Model",
       "biography": "The 22-year-old British male model is an extremely perfect fit for street-style high-fashion shoots. He has a habit of whistling softly while waiting for his turn on set, and always spends his leisure time on the terrace of his apartment tending to the dozen or so ornamental pigeons he keeps."
+    },
+    {
+      "asset_id": "asset-20260225015112-q9dvj",
+      "group_id": "group-20260225015112-gj5j9",
+      "thumbnail_path": "thumbnails/asset-20260225015112-q9dvj.jpg",
+      "nationality": "Netherlands",
+      "gender": "female",
+      "age": 22,
+      "occupation": "Succulent/Flower Grower",
+      "biography": "A 22-year-old Dutch woman works as a tulip grower. Every day, she is busy weeding and pruning in the flower fields until sunset. During her breaks on workdays, she holds up her action camera to film skylarks in the fields. She always hums Dutch folk ballads when picking flowers."
+    },
+    {
+      "asset_id": "asset-20260225015233-r2rfv",
+      "group_id": "group-20260225015233-wfnnz",
+      "thumbnail_path": "thumbnails/asset-20260225015233-r2rfv.jpg",
+      "nationality": "South Africa",
+      "gender": "female",
+      "age": 24,
+      "occupation": "Model",
+      "biography": "A 24-year-old South African female model often shoots urban-style high-fashion spreads in high-end office buildings in Johannesburg. She can never resist dabbing the edge of the lipstick on her lower lip when touching up her makeup. After wrapping up work on weekdays, she spends half an hour learning new makeup techniques from a makeup artist, and has filled an entire notebook with her study notes."
+    },
+    {
+      "asset_id": "asset-20260225015024-f7rvx",
+      "group_id": "group-20260225015024-lgbmg",
+      "thumbnail_path": "thumbnails/asset-20260225015024-f7rvx.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 68,
+      "occupation": "Beekeeper",
+      "biography": "The 68-year-old beekeeper has been keeping bees for half his life and knows all types of nectar sources inside out. Whenever he encounters newly blossomed nectar-producing flowers while working, he always picks one, presses it into the specimen notebook he carries with him, and notes down the corresponding honey aroma features. To date, he has filled two thick such notebooks."
+    },
+    {
+      "asset_id": "asset-20260225015156-2w2d5",
+      "group_id": "group-20260225015156-f49wt",
+      "thumbnail_path": "thumbnails/asset-20260225015156-2w2d5.jpg",
+      "nationality": "United Kingdom",
+      "gender": "female",
+      "age": 26,
+      "occupation": "Model",
+      "biography": "A 26-year-old British female model always perfectly captures the designer's intended expression for the pieces when walking in haute couture shows. She has a habit of raising her hand to adjust her shirt cuffs, and regularly heads to a workshop on weekends to learn traditional hand-sewing techniques."
+    },
+    {
+      "asset_id": "asset-20260225015209-lb6sf",
+      "group_id": "group-20260225015209-cz4fk",
+      "thumbnail_path": "thumbnails/asset-20260225015209-lb6sf.jpg",
+      "nationality": "China",
+      "gender": "male",
+      "age": 40,
+      "occupation": "Actor/Actress",
+      "biography": "The 40-year-old Chinese actor often portrays generals. Clad in heavy armor weighing dozens of pounds, he always films battle scenes on sets covered with yellow sand. He often subconsciously rubs his taut, furrowed brows, and during shooting breaks, he always sits on a prop box knitting wool scarves for his elementary school-aged daughter."
+    },
+    {
+      "asset_id": "asset-20260225014946-gdm92",
+      "group_id": "group-20260225014946-z8scj",
+      "thumbnail_path": "thumbnails/asset-20260225014946-gdm92.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 23,
+      "occupation": "Singer",
+      "biography": "The 23-year-old female singer often spends long hours in her recording studio, where cyber neon lights interweave with traditional Chinese tea sets, practicing singing electronic music infused with ancient Chinese charm. After each vocal practice session, she always takes her time savoring oolong tea slowly. In her spare time, she curls up on the sofa scrolling through Chinese-style short videos."
+    },
+    {
+      "asset_id": "asset-20260225015256-6vmff",
+      "group_id": "group-20260225015256-j6tdn",
+      "thumbnail_path": "thumbnails/asset-20260225015256-6vmff.jpg",
+      "nationality": "South Africa",
+      "gender": "male",
+      "age": 26,
+      "occupation": "Model",
+      "biography": "A 26-year-old South African male model spends most of his days in wildlife reserves shooting stunning wilderness-themed photos. After wrapping up work on workdays, he collects various feathers from birds and wild animals along the way, sorts them out, and repurposes them as decorative props for his shoots."
+    },
+    {
+      "asset_id": "asset-20260225015206-mvz6t",
+      "group_id": "group-20260225015206-9g8wl",
+      "thumbnail_path": "thumbnails/asset-20260225015206-mvz6t.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 21,
+      "occupation": "Actor/Actress",
+      "biography": "The 21-year-old Chinese actress often plays the role of a palace maid, so she always waits off-camera outside the palace hall set for her turn to film. When she wraps up work early on workdays, she always makes a detour to the trendy toy store in the commercial district to get the latest blind boxes."
+    },
+    {
+      "asset_id": "asset-20260410114236-8cdfz",
+      "group_id": "group-20260410114236-pn4bv",
+      "thumbnail_path": "thumbnails/asset-20260410114236-8cdfz.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 26,
+      "occupation": "Internet Celebrity/Streamer",
+      "biography": "A 26-year-old beauty blogger from Shanghai, Hangzhou, and Taiwan, she is an independent content creator with annual collaborations with three top international luxury beauty brands, and a benchmark KOL for Chinese-style makeup and styling. Her daily life involves either spending time in the studio working on high-fashion makeup projects, collaborating with luxury brand teams to develop and create limited-edition makeup lines, or being invited to fashion schools to share insights into the evolution of Chinese-style makeup aesthetics."
+    },
+    {
+      "asset_id": "asset-20260225015124-m44vk",
+      "group_id": "group-20260225015124-4fsjl",
+      "thumbnail_path": "thumbnails/asset-20260225015124-m44vk.jpg",
+      "nationality": "Indonesia",
+      "gender": "male",
+      "age": 36,
+      "occupation": "trainer",
+      "biography": "A 36-year-old Indonesian male diving instructor is based year-round at a coastal dive shop in Cape Town, South Africa. On workdays, he walks novice trainees through the essentials of diving. On weekends, he always carries professional equipment to uninhabited sea areas to shoot footage of underwater ecosystems. He has a little quirk of scratching the back of his head twice before speaking."
+    },
+    {
+      "asset_id": "asset-20260311022852-hjjp4",
+      "group_id": "group-20260311022852-7r6r7",
+      "thumbnail_path": "thumbnails/asset-20260311022852-hjjp4.jpg",
+      "nationality": "Canada",
+      "gender": "female",
+      "age": 35,
+      "occupation": "Clerk/Administrative Staff",
+      "biography": "A 35-year-old Canadian female office worker with thick, curled golden-brown eyelashes and a few light freckles on the tip of her nose, works as an administrative clerk in the Canadian manufacturing industry. She is always hunched over her cubicle covered with sticky notes, organizing materials and coordinating tasks, showing diligence and conscientiousness. She enjoys going camping in the countryside on weekends, and unconsciously bites her lower lip when checking reports. She has a cheerful and easy-going personality."
+    },
+    {
+      "asset_id": "asset-20260225015051-jgd5n",
+      "group_id": "group-20260225015051-7sc87",
+      "thumbnail_path": "thumbnails/asset-20260225015051-jgd5n.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 38,
+      "occupation": "Food Delivery Rider",
+      "biography": "A 38-year-old Chinese woman runs a small community noodle shop with her husband. She is in charge of both cooking noodles in the back kitchen and delivering takeout orders to nearby customers, which is quite convenient for her as all the orders are from the surrounding area. During quiet lulls with no customers, she does aerobics to the music played on the shop's speaker, and she can spin a small hula hoop around her waist incredibly steadily."
+    },
+    {
+      "asset_id": "asset-20260225014824-xclbt",
+      "group_id": "group-20260225014824-g8fd6",
+      "thumbnail_path": "thumbnails/asset-20260225014824-xclbt.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 28,
+      "occupation": "Internet Celebrity/Streamer",
+      "biography": "The 28-year-old woman is a beauty live streamer. She loves telling relatable, down-to-earth jokes during her live sessions. After work, she just hunkers down at home binge-watching historical costume dramas. On weekends, she often meets up with her besties for barbecue skewers and iced beer, and she's always forgetting to bring her house keys."
+    },
+    {
+      "asset_id": "asset-20260225015312-pnlv8",
+      "group_id": "group-20260225015312-d8l2t",
+      "thumbnail_path": "thumbnails/asset-20260225015312-pnlv8.jpg",
+      "nationality": "United States",
+      "gender": "male",
+      "age": 30,
+      "occupation": "Carpenter",
+      "biography": "A 30-year-old American male carpenter, whose knuckles are covered in fine calluses, runs a small woodworking studio. The solid wood furniture he crafts is both sturdy and stylishly designed. In his spare time, he sits in the studio making miniature models of vintage furniture, always subconsciously twirling the old wood carving knife in his hand that has been worn glossy and smooth from constant use."
+    },
+    {
+      "asset_id": "asset-20260225015148-l6hcm",
+      "group_id": "group-20260225015148-rjcvb",
+      "thumbnail_path": "thumbnails/asset-20260225015148-l6hcm.jpg",
+      "nationality": "Netherlands",
+      "gender": "female",
+      "age": 22,
+      "occupation": "Model",
+      "biography": "The 22-year-old Dutch female model always subconsciously touches the small mole behind her ear. She often stays at the photo studio rushing through shooting assignments. During work breaks, she would stare at the light reflectors, pondering vintage lighting techniques, and the lighting she adjusts always greatly improves the texture of the final photos."
+    },
+    {
+      "asset_id": "asset-20260225025518-4zcjd",
+      "group_id": "group-20260225025518-g6bl2",
+      "thumbnail_path": "thumbnails/asset-20260225025518-4zcjd.jpg",
+      "nationality": "Tanzania",
+      "gender": "female",
+      "age": 44,
+      "occupation": "Model",
+      "biography": "She is a 44-year-old female model from Tanzania. In her free time, she loves scrolling through short videos about folk customs from various regions the most. During rehearsal breaks, she always takes out the colorful beads she carries with her to string into small trinkets."
+    },
+    {
+      "asset_id": "asset-20260225022042-4vgpw",
+      "group_id": "group-20260225022042-wkvg8",
+      "thumbnail_path": "thumbnails/asset-20260225022042-4vgpw.jpg",
+      "nationality": "Hungary",
+      "gender": "male",
+      "age": 33,
+      "occupation": "Corporate Executive",
+      "biography": "This 33-year-old corporate executive is decisive and always the first to pinpoint the core of a project during meetings. After work, he loves nothing more than soaking in a hot spring resort on the outskirts of the city to unwind. On weekends, he also makes stew loaded with generous amounts of chili powder."
+    },
+    {
+      "asset_id": "asset-20260225014954-jbfpf",
+      "group_id": "group-20260225014954-pqsdc",
+      "thumbnail_path": "thumbnails/asset-20260225014954-jbfpf.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 24,
+      "occupation": "Singer",
+      "biography": "The 24-year-old young woman is the lead vocalist of a girl group. She spends most of her days in the dance studio fitted with bright yellow vinyl flooring, polishing the nuances of her vocal riffs in front of the full-length mirror, and catches up on sleep leaning against the back seat of the nanny van on her way to scheduled gigs.\nIn her free time, she loves lingering in vintage stores to hunt for old cassette tapes of 1990s K-pop groups. As soon as she wraps up work, she will drag her teammates out to eat ice jelly. She has a little habit of biting on straws in private, and never fails to slip lemon candies to all her teammates before rehearsals start."
+    },
+    {
+      "asset_id": "asset-20260225015115-jk46b",
+      "group_id": "group-20260225015115-5dzfk",
+      "thumbnail_path": "thumbnails/asset-20260225015115-jk46b.jpg",
+      "nationality": "China",
+      "gender": "male",
+      "age": 26,
+      "occupation": "Scientist/Researcher",
+      "biography": "A 26-year-old male ancient book restorer keeps his nails neatly trimmed short and even, and the pads of his fingers always carry a faint rice scent from the restoration paste he uses. On weekends, he loves rummaging through flea markets for tattered paper remnants from the Republican era to use as repair materials most. When flipping through books, he always has the habit of bracing the page corners with his finger pads to avoid creasing or damaging the pages."
+    },
+    {
+      "asset_id": "asset-20260225014930-kh5c8",
+      "group_id": "group-20260225014930-4vz9x",
+      "thumbnail_path": "thumbnails/asset-20260225014930-kh5c8.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 49,
+      "occupation": "University Professor",
+      "biography": "A 49-year-old female professor spends most of her time in her teaching and research office piled high with thread-bound ancient Chinese books, where she guides her students to collate and annotate texts. In her leisure time, she loves following spy dramas. Every Friday, she gets together with her long-time colleagues to savor aged white tea."
+    },
+    {
+      "asset_id": "asset-20260225015307-6z8lx",
+      "group_id": "group-20260225015307-bqwsc",
+      "thumbnail_path": "thumbnails/asset-20260225015307-6z8lx.jpg",
+      "nationality": "South Korea",
+      "gender": "male",
+      "age": 28,
+      "occupation": "Model",
+      "biography": "He is a 28-year-old South Korean street hip-hop model who often shoots against street graffiti walls. He always freestyles rap lyrics impromptu during work breaks, and unconsciously prods the inside of his cheek with the tip of his tongue when shooting."
+    },
+    {
+      "asset_id": "asset-20260225015242-nlzg7",
+      "group_id": "group-20260225015242-98gq8",
+      "thumbnail_path": "thumbnails/asset-20260225015242-nlzg7.jpg",
+      "nationality": "Japan",
+      "gender": "female",
+      "age": 35,
+      "occupation": "Model",
+      "biography": "A 35-year-old Japanese woman, she is a veteran kimono model who often does photoshoots in front of torii gates at Shinto shrines. While waiting for her shooting slots at work, she always sits backstage crocheting small yarn pendants."
+    },
+    {
+      "asset_id": "asset-20260225015101-2jdrh",
+      "group_id": "group-20260225015101-d46dv",
+      "thumbnail_path": "thumbnails/asset-20260225015101-2jdrh.jpg",
+      "nationality": "China",
+      "gender": "male",
+      "age": 40,
+      "occupation": "Corporate Executive",
+      "biography": "He is a 40-year-old man who works as the HR manager of an e-commerce company. In his spare time, he always goes skateboarding by the river. After nailing a landing, he habitually brushes the loose dust off his jeans. Even his subordinates born after 1995 often seek him out for skateboarding tips."
+    },
+    {
+      "asset_id": "asset-20260225015133-tlfsj",
+      "group_id": "group-20260225015133-6q8xb",
+      "thumbnail_path": "thumbnails/asset-20260225015133-tlfsj.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 22,
+      "occupation": "College Student",
+      "biography": "At 22, she works as a content operations intern at an internet company. She can often be found squatting beside her desk, gnawing on a plastic pen cap while sorting through materials. During weekday lunch breaks, she would flip through her collection of vintage 1970s and 1980s periodicals to excerpt their opening notes. She often forgets to fill in her attendance sheet, but the piles of old copy she has amassed always provide unexpected inspiration for topic selection."
+    },
+    {
+      "asset_id": "asset-20260225015049-zzsfp",
+      "group_id": "group-20260225015049-tg5pz",
+      "thumbnail_path": "thumbnails/asset-20260225015049-zzsfp.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 24,
+      "occupation": "Engineer",
+      "biography": "A 24-year-old female bomb disposal expert has a faint burn scar on the webbing between her left thumb and index finger, sustained from high heat during a bomb disposal mission. On weekends, her favorite pastime at home is assembling millimeter-precision metal mechanical puzzles. When stuck on a tricky problem, she always subconsciously taps her temple lightly with her knuckles."
+    },
+    {
+      "asset_id": "asset-20260225014958-fqpcg",
+      "group_id": "group-20260225014958-4gk8k",
+      "thumbnail_path": "thumbnails/asset-20260225014958-fqpcg.jpg",
+      "nationality": "China",
+      "gender": "male",
+      "age": 30,
+      "occupation": "Investment Banker/Fund Manager",
+      "biography": "A 30-year-old man works as a senior analyst at the research institute of a securities firm. When he gets a headache from revising research reports, he takes a short break to knead small ornaments out of ultra-light clay. Up till now, he has made over a dozen exclusive tiny hats for the little succulent on his desk."
+    },
+    {
+      "asset_id": "asset-20260225015244-4lwgt",
+      "group_id": "group-20260225015244-vvh9d",
+      "thumbnail_path": "thumbnails/asset-20260225015244-4lwgt.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 20,
+      "occupation": "Model",
+      "biography": "A 20-year-old Chinese female street model specializing in the guochao (Chinese domestic fashion trend) style. She usually shoots on location in old hutongs and at graffiti walls, and always stays cooped up at home practicing small regular script brush calligraphy in her spare time."
+    },
+    {
+      "asset_id": "asset-20260225015308-87pn5",
+      "group_id": "group-20260225015308-fp77z",
+      "thumbnail_path": "thumbnails/asset-20260225015308-87pn5.jpg",
+      "nationality": "Spain",
+      "gender": "female",
+      "age": 24,
+      "occupation": "Model",
+      "biography": "A 24-year-old Spanish female model is a regular at shooting locations of various fast fashion brands. She has a habit of blowing away stray fringe hairs that fall over her eyes, and always rounds up friends to play horror-themed escape rooms on weekends."
+    },
+    {
+      "asset_id": "asset-20260225015143-gblwp",
+      "group_id": "group-20260225015143-t9kgd",
+      "thumbnail_path": "thumbnails/asset-20260225015143-gblwp.jpg",
+      "nationality": "China",
+      "gender": "male",
+      "age": 25,
+      "occupation": "Courier",
+      "biography": "The 25-year-old works as a bulky item courier serving the science and technology park area. His palms are covered with fine calluses worn from constant heavy lifting. He can hoist even equipment weighing dozens of jin (a Chinese unit of weight equal to 0.5 kilograms) steadily with ease, and always twists his wrists twice to loosen his joints before moving any goods. On workdays, he usually spends half an hour practicing tai chi on the open ground of the courier station during his lunch break. He also makes a point of checking the ground first to make sure there are no obstacles before every carry."
+    },
+    {
+      "asset_id": "asset-20260225015032-9f59b",
+      "group_id": "group-20260225015032-hndhj",
+      "thumbnail_path": "thumbnails/asset-20260225015032-9f59b.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 24,
+      "occupation": "Beekeeper",
+      "biography": "This 24-year-old Chinese woman, dubbed the \"Post-95s Bee Girl\", moved to the mountains to raise Italian honeybees right after graduation. When she has free time, she often fidgets with the ends of her hair out of habit. While working, she uses an action camera to film her day-to-day beekeeping life and edits the clips into vlogs. Her social media account has already garnered over 100,000 like-minded followers."
+    },
+    {
+      "asset_id": "asset-20260225015240-wmzwz",
+      "group_id": "group-20260225015240-c8lfc",
+      "thumbnail_path": "thumbnails/asset-20260225015240-wmzwz.jpg",
+      "nationality": "South Korea",
+      "gender": "female",
+      "age": 32,
+      "occupation": "Scientist/Researcher",
+      "biography": "A 32-year-old South Korean university researcher spends nearly all his workdays holed up in the molecular biology lab running cell experiments. On weekends, he always hangs out at second-hand bookstores tucked away in all corners of the city, scouring for out-of-print professional reference books. He never finds it a hassle to wait for as long as half a month to get the exact edition he wants."
+    },
+    {
+      "asset_id": "asset-20260225014837-p8pc8",
+      "group_id": "group-20260225014837-cnpcb",
+      "thumbnail_path": "thumbnails/asset-20260225014837-p8pc8.jpg",
+      "nationality": "Denmark",
+      "gender": "male",
+      "age": 59,
+      "occupation": "University Professor",
+      "biography": "The 59-year-old Danish professor teaches his students about the connection between Viking heritage and Hygge culture in his minimalist office, where reproductions of Hans Christian Andersen's illustrations are mounted on the walls. He always brews cinnamon tea during class breaks. In his free time, he enjoys polishing his collection of bronze Viking badges, and makes a point of going fishing in the countryside every weekend."
+    },
+    {
+      "asset_id": "asset-20260225021122-8drxm",
+      "group_id": "group-20260225021122-lgxgv",
+      "thumbnail_path": "thumbnails/asset-20260225021122-8drxm.jpg",
+      "nationality": "United States",
+      "gender": "female",
+      "age": 22,
+      "occupation": "Tour Guide",
+      "biography": "She is a 22-year-old local tour guide. When she takes visitors around the historic Hollywood sites and Silicon Valley industrial parks, her commentary is well-informed and meticulous. In her spare time, she curls up in her rented apartment binge-watching local short sitcoms, and she also loves collecting unique souvenir badges from various attractions."
+    },
+    {
+      "asset_id": "asset-20260225014832-bdcj7",
+      "group_id": "group-20260225014832-h2lvw",
+      "thumbnail_path": "thumbnails/asset-20260225014832-bdcj7.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 75,
+      "occupation": "Fruit Farmer",
+      "biography": "This 75-year-old female fruit farmer has been growing Red Fuji apples in Yantai, Shandong for 48 years, and is the \"backbone\" of the village cooperative. She led the effort to build an apple cold storage for the village, and rallied young people to sell apples via livestreaming. Every day after finishing her work at the cooperative, she sits on the threshold mending shoes for the left-behind children in the village."
+    },
+    {
+      "asset_id": "asset-20260225014833-c86qr",
+      "group_id": "group-20260225014833-4dc7d",
+      "thumbnail_path": "thumbnails/asset-20260225014833-c86qr.jpg",
+      "nationality": "China",
+      "gender": "male",
+      "age": 47,
+      "occupation": "University Professor",
+      "biography": "This 47-year-old university professor has bookshelves in his teaching and research office stuffed full of thread-bound ancient Chinese books, and he cites classics extensively when delivering lectures. After work, he enjoys meeting up with long-time colleagues to discuss academic topics. In his free time, he will brew a cup of Keemun black tea and flip through old books, taking everything at a leisurely, unrushed pace."
+    },
+    {
+      "asset_id": "asset-20260225015336-q2429",
+      "group_id": "group-20260225015336-z86ck",
+      "thumbnail_path": "thumbnails/asset-20260225015336-q2429.jpg",
+      "nationality": "United States",
+      "gender": "male",
+      "age": 55,
+      "occupation": "Actor/Actress",
+      "biography": "A 55-year-old American actor plays the role of a royal governor responsible for trade taxation. The character often cross-checks tax entries against trade ledgers, taps the brass paperweight on his desk with his knuckles whenever he is mulling over a problem, and sorts out his personal collection of vintage trade-themed stamps from various countries during work breaks."
+    },
+    {
+      "asset_id": "asset-20260225015337-wllzx",
+      "group_id": "group-20260225015337-hsgt9",
+      "thumbnail_path": "thumbnails/asset-20260225015337-wllzx.jpg",
+      "nationality": "South Korea",
+      "gender": "female",
+      "age": 22,
+      "occupation": "Model",
+      "biography": "This 22-year-old South Korean model often shoots sample photos of workplace outfits in modern office spaces. She always films short videos sharing workplace dressing tips during work breaks, and subconsciously rolls up her shirt cuffs to one-third of the way up her forearm when taking styling test shots."
+    },
+    {
+      "asset_id": "asset-20260225014826-lr75n",
+      "group_id": "group-20260225014826-rzwdt",
+      "thumbnail_path": "thumbnails/asset-20260225014826-lr75n.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 75,
+      "occupation": "Fruit Farmer",
+      "biography": "This 75-year-old female fruit farmer has been growing Red Fuji apples in Yantai, Shandong for 48 years, and is the \"backbone\" of the village cooperative. She led the effort to build an apple cold storage for the village, and rallied young people to sell apples via livestreaming. Every day after finishing her work at the cooperative, she sits on the threshold mending shoes for the left-behind children in the village."
+    },
+    {
+      "asset_id": "asset-20260225015052-n7hp9",
+      "group_id": "group-20260225015052-2cpzw",
+      "thumbnail_path": "thumbnails/asset-20260225015052-n7hp9.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 48,
+      "occupation": "Corporate Executive",
+      "biography": "A 48-year-old Chinese woman works as a creative director at a 4A advertising agency. When going over creative proposals in her high-rise office in Shanghai, she can always spot content flaws at a glance. During lunch breaks on workdays, she always goes to a nearby park to photograph old buildings for inspiration. She often taps the desk gently while revising proposals."
+    },
+    {
+      "asset_id": "asset-20260225020905-kcj5m",
+      "group_id": "group-20260225020905-jngjk",
+      "thumbnail_path": "thumbnails/asset-20260225020905-kcj5m.jpg",
+      "nationality": "Italy",
+      "gender": "female",
+      "age": 23,
+      "occupation": "Singer",
+      "biography": "A 23-year-old resident singer based in Milan performs pop songs infused with Sicilian folk vibes at a livehouse tucked away in an old alley. During breaks, they squat in the corner munching on a Margherita pizza while scrolling through pet-themed short videos. When they get totally hyped up from singing, they will even hop onto the bar counter to tap their feet to the beat."
+    },
+    {
+      "asset_id": "asset-20260410164936-9h9q2",
+      "group_id": "group-20260410164936-jxrb7",
+      "thumbnail_path": "thumbnails/asset-20260410164936-9h9q2.jpg",
+      "nationality": "Sweden",
+      "gender": "female",
+      "age": 35,
+      "occupation": "Clerk/Cashier",
+      "biography": "She is a cashier at a convenience store in a small town. When shopping, she always secretly saves discounted items that are about to expire. On her days off, she plays bridge with her neighbors and loves to collect small ornaments with Viking patterns. She can do small calculations faster than a barcode scanner."
+    },
+    {
+      "asset_id": "asset-20260225015212-4tpnh",
+      "group_id": "group-20260225015212-trj2j",
+      "thumbnail_path": "thumbnails/asset-20260225015212-4tpnh.jpg",
+      "nationality": "Indonesia",
+      "gender": "male",
+      "age": 24,
+      "occupation": "Model",
+      "biography": "He is a 24-year-old Indonesian male model who often appears in fashion shoots for local Southeast Asian clothing collections. On weekends, he always lays out a felt mat at home to practice brush calligraphy. This hobby not only helps him strengthen his core muscles but also improves his aesthetic taste. His calligraphy boasts bold, powerful brushstrokes."
+    },
+    {
+      "asset_id": "asset-20260225015121-fd6b8",
+      "group_id": "group-20260225015121-jq7sq",
+      "thumbnail_path": "thumbnails/asset-20260225015121-fd6b8.jpg",
+      "nationality": "South Africa",
+      "gender": "female",
+      "age": 24,
+      "occupation": "Engineer",
+      "biography": "This 24-year-old South African woman is a diamond cutter at a workshop in Johannesburg. Her fingertips are always stained with fine emery grit. During work breaks, she always draws chibi figures on the sticky notes on her workbench. When operating the cutting equipment, she will subconsciously bite her lower lip while twisting the knob of the cutting table."
+    },
+    {
+      "asset_id": "asset-20260225020713-2lh7b",
+      "group_id": "group-20260225020713-r6jnz",
+      "thumbnail_path": "thumbnails/asset-20260225020713-2lh7b.jpg",
+      "nationality": "Sweden",
+      "gender": "female",
+      "age": 19,
+      "occupation": "Model",
+      "biography": "The 19-year-old girl works as a print model for a local minimalist homeware brand. She spends her workdays arranging cotton and linen fabrics in a studio with plain white walls and unadorned floors. She often suddenly strikes a pose with a Viking-style eyebrow raise. After getting off work, she curls up in her rental apartment binging Nordic suspense dramas, and never deliberately caters to the camera."
+    },
+    {
+      "asset_id": "asset-20260225015122-zvrnp",
+      "group_id": "group-20260225015122-g6g75",
+      "thumbnail_path": "thumbnails/asset-20260225015122-zvrnp.jpg",
+      "nationality": "China",
+      "gender": "male",
+      "age": 45,
+      "occupation": "Singer",
+      "biography": "The 45-year-old folk singer has thick calluses on the area between his thumb and index finger, formed over years of strumming the guitar. He performs regularly at livehouses. Every weekend, he goes to the small community square to sing classic old songs adapted into folk versions for local seniors. After each performance, he always squats on the steps and chats with the elderly men for half an hour."
+    },
+    {
+      "asset_id": "asset-20260225015021-bkztc",
+      "group_id": "group-20260225015021-q6n56",
+      "thumbnail_path": "thumbnails/asset-20260225015021-bkztc.jpg",
+      "nationality": "China",
+      "gender": "male",
+      "age": 67,
+      "occupation": "Chauffeur",
+      "biography": "A 67-year-old retired train driver can't help making the gesture of blowing a train whistle whenever he talks about anything related to trains. When on duty at the railway museum, he always shoots short popular science videos introducing different types of trains and posts them on social media."
+    },
+    {
+      "asset_id": "asset-20260410165137-hfswj",
+      "group_id": "group-20260410165137-mjvlz",
+      "thumbnail_path": "thumbnails/asset-20260410165137-hfswj.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 18,
+      "occupation": "Manicurist",
+      "biography": "She always speaks with a smile. She is an eighteen-year-old girl who runs a nail salon in an old alley. She often makes traditional Chinese-style nail designs for her customers, printed with delicate gold-style characters and light tea buds. In her spare time, she brews a cup of roasted green tea, tends to the shop, and flips through nail templates. After finishing work, she always invites her girlfriends to play mahjong for half an hour before going home."
+    },
+    {
+      "asset_id": "asset-20260410165914-gk8fl",
+      "group_id": "group-20260410165914-rc9gq",
+      "thumbnail_path": "thumbnails/asset-20260410165914-gk8fl.jpg",
+      "nationality": "Germany",
+      "gender": "female",
+      "age": 37,
+      "occupation": "Model",
+      "biography": "As a model who has been in the fashion industry for over ten years, she is always on time for photo shoots and is meticulous about every detail. After work, she loves to stay in her apartment with a crispy pork knuckle and ice-cold beer, and only after watching two episodes of a detective drama will she slowly remove her full makeup."
+    },
+    {
+      "asset_id": "asset-20260225025003-5tdv8",
+      "group_id": "group-20260225025003-r7pw5",
+      "thumbnail_path": "thumbnails/asset-20260225025003-5tdv8.jpg",
+      "nationality": "New Zealand",
+      "gender": "male",
+      "age": 70,
+      "occupation": "Photographer",
+      "biography": "He has traditional Polynesian spiral tattoos on his forearm. Slung over his shoulder is a film camera he has used for 40 years. Long before dawn, he hunkers down on the reefs to photograph canoes setting out to sea or church services.\nHe never misses a trip to the seaside tavern every Thursday, where he chugs fresh draft beer and plays dominoes with his old pals. If he loses a game, he has to stick up a selfie as a \"fine\"."
+    },
+    {
+      "asset_id": "asset-20260225015400-gn98l",
+      "group_id": "group-20260225015400-tvqmg",
+      "thumbnail_path": "thumbnails/asset-20260225015400-gn98l.jpg",
+      "nationality": "United States",
+      "gender": "male",
+      "age": 45,
+      "occupation": "Fisherman",
+      "biography": "A 45-year-old American male fisherman spends all year navigating his small fishing boat to catch cod in inshore waters. In his free time, he can often be found stroking his chin stubble as he sands wooden fishing boat models against old ship blueprints, and all of his finished works are displayed on the shelves inside his fishing shack."
+    },
+    {
+      "asset_id": "asset-20260225015015-n4gk2",
+      "group_id": "group-20260225015015-lvt6z",
+      "thumbnail_path": "thumbnails/asset-20260225015015-n4gk2.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 32,
+      "occupation": "University Professor",
+      "biography": "A 32-year-old female lecturer often stands behind the podium of her university's lecture theater. When delivering lectures on classical literature, she unconsciously twirls a fountain pen between her fingertips. In her spare time, she is an avid fan of ancient costume suspense dramas. Every Friday, she makes a point of rounding up her colleagues from the teaching and research office for a mahjong game, and she is exceptionally accurate at calculating the tiles."
+    },
+    {
+      "asset_id": "asset-20260225023351-g22m6",
+      "group_id": "group-20260225023351-2zm2k",
+      "thumbnail_path": "thumbnails/asset-20260225023351-g22m6.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 18,
+      "occupation": "Fruit Farmer",
+      "biography": "The girl living at the foot of Mount Cang has just turned eighteen. She spends every day pruning branches and thinning fruit in her family's orchard, so her knuckles are often smudged with fruit pulp and covered with fine calluses. When she calls it a day, she always invites her friends from the same village to play *Run Fast*, a popular local card game. In her spare time, she makes small tie-dye works, and sets up a little stall to sell them at the Third Month Fair, a well-known annual local market event."
+    },
+    {
+      "asset_id": "asset-20260225022356-rg8jv",
+      "group_id": "group-20260225022356-2hhk8",
+      "thumbnail_path": "thumbnails/asset-20260225022356-rg8jv.jpg",
+      "nationality": "Saudi Arabia",
+      "gender": "male",
+      "age": 54,
+      "occupation": "Photographer",
+      "biography": "As a photographer, he has spent years weaving through the crowds of Hajj pilgrims in Mecca and the Bedouin tents scattered across the desert. After wrapping up a shoot, he loves to hang out in time-honored tea houses playing Arabian card games. He laughs heartily when he loses, and can never bring himself to delete the flawed shots tucked away in his camera, saying all of them are fated gifts bestowed by the desert."
+    },
+    {
+      "asset_id": "asset-20260225014926-vdnsx",
+      "group_id": "group-20260225014926-w8t2r",
+      "thumbnail_path": "thumbnails/asset-20260225014926-vdnsx.jpg",
+      "nationality": "China",
+      "gender": "female",
+      "age": 24,
+      "occupation": "Model",
+      "biography": "The 24-year-old girl is a fairly well-known model who often shuttles between fashion shows and studios featuring a minimalist, high-end aesthetic. In her private life, she is obsessed with historical sweet romance dramas, and can even stay up three consecutive nights binge-watching them. She also has a habit of sipping some water before every runway show."
+    },
+    {
+      "asset_id": "asset-20260225015022-vb4jk",
+      "group_id": "group-20260225015022-cdl4x",
+      "thumbnail_path": "thumbnails/asset-20260225015022-vb4jk.jpg",
+      "nationality": "China",
+      "gender": "male",
+      "age": 40,
+      "occupation": "Food Delivery Rider",
+      "biography": "At 40, he still bears thick calluses on his hands, left from all the wok tossing he did back when he cooked Cantonese cuisine. Now he makes claypot rice and delivers orders all by himself. He adds two scoops of his homemade pickled sour cowpeas to every serving, and has a habit of pressing the crispy rice crust twice with the back of the ladle when dishing up the rice. On weekends, he always slings a fishing rod over his shoulder, heads to the riverside on the city outskirts, and sits there for the whole afternoon."
+    },
+    {
+      "asset_id": "asset-20260410173900-6vf9z",
+      "group_id": "group-20260410173900-7v95s",
+      "thumbnail_path": "thumbnails/asset-20260410173900-6vf9z.jpg",
+      "nationality": "Brazil",
+      "gender": "female",
+      "age": 18,
+      "occupation": "Customer Service Representative",
+      "biography": "An 18-year-old girl works as a customer service representative in a cross-border e-commerce business. She always asks customers about their experiences abroad, spends her free time in her rented room watching funny Latin American short videos after get off work, and goes to the community on weekends to learn Capoeira. Her knees are often covered with cartoon bandages."
+    },
+    {
+      "asset_id": "asset-20260225015329-b5rl4",
+      "group_id": "group-20260225015329-g76g9",
+      "thumbnail_path": "thumbnails/asset-20260225015329-b5rl4.jpg",
+      "nationality": "United States",
+      "gender": "female",
+      "age": 27,
+      "occupation": "Actor/Actress",
+      "biography": "This 27-year-old American actress often rehearses her blocking on set. In her spare time, she loves studying the food plating techniques of maids from different eras to polish the details of her characters."
+    },
+    {
+      "asset_id": "asset-20260225015149-88fxq",
+      "group_id": "group-20260225015149-7h5ww",
+      "thumbnail_path": "thumbnails/asset-20260225015149-88fxq.jpg",
+      "nationality": "Japan",
+      "gender": "male",
+      "age": 28,
+      "occupation": "Model",
+      "biography": "A 28-year-old Japanese male model, who has been walking local Tokyo ready-to-wear shows for years, is extremely meticulous at work. His fingers always subconsciously rub the stitching on garment necklines. When waiting backstage for his turn to walk the runway, he always squats in the corner collecting show styling sketches of different brands. Over the six years since he entered the industry, he has filled three entire thick notebooks with these sketches."
+    },
+    {
+      "asset_id": "asset-20260225015131-qkx9l",
+      "group_id": "group-20260225015131-67dvs",
+      "thumbnail_path": "thumbnails/asset-20260225015131-qkx9l.jpg",
+      "nationality": "Nigeria",
+      "gender": "female",
+      "age": 38,
+      "occupation": "Doctor",
+      "biography": "The 38-year-old Nigerian female community doctor always keeps orange hard candies for children in her pockets. No one ever complains about her slow pace when she sees patients at the community clinic. At work, she draws cartoon waterproof stickers for kids who cooperate well during their checkups. When coaxing little kids, she can never resist gently scraping the tip of their noses."
     }
   ]
 }

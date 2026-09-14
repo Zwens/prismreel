@@ -74,7 +74,12 @@ OFFICIAL_CHARACTERS_PATH = (
 def _load_official_characters() -> List[OfficialDigitalCharacter]:
     with open(OFFICIAL_CHARACTERS_PATH, encoding="utf-8") as fh:
         data = json.load(fh)
-    return [OfficialDigitalCharacter(**entry) for entry in data["characters"]]
+    characters = []
+    for entry in data["characters"]:
+        thumbnail_path = entry.pop("thumbnail_path")
+        entry["thumbnail_url"] = f"/files/digital-characters/{Path(thumbnail_path).name}"
+        characters.append(OfficialDigitalCharacter(**entry))
+    return characters
 
 
 def list_official_characters():

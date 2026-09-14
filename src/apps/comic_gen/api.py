@@ -227,6 +227,16 @@ os.makedirs("output/playground/images", exist_ok=True)
 os.makedirs("output/playground/videos", exist_ok=True)
 app.mount("/files/playground", StaticFiles(directory="output/playground"), name="files_playground")
 
+# Official Digital Character Library thumbnails (local copies -- BytePlus
+# serves these via 12-hour signed URLs, so they're downloaded once and
+# committed rather than proxied live). See config/digital_characters/official.json.
+os.makedirs("config/digital_characters/thumbnails", exist_ok=True)
+app.mount(
+    "/files/digital-characters",
+    StaticFiles(directory="config/digital_characters/thumbnails"),
+    name="files_digital_characters",
+)
+
 
 # Initialize pipeline
 pipeline = ComicGenPipeline()
