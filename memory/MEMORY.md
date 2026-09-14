@@ -2,6 +2,10 @@
 
 > 進入本專案工作時 Read 載入。工作區共用規則見根目錄 CLAUDE.md。
 
+## AI影片生成 API gotcha
+- [**🔄 Seedance真人臉孔審核機制+虛擬肖像庫vs真人肖像庫的正確選用**](reference_seedance_real_person_face_restriction_and_asset_library.md) — 目前所有人打同一支API、image_url直傳原圖網址被誤判真人；已確認走Private Virtual Portrait Library+公司企業認證路徑，**公司已安排驗證中**（CreateAsset實測+免費版門檻），未有結果前不確定最終可行
+- [**Seedance多圖prompt引用語法：@Image1僅限Playground網頁UI，API呼叫需用`Image 1`格式**](reference_seedance_multi_image_prompt_reference_syntax.md) — 待辦：搜尋後端組prompt程式碼位置並修正驗證
+
 ## 圖片抓取踩坑（i2v首末幀 / R2V多圖標籤）
 - [**✅ BytePlus/Ark首末幀本機檔案未接上provider_media半成品 + ShotCard.tsx三處精確比對重演assetTags.ts已修過的bug（已合併main並部署2026-09-11）**](feedback_byteplus_img_path_and_shotcard_exact_match_bugs_2026-09-11.md) — catalog已定義`byteplus_ark_image_url` mode但dispatch層從未實作；`resolveAssetByTagName`容錯函式只在一處被呼叫，其餘三處各自重寫精確比對
 - [**✅ 同分支首版遺漏R2V的ref_image_urls，本機上傳圖片直送Ark造成400（已補修復並部署2026-09-11）**](feedback_r2v_ref_image_urls_bypassed_resolver_2026-09-11.md) — 2026-09-11使用者實測R2V生成400才發現；同一`generate()`函式內多個分支吃本機路徑時，修一處要順手查其他分支是否也漏；VPS容器重啟後已用3次live驗證確認本機路徑正確轉OSS簽名URL且可公開存取
