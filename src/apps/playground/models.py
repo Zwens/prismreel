@@ -51,6 +51,16 @@ class PlaygroundTemplate(BaseModel):
     updated_at: str = Field(..., description="Last update timestamp in ISO 8601 format")
 
 
+class OfficialDigitalCharacter(BaseModel):
+    asset_id: str = Field(..., description="Ark asset id; referenced as asset://<asset_id>")
+    group_id: str = Field(..., description="Ark asset group id")
+    nationality: str = Field(..., description="Character tag: nationality")
+    gender: str = Field(..., description="Character tag: gender")
+    age: int = Field(..., description="Character tag: age")
+    occupation: str = Field(..., description="Character tag: occupation")
+    biography: str = Field(..., description="Character biography shown in ModelArk Playground")
+
+
 class GenerateRequest(BaseModel):
     mode: PlaygroundMode = Field(..., description="Generation mode")
     model_id: str = Field(..., description="Model identifier from model catalog")

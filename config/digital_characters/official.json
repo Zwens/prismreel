@@ -1,0 +1,15 @@
+{
+  "$comment": "BytePlus ModelArk official Digital Character Library entries, curated from the ModelArk Playground (Digital characters tab). Each asset_id resolves server-side by Ark via asset://<asset_id> in image_url.url — no upload, no company real-name authentication required. See AI 短片系統 Prismreel/memory/reference_seedance_real_person_face_restriction_and_asset_library.md",
+  "source_url": "https://ai.byteplus.com/ark/region:ap-southeast-1/experience/gen_video?model=dreamina-seedance-2-5-260628&projectName=default",
+  "characters": [
+    {
+      "asset_id": "asset-20260225015229-d77t9",
+      "group_id": "group-20260225015229-x7pgd",
+      "nationality": "United Kingdom",
+      "gender": "male",
+      "age": 22,
+      "occupation": "Model",
+      "biography": "The 22-year-old British male model is an extremely perfect fit for street-style high-fashion shoots. He has a habit of whistling softly while waiting for his turn on set, and always spends his leisure time on the terrace of his apartment tending to the dozen or so ornamental pigeons he keeps."
+    }
+  ]
+}
