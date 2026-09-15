@@ -84,6 +84,7 @@ export default function AssetPickerModal({
   const [officialCharacters, setOfficialCharacters] = useState<OfficialDigitalCharacterResponse[]>([]);
   const [officialLoading, setOfficialLoading] = useState(false);
   const [officialError, setOfficialError] = useState<string | null>(null);
+  const [failedThumbnails, setFailedThumbnails] = useState<Set<string>>(new Set());
   const showOfficialTab = accept === 'all' || accept === 'image';
 
   // -------------------------------------------------------------------------
@@ -353,6 +354,7 @@ export default function AssetPickerModal({
                         const path = `asset://${char.asset_id}`;
                         const isSelected = selected === path;
                         const label = `${char.nationality} · ${char.occupation}`;
+                        const thumbnailFailed = failedThumbnails.has(char.asset_id);
 
                         return (
                           <button
@@ -377,12 +379,24 @@ export default function AssetPickerModal({
                               }
                             `}
                           >
-                            <img
-                              src={char.thumbnail_url}
-                              alt={label}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
+                            {thumbnailFailed ? (
+                              <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 px-2 text-center">
+                                <UserRound className="w-6 h-6 text-text-muted" />
+                                <span className="text-[0.625rem] text-text-muted line-clamp-2">
+                                  {label}
+                                </span>
+                              </div>
+                            ) : (
+                              <img
+                                src={char.thumbnail_url}
+                                alt={label}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                onError={() =>
+                                  setFailedThumbnails((prev) => new Set(prev).add(char.asset_id))
+                                }
+                              />
+                            )}
 
                             {isSelected && (
                               <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
