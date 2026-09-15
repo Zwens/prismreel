@@ -3,7 +3,8 @@
 > 進入本專案工作時 Read 載入。工作區共用規則見根目錄 CLAUDE.md。
 
 ## AI影片生成 API gotcha
-- [**✅ 官方角色庫480/480縮圖全補齊+前端載入根因修復（2026-09-15第三輪，已結案）**](feedback_official_character_thumbnail_root_cause_no_virtualization_permanent_fallback_2026-09-15.md) — 剩餘30筆並非下架（用ModelArk搜尋欄位驗證100%命中），且前端`AssetPickerModal.tsx`一次性渲染480個`<img>`+onError永久不重試才是使用者持續看到大量假人icon的真正根因；已改IntersectionObserver按需載入+失敗重試2次，live驗證`svgFallback`穩定為0
+- [**🔄 官方角色庫縮圖：前端載入根因已修復+480/480筆已補齊，但剩6筆雜湊重複待查（2026-09-15第四輪）**](feedback_official_character_thumbnail_root_cause_no_virtualization_permanent_fallback_2026-09-15.md) — ①前端`AssetPickerModal.tsx`一次性渲染480個img+onError永久不重試已改IntersectionObserver+重試2次根治 ②30筆縮圖第一次用ModelArk搜尋框抓取時搜尋框卡死導致全部抓成同一張圖，已改用React fiber `item.SID`比對`group_id`直接滾動列表收集，commit`c5db137`修正並live驗證雜湊一致 ③殘留待辦：另外3對(6筆)更早批次縮圖雜湊也重複，滾動300+張未找到，暫不確定是ModelArk庫真雙胞胎還是同款錯誤，下次用同一手法接續
+- [**🔴🔴 用ModelArk搜尋框抓取asset_id對應圖片前，必須驗證`fetch(url)`雜湊或完整src是否真變化，不能只看alt文字或單次截圖**](feedback_official_character_thumbnail_root_cause_no_virtualization_permanent_fallback_2026-09-15.md) — 搜尋框連續程式化輸入會卡死在第一次結果不刷新，`img.alt`殘留值會誤導判斷；改用React fiber讀`item.SID`比對`group_id`+滾動預設列表最可靠
 - [**✅ Seedance官方Digital Character Library兩個回報問題已修復（2026-09-15）**](feedback_official_character_library_thumbnail_and_count_fix_2026-09-15.md) — ①第1張破圖根因是CF edge cache卡住部署前的404 ②角色庫遠不止60筆，重新滾動抓取拿到510筆並上線；已live驗證
 - [**🔴 CF edge cache會卡住部署視窗內的404，源站已修好仍持續破圖**](feedback_cf_edge_cache_stale_404_during_deploy_window.md) — 判斷方法+CF Dashboard自訂清除SOP；排查「檔案明明存在卻404」優先比對此案例
 - [**🔴 排查前端fallback UI「大量顯示假人icon」時，先確認fallback是否保留原`<img>`標籤**](feedback_official_character_thumbnail_root_cause_no_virtualization_permanent_fallback_2026-09-15.md) — `querySelectorAll('img')`統計會漏掉已onError切換成SVG的卡片，改用`button[title]`比對`querySelector('img')`有無存在才準確
