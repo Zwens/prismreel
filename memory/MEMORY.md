@@ -3,9 +3,10 @@
 > 進入本專案工作時 Read 載入。工作區共用規則見根目錄 CLAUDE.md。
 
 ## AI影片生成 API gotcha
+- [**✅ 官方角色庫480/480縮圖全補齊+前端載入根因修復（2026-09-15第三輪，已結案）**](feedback_official_character_thumbnail_root_cause_no_virtualization_permanent_fallback_2026-09-15.md) — 剩餘30筆並非下架（用ModelArk搜尋欄位驗證100%命中），且前端`AssetPickerModal.tsx`一次性渲染480個`<img>`+onError永久不重試才是使用者持續看到大量假人icon的真正根因；已改IntersectionObserver按需載入+失敗重試2次，live驗證`svgFallback`穩定為0
 - [**✅ Seedance官方Digital Character Library兩個回報問題已修復（2026-09-15）**](feedback_official_character_library_thumbnail_and_count_fix_2026-09-15.md) — ①第1張破圖根因是CF edge cache卡住部署前的404 ②角色庫遠不止60筆，重新滾動抓取拿到510筆並上線；已live驗證
 - [**🔴 CF edge cache會卡住部署視窗內的404，源站已修好仍持續破圖**](feedback_cf_edge_cache_stale_404_during_deploy_window.md) — 判斷方法+CF Dashboard自訂清除SOP；排查「檔案明明存在卻404」優先比對此案例
-- [**🔄 官方角色庫縮圖補齊：450/480張，剩餘30筆疑似線上庫已下架（2026-09-15第二輪）**](project_thumbnail_backfill_handoff_2026-09-15.md) — commit d7999ce已push；本輪重大突破：ModelArk圖片URL是無需瀏覽器session的簽名直連，改用Blob匯出JSON+Node批次fetch+PIL批次壓縮，330張下載從330次瀏覽器呼叫降到近乎0次；剩餘30筆15輪滾動0命中，下次接手先確認是否比照上輪30筆從official.json移除
+- [**🔴 排查前端fallback UI「大量顯示假人icon」時，先確認fallback是否保留原`<img>`標籤**](feedback_official_character_thumbnail_root_cause_no_virtualization_permanent_fallback_2026-09-15.md) — `querySelectorAll('img')`統計會漏掉已onError切換成SVG的卡片，改用`button[title]`比對`querySelector('img')`有無存在才準確
 - [**🔴 claude-in-chrome連續fetch+Blob下載2-3次後渲染器會凍結，需單張逐一執行**](feedback_browser_blob_download_freezes_renderer_after_few_calls_2026-09-15.md) — 根因未查證，僅找到迂迴解法；批量抓縮圖/附件時工具呼叫數與張數1:1，量大時先評估是否可行
 - [**Seedance官方Digital Character Library整合技術參考**](reference_seedance_real_person_face_restriction_and_asset_library.md) — 不需企業認證的官方數位角色庫，asset://<asset_id>直通image_url.url、真實API呼叫已驗證成功生成影片；企業認證+自有虛構角色路徑仍待公司驗證中，見全文「已確認可行路徑」章節
 - [**✅ Seedance多圖prompt引用語法：@Image1僅限Playground網頁UI，API呼叫需用`Image 1`格式（2026-09-14已修復並上線）**](reference_seedance_multi_image_prompt_reference_syntax.md) — 查證後發現後端無自動組裝邏輯，根因是前端PromptInput.tsx缺提示；已補UI提示三語言版本並驗證live bundle生效
