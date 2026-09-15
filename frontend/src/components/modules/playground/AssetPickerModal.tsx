@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Image, Film, Loader2, UserRound } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -62,6 +62,78 @@ const modalVariants = {
 };
 
 const springModal = { type: 'spring' as const, stiffness: 400, damping: 30 };
+
+// ---------------------------------------------------------------------------
+// CharacterThumbnail — loads only when scrolled near view (avoids hundreds
+// of simultaneous requests when the official character grid renders), and
+// retries a transient failure (CDN edge-cache race, brief network blip)
+// before giving up and showing the text fallback card.
+// ---------------------------------------------------------------------------
+
+const THUMBNAIL_MAX_RETRIES = 2;
+const THUMBNAIL_RETRY_DELAY_MS = 800;
+
+function CharacterThumbnail({
+  src,
+  alt,
+  onGiveUp,
+}: {
+  src: string;
+  alt: string;
+  onGiveUp: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [gaveUp, setGaveUp] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const handleError = useCallback(() => {
+    setAttempt((prev) => {
+      const next = prev + 1;
+      if (next > THUMBNAIL_MAX_RETRIES) {
+        setGaveUp(true);
+        onGiveUp();
+        return prev;
+      }
+      window.setTimeout(() => setAttempt(next), THUMBNAIL_RETRY_DELAY_MS * next);
+      return prev;
+    });
+  }, [onGiveUp]);
+
+  if (!shouldLoad || gaveUp) {
+    return <div ref={containerRef} className="w-full h-full" />;
+  }
+
+  const retrySrc = attempt === 0 ? src : `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`;
+
+  return (
+    <div ref={containerRef} className="w-full h-full">
+      <img
+        key={attempt}
+        src={retrySrc}
+        alt={alt}
+        className="w-full h-full object-cover"
+        onError={handleError}
+      />
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -387,12 +459,10 @@ export default function AssetPickerModal({
                                 </span>
                               </div>
                             ) : (
-                              <img
+                              <CharacterThumbnail
                                 src={char.thumbnail_url}
                                 alt={label}
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                                onError={() =>
+                                onGiveUp={() =>
                                   setFailedThumbnails((prev) => new Set(prev).add(char.asset_id))
                                 }
                               />
