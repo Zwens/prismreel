@@ -138,23 +138,15 @@ function CompletedCard({ generation, outputIndex, onGenerateVideo, onOpenDetail 
   const toggleFeatured = usePlaygroundStore((s) => s.toggleFeatured);
   const featured = output ? featuredByGen[generation.id] === output.id : false;
 
-  const handleDownload = useCallback(async (e: React.MouseEvent) => {
+  const handleDownload = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (!mediaUrl) return;
-    try {
-      const resp = await fetch(mediaUrl);
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = output?.media_path?.split('/').pop() || 'download';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch {
-      window.open(mediaUrl, '_blank');
-    }
+    const a = document.createElement('a');
+    a.href = mediaUrl;
+    a.download = output?.media_path?.split('/').pop() || 'download';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }, [mediaUrl, output]);
 
   const handleSaveToLibrary = useCallback(async (e: React.MouseEvent) => {
