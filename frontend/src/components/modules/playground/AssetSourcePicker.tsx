@@ -158,10 +158,16 @@ function CharacterThumbnail({
 // Animation
 // ---------------------------------------------------------------------------
 
-const overlayVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
+// pointerEvents flips the instant the exit transition starts (it isn't an
+// interpolated property), so a stalled/backgrounded-tab exit animation can
+// never leave an invisible overlay still eating clicks underneath it.
+const overlayVariants = {
+  hidden: { opacity: 0, pointerEvents: 'none' as const },
+  visible: { opacity: 1, pointerEvents: 'auto' as const },
+};
 const modalVariants = {
-  hidden: { opacity: 0, scale: 0.95, y: 16 },
-  visible: { opacity: 1, scale: 1, y: 0 },
+  hidden: { opacity: 0, scale: 0.95, y: 16, pointerEvents: 'none' as const },
+  visible: { opacity: 1, scale: 1, y: 0, pointerEvents: 'auto' as const },
 };
 const springModal = { type: 'spring' as const, stiffness: 400, damping: 30 };
 
