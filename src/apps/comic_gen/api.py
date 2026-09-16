@@ -176,6 +176,21 @@ try:
 except Exception as e:  # never block startup on a cosmetic check
     logger.warning(f"[STARTUP] BGM asset verification skipped: {e}")
 
+# Official Digital Character Library thumbnails (local copies -- BytePlus
+# serves these via 12-hour signed URLs, so they're downloaded once and
+# committed rather than proxied live). See config/digital_characters/official.json.
+# Must be registered before the broad "/files" mount below -- Starlette's
+# Mount matching is registration-order, not longest-prefix, so a later,
+# more specific mount is unreachable once a broader one already claims the
+# prefix (verified: the broader mount's own 404 wins, the router never
+# falls through to try the next candidate).
+os.makedirs("config/digital_characters/thumbnails", exist_ok=True)
+app.mount(
+    "/files/digital-characters",
+    StaticFiles(directory="config/digital_characters/thumbnails"),
+    name="files_digital_characters",
+)
+
 # Mount static files with multiple aliases to handle plural/singular inconsistencies
 # Legacy paths in projects.json often use 'outputs/videos' or 'outputs/assets'
 app.mount("/files/outputs/videos", StaticFiles(directory="output/video"), name="files_outputs_videos")
@@ -224,7 +239,6 @@ app.add_middleware(
 os.makedirs("output/playground/images", exist_ok=True)
 os.makedirs("output/playground/videos", exist_ok=True)
 app.mount("/files/playground", StaticFiles(directory="output/playground"), name="files_playground")
-
 
 # Initialize pipeline
 pipeline = ComicGenPipeline()

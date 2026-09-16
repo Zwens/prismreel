@@ -2,6 +2,19 @@
 
 > 進入本專案工作時 Read 載入。工作區共用規則見根目錄 CLAUDE.md。
 
+## 影片下載功能
+- [**✅ 生成歷史列表頁下載按鈕fetch+blob阻塞主執行緒導致大影片下載卡死無提示（已修復並部署，2026-09-15）**](feedback_fetch_blob_download_blocks_main_thread_large_video_2026-09-15.md) — `ResultCard.tsx`改為與`DetailPanel.tsx`一致的原生`a href download`寫法；commit`7e8338e`已同步GitLab+GitHub並live驗證；排查時claude-in-chrome的javascript_tool內fetch回傳值與真實network log矛盾，以後者為準
+
+## AI影片生成 API gotcha
+- [**✅ 官方角色庫縮圖：全部問題已結案，480/480筆live驗證通過（2026-09-15第五輪最終結案）**](feedback_official_character_thumbnail_root_cause_no_virtualization_permanent_fallback_2026-09-15.md) — ①前端`AssetPickerModal.tsx`一次性渲染480個img+onError永久不重試已改IntersectionObserver+重試2次根治 ②30筆縮圖第一次抓取搜尋框卡死全抓成同一張圖，改用React fiber `item.SID`比對`group_id`修正，commit`c5db137` ③殘留3對(6筆)雜湊重複經搜尋框單次查詢+SHA-256雜湊比對確認是ModelArk資料庫本身重複記錄，非抓取錯誤，無需修復 ④額外發現30筆live 404是CF edge cache卡舊快照（源站早已正常），CF Dashboard Purge Everything後480/480全數複驗200通過
+- [**🔴🔴 用ModelArk搜尋框抓取asset_id對應圖片前，必須驗證`fetch(url)`雜湊或完整src是否真變化，不能只看alt文字或單次截圖**](feedback_official_character_thumbnail_root_cause_no_virtualization_permanent_fallback_2026-09-15.md) — 搜尋框連續程式化輸入會卡死在第一次結果不刷新，`img.alt`殘留值會誤導判斷；改用React fiber讀`item.SID`比對`group_id`+滾動預設列表最可靠
+- [**✅ Seedance官方Digital Character Library兩個回報問題已修復（2026-09-15）**](feedback_official_character_library_thumbnail_and_count_fix_2026-09-15.md) — ①第1張破圖根因是CF edge cache卡住部署前的404 ②角色庫遠不止60筆，重新滾動抓取拿到510筆並上線；已live驗證
+- [**🔴 CF edge cache會卡住部署視窗內的404，源站已修好仍持續破圖**](feedback_cf_edge_cache_stale_404_during_deploy_window.md) — 判斷方法+CF Dashboard自訂清除SOP；排查「檔案明明存在卻404」優先比對此案例
+- [**🔴 排查前端fallback UI「大量顯示假人icon」時，先確認fallback是否保留原`<img>`標籤**](feedback_official_character_thumbnail_root_cause_no_virtualization_permanent_fallback_2026-09-15.md) — `querySelectorAll('img')`統計會漏掉已onError切換成SVG的卡片，改用`button[title]`比對`querySelector('img')`有無存在才準確
+- [**🔴 claude-in-chrome連續fetch+Blob下載2-3次後渲染器會凍結，需單張逐一執行**](feedback_browser_blob_download_freezes_renderer_after_few_calls_2026-09-15.md) — 根因未查證，僅找到迂迴解法；批量抓縮圖/附件時工具呼叫數與張數1:1，量大時先評估是否可行
+- [**Seedance官方Digital Character Library整合技術參考**](reference_seedance_real_person_face_restriction_and_asset_library.md) — 不需企業認證的官方數位角色庫，asset://<asset_id>直通image_url.url、真實API呼叫已驗證成功生成影片；企業認證+自有虛構角色路徑仍待公司驗證中，見全文「已確認可行路徑」章節
+- [**✅ Seedance多圖prompt引用語法：@Image1僅限Playground網頁UI，API呼叫需用`Image 1`格式（2026-09-14已修復並上線）**](reference_seedance_multi_image_prompt_reference_syntax.md) — 查證後發現後端無自動組裝邏輯，根因是前端PromptInput.tsx缺提示；已補UI提示三語言版本並驗證live bundle生效
+
 ## 圖片抓取踩坑（i2v首末幀 / R2V多圖標籤）
 - [**✅ BytePlus/Ark首末幀本機檔案未接上provider_media半成品 + ShotCard.tsx三處精確比對重演assetTags.ts已修過的bug（已合併main並部署2026-09-11）**](feedback_byteplus_img_path_and_shotcard_exact_match_bugs_2026-09-11.md) — catalog已定義`byteplus_ark_image_url` mode但dispatch層從未實作；`resolveAssetByTagName`容錯函式只在一處被呼叫，其餘三處各自重寫精確比對
 - [**✅ 同分支首版遺漏R2V的ref_image_urls，本機上傳圖片直送Ark造成400（已補修復並部署2026-09-11）**](feedback_r2v_ref_image_urls_bypassed_resolver_2026-09-11.md) — 2026-09-11使用者實測R2V生成400才發現；同一`generate()`函式內多個分支吃本機路徑時，修一處要順手查其他分支是否也漏；VPS容器重啟後已用3次live驗證確認本機路徑正確轉OSS簽名URL且可公開存取
@@ -45,6 +58,9 @@
 
 ## 多租戶登入系統操作
 - [**🔴 邀請碼兌換入口是獨立`/redeem?code=`頁面，非登入頁**](feedback_invite_redeem_ui_location_unverified_wrong_guidance.md) — 2026-09-10首次踩坑，未查前端就講錯操作位置，被使用者當場糾正
+
+## Line B 視覺重構（HANDOFF.md，2026-09-16 現況核實+補齊）
+- [**✅ HANDOFF.md macOS路徑已更新對應本機Windows repo；四項下一步待辦核實：①④已完成、③本輪補齊、②資產庫二級篩選欄仍待決策**](feedback_ui_change_visual_verify_blocked_by_login_pattern_reuse_accepted_2026-09-16.md) — commit `b1b8297`（文件更新）+`31b2c38`（Modal對齊）+`16e0d88`（狀態更新）；本機dev環境現需登入無法自動化截圖，複用`PlaygroundPage.tsx`已驗證pattern跳過視覺驗收
 
 ## 導覽命名重構（2026-09-12，解決ComicGen/Playground命名落差誤導）
 - [**✅ 「資料遺失」誤判已結案：查證時混淆ComicGen(漫畫生成)與Playground(影片生成)兩條獨立產線**](feedback_output_data_loss_was_misdiagnosis_two_pipelines_confused_2026-09-12.md) — 2026-09-11判定的VPS資料遺失，2026-09-12重查證實Playground資料從未丟失，只是查錯路徑；已推動導覽重新命名根治

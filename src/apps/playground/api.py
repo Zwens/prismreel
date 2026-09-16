@@ -1,9 +1,12 @@
 """Playground API routes — generation, history, and template management."""
 
+import json
 import os
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from functools import lru_cache
+from pathlib import Path
+from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File
 
@@ -13,6 +16,7 @@ from .models import (
     EstimateCostRequest,
     EstimateCostResponse,
     GenerateRequest,
+    OfficialDigitalCharacter,
     PlaygroundTemplate,
     SaveToLibraryRequest,
     UpdateTemplateRequest,
@@ -59,6 +63,37 @@ def estimate_cost(request: EstimateCostRequest, _user=Depends(auth.require_login
 
 router.add_api_route("/generate", generate, methods=["POST"])
 router.add_api_route("/estimate-cost", estimate_cost, methods=["POST"])
+
+# ---------------------------------------------------------------------------
+# Official digital characters (Ark Digital Character Library)
+# ---------------------------------------------------------------------------
+
+OFFICIAL_CHARACTERS_PATH = (
+    Path(__file__).resolve().parents[3] / "config" / "digital_characters" / "official.json"
+)
+
+
+@lru_cache(maxsize=1)
+def _load_official_characters() -> List[OfficialDigitalCharacter]:
+    with open(OFFICIAL_CHARACTERS_PATH, encoding="utf-8") as fh:
+        data = json.load(fh)
+    characters = []
+    for entry in data["characters"]:
+        thumbnail_path = entry.pop("thumbnail_path")
+        entry["thumbnail_url"] = f"/files/digital-characters/{Path(thumbnail_path).name}"
+        characters.append(OfficialDigitalCharacter(**entry))
+    return characters
+
+
+def list_official_characters():
+    """Curated BytePlus ModelArk Digital Character Library entries.
+
+    Static, hand-verified list (not a live Ark API call) — see
+    config/digital_characters/official.json for provenance."""
+    return _load_official_characters()
+
+
+router.add_api_route("/official-characters", list_official_characters, methods=["GET"])
 
 # ---------------------------------------------------------------------------
 # History

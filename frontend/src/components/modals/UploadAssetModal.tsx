@@ -129,12 +129,12 @@ export default function UploadAssetModal({
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.95, opacity: 0 }}
-                    className="bg-elevated rounded-xl p-6 w-full max-w-lg mx-4 shadow-lg border border-glass-border"
+                    className="glass-panel atelier-card rounded-xl p-6 w-full max-w-lg mx-4 shadow-lg border border-glass-border"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold text-foreground">
+                        <h2 className="font-display atelier-display text-xl font-semibold text-foreground">
                             {t("uploadTitle", { name: assetName })}
                         </h2>
                         <button

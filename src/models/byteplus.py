@@ -303,13 +303,15 @@ class BytePlusVideoModel(VideoGenModel):
     def _resolve_ark_image_url(self, ref: Optional[str], *, model_name: Optional[str]) -> Optional[str]:
         """Resolve a first/last-frame reference to a URL Ark can fetch.
 
-        ``ref`` may already be a remote URL (pass through) or a local file
-        path (upload to OSS and sign). Ark's `image_url.url` field only
-        accepts a fetchable URL, unlike Kling's vendor path which takes
-        base64."""
+        ``ref`` may already be a remote URL (pass through), an Ark asset URI
+        (pass through — official Digital Character Library / authorized
+        real-person assets resolve server-side by Ark itself, never touch
+        OSS), or a local file path (upload to OSS and sign). Ark's
+        `image_url.url` field only accepts a fetchable URL or `asset://`,
+        unlike Kling's vendor path which takes base64."""
         if not ref:
             return None
-        if ref.startswith(("http://", "https://")):
+        if ref.startswith(("http://", "https://", "asset://")):
             return ref
         resolved = resolve_media_input(
             ref,
