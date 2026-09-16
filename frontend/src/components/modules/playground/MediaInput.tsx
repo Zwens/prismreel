@@ -3,7 +3,8 @@
 import { useRef, useState, useCallback } from 'react';
 import { ImagePlus, Film, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { API_URL, playgroundApi } from '@/lib/api';
+import { playgroundApi } from '@/lib/api';
+import { mediaUrl } from '@/lib/mediaPath';
 import { usePlaygroundStore, type PlaygroundMode } from './usePlaygroundStore';
 import AssetSourcePicker from './AssetSourcePicker';
 
@@ -93,7 +94,7 @@ function isVideoPath(path: string): boolean {
 // in store state + the generate payload — only the <img>/<video> src is resolved.
 function resolveMediaSrc(path: string): string {
   if (/^(https?:|blob:|data:|\/)/i.test(path)) return path;
-  return `${API_URL}/files/${path.replace(/^output\//, '')}`;
+  return mediaUrl(path);
 }
 
 // ---------------------------------------------------------------------------

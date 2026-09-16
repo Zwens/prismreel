@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Image as ImageIcon, Film, Loader2, Layers, LayoutGrid, Clapperboard, History } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { API_URL, api, playgroundApi } from '@/lib/api';
+import { api, playgroundApi } from '@/lib/api';
+import { mediaUrl } from '@/lib/mediaPath';
 import { resolveAssetMedia } from '@/lib/assetImageResolver';
 
 // ---------------------------------------------------------------------------
@@ -48,9 +49,7 @@ function fileName(path: string): string {
 /** Display URL. Mirrors lib/utils getAssetUrl — OSS records are already
  *  absolute, locally produced ones are output-relative. */
 function toDisplayUrl(path: string): string {
-  if (/^(https?:|blob:|data:)/.test(path)) return path;
-  const clean = path.replace(/^\/+/, '').replace(/^output\//, '');
-  return `${API_URL}/files/${clean}`;
+  return mediaUrl(path);
 }
 
 /** Characters / scenes / props of one container, in a stable display order. */

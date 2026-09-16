@@ -132,6 +132,20 @@ def to_project_media_ref(abs_path: str, *, root: str = "output") -> str:
     return os.path.relpath(abs_path, root).replace(os.sep, "/").replace("\\", "/")
 
 
+def to_posix_media_path(path: str) -> str:
+    """'/'-separated form of a media path that is about to leave the backend.
+
+    Unlike to_project_media_ref this keeps the path as-is apart from the
+    separator — callers that hand the frontend an ``output/...``-prefixed path
+    (playground uploads, generation outputs, depth clips) need the prefix
+    preserved. It only exists because os.path.join produces
+    ``output\\playground\\uploads\\x.png`` on Windows, and the frontend builds
+    its /files URL by stripping a literal ``output/`` prefix: a backslash ref
+    survives the strip and 404s as a broken image.
+    """
+    return str(path).replace(os.sep, "/").replace("\\", "/")
+
+
 def is_remote_media_ref(value: str) -> bool:
     return classify_media_ref(value) in {MEDIA_REF_REMOTE_URL, MEDIA_REF_BLOB_URL}
 
