@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { X, Star, Download, Sparkles, Loader2, Globe } from "lucide-react";
 import type { Character, Scene, Prop, ImageAsset, ImageVariant } from "@/store/projectStore";
 import { characterImageAsset } from "@/lib/characterImage";
+import { mediaUrl } from "@/lib/mediaPath";
 import { api } from "@/lib/api";
 import { toast } from "@/store/toastStore";
 import { coverGradient, GRAIN_URL } from "@/lib/atelierCover";
@@ -161,7 +162,8 @@ export default function AssetInspector({
   }, []);
 
   const activeVariant = variants.find((v) => v.id === activeVariantId) ?? variants[0];
-  const heroUrl = activeVariant?.url ?? fallbackUrl(asset, type);
+  const rawHeroUrl = activeVariant?.url ?? fallbackUrl(asset, type);
+  const heroUrl = rawHeroUrl ? mediaUrl(rawHeroUrl) : undefined;
   const prompt = activeVariant?.prompt_used ?? "";
 
   // 元数据行（数据驱动）：先放现有四项，再在字段存在时追加 SEED/MODEL/SIZE。
@@ -384,7 +386,7 @@ export default function AssetInspector({
                       on ? "ring-2 ring-primary" : "ring-1 ring-glass-border"
                     }`}
                   >
-                    <img src={v.url} alt={t("variantAlt")} className="w-full h-full object-cover" />
+                    <img src={mediaUrl(v.url)} alt={t("variantAlt")} className="w-full h-full object-cover" />
                   </button>
                 );
               })}

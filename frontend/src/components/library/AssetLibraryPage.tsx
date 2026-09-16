@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import type { Series, Project, Character, Scene, Prop, ImageAsset } from "@/store/projectStore";
 import { toast } from "@/store/toastStore";
 import { characterImageUrl, characterVariants } from "@/lib/characterImage";
+import { mediaUrl } from "@/lib/mediaPath";
 import { coverGradient, GRAIN_URL } from "@/lib/atelierCover";
 import { rovingKeyDown } from "@/lib/a11y";
 import AssetInspector from "./AssetInspector";
@@ -44,15 +45,23 @@ interface RenderGroup {
   items: RenderItem[];
 }
 
-/** 取图：character 走 characterImageUrl（reference_sheet→full_body→legacy）；scene/prop 用 image_asset。 */
+/** 取图：character 走 characterImageUrl（reference_sheet→full_body→legacy）；scene/prop 用 image_asset。
+ *  后端存的是相对路径（"uploads/x.png" / "output/assets/character/x.png"），必须经 mediaUrl() 转成
+ *  浏览器可加载的绝对 URL——否则 <img src> 会相对当前页面地址解析，直接 404。 */
 function getImageUrl(asset: Character | Scene | Prop, type: AssetTab): string | undefined {
-  if (type === "characters") return characterImageUrl(asset as Character);
-  const a = asset as Scene | Prop;
-  if (a.image_asset?.variants?.length) {
-    const sel = a.image_asset.variants.find((v) => v.id === a.image_asset?.selected_id);
-    return sel?.url || a.image_asset.variants[0]?.url;
+  let raw: string | undefined;
+  if (type === "characters") {
+    raw = characterImageUrl(asset as Character);
+  } else {
+    const a = asset as Scene | Prop;
+    if (a.image_asset?.variants?.length) {
+      const sel = a.image_asset.variants.find((v) => v.id === a.image_asset?.selected_id);
+      raw = sel?.url || a.image_asset.variants[0]?.url;
+    } else {
+      raw = a.image_url;
+    }
   }
-  return a.image_url;
+  return raw ? mediaUrl(raw) : undefined;
 }
 
 function variantCount(asset: Character | Scene | Prop, type: AssetTab): number {
