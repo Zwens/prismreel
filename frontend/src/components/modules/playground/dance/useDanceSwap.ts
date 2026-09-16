@@ -48,6 +48,10 @@ export interface DanceSwapState {
   sheet: StepResult | null;
 
   // step 2 — motion reference
+  /** 'extract': server runs depth extraction on the uploaded clip (needs a
+   *  GPU). 'upload': the uploaded clip already IS the depth/motion video,
+   *  skip extraction and feed it straight to compose. */
+  motionSource: 'extract' | 'upload';
   danceVideoPath: string | null;
   depthCapability: PlaygroundDepthCapability | null;
   depthJob: PlaygroundDepthJob | null;
@@ -76,6 +80,7 @@ const INITIAL: DanceSwapState = {
   sheetError: null,
   sheet: null,
 
+  motionSource: 'extract',
   danceVideoPath: null,
   depthCapability: null,
   depthJob: null,
@@ -222,8 +227,16 @@ export function useDanceSwap() {
 
   const uploadDanceVideo = useCallback(
     (file: File) =>
-      playgroundApi.uploadVideo(file).then((r) => patch({ danceVideoPath: r.path, depthJob: null, depthState: 'idle' })),
-    [patch],
+      playgroundApi.uploadVideo(file).then((r) =>
+        patch({
+          danceVideoPath: r.path,
+          depthJob: null,
+          // In 'upload' mode the clip already IS the motion video — no
+          // extraction to run, so it's ready as soon as it lands.
+          depthState: state.motionSource === 'upload' ? 'done' : 'idle',
+        }),
+      ),
+    [patch, state.motionSource],
   );
 
   const generateDepth = useCallback(async () => {

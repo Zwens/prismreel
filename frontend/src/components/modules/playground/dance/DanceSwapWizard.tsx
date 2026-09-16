@@ -250,111 +250,164 @@ export default function DanceSwapWizard() {
       </StepShell>
 
       {/* ---------------- step 2: motion reference ---------------- */}
-      <StepShell index={2} title={t('step2.title')} hint={t('step2.hint')} done={state.depthState === 'done'}>
-        {cap && (
-          <div className="flex items-start gap-2 rounded-[12px] border border-glass-border bg-glass px-3 py-2.5">
-            <Cpu size={14} className="mt-0.5 shrink-0 text-text-muted" aria-hidden="true" />
-            <div className="flex flex-col gap-0.5">
-              <span className="font-mono text-[0.6875rem] text-foreground">
-                {cap.device === 'cuda'
-                  ? t('step2.gpu', { name: cap.gpu_name ?? '', vram: cap.vram_gb ?? 0 })
-                  : t('step2.cpu')}
-              </span>
-              {cap.device === 'cuda' && (
-                <span className="font-mono text-[0.625rem] text-text-muted">
-                  {t('step2.plan', {
-                    encoder: cap.recommended_encoder ?? '',
-                    size: cap.recommended_input_size ?? 0,
-                  })}
-                </span>
-              )}
-              {cap.warning && (
-                <span className="font-mono text-[0.625rem] text-warning">{cap.warning}</span>
-              )}
-            </div>
-          </div>
-        )}
-
-        <FilePick
-          label={t('step2.danceVideo')}
-          accept="video/*"
-          value={state.danceVideoPath}
-          onPick={(f) => void actions.uploadDanceVideo(f)}
-          icon={<Upload size={20} aria-hidden="true" />}
-        />
-
-        <div className="grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1.5">
-            <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
-              {t('step2.maxSeconds')}
-            </span>
-            <input
-              type="number"
-              min={1}
-              value={state.maxSeconds ?? ''}
-              placeholder={t('step2.wholeClip')}
-              onChange={(e) => patch({ maxSeconds: e.target.value ? Number(e.target.value) : null })}
-              className="rounded-[12px] border border-border-subtle bg-surface-inset px-3 py-2 font-mono text-[0.75rem] text-foreground outline-none focus:border-primary"
-            />
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
-              {t('step2.targetFps')}
-            </span>
-            <input
-              type="number"
-              min={1}
-              value={state.targetFps ?? ''}
-              placeholder={t('step2.sourceFps')}
-              onChange={(e) => patch({ targetFps: e.target.value ? Number(e.target.value) : null })}
-              className="rounded-[12px] border border-border-subtle bg-surface-inset px-3 py-2 font-mono text-[0.75rem] text-foreground outline-none focus:border-primary"
-            />
-          </label>
+      <StepShell index={2} title={t('step2.title')} hint={t('step2.hint')} done={motionReady}>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => patch({ motionSource: 'extract' })}
+            className={`rounded-[12px] border px-3 py-2 font-mono text-[0.6875rem] transition-colors cursor-pointer ${
+              state.motionSource === 'extract'
+                ? 'border-primary bg-primary/10 text-foreground'
+                : 'border-border-subtle bg-surface-inset text-text-muted'
+            }`}
+          >
+            {t('step2.sourceExtract')}
+          </button>
+          <button
+            type="button"
+            onClick={() => patch({ motionSource: 'upload' })}
+            className={`rounded-[12px] border px-3 py-2 font-mono text-[0.6875rem] transition-colors cursor-pointer ${
+              state.motionSource === 'upload'
+                ? 'border-primary bg-primary/10 text-foreground'
+                : 'border-border-subtle bg-surface-inset text-text-muted'
+            }`}
+          >
+            {t('step2.sourceUpload')}
+          </button>
         </div>
-        <p className="font-mono text-[0.625rem] leading-relaxed text-text-muted">
-          {t('step2.fpsHint')}
-        </p>
 
-        <RunButton
-          onClick={() => void actions.generateDepth()}
-          disabled={!state.danceVideoPath}
-          running={state.depthState === 'running'}
-          label={t('step2.run')}
-          runningLabel={state.depthJob?.message || t('step2.running')}
-        />
-
-        {state.depthState === 'running' && state.depthJob && (
-          <div className="h-1 overflow-hidden rounded-full bg-surface-inset">
-            <div
-              className="h-full bg-primary transition-[width]"
-              style={{ width: `${Math.round((state.depthJob.progress || 0) * 100)}%` }}
-            />
-          </div>
-        )}
-
-        {state.depthError && <ErrorBox message={state.depthError} />}
-
-        {state.depthState === 'done' && state.depthJob?.output_path && (
-          <div className="flex flex-col gap-2">
-            <video
-              src={mediaUrl(state.depthJob.output_path)}
-              className="w-full rounded-[14px] border border-border-subtle"
-              controls
-              muted
-              playsInline
-            />
-            {depthInfo && (
-              <p className="font-mono text-[0.625rem] text-text-muted">
-                {t('step2.stats', {
-                  frames: depthInfo.frames ?? 0,
-                  seconds: depthInfo.elapsed_sec ?? 0,
-                  encoder: depthInfo.encoder ?? '',
-                  size: depthInfo.input_size ?? 0,
-                  vram: depthInfo.peak_vram_gb ?? 0,
-                })}
-              </p>
+        {state.motionSource === 'extract' ? (
+          <>
+            {cap && (
+              <div className="flex items-start gap-2 rounded-[12px] border border-glass-border bg-glass px-3 py-2.5">
+                <Cpu size={14} className="mt-0.5 shrink-0 text-text-muted" aria-hidden="true" />
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-mono text-[0.6875rem] text-foreground">
+                    {cap.available === false
+                      ? t('step2.noGpuOnServer')
+                      : cap.device === 'cuda'
+                        ? t('step2.gpu', { name: cap.gpu_name ?? '', vram: cap.vram_gb ?? 0 })
+                        : t('step2.cpu')}
+                  </span>
+                  {cap.device === 'cuda' && (
+                    <span className="font-mono text-[0.625rem] text-text-muted">
+                      {t('step2.plan', {
+                        encoder: cap.recommended_encoder ?? '',
+                        size: cap.recommended_input_size ?? 0,
+                      })}
+                    </span>
+                  )}
+                  {cap.warning && (
+                    <span className="font-mono text-[0.625rem] text-warning">{cap.warning}</span>
+                  )}
+                </div>
+              </div>
             )}
-          </div>
+
+            <FilePick
+              label={t('step2.danceVideo')}
+              accept="video/*"
+              value={state.danceVideoPath}
+              onPick={(f) => void actions.uploadDanceVideo(f)}
+              icon={<Upload size={20} aria-hidden="true" />}
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1.5">
+                <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
+                  {t('step2.maxSeconds')}
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  value={state.maxSeconds ?? ''}
+                  placeholder={t('step2.wholeClip')}
+                  onChange={(e) => patch({ maxSeconds: e.target.value ? Number(e.target.value) : null })}
+                  className="rounded-[12px] border border-border-subtle bg-surface-inset px-3 py-2 font-mono text-[0.75rem] text-foreground outline-none focus:border-primary"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
+                  {t('step2.targetFps')}
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  value={state.targetFps ?? ''}
+                  placeholder={t('step2.sourceFps')}
+                  onChange={(e) => patch({ targetFps: e.target.value ? Number(e.target.value) : null })}
+                  className="rounded-[12px] border border-border-subtle bg-surface-inset px-3 py-2 font-mono text-[0.75rem] text-foreground outline-none focus:border-primary"
+                />
+              </label>
+            </div>
+            <p className="font-mono text-[0.625rem] leading-relaxed text-text-muted">
+              {t('step2.fpsHint')}
+            </p>
+
+            <RunButton
+              onClick={() => void actions.generateDepth()}
+              disabled={!state.danceVideoPath || cap?.available === false}
+              running={state.depthState === 'running'}
+              label={t('step2.run')}
+              runningLabel={state.depthJob?.message || t('step2.running')}
+            />
+
+            {state.depthState === 'running' && state.depthJob && (
+              <div className="h-1 overflow-hidden rounded-full bg-surface-inset">
+                <div
+                  className="h-full bg-primary transition-[width]"
+                  style={{ width: `${Math.round((state.depthJob.progress || 0) * 100)}%` }}
+                />
+              </div>
+            )}
+
+            {state.depthError && <ErrorBox message={state.depthError} />}
+
+            {state.depthState === 'done' && state.depthJob?.output_path && (
+              <div className="flex flex-col gap-2">
+                <video
+                  src={mediaUrl(state.depthJob.output_path)}
+                  className="w-full rounded-[14px] border border-border-subtle"
+                  controls
+                  muted
+                  playsInline
+                />
+                {depthInfo && (
+                  <p className="font-mono text-[0.625rem] text-text-muted">
+                    {t('step2.stats', {
+                      frames: depthInfo.frames ?? 0,
+                      seconds: depthInfo.elapsed_sec ?? 0,
+                      encoder: depthInfo.encoder ?? '',
+                      size: depthInfo.input_size ?? 0,
+                      vram: depthInfo.peak_vram_gb ?? 0,
+                    })}
+                  </p>
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="font-mono text-[0.625rem] leading-relaxed text-text-muted">
+              {t('step2.sourceUploadHint')}
+            </p>
+            <FilePick
+              label={t('step2.depthVideo')}
+              accept="video/*"
+              value={state.danceVideoPath}
+              onPick={(f) => void actions.uploadDanceVideo(f)}
+              icon={<Upload size={20} aria-hidden="true" />}
+            />
+            {state.danceVideoPath && (
+              <video
+                src={mediaUrl(state.danceVideoPath)}
+                className="w-full rounded-[14px] border border-border-subtle"
+                controls
+                muted
+                playsInline
+              />
+            )}
+          </>
         )}
       </StepShell>
 
