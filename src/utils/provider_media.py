@@ -141,6 +141,16 @@ def _resolve_vendor_url_mode(
         signed_url = _upload_then_sign(local_path, uploader)
         if signed_url:
             return _resolved(signed_url, source_ref=ref, media_ref_type=ref_type)
+        if uploader is not None and getattr(uploader, "is_configured", False):
+            # Credentials were fine and we did try — the upload itself failed
+            # (timeout, permissions, network). Saying "configure OSS" here sends
+            # the reader to audit a .env that was never the problem; the real
+            # cause is in the oss_utils log line right above this one.
+            raise ValueError(
+                f"{provider_label} vendor {modality} input needs an OSS upload, and the upload failed "
+                f"for '{ref}' (local path: {local_path}). See the OSS error logged just before this — "
+                "a slow link can exceed OSS_TIMEOUT_SECONDS."
+            )
 
     raise ValueError(
         f"{provider_label} vendor {modality} input requires a URL-compatible media source. "

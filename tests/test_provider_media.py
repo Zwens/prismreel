@@ -131,3 +131,33 @@ def test_resolver_does_not_mutate_input_refs(tmp_path):
     assert len(resolved) == 1
     # vendor kling 走纯 base64（无 data: 前缀），断言只关心"入参没被改动"这条不变量。
     assert resolved[0].value
+
+
+class FailingUploader(FakeUploader):
+    """Configured, reachable enough to try, but the PUT does not land.
+
+    This is the shape of a slow network hitting the OSS request timeout: the
+    credentials are fine, so telling the user to "configure OSS" sends them to
+    audit a .env that was never the problem.
+    """
+
+    def upload_file(self, local_path: str, sub_path: str = "", custom_filename=None):
+        return None
+
+
+def test_a_failed_upload_is_not_reported_as_missing_oss_configuration(tmp_path):
+    _write_output_png(tmp_path, "uploads/ref.png")
+
+    with pytest.raises(ValueError) as excinfo:
+        resolve_media_input(
+            "uploads/ref.png",
+            model_name="vidu-q3",
+            backend="vendor",
+            modality="image",
+            uploader=FailingUploader(configured=True),
+            project_root=str(tmp_path),
+        )
+
+    message = str(excinfo.value)
+    assert "upload" in message.lower()
+    assert "Configure OSS" not in message

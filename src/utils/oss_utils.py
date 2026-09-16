@@ -13,6 +13,27 @@ DEFAULT_OSS_BASE_PATH = "prismreel"
 SIGN_URL_EXPIRES_DISPLAY = 7200  # 2 hours for frontend display
 SIGN_URL_EXPIRES_API = 1800      # 30 minutes for AI API calls
 
+# oss2 hands this to requests as a scalar timeout, so it bounds the connect and
+# the wait for the PUT response — and OSS only responds once the whole body is
+# in. It is therefore an upload deadline, not a handshake deadline: at 5s a
+# sub-megabyte video failed on an ordinary connection. Measured on this link:
+# ~50-80 KB/s to oss-cn-hangzhou, i.e. 13.6s for a 675 KB depth clip — so the
+# budget has to be generous enough for a multi-megabyte reference file.
+DEFAULT_OSS_TIMEOUT_SECONDS = 120
+
+
+def get_oss_timeout() -> int:
+    """Upload/request deadline in seconds. ``OSS_TIMEOUT_SECONDS`` overrides."""
+    raw = os.getenv("OSS_TIMEOUT_SECONDS")
+    if not raw:
+        return DEFAULT_OSS_TIMEOUT_SECONDS
+    try:
+        value = int(float(raw))
+    except (TypeError, ValueError):
+        logger.warning("Invalid OSS_TIMEOUT_SECONDS=%r; using %ss", raw, DEFAULT_OSS_TIMEOUT_SECONDS)
+        return DEFAULT_OSS_TIMEOUT_SECONDS
+    return value if value > 0 else DEFAULT_OSS_TIMEOUT_SECONDS
+
 
 def is_oss_configured() -> bool:
     """Check if OSS is properly configured."""
@@ -104,10 +125,10 @@ class OSSImageUploader:
                 self.auth = oss2.Auth(self.access_key_id, self.access_key_secret)
                 # Set connection timeout to prevent long blocking on network issues
                 self.bucket = oss2.Bucket(
-                    self.auth, 
-                    self.endpoint, 
+                    self.auth,
+                    self.endpoint,
                     self.bucket_name,
-                    connect_timeout=5  # 5 seconds connection timeout
+                    connect_timeout=get_oss_timeout()
                 )
                 logger.info(f"OSS initialized: bucket={self.bucket_name}, base_path={self.base_path}")
                 print(f"DEBUG: OSS init - SUCCESS: bucket={self.bucket_name}")
