@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  api,
   playgroundApi,
   type PlaygroundDepthCapability,
   type PlaygroundDepthJob,
@@ -39,6 +40,10 @@ export interface StepResult {
 
 export interface DanceSwapState {
   // step 1 — character sheet
+  /** 'generate': AI creates the three-view sheet from the uploaded portrait.
+   *  'upload': the user already has a three-view sheet, skip generation and
+   *  use the uploaded image directly. */
+  sheetSource: 'generate' | 'upload';
   portraitPath: string | null;
   outfitRefPath: string | null;
   outfit: string;
@@ -72,6 +77,7 @@ export interface DanceSwapState {
 }
 
 const INITIAL: DanceSwapState = {
+  sheetSource: 'generate',
   portraitPath: null,
   outfitRefPath: null,
   outfit: '',
@@ -223,6 +229,21 @@ export function useDanceSwap() {
     }
   }, [state.portraitPath, state.outfitRefPath, state.outfit, state.sheetStyle, patch, runGeneration]);
 
+  /** 'upload' mode: the user already has a three-view sheet. There's no
+   *  generation behind it, so generationId/outputId are empty — saveToLibrary
+   *  branches on that to skip the history-lookup save path. */
+  const uploadSheet = useCallback(
+    (file: File) =>
+      playgroundApi.uploadMedia(file).then((r) =>
+        patch({
+          sheetState: 'done',
+          sheetError: null,
+          sheet: { generationId: '', outputId: '', mediaPath: r.path, mediaType: 'image' },
+        }),
+      ),
+    [patch],
+  );
+
   // -- step 2 -----------------------------------------------------------
 
   const uploadDanceVideo = useCallback(
@@ -322,9 +343,18 @@ export function useDanceSwap() {
   // -- library ----------------------------------------------------------
 
   const saveToLibrary = useCallback(
-    (result: StepResult, category: string) =>
-      playgroundApi.saveToLibrary(result.generationId, result.outputId, category),
-    [],
+    (result: StepResult, category: string) => {
+      // Uploaded (not generated) media has no history entry to save-from —
+      // register it as a library asset directly instead.
+      if (!result.generationId || !result.outputId) {
+        return api.createLibraryAsset(category, {
+          name: state.outfit || '换装角色',
+          image_url: result.mediaPath,
+        });
+      }
+      return playgroundApi.saveToLibrary(result.generationId, result.outputId, category);
+    },
+    [state.outfit],
   );
 
   const reset = useCallback(() => setState(INITIAL), []);
@@ -338,6 +368,7 @@ export function useDanceSwap() {
       uploadPortrait,
       uploadOutfitRef,
       generateSheet,
+      uploadSheet,
       uploadDanceVideo,
       generateDepth,
       compose,

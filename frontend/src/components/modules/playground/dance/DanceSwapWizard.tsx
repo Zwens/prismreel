@@ -156,96 +156,153 @@ export default function DanceSwapWizard() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-6 py-6">
       {/* ---------------- step 1: character sheet ---------------- */}
       <StepShell index={1} title={t('step1.title')} hint={t('step1.hint')} done={state.sheetState === 'done'}>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FilePick
-            label={t('step1.portrait')}
-            accept="image/*"
-            value={state.portraitPath}
-            onPick={(f) => void actions.uploadPortrait(f)}
-            icon={<ImagePlus size={20} aria-hidden="true" />}
-          />
-          <FilePick
-            label={t('step1.outfitRef')}
-            accept="image/*"
-            value={state.outfitRefPath}
-            onPick={(f) => void actions.uploadOutfitRef(f)}
-            icon={<Shirt size={20} aria-hidden="true" />}
-          />
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => patch({ sheetSource: 'generate' })}
+            className={`rounded-[12px] border px-3 py-2 font-mono text-[0.6875rem] transition-colors cursor-pointer ${
+              state.sheetSource === 'generate'
+                ? 'border-primary bg-primary/10 text-foreground'
+                : 'border-border-subtle bg-surface-inset text-text-muted'
+            }`}
+          >
+            {t('step1.sourceGenerate')}
+          </button>
+          <button
+            type="button"
+            onClick={() => patch({ sheetSource: 'upload' })}
+            className={`rounded-[12px] border px-3 py-2 font-mono text-[0.6875rem] transition-colors cursor-pointer ${
+              state.sheetSource === 'upload'
+                ? 'border-primary bg-primary/10 text-foreground'
+                : 'border-border-subtle bg-surface-inset text-text-muted'
+            }`}
+          >
+            {t('step1.sourceUpload')}
+          </button>
         </div>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
-            {t('step1.outfitLabel')}
-          </span>
-          <input
-            value={state.outfit}
-            onChange={(e) => patch({ outfit: e.target.value })}
-            placeholder={t('step1.outfitPlaceholder')}
-            className="rounded-[12px] border border-border-subtle bg-surface-inset px-3 py-2.5 font-mono text-[0.75rem] text-foreground outline-none focus:border-primary"
-          />
-        </label>
-
-        <div className="flex flex-col gap-1.5">
-          <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
-            {t('step1.styleLabel')}
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {SHEET_STYLES.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => patch({ sheetStyle: s })}
-                className={`rounded-[10px] border px-3 py-1.5 font-mono text-[0.6875rem] transition-colors cursor-pointer ${
-                  state.sheetStyle === s
-                    ? 'border-primary bg-primary/15 text-foreground'
-                    : 'border-glass-border bg-glass text-text-muted hover:text-foreground'
-                }`}
-              >
-                {t(`step1.style.${s}`)}
-              </button>
-            ))}
-          </div>
-          {state.sheetStyle === 'photoreal' && (
-            <p className="font-mono text-[0.625rem] leading-relaxed text-warning">
-              {t('step1.photorealWarning')}
-            </p>
-          )}
-        </div>
-
-        <RunButton
-          onClick={() => void actions.generateSheet()}
-          disabled={!state.portraitPath}
-          running={state.sheetState === 'running'}
-          label={t('step1.run')}
-          runningLabel={t('step1.running')}
-        />
-
-        {state.sheetError && <ErrorBox message={state.sheetError} />}
-
-        {state.sheet && (
-          <div className="flex flex-col gap-2">
-            <img
-              src={mediaUrl(state.sheet.mediaPath)}
-              alt={t('step1.title')}
-              className="w-full rounded-[14px] border border-border-subtle"
-            />
-            <div className="flex items-center gap-2">
-              <SaveToLibrary
-                result={state.sheet}
-                category="character"
-                onSave={actions.saveToLibrary}
-                label={t('step1.saveAsCharacter')}
+        {state.sheetSource === 'generate' ? (
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FilePick
+                label={t('step1.portrait')}
+                accept="image/*"
+                value={state.portraitPath}
+                onPick={(f) => void actions.uploadPortrait(f)}
+                icon={<ImagePlus size={20} aria-hidden="true" />}
               />
-              <button
-                type="button"
-                onClick={() => void actions.generateSheet()}
-                className="flex items-center gap-1.5 rounded-[10px] border border-glass-border bg-glass px-2.5 py-1.5 font-mono text-[0.625rem] text-text-muted transition-colors hover:text-foreground cursor-pointer"
-              >
-                <RotateCcw size={12} aria-hidden="true" />
-                {t('regenerate')}
-              </button>
+              <FilePick
+                label={t('step1.outfitRef')}
+                accept="image/*"
+                value={state.outfitRefPath}
+                onPick={(f) => void actions.uploadOutfitRef(f)}
+                icon={<Shirt size={20} aria-hidden="true" />}
+              />
             </div>
-          </div>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
+                {t('step1.outfitLabel')}
+              </span>
+              <input
+                value={state.outfit}
+                onChange={(e) => patch({ outfit: e.target.value })}
+                placeholder={t('step1.outfitPlaceholder')}
+                className="rounded-[12px] border border-border-subtle bg-surface-inset px-3 py-2.5 font-mono text-[0.75rem] text-foreground outline-none focus:border-primary"
+              />
+            </label>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
+                {t('step1.styleLabel')}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {SHEET_STYLES.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => patch({ sheetStyle: s })}
+                    className={`rounded-[10px] border px-3 py-1.5 font-mono text-[0.6875rem] transition-colors cursor-pointer ${
+                      state.sheetStyle === s
+                        ? 'border-primary bg-primary/15 text-foreground'
+                        : 'border-glass-border bg-glass text-text-muted hover:text-foreground'
+                    }`}
+                  >
+                    {t(`step1.style.${s}`)}
+                  </button>
+                ))}
+              </div>
+              {state.sheetStyle === 'photoreal' && (
+                <p className="font-mono text-[0.625rem] leading-relaxed text-warning">
+                  {t('step1.photorealWarning')}
+                </p>
+              )}
+            </div>
+
+            <RunButton
+              onClick={() => void actions.generateSheet()}
+              disabled={!state.portraitPath}
+              running={state.sheetState === 'running'}
+              label={t('step1.run')}
+              runningLabel={t('step1.running')}
+            />
+
+            {state.sheetError && <ErrorBox message={state.sheetError} />}
+
+            {state.sheet && (
+              <div className="flex flex-col gap-2">
+                <img
+                  src={mediaUrl(state.sheet.mediaPath)}
+                  alt={t('step1.title')}
+                  className="w-full rounded-[14px] border border-border-subtle"
+                />
+                <div className="flex items-center gap-2">
+                  <SaveToLibrary
+                    result={state.sheet}
+                    category="character"
+                    onSave={actions.saveToLibrary}
+                    label={t('step1.saveAsCharacter')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void actions.generateSheet()}
+                    className="flex items-center gap-1.5 rounded-[10px] border border-glass-border bg-glass px-2.5 py-1.5 font-mono text-[0.625rem] text-text-muted transition-colors hover:text-foreground cursor-pointer"
+                  >
+                    <RotateCcw size={12} aria-hidden="true" />
+                    {t('regenerate')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="font-mono text-[0.625rem] leading-relaxed text-text-muted">
+              {t('step1.sourceUploadHint')}
+            </p>
+            <FilePick
+              label={t('step1.sheetFile')}
+              accept="image/*"
+              value={state.sheet?.mediaPath ?? null}
+              onPick={(f) => void actions.uploadSheet(f)}
+              icon={<ImagePlus size={20} aria-hidden="true" />}
+            />
+            {state.sheet && (
+              <div className="flex flex-col gap-2">
+                <img
+                  src={mediaUrl(state.sheet.mediaPath)}
+                  alt={t('step1.title')}
+                  className="w-full rounded-[14px] border border-border-subtle"
+                />
+                <SaveToLibrary
+                  result={state.sheet}
+                  category="character"
+                  onSave={actions.saveToLibrary}
+                  label={t('step1.saveAsCharacter')}
+                />
+              </div>
+            )}
+          </>
         )}
       </StepShell>
 
@@ -413,17 +470,22 @@ export default function DanceSwapWizard() {
 
       {/* ---------------- step 3: compose ---------------- */}
       <StepShell index={3} title={t('step3.title')} hint={t('step3.hint')} done={state.composeState === 'done'}>
-        <label className="flex items-center gap-2">
+        <label className={`flex items-center gap-2 ${!state.sheet ? 'opacity-40' : ''}`}>
           <input
             type="checkbox"
-            checked={state.useSheet}
+            checked={state.useSheet && Boolean(state.sheet)}
+            disabled={!state.sheet}
             onChange={(e) => patch({ useSheet: e.target.checked })}
             className="h-3.5 w-3.5 accent-[var(--color-primary)]"
           />
           <span className="font-mono text-[0.6875rem] text-foreground">{t('step3.useSheet')}</span>
         </label>
         <p className="font-mono text-[0.625rem] leading-relaxed text-text-muted">
-          {state.useSheet ? t('step3.useSheetOn') : t('step3.useSheetOff')}
+          {!state.sheet
+            ? t('step3.noSheet')
+            : state.useSheet
+              ? t('step3.useSheetOn')
+              : t('step3.useSheetOff')}
         </p>
 
         <label className="flex flex-col gap-1.5">

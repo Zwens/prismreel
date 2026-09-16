@@ -2154,6 +2154,10 @@
       "step1": {
         "title": "Character sheet",
         "hint": "Upload a portrait and get front, side and back views in the new outfit",
+        "sourceGenerate": "AI generate",
+        "sourceUpload": "I already have a sheet",
+        "sourceUploadHint": "Upload a three-view sheet (or any character reference image) you already have, skip AI generation, and use it directly in the compose step.",
+        "sheetFile": "Character sheet / reference image",
         "portrait": "Portrait",
         "outfitRef": "Outfit reference (optional)",
         "outfitLabel": "Outfit",
@@ -2196,6 +2200,7 @@
         "useSheet": "Use the sheet from step 1",
         "useSheetOn": "Character comes from the sheet, motion from the depth clip. Note: a photoreal sheet will be rejected.",
         "useSheetOff": "No reference image: the original person is kept and only the outfit and scene change. This path is not restricted.",
+        "noSheet": "No sheet from step 1 yet — composing without a reference image. The original person is kept and only the outfit and scene change.",
         "scene": "Scene",
         "scenePlaceholder": "e.g. a bright empty dance studio with a wooden floor",
         "resolution": "Resolution",
