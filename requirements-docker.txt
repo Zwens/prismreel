@@ -4,6 +4,21 @@ uvicorn[standard]>=0.30.0
 python-multipart>=0.0.9
 
 # AI/ML Models
+# LLM 客户端。Gemini 通过其 OpenAI 兼容层复用同一个包，见 llm_adapter.py 的
+# _get_client。缺它时剧本分析会直接失败（RuntimeError），无 try/except 降级。
+openai>=1.0.0
+
+# 卡点的节拍检测直接 import numpy（src/apps/comic_gen/beats.py 模块顶层硬
+# import），非降级依赖。
+numpy>=1.24.0
+
+# 图像格式转码。Vidu 生图接口只返回 JPEG，仓库所有生图调用方按 .png 构造路径，
+# 见 src/models/vidu.py 的 _download_vidu_image。
+pillow>=10.0.0
+
+# BGM 人声分离（DUB 卡点功能）。缺失时 pipeline.py 已 try/except 优雅降级为
+# 警告（"[DUB] Demucs model warmup failed"），非阻塞性依赖，但补上才能真正启用。
+soundfile>=0.12.0
 
 # Data Validation & Processing
 pydantic>=2.0.0
