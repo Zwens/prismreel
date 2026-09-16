@@ -71,6 +71,12 @@ export interface DanceSwapState {
   composePromptDirty: boolean;
   useSheet: boolean;
   resolution: string;
+  /** 'adaptive' follows the motion clip's own ratio; anything else is an
+   *  explicit override. task_type 'reference' has no ratio constraint, so
+   *  the request can safely carry whatever the user picks here. */
+  aspectRatio: string;
+  /** Seconds, or null to follow the motion clip's own length (sent as -1). */
+  duration: number | null;
   composeState: StepState;
   composeError: string | null;
   composed: StepResult | null;
@@ -100,6 +106,8 @@ const INITIAL: DanceSwapState = {
   composePromptDirty: false,
   useSheet: true,
   resolution: '720p',
+  aspectRatio: 'adaptive',
+  duration: null,
   composeState: 'idle',
   composeError: null,
   composed: null,
@@ -346,9 +354,8 @@ export function useDanceSwap() {
         parameters: {
           task_type: 'reference',
           resolution: state.resolution,
-          // 'reference' is the one omni sub-type with no ratio/duration
-          // constraint, so the output can simply follow the source clip.
-          aspect_ratio: 'adaptive',
+          aspect_ratio: state.aspectRatio,
+          duration: state.duration ?? -1,
         },
         batch_size: 1,
       });
@@ -358,7 +365,7 @@ export function useDanceSwap() {
     }
   }, [
     state.depthJob, state.danceVideoPath, state.useSheet, state.sheet,
-    state.resolution, effectivePrompt, patch, runGeneration,
+    state.resolution, state.aspectRatio, state.duration, effectivePrompt, patch, runGeneration,
   ]);
 
   // -- library ----------------------------------------------------------

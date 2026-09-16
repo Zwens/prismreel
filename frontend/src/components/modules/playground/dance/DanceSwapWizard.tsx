@@ -144,6 +144,9 @@ function SaveToLibrary({
 
 const SHEET_STYLES: SheetStyle[] = ['illustration', 'anime', 'photoreal'];
 const RESOLUTIONS = ['480p', '720p', '1080p'];
+const ASPECT_RATIOS = ['adaptive', '9:16', '16:9', '1:1', '3:4', '4:3'];
+const DURATION_MIN = 4;
+const DURATION_MAX = 30;
 
 export default function DanceSwapWizard() {
   const t = useTranslations('playground.dance');
@@ -563,6 +566,48 @@ export default function DanceSwapWizard() {
             ))}
           </div>
         </div>
+
+        <div className="flex flex-col gap-1.5">
+          <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
+            {t('step3.aspectRatio')}
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {ASPECT_RATIOS.map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => patch({ aspectRatio: r })}
+                className={`rounded-[10px] border px-3 py-1.5 font-mono text-[0.6875rem] transition-colors cursor-pointer ${
+                  state.aspectRatio === r
+                    ? 'border-primary bg-primary/15 text-foreground'
+                    : 'border-glass-border bg-glass text-text-muted hover:text-foreground'
+                }`}
+              >
+                {r === 'adaptive' ? t('step3.aspectRatioAdaptive') : r}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
+            {t('step3.duration')}
+          </span>
+          <input
+            type="number"
+            min={DURATION_MIN}
+            max={DURATION_MAX}
+            value={state.duration ?? ''}
+            placeholder={t('step3.durationFollowClip')}
+            onChange={(e) =>
+              patch({ duration: e.target.value ? Number(e.target.value) : null })
+            }
+            className="rounded-[12px] border border-border-subtle bg-surface-inset px-3 py-2 font-mono text-[0.75rem] text-foreground outline-none focus:border-primary"
+          />
+          <p className="font-mono text-[0.625rem] leading-relaxed text-text-muted">
+            {t('step3.durationHint', { min: DURATION_MIN, max: DURATION_MAX })}
+          </p>
+        </label>
 
         <label className="flex flex-col gap-1.5">
           <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
