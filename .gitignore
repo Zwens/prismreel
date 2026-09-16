@@ -148,3 +148,6 @@ frontend/docs/
 # Env backups and local scratch files
 .env.bak*
 scratch_common.txt
+
+# Throwaway probe/spike workspace
+scratch/
