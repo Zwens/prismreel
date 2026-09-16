@@ -2151,6 +2151,7 @@
       "cardTitle": "真人换装舞蹈",
       "cardDescription": "三步走：换装三视图 → 黑白深度动作 → 合成成片",
       "regenerate": "重新生成",
+      "pickFromLibrary": "从素材库选择",
       "step1": {
         "title": "换装三视图",
         "hint": "上传人物照，生成正面、侧面、背面三个视角的换装角色图",

@@ -2151,6 +2151,7 @@
       "cardTitle": "Dance Outfit Swap",
       "cardDescription": "Three steps: outfit turnaround sheet, depth motion pass, composed clip",
       "regenerate": "Regenerate",
+      "pickFromLibrary": "Pick from library",
       "step1": {
         "title": "Character sheet",
         "hint": "Upload a portrait and get front, side and back views in the new outfit",

@@ -244,6 +244,19 @@ export function useDanceSwap() {
     [patch],
   );
 
+  /** Same as uploadSheet, but the path comes from AssetSourcePicker (library /
+   *  series / project / history / official) instead of a fresh file upload —
+   *  no new upload call needed, the asset already lives on the server. */
+  const pickSheet = useCallback(
+    (path: string) =>
+      patch({
+        sheetState: 'done',
+        sheetError: null,
+        sheet: { generationId: '', outputId: '', mediaPath: path, mediaType: 'image' },
+      }),
+    [patch],
+  );
+
   // -- step 2 -----------------------------------------------------------
 
   const uploadDanceVideo = useCallback(
@@ -258,6 +271,14 @@ export function useDanceSwap() {
         }),
       ),
     [patch, state.motionSource],
+  );
+
+  /** Same as uploadDanceVideo's 'upload' path, but the clip comes from
+   *  AssetSourcePicker instead of a fresh file upload. */
+  const pickDanceVideo = useCallback(
+    (path: string) =>
+      patch({ danceVideoPath: path, depthJob: null, depthState: 'done' }),
+    [patch],
   );
 
   const generateDepth = useCallback(async () => {
@@ -369,7 +390,9 @@ export function useDanceSwap() {
       uploadOutfitRef,
       generateSheet,
       uploadSheet,
+      pickSheet,
       uploadDanceVideo,
+      pickDanceVideo,
       generateDepth,
       compose,
       saveToLibrary,

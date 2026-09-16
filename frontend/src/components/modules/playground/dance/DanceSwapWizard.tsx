@@ -1,11 +1,12 @@
 'use client';
 
-import { useRef, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  AlertTriangle, Bookmark, Check, Cpu, ImagePlus, Loader2, RotateCcw, Shirt, Upload, Wand2,
+  AlertTriangle, Bookmark, Check, Cpu, FolderOpen, ImagePlus, Loader2, RotateCcw, Shirt, Upload, Wand2,
 } from 'lucide-react';
 import { mediaUrl } from '@/lib/mediaPath';
+import AssetSourcePicker from '../AssetSourcePicker';
 import { useDanceSwap, type StepResult } from './useDanceSwap';
 import type { SheetStyle } from './prompts';
 
@@ -152,6 +153,9 @@ export default function DanceSwapWizard() {
   const depthInfo = state.depthJob?.info;
   const motionReady = state.depthState === 'done' || Boolean(state.danceVideoPath);
 
+  const [showSheetPicker, setShowSheetPicker] = useState(false);
+  const [showDanceVideoPicker, setShowDanceVideoPicker] = useState(false);
+
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-6 py-6">
       {/* ---------------- step 1: character sheet ---------------- */}
@@ -280,12 +284,31 @@ export default function DanceSwapWizard() {
             <p className="font-mono text-[0.625rem] leading-relaxed text-text-muted">
               {t('step1.sourceUploadHint')}
             </p>
-            <FilePick
-              label={t('step1.sheetFile')}
-              accept="image/*"
-              value={state.sheet?.mediaPath ?? null}
-              onPick={(f) => void actions.uploadSheet(f)}
-              icon={<ImagePlus size={20} aria-hidden="true" />}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <FilePick
+                label={t('step1.sheetFile')}
+                accept="image/*"
+                value={state.sheet?.mediaPath ?? null}
+                onPick={(f) => void actions.uploadSheet(f)}
+                icon={<ImagePlus size={20} aria-hidden="true" />}
+              />
+              <button
+                type="button"
+                onClick={() => setShowSheetPicker(true)}
+                className="flex flex-col items-center justify-center gap-1.5 rounded-[14px] border border-dashed border-border-subtle bg-surface-inset px-4 py-6 font-mono text-[0.6875rem] text-text-muted transition-colors hover:border-primary hover:text-foreground cursor-pointer"
+              >
+                <FolderOpen size={20} aria-hidden="true" />
+                {t('pickFromLibrary')}
+              </button>
+            </div>
+            <AssetSourcePicker
+              isOpen={showSheetPicker}
+              onClose={() => setShowSheetPicker(false)}
+              onSelect={(path) => {
+                actions.pickSheet(path);
+                setShowSheetPicker(false);
+              }}
+              accept="image"
             />
             {state.sheet && (
               <div className="flex flex-col gap-2">
@@ -448,12 +471,31 @@ export default function DanceSwapWizard() {
             <p className="font-mono text-[0.625rem] leading-relaxed text-text-muted">
               {t('step2.sourceUploadHint')}
             </p>
-            <FilePick
-              label={t('step2.depthVideo')}
-              accept="video/*"
-              value={state.danceVideoPath}
-              onPick={(f) => void actions.uploadDanceVideo(f)}
-              icon={<Upload size={20} aria-hidden="true" />}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <FilePick
+                label={t('step2.depthVideo')}
+                accept="video/*"
+                value={state.danceVideoPath}
+                onPick={(f) => void actions.uploadDanceVideo(f)}
+                icon={<Upload size={20} aria-hidden="true" />}
+              />
+              <button
+                type="button"
+                onClick={() => setShowDanceVideoPicker(true)}
+                className="flex flex-col items-center justify-center gap-1.5 rounded-[14px] border border-dashed border-border-subtle bg-surface-inset px-4 py-6 font-mono text-[0.6875rem] text-text-muted transition-colors hover:border-primary hover:text-foreground cursor-pointer"
+              >
+                <FolderOpen size={20} aria-hidden="true" />
+                {t('pickFromLibrary')}
+              </button>
+            </div>
+            <AssetSourcePicker
+              isOpen={showDanceVideoPicker}
+              onClose={() => setShowDanceVideoPicker(false)}
+              onSelect={(path) => {
+                actions.pickDanceVideo(path);
+                setShowDanceVideoPicker(false);
+              }}
+              accept="video"
             />
             {state.danceVideoPath && (
               <video
