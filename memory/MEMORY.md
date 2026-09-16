@@ -2,8 +2,12 @@
 
 > 進入本專案工作時 Read 載入。工作區共用規則見根目錄 CLAUDE.md。
 
-## 🔴 待辦：真人換裝舞蹈三項UI修復已push，卡在CI build未完成待驗收（2026-09-16）
-- [**🔴 三個commit(54c35a3/57ba767/be41788)已push main，最後一次build因VPS系統負載過高(load 20.4)異常緩慢，容器尚未切到新版**](project_dance_swap_library_features_pending_verify_2026-09-16.md) — 新session接手先查`docker images prismreel-frontend` CreatedAt是否晚於09:54:52判斷完成與否；VPS負載排查由使用者另一個session處理，本session不重複介入
+## 真人換裝舞蹈功能修復全紀錄（✅ 2026-09-16 已驗收完成，兩輪共8個commit）
+- ✅ 第一輪三個commit(54c35a3/57ba767/be41788)：素材庫破圖mediaUrl修復+Step1上傳/生成二選一+Step1/Step2「從素材庫選擇」按鈕。「從素材庫選擇」按鈕僅存在於「我已有三視圖」分頁、非「AI生成」分頁，屬既定設計非缺漏（見DanceSwapWizard.tsx）
+- [**✅ 問題3/5根因：AssetSourcePicker退場動畫卡住時overlay仍pointerEvents:auto持續攔截點擊**](feedback_asset_source_picker_exit_animation_blocks_clicks_2026-09-16.md) — commit`cdd4d77`；variants加`pointerEvents:'none'/'auto'`隨hidden/visible狀態立即切換，不等exit動畫跑完；live驗收用`document.elementFromPoint`命中真實checkbox+`.click()`觸發checked切換
+- [**✅ 問題2/4：Step3新增比例(9:16/16:9/1:1/3:4/4:3/adaptive)+秒數(4-30s)控制項**](feedback_asset_source_picker_exit_animation_blocks_clicks_2026-09-16.md) — commit`c6179ac`；依`docs/api-reference/byteplus-ark-seedance-seedream.md`第2.4節確認`task_type:'reference'`無ratio/duration約束才放開自訂，避開edit/extend強制adaptive/-1限制
+- [**🔴 驗證React state時，`findHookState`遍歷memoizedState可能抓到過期fiber snapshot，改讀`element[__reactProps$xxx].value`才準確**](feedback_asset_source_picker_exit_animation_blocks_clicks_2026-09-16.md) — 排查duration輸入時一度誤判為bug，改用reactProps驗證後確認實際正常
+- 問題1（選定感受）已排除非缺陷；跨session協作記錄（claude-wmzic-6c互相驗收機制）見全文
 
 ## GitHub上游整合
 - [**✅ Gemini+Ark模型遷移大合併完成，含官方角色斷點修復+安全審查誤判查證（2026-09-16）**](project_gemini_ark_upstream_integration_2026-09-16.md) — DashScope全家族下架；官方角色tab移植進新AssetSourcePicker；部署驗證需CI success+容器穩定性+live三層；記錄鑑權全域middleware模式避免誤判
