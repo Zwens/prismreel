@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Type, ImagePlus, Clapperboard, Film, Layers, Scissors, type LucideIcon } from 'lucide-react';
+import { Type, ImagePlus, Clapperboard, Film, Layers, Scissors, PersonStanding, type LucideIcon } from 'lucide-react';
 import { usePlaygroundStore, type PlaygroundMode } from './usePlaygroundStore';
 
 const MODE_ICONS: Record<PlaygroundMode, LucideIcon> = {
@@ -76,6 +76,34 @@ export default function ModeCardSelector() {
             <span className="h-px flex-1 bg-border-subtle atelier-group-line" />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{VIDEO_MODES.map(renderCard)}</div>
+        </div>
+
+        <div>
+          <div className="mb-3 flex items-center gap-2">
+            <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
+              {t('mode.groupWorkflow')}
+            </span>
+            <span className="h-px flex-1 bg-border-subtle atelier-group-line" />
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Not a PlaygroundMode: this card opens a multi-step wizard rather
+                than the single-shot compose panel, so it sets the stage directly. */}
+            <button
+              type="button"
+              onClick={() => setPlaygroundStage('dance')}
+              className="glass-panel atelier-card group flex flex-col items-start gap-3 rounded-[20px] px-6 py-6 text-left transition-all hover:-translate-y-0.5 hover:shadow-[var(--glow-primary)] cursor-pointer"
+            >
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-inset text-primary transition-colors group-hover:bg-primary group-hover:text-on-accent">
+                <PersonStanding size={20} aria-hidden="true" />
+              </span>
+              <span className="font-display text-[1.0625rem] font-semibold tracking-tight text-foreground">
+                {t('dance.cardTitle')}
+              </span>
+              <span className="font-mono text-[0.75rem] leading-relaxed text-text-muted">
+                {t('dance.cardDescription')}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -5,13 +5,9 @@ routing_prefixes:
   - kling/kling-
   - kling-
 supported_backends:
-  - dashscope
   - vendor
-default_backend: dashscope
-backend_env_key: KLING_PROVIDER_MODE
+default_backend: vendor
 credential_sources:
-  dashscope:
-    - DASHSCOPE_API_KEY
   vendor:
     - KLING_ACCESS_KEY
     - KLING_SECRET_KEY
@@ -21,13 +17,10 @@ supported_modalities:
   - r2v
 transport:
   image_input_mode:
-    dashscope: dashscope_image_to_video
     vendor: kling_vendor_base64_image
   audio_input_mode:
-    dashscope: dashscope_temp_file_url
     vendor: kling_vendor_audio_url
   reference_video_input_mode:
-    dashscope: dashscope_temp_file_url
     vendor: kling_vendor_video_url
 docs:
   official_snapshot_ids:
@@ -39,8 +32,6 @@ models:
     status: active
     release_stage: stable
     runtime:
-      dashscope:
-        gateway: dashscope
       vendor:
         gateway: kling
     docs:
@@ -54,8 +45,6 @@ models:
         description: First-frame image to video generation
         capabilities: [i2v]
         runtime:
-          dashscope:
-            api_model_id: kling/kling-v3-video-generation
         ui:
           selection_group: i2v
           visible_in: [project_settings, series_settings, video_sidebar, global_settings]
@@ -94,8 +83,6 @@ models:
         description: Reference-based video generation with multi-modal input
         capabilities: [r2v]
         runtime:
-          dashscope:
-            api_model_id: kling/kling-v3-omni-video-generation
         ui:
           selection_group: r2v
           visible_in: [project_settings, series_settings, video_sidebar, global_settings]

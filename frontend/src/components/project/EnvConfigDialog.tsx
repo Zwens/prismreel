@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Save, ChevronDown, ChevronRight, Loader2, Key } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { api, type EnvConfigPayload, type ProviderMode } from "@/lib/api";
+import { api, type EnvConfigPayload } from "@/lib/api";
 
 interface EnvConfigDialogProps {
   isOpen: boolean;
@@ -13,15 +13,12 @@ interface EnvConfigDialogProps {
 }
 
 type EnvConfig = EnvConfigPayload & {
-  DASHSCOPE_API_KEY: string;
+  GEMINI_API_KEY: string;
   ALIBABA_CLOUD_ACCESS_KEY_ID: string;
   ALIBABA_CLOUD_ACCESS_KEY_SECRET: string;
   OSS_BUCKET_NAME: string;
   OSS_ENDPOINT: string;
   OSS_BASE_PATH: string;
-  KLING_PROVIDER_MODE: ProviderMode;
-  VIDU_PROVIDER_MODE: ProviderMode;
-  PIXVERSE_PROVIDER_MODE: ProviderMode;
   KLING_ACCESS_KEY: string;
   KLING_SECRET_KEY: string;
   VIDU_API_KEY: string;
@@ -39,15 +36,12 @@ const ENDPOINT_PROVIDERS = [
 ];
 
 const DEFAULT_CONFIG: EnvConfig = {
-  DASHSCOPE_API_KEY: "",
+  GEMINI_API_KEY: "",
   ALIBABA_CLOUD_ACCESS_KEY_ID: "",
   ALIBABA_CLOUD_ACCESS_KEY_SECRET: "",
   OSS_BUCKET_NAME: "",
   OSS_ENDPOINT: "",
   OSS_BASE_PATH: "",
-  KLING_PROVIDER_MODE: "dashscope",
-  VIDU_PROVIDER_MODE: "dashscope",
-  PIXVERSE_PROVIDER_MODE: "dashscope",
   KLING_ACCESS_KEY: "",
   KLING_SECRET_KEY: "",
   VIDU_API_KEY: "",
@@ -57,34 +51,20 @@ const DEFAULT_CONFIG: EnvConfig = {
   endpoint_overrides: {},
 };
 
-const normalizeProviderMode = (mode?: string): ProviderMode => (mode === "vendor" ? "vendor" : "dashscope");
 
 const normalizeEnvConfig = (existing: EnvConfig, data?: EnvConfigPayload): EnvConfig => ({
   ...existing,
   ...data,
-  KLING_PROVIDER_MODE: normalizeProviderMode(data?.KLING_PROVIDER_MODE ?? existing.KLING_PROVIDER_MODE),
-  VIDU_PROVIDER_MODE: normalizeProviderMode(data?.VIDU_PROVIDER_MODE ?? existing.VIDU_PROVIDER_MODE),
-  PIXVERSE_PROVIDER_MODE: normalizeProviderMode(data?.PIXVERSE_PROVIDER_MODE ?? existing.PIXVERSE_PROVIDER_MODE),
   endpoint_overrides: data?.endpoint_overrides ?? existing.endpoint_overrides ?? {},
 });
 
 const getValidationErrors = (env: EnvConfig): string[] => {
   const errors: string[] = [];
 
-  if (!env.DASHSCOPE_API_KEY?.trim()) {
-    errors.push("DashScope API Key");
+  if (!env.GEMINI_API_KEY?.trim()) {
+    errors.push("Gemini API Key");
   }
-  if (env.KLING_PROVIDER_MODE === "vendor") {
-    if (!env.KLING_ACCESS_KEY?.trim()) {
-      errors.push("Kling Access Key (vendor mode)");
-    }
-    if (!env.KLING_SECRET_KEY?.trim()) {
-      errors.push("Kling Secret Key (vendor mode)");
-    }
-  }
-  if (env.VIDU_PROVIDER_MODE === "vendor" && !env.VIDU_API_KEY?.trim()) {
-    errors.push("Vidu API Key (vendor mode)");
-  }
+
 
   return errors;
 };
@@ -228,12 +208,12 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                 <div>
                   <label className="flex items-center justify-between text-sm font-medium text-foreground mb-2">
                     <span>{t("dashscopeApiKeyLabel")} <span className="text-red-500">*</span></span>
-                    <span className="text-text-muted font-normal text-xs">e.g. sk-xxx</span>
+                    <span className="text-text-muted font-normal text-xs">e.g. AIza...</span>
                   </label>
                   <input
                     type="password"
-                    value={config.DASHSCOPE_API_KEY}
-                    onChange={(e) => handleChange("DASHSCOPE_API_KEY", e.target.value)}
+                    value={config.GEMINI_API_KEY}
+                    onChange={(e) => handleChange("GEMINI_API_KEY", e.target.value)}
                     placeholder={t("dashscopeKeyPlaceholder")}
                     className={inputClass}
                   />
@@ -334,101 +314,53 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                 <div className="pt-4 border-t border-glass-border">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-bold text-foreground">{t("klingProvider")}</h3>
-                    <span className="text-[0.625rem] text-text-muted">{t("chooseProvider")}</span>
                   </div>
+                  {/* DashScope 代理通道已拔除，Kling 只剩直连；模式切换器随之移除。 */}
                   <div className="bg-glass border border-glass-border rounded-lg p-4 space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleChange("KLING_PROVIDER_MODE", "dashscope")}
-                        className={modeButtonClass(config.KLING_PROVIDER_MODE === "dashscope")}
-                      >
-                        DashScope
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleChange("KLING_PROVIDER_MODE", "vendor")}
-                        className={modeButtonClass(config.KLING_PROVIDER_MODE === "vendor")}
-                      >
-                        Vendor Direct
-                      </button>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Kling Access Key
+                      </label>
+                      <input
+                        type="password"
+                        value={config.KLING_ACCESS_KEY}
+                        onChange={(e) => handleChange("KLING_ACCESS_KEY", e.target.value)}
+                        placeholder={t("klingAccessKeyPlaceholder")}
+                        className={inputClass}
+                      />
                     </div>
-                    <p className="text-xs text-text-muted">
-                      {t("dashscopeMode")} {t("vendorMode")}
-                    </p>
-
-                    {config.KLING_PROVIDER_MODE === "vendor" && (
-                      <>
-                        <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">
-                            Kling Access Key <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="password"
-                            value={config.KLING_ACCESS_KEY}
-                            onChange={(e) => handleChange("KLING_ACCESS_KEY", e.target.value)}
-                            placeholder={t("klingAccessKeyPlaceholder")}
-                            className={inputClass}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">
-                            Kling Secret Key <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="password"
-                            value={config.KLING_SECRET_KEY}
-                            onChange={(e) => handleChange("KLING_SECRET_KEY", e.target.value)}
-                            placeholder={t("klingSecretKeyPlaceholder")}
-                            className={inputClass}
-                          />
-                        </div>
-                      </>
-                    )}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Kling Secret Key
+                      </label>
+                      <input
+                        type="password"
+                        value={config.KLING_SECRET_KEY}
+                        onChange={(e) => handleChange("KLING_SECRET_KEY", e.target.value)}
+                        placeholder={t("klingSecretKeyPlaceholder")}
+                        className={inputClass}
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <div className="pt-4 border-t border-glass-border">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-bold text-foreground">{t("viduProvider")}</h3>
-                    <span className="text-[0.625rem] text-text-muted">{t("chooseProvider")}</span>
                   </div>
-                  <div className="bg-input-bg border border-glass-border rounded-lg p-4 space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleChange("VIDU_PROVIDER_MODE", "dashscope")}
-                        className={modeButtonClass(config.VIDU_PROVIDER_MODE === "dashscope")}
-                      >
-                        DashScope
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleChange("VIDU_PROVIDER_MODE", "vendor")}
-                        className={modeButtonClass(config.VIDU_PROVIDER_MODE === "vendor")}
-                      >
-                        Vendor Direct
-                      </button>
+                  <div className="bg-glass border border-glass-border rounded-lg p-4 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Vidu API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={config.VIDU_API_KEY}
+                        onChange={(e) => handleChange("VIDU_API_KEY", e.target.value)}
+                        placeholder={t("viduApiKeyPlaceholder")}
+                        className={inputClass}
+                      />
                     </div>
-                    <p className="text-xs text-text-muted">
-                      {t("dashscopeMode")} {t("vendorMode")}
-                    </p>
-
-                    {config.VIDU_PROVIDER_MODE === "vendor" && (
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Vidu API Key <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="password"
-                          value={config.VIDU_API_KEY}
-                          onChange={(e) => handleChange("VIDU_API_KEY", e.target.value)}
-                          placeholder={t("viduApiKeyPlaceholder")}
-                          className={inputClass}
-                        />
-                      </div>
-                    )}
                   </div>
                 </div>
 

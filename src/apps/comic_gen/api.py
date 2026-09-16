@@ -39,8 +39,6 @@ from .pipeline import ComicGenPipeline, LibraryAssetInUseError
 from .models import (
     ArtDirection,
     PromptConfig,
-    ProviderBackend,
-    ProviderRoutingConfig,
     Script,
     Series,
     StoryboardFrame,
@@ -1346,8 +1344,10 @@ async def import_file_confirm(request: ConfirmImportRequest, user=Depends(auth.r
         raise HTTPException(status_code=500, detail=str(e))
 
 
-class EnvConfig(ProviderRoutingConfig):
-    DASHSCOPE_API_KEY: Optional[str] = None
+class EnvConfig(BaseModel):
+    # Google Gemini — backs the LLM chain (script / storyboard / prompt polish).
+    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_BASE_URL: Optional[str] = None
     ALIBABA_CLOUD_ACCESS_KEY_ID: Optional[str] = None
     ALIBABA_CLOUD_ACCESS_KEY_SECRET: Optional[str] = None
     OSS_BUCKET_NAME: Optional[str] = None
@@ -1362,13 +1362,6 @@ class EnvConfig(ProviderRoutingConfig):
     ARK_REGION: Optional[str] = None
     ARK_BASE_URL: Optional[str] = None
     endpoint_overrides: Dict[str, str] = Field(default_factory=dict)
-
-
-def _normalize_provider_mode(value: Optional[str]) -> str:
-    normalized = (value or "").strip().lower()
-    if normalized in (ProviderBackend.DASHSCOPE.value, ProviderBackend.VENDOR.value):
-        return normalized
-    return ProviderBackend.DASHSCOPE.value
 
 
 def get_user_config_path() -> str:
@@ -1501,8 +1494,6 @@ def update_env_config(config: EnvConfig):
                 # Booleans (e.g. OSS_ENABLE) persist as "true"/"false" strings so
                 # they round-trip through os.environ and the .env/config.json store.
                 config_dict[key] = "true" if value else "false"
-            elif isinstance(value, ProviderBackend):
-                config_dict[key] = value.value
             else:
                 config_dict[key] = value
 
@@ -2997,9 +2988,9 @@ def voice_preview(request: VoicePreviewRequest):
     output/cache/voice_preview/{key}.mp3. Subsequent identical calls
     return the cached URL instantly.
 
-    PR-3h #2: handles CUSTOM voices (clones/designs) by looking up
-    series.custom_voices[] for target_model + family overrides — required
-    because cloned voice_ids aren't in static TTS_VOICE_REGISTRY.
+    Legacy CosyVoice voice_ids are migrated to a Gemini voice inside the TTS
+    layer (config/voice_migration.yaml), so no per-voice model override is
+    needed any more — every voice runs on the same Gemini TTS model.
 
     Spec: r2v-workflow-v3-unified.md §4.2.3 (cache strategy) + Q5 b/c.
     """
@@ -3007,13 +2998,11 @@ def voice_preview(request: VoicePreviewRequest):
     if not pipeline.audio_generator.tts:
         raise HTTPException(
             status_code=503,
-            detail="TTS service unavailable. Check DASHSCOPE_API_KEY configuration.",
+            detail="TTS service unavailable. Check GEMINI_API_KEY configuration.",
         )
 
-    # PR-3h #2: resolve custom voice → target_model/family override
-    custom = pipeline.find_custom_voice(request.voice_id)
-    model_override = custom.target_model if custom else None
-    family_override = custom.family if custom else None
+    model_override = None
+    family_override = None
 
     cache_dir = "output/cache/voice_preview"
     os.makedirs(cache_dir, exist_ok=True)
@@ -3045,137 +3034,6 @@ def voice_preview(request: VoicePreviewRequest):
     # signing when configured, no-op otherwise.
     url = f"cache/voice_preview/{cache_key}.mp3"
     return signed_response({"url": url, "cached": cached})
-
-
-# ─────────────────────────────────────────────────────────────
-# PR-3h · Voice clone endpoints
-# Per Q16: series-level scope for custom voices. Frontend uploads audio
-# via existing /upload (gets URL), then calls /voice/clone with that URL.
-# ─────────────────────────────────────────────────────────────
-
-class VoiceCloneRequest(BaseModel):
-    """PR-3h request: clone a voice from a reference audio URL.
-
-    Frontend pre-validates: ≤10MB, MP3/WAV/M4A, ≥16kHz, 10-20s recommended.
-    """
-    series_id: str
-    audio_url: str
-    label: str
-    target_model: str = "cosyvoice-v3.5-plus"
-
-
-@app.post("/voice/clone")
-def voice_clone(request: VoiceCloneRequest):
-    """Create a custom voice by cloning a reference audio sample.
-
-    Per Q15.2: stored at series level so any character in the series can
-    pick from the clone via the VoicePickerModal '我的复刻' tab.
-    """
-    try:
-        custom = pipeline.create_voice_clone(
-            series_id=request.series_id,
-            audio_url=request.audio_url,
-            label=request.label,
-            target_model=request.target_model,
-        )
-        return signed_response(custom)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except RuntimeError as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/series/{series_id}/custom_voices")
-def list_series_custom_voices(series: Series = Depends(get_owned_series)):
-    """Return all custom voices (clones + designs) in a series."""
-    voices = pipeline.list_custom_voices(series.id)
-    return signed_response(voices)
-
-
-@app.delete("/series/{series_id}/custom_voices/{voice_id}")
-def delete_series_custom_voice(voice_id: str, series: Series = Depends(get_owned_series)):
-    """Remove a custom voice from a series.
-
-    Note: does NOT delete on dashscope side (24h retention is best-effort).
-    If a character has this voice_id bound, the binding becomes orphaned
-    (frontend should warn before delete in v2).
-    """
-    removed = pipeline.delete_custom_voice(series.id, voice_id)
-    if not removed:
-        raise HTTPException(status_code=404, detail="Custom voice not found")
-    return signed_response({"removed": True})
-
-
-# ─────────────────────────────────────────────────────────────
-# PR-3i · Voice design endpoints
-# Iterative pattern: preview → (tweak prompt) → preview → accept.
-# Each preview mints a NEW voice on dashscope; only accept persists.
-# ─────────────────────────────────────────────────────────────
-
-class VoiceDesignPreviewRequest(BaseModel):
-    voice_prompt: str
-    preview_text: str = "你好，这是一段音色测试。请仔细听一听是否符合预期。"
-    target_model: str = "cosyvoice-v3.5-plus"
-
-
-@app.post("/voice/design/preview")
-def voice_design_preview(request: VoiceDesignPreviewRequest):
-    """Mint a fresh design voice and return a preview audio URL.
-
-    The user re-calls this with a tweaked voice_prompt to iterate.
-    Returns: {voice_id, preview_url, target_model}.
-    """
-    try:
-        result = pipeline.voice_design_preview(
-            voice_prompt=request.voice_prompt,
-            preview_text=request.preview_text,
-            target_model=request.target_model,
-        )
-        return signed_response(result)
-    except RuntimeError as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-class VoiceDesignSaveRequest(BaseModel):
-    series_id: str
-    voice_id: str
-    voice_prompt: str
-    label: str
-    target_model: str = "cosyvoice-v3.5-plus"
-
-
-@app.post("/voice/design/accept")
-def voice_design_accept(request: VoiceDesignSaveRequest):
-    """Persist a previewed design voice into series.custom_voices[]."""
-    try:
-        custom = pipeline.voice_design_save(
-            series_id=request.series_id,
-            voice_id=request.voice_id,
-            voice_prompt=request.voice_prompt,
-            label=request.label,
-            target_model=request.target_model,
-        )
-        return signed_response(custom)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except RuntimeError as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-class VoiceDesignTranslateRequest(BaseModel):
-    description: str
-
-
-@app.post("/voice/design/translate")
-def voice_design_translate(request: VoiceDesignTranslateRequest):
-    """LLM helper: character.description → CosyVoice voice_prompt."""
-    if not request.description.strip():
-        raise HTTPException(status_code=400, detail="description is empty")
-    try:
-        voice_prompt = pipeline.translate_character_to_voice_prompt(request.description)
-        return {"voice_prompt": voice_prompt}
-    except RuntimeError as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 class GenerateLineAudioRequest(BaseModel):
@@ -4267,7 +4125,7 @@ def polish_r2v_prompt(request: PolishR2VPromptRequest, user=Depends(auth.require
 
 # Credential-like env fields that must never be returned in plaintext.
 SECRET_FIELDS = {
-    "DASHSCOPE_API_KEY",
+    "GEMINI_API_KEY",
     "ALIBABA_CLOUD_ACCESS_KEY_ID",
     "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
     "KLING_ACCESS_KEY",
@@ -4319,7 +4177,7 @@ def get_env_config():
 
         return {
             # Masked secrets — never plaintext.
-            "DASHSCOPE_API_KEY": _mask_secret(os.getenv("DASHSCOPE_API_KEY")),
+            "GEMINI_API_KEY": _mask_secret(os.getenv("GEMINI_API_KEY")),
             "ALIBABA_CLOUD_ACCESS_KEY_ID": _mask_secret(os.getenv("ALIBABA_CLOUD_ACCESS_KEY_ID")),
             "ALIBABA_CLOUD_ACCESS_KEY_SECRET": _mask_secret(os.getenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET")),
             "KLING_ACCESS_KEY": _mask_secret(os.getenv("KLING_ACCESS_KEY")),
@@ -4335,9 +4193,6 @@ def get_env_config():
             "OSS_ENDPOINT": os.getenv("OSS_ENDPOINT", ""),
             "OSS_BASE_PATH": os.getenv("OSS_BASE_PATH", ""),
             "OSS_ENABLE": is_oss_enabled(),
-            "KLING_PROVIDER_MODE": _normalize_provider_mode(os.getenv("KLING_PROVIDER_MODE")),
-            "VIDU_PROVIDER_MODE": _normalize_provider_mode(os.getenv("VIDU_PROVIDER_MODE")),
-            "PIXVERSE_PROVIDER_MODE": _normalize_provider_mode(os.getenv("PIXVERSE_PROVIDER_MODE")),
             "endpoint_overrides": endpoint_overrides,
             "secrets_configured": secrets_configured,
         }

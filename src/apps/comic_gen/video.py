@@ -1,7 +1,7 @@
 import os
 from typing import Dict, Any
 from .models import StoryboardFrame, GenerationStatus
-from ...models.wanx import WanxModel
+from ...models.byteplus import BytePlusVideoModel
 from ...utils import get_logger
 from ...utils.media_refs import to_project_media_ref
 
@@ -10,7 +10,9 @@ logger = get_logger(__name__)
 class VideoGenerator:
     def __init__(self, config: Dict[str, Any] = None):
         self.config = config or {}
-        self.model = WanxModel(self.config.get('model', {}))
+        # DashScope 下线后视频全部走 BytePlus Ark 上的 Seedance。
+        # pipeline 里 seedance / vidu / kling 各有显式分支，这里是兜底适配器。
+        self.model = BytePlusVideoModel(self.config.get('model', {}))
         self.output_dir = self.config.get('output_dir', 'output/video')
 
     def generate_i2v(self, image_url: str, prompt: str, duration: int = 5, audio_url: str = None) -> Dict[str, Any]:
@@ -83,7 +85,7 @@ class VideoGenerator:
         prompt = frame.video_prompt or frame.image_prompt or frame.action_description
         
         # Convert file:// URL to local path if necessary, or ensure the model can handle it.
-        # Wanx API needs a public URL or OSS URL. 
+        # Ark 需要公网可访问的 URL 或 OSS URL。
         # For this local demo, we might need to assume the user has a way to serve files or upload them.
         # OR we mock the upload.
         # For now, let's assume the image_url is accessible to the API (e.g. if we used an OSS URL earlier).

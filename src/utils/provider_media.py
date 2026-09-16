@@ -105,101 +105,6 @@ def _resolved(value: str, *, source_ref: str, media_ref_type: str, headers: Opti
     )
 
 
-def _resolve_dashscope_image(
-    ref: str,
-    ref_type: str,
-    *,
-    uploader,
-    local_path: Optional[str],
-) -> ResolvedMediaInput:
-    if ref_type == MEDIA_REF_REMOTE_URL:
-        return _resolved(ref, source_ref=ref, media_ref_type=ref_type)
-    if ref_type == MEDIA_REF_DATA_URI:
-        return _resolved(ref, source_ref=ref, media_ref_type=ref_type)
-    if ref_type == MEDIA_REF_OBJECT_KEY:
-        signed_url = _signed_url_from_object_key(ref, uploader)
-        if signed_url:
-            return _resolved(signed_url, source_ref=ref, media_ref_type=ref_type)
-        raise ValueError(
-            "DashScope image input received an OSS object key but OSS is not configured. "
-            "Configure OSS or pass a local/remote image reference."
-        )
-    if ref_type == MEDIA_REF_LOCAL_PATH:
-        if not local_path:
-            raise ValueError(f"Unable to resolve local media path for '{ref}'")
-        signed_url = _upload_then_sign(local_path, uploader)
-        if signed_url:
-            return _resolved(signed_url, source_ref=ref, media_ref_type=ref_type)
-        return _resolved(_encode_image_as_data_uri(local_path), source_ref=ref, media_ref_type=ref_type)
-    if ref_type == MEDIA_REF_BLOB_URL:
-        raise ValueError("Blob URLs are ephemeral and unsupported for backend media resolution.")
-    # Fallback: treat unknown ref types as local file paths if the file exists on disk.
-    if ref_type == MEDIA_REF_UNKNOWN and os.path.isfile(ref):
-        signed_url = _upload_then_sign(ref, uploader)
-        if signed_url:
-            return _resolved(signed_url, source_ref=ref, media_ref_type=MEDIA_REF_LOCAL_PATH)
-        return _resolved(_encode_image_as_data_uri(ref), source_ref=ref, media_ref_type=MEDIA_REF_LOCAL_PATH)
-    raise ValueError(f"Unsupported media reference for DashScope image input: '{ref}'")
-
-
-def _resolve_dashscope_temp_url(
-    ref: str,
-    ref_type: str,
-    *,
-    uploader,
-    local_path: Optional[str],
-    dashscope_temp_url_resolver: Optional[Callable[[str], str]],
-) -> ResolvedMediaInput:
-    if ref_type == MEDIA_REF_REMOTE_URL:
-        return _resolved(ref, source_ref=ref, media_ref_type=ref_type)
-    if ref_type == MEDIA_REF_OBJECT_KEY:
-        signed_url = _signed_url_from_object_key(ref, uploader)
-        if signed_url:
-            return _resolved(signed_url, source_ref=ref, media_ref_type=ref_type)
-        raise ValueError(
-            "DashScope URL-based media input received an OSS object key but OSS is not configured. "
-            "Configure OSS or use a local path that can be resolved via temporary URL."
-        )
-    if ref_type == MEDIA_REF_LOCAL_PATH:
-        if not local_path:
-            raise ValueError(f"Unable to resolve local media path for '{ref}'")
-        signed_url = _upload_then_sign(local_path, uploader)
-        if signed_url:
-            return _resolved(signed_url, source_ref=ref, media_ref_type=ref_type)
-
-        if dashscope_temp_url_resolver is None:
-            raise ValueError(
-                "DashScope URL-based media input requires OSS or a dashscope_temp_url_resolver "
-                "for local media. Configure OSS or provide a DashScope temp-url resolver."
-            )
-        resolver = dashscope_temp_url_resolver
-        temp_url = resolver(local_path)
-        if not isinstance(temp_url, str) or not temp_url.strip():
-            raise ValueError("dashscope_temp_url_resolver returned an empty URL.")
-        headers = {}
-        if temp_url.startswith("oss://"):
-            headers[RESOLVE_HEADER_DASHSCOPE_OSS_RESOURCE] = "enable"
-        return _resolved(temp_url, source_ref=ref, media_ref_type=ref_type, headers=headers)
-    # Fallback: treat unknown ref types as local file paths if the file exists on disk.
-    # This handles cases like /var/folders/... temp files that are outside the project output root.
-    if ref_type == MEDIA_REF_UNKNOWN and os.path.isfile(ref):
-        signed_url = _upload_then_sign(ref, uploader)
-        if signed_url:
-            return _resolved(signed_url, source_ref=ref, media_ref_type=MEDIA_REF_LOCAL_PATH)
-        if dashscope_temp_url_resolver is not None:
-            temp_url = dashscope_temp_url_resolver(ref)
-            if isinstance(temp_url, str) and temp_url.strip():
-                headers = {}
-                if temp_url.startswith("oss://"):
-                    headers[RESOLVE_HEADER_DASHSCOPE_OSS_RESOURCE] = "enable"
-                return _resolved(temp_url, source_ref=ref, media_ref_type=MEDIA_REF_LOCAL_PATH, headers=headers)
-    if ref_type == MEDIA_REF_BLOB_URL:
-        raise ValueError("Blob URLs are ephemeral and unsupported for backend media resolution.")
-    if ref_type == MEDIA_REF_DATA_URI:
-        raise ValueError("Data URI is not supported for DashScope URL-based media input.")
-    raise ValueError(f"Unsupported media reference for DashScope URL-based media input: '{ref}'")
-
-
 def _resolve_vendor_kling_image(
     ref: str,
     ref_type: str,
@@ -236,12 +141,22 @@ def _resolve_vendor_url_mode(
         signed_url = _upload_then_sign(local_path, uploader)
         if signed_url:
             return _resolved(signed_url, source_ref=ref, media_ref_type=ref_type)
+        if uploader is not None and getattr(uploader, "is_configured", False):
+            # Credentials were fine and we did try — the upload itself failed
+            # (timeout, permissions, network). Saying "configure OSS" here sends
+            # the reader to audit a .env that was never the problem; the real
+            # cause is in the oss_utils log line right above this one.
+            raise ValueError(
+                f"{provider_label} vendor {modality} input needs an OSS upload, and the upload failed "
+                f"for '{ref}' (local path: {local_path}). See the OSS error logged just before this — "
+                "a slow link can exceed OSS_TIMEOUT_SECONDS."
+            )
 
     raise ValueError(
         f"{provider_label} vendor {modality} input requires a URL-compatible media source. "
         f"Got ref '{ref}' classified as '{ref_type}'"
         + (f" (local path: {local_path})" if local_path else "")
-        + ". Configure OSS for local/object-key references, or switch provider mode to dashscope."
+        + ". Configure OSS for local/object-key references."
     )
 
 
@@ -255,7 +170,6 @@ def resolve_media_input(
     registry: Optional[ProviderRegistry] = None,
     project_root: Optional[str] = None,
     oss_base_path: Optional[str] = None,
-    dashscope_temp_url_resolver: Optional[Callable[[str], str]] = None,
 ) -> ResolvedMediaInput:
     """
     Resolve a stable project-side media reference to a provider-ready input payload.
@@ -280,21 +194,6 @@ def resolve_media_input(
     )
     local_path = resolve_local_media_path(ref, project_root=project_root)
 
-    if mode in {"dashscope_multimodal_message", "dashscope_image_to_video"}:
-        return _resolve_dashscope_image(
-            ref,
-            ref_type,
-            uploader=uploader,
-            local_path=local_path,
-        )
-    if mode == "dashscope_temp_file_url":
-        return _resolve_dashscope_temp_url(
-            ref,
-            ref_type,
-            uploader=uploader,
-            local_path=local_path,
-            dashscope_temp_url_resolver=dashscope_temp_url_resolver,
-        )
     if mode == "kling_vendor_base64_image":
         return _resolve_vendor_kling_image(ref, ref_type, local_path=local_path)
     if (
@@ -336,7 +235,6 @@ def resolve_media_inputs(
     registry: Optional[ProviderRegistry] = None,
     project_root: Optional[str] = None,
     oss_base_path: Optional[str] = None,
-    dashscope_temp_url_resolver: Optional[Callable[[str], str]] = None,
 ) -> List[ResolvedMediaInput]:
     return [
         resolve_media_input(
@@ -348,7 +246,6 @@ def resolve_media_inputs(
             registry=registry,
             project_root=project_root,
             oss_base_path=oss_base_path,
-            dashscope_temp_url_resolver=dashscope_temp_url_resolver,
         )
         for ref in list(refs)
     ]

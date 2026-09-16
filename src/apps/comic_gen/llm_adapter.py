@@ -1,13 +1,19 @@
 """
-LLM Adapter - Unified interface for DashScope and OpenAI-compatible APIs.
+LLM Adapter - Unified interface for Gemini and OpenAI-compatible APIs.
 
 Supports two providers:
-  - dashscope (default): Alibaba Cloud DashScope via OpenAI-compatible endpoint
+  - gemini (default): Google Gemini via its OpenAI-compatible layer
   - openai: Any OpenAI-compatible API (OpenAI, DeepSeek, Ollama, etc.)
 
+Gemini exposes an OpenAI-compatible endpoint at /v1beta/openai/, so both
+providers share one client type and no extra SDK is needed. That layer is
+officially still beta: unsupported parameters are silently ignored rather
+than rejected, so only send options the docs list as supported.
+
 Configuration via environment variables:
-  LLM_PROVIDER=dashscope|openai
-  DASHSCOPE_API_KEY=...
+  LLM_PROVIDER=gemini|openai
+  GEMINI_API_KEY=...
+  GEMINI_BASE_URL=https://generativelanguage.googleapis.com   (optional)
   OPENAI_API_KEY=...
   OPENAI_BASE_URL=https://api.openai.com/v1
   OPENAI_MODEL=gpt-4o
@@ -22,18 +28,43 @@ logger = logging.getLogger(__name__)
 
 
 class LLMAdapter:
-    """Unified LLM call interface supporting DashScope and OpenAI-compatible APIs."""
+    """Unified LLM call interface supporting Gemini and OpenAI-compatible APIs."""
+
+    # Providers this adapter can actually talk to. Anything else is normalised
+    # away rather than carried around as a label that no branch handles.
+    _SUPPORTED_PROVIDERS = ("gemini", "openai")
+    # `.env.example` shipped `LLM_PROVIDER=dashscope` for a long time, so every
+    # pre-migration install has that line pinned. Changing only the default
+    # would leave those installs reporting a provider that no longer exists.
+    _RETIRED_PROVIDERS = ("dashscope",)
 
     def __init__(self):
-        self.provider = os.getenv("LLM_PROVIDER", "dashscope").lower()
+        self.provider = self._resolve_provider(os.getenv("LLM_PROVIDER"))
         self._client = None
         logger.info(f"LLM Adapter initialized with provider: {self.provider}")
+
+    @classmethod
+    def _resolve_provider(cls, raw: Optional[str]) -> str:
+        value = (raw or "").strip().lower()
+        if value in cls._SUPPORTED_PROVIDERS:
+            return value
+        if value in cls._RETIRED_PROVIDERS:
+            logger.warning(
+                "LLM_PROVIDER=%s is retired (DashScope has been removed); using gemini. "
+                "Remove or update that line in your .env.",
+                value,
+            )
+        elif value:
+            logger.warning(
+                "Unknown LLM_PROVIDER=%s; falling back to gemini.", value
+            )
+        return "gemini"
 
     @property
     def is_configured(self) -> bool:
         if self.provider == "openai":
             return bool(os.getenv("OPENAI_API_KEY"))
-        return bool(os.getenv("DASHSCOPE_API_KEY"))
+        return bool(os.getenv("GEMINI_API_KEY"))
 
     def _get_client(self):
         """Get or create the OpenAI-compatible client (lazy, cached)."""
@@ -51,22 +82,23 @@ class LLMAdapter:
                     base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
                 )
             else:
-                # DashScope uses OpenAI-compatible endpoint
+                # Gemini speaks the OpenAI protocol at /v1beta/openai/.
                 self._client = OpenAI(
-                    api_key=os.getenv("DASHSCOPE_API_KEY"),
-                    base_url=f"{get_provider_base_url('DASHSCOPE')}/compatible-mode/v1",
+                    api_key=os.getenv("GEMINI_API_KEY"),
+                    base_url=f"{get_provider_base_url('GEMINI')}/v1beta/openai/",
                 )
         return self._client
 
-    # DashScope qwen 系列：首选 qwen3.7-plus（最新），不可用时回退到 qwen3.6-plus，
-    # 最终回退到 qwen-plus alias（始终指向最新稳定通用版）。
+    # Gemini flash 系列：首选 gemini-3.8-flash（最新稳定），不可用时依次回退。
     # 维护 fallback chain 而不是硬写一个名字，避免新版本上下线时整条 LLM 链断掉。
-    _DASHSCOPE_MODEL_FALLBACK_CHAIN = ["qwen3.7-plus", "qwen3.6-plus", "qwen-plus"]
+    # 只放 Google 标注为 stable 的型号 —— gemini-2.0-* 与 gemini-3-pro-preview
+    # 已被标记弃用，放进兜底等于埋一个必然失效的兜底。
+    _GEMINI_MODEL_FALLBACK_CHAIN = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-2.5-flash"]
 
     def _get_default_model(self) -> str:
         if self.provider == "openai":
             return os.getenv("OPENAI_MODEL", "gpt-4o")
-        return self._DASHSCOPE_MODEL_FALLBACK_CHAIN[0]
+        return self._GEMINI_MODEL_FALLBACK_CHAIN[0]
 
     def chat(
         self,
@@ -128,36 +160,37 @@ class LLMAdapter:
             content, usage = self._chat_once(client, model, messages, response_format)
             return content, self._normalize_usage(usage), model
 
-        # Provider 默认路径：DashScope 走 fallback chain，OpenAI 单次尝试。
+        # Provider 默认路径：Gemini 走 fallback chain，OpenAI 单次尝试。
         if self.provider == "openai":
             openai_model = self._get_default_model()
             content, usage = self._chat_once(client, openai_model, messages, response_format)
             return content, self._normalize_usage(usage), openai_model
 
         last_err: Optional[Exception] = None
-        for idx, candidate in enumerate(self._DASHSCOPE_MODEL_FALLBACK_CHAIN):
+        for idx, candidate in enumerate(self._GEMINI_MODEL_FALLBACK_CHAIN):
             try:
                 content, usage = self._chat_once(client, candidate, messages, response_format)
                 return content, self._normalize_usage(usage), candidate
             except RuntimeError as e:
                 # 仅在 "模型不存在 / 不可用" 类错误时回退；其他错误（鉴权、限流、网络）
-                # 直接抛，不浪费第二次重试。判定关键字宽松匹配 DashScope 文案。
+                # 直接抛，不浪费第二次重试。关键字宽松匹配，兼容各家措辞。
                 msg = str(e).lower()
                 is_model_unavailable = any(k in msg for k in (
                     "model not found", "invalidmodel", "model_not_found",
                     "no such model", "not supported", "modelnotfound", "404",
+                    "is not found for api version", "unsupported model",
                 ))
                 last_err = e
-                if is_model_unavailable and idx < len(self._DASHSCOPE_MODEL_FALLBACK_CHAIN) - 1:
-                    next_candidate = self._DASHSCOPE_MODEL_FALLBACK_CHAIN[idx + 1]
+                if is_model_unavailable and idx < len(self._GEMINI_MODEL_FALLBACK_CHAIN) - 1:
+                    next_candidate = self._GEMINI_MODEL_FALLBACK_CHAIN[idx + 1]
                     logger.warning(
-                        "DashScope model %s unavailable (%s); falling back to %s",
+                        "Gemini model %s unavailable (%s); falling back to %s",
                         candidate, e, next_candidate,
                     )
                     continue
                 raise
         # 理论上不可达（最后一次失败已 raise），保留兜底
-        raise last_err if last_err else RuntimeError("DashScope: no models available")
+        raise last_err if last_err else RuntimeError("Gemini: no models available")
 
     def _chat_once(
         self,
@@ -177,7 +210,7 @@ class LLMAdapter:
             response = client.chat.completions.create(**kwargs)
             return response.choices[0].message.content, getattr(response, "usage", None)
         except Exception as e:
-            provider_label = "DashScope" if self.provider != "openai" else "OpenAI"
+            provider_label = "Gemini" if self.provider != "openai" else "OpenAI"
             raise RuntimeError(f"{provider_label} API error: {e}") from e
 
     @staticmethod

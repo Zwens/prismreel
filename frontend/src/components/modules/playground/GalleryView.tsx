@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Video, AlertCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { API_URL } from '@/lib/api';
+import { mediaUrl as getMediaUrl } from '@/lib/mediaPath';
 import type { PlaygroundGeneration } from './usePlaygroundStore';
 
 // ---------------------------------------------------------------------------
@@ -19,10 +19,6 @@ interface GalleryViewProps {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function getMediaUrl(path: string): string {
-  return API_URL + '/files/' + path.replace(/^output\//, '');
-}
 
 function formatTime(dateStr: string): string {
   const date = new Date(dateStr);

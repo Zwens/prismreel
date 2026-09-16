@@ -1,13 +1,13 @@
 "use client";
 
-import { LayoutGrid, Layers, Wand2, Clock, Settings, LogOut, Gauge } from "lucide-react";
+import { LayoutGrid, Layers, Clapperboard, Wand2, Clock, Settings, LogOut, Gauge } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import PrismReelBranding from "./PrismReelBranding";
 import { logout } from "@/lib/api";
 
-export type GlobalTab = "workspace" | "library" | "playground" | "history" | "settings";
+export type GlobalTab = "workspace" | "library" | "aivideo" | "playground" | "history" | "settings";
 
 interface GlobalSidebarProps {
   activeTab: GlobalTab;
@@ -19,12 +19,13 @@ interface GlobalSidebarProps {
 export const GLOBAL_NAV_ITEMS: { id: GlobalTab; icon: typeof LayoutGrid; hash: string }[] = [
   { id: "workspace", icon: LayoutGrid, hash: "#/" },
   { id: "library", icon: Layers, hash: "#/library" },
+  { id: "aivideo", icon: Clapperboard, hash: "#/ai-video" },
   { id: "playground", icon: Wand2, hash: "#/playground" },
   { id: "history", icon: Clock, hash: "#/history" },
   { id: "settings", icon: Settings, hash: "#/settings" },
 ];
 
-const APP_VERSION = "v0.2.0";
+const APP_VERSION = "v1.5.0";
 
 function NavButton({
   active,
@@ -106,7 +107,7 @@ export default function GlobalSidebar({ activeTab, onTabChange }: GlobalSidebarP
 
       {/* Primary navigation */}
       <nav className="flex-1 flex flex-col gap-0.5 p-2.5" aria-label={t("mainNavAria")}>
-        {GLOBAL_NAV_ITEMS.slice(0, 4).map((item) => (
+        {GLOBAL_NAV_ITEMS.filter((item) => item.id !== "settings").map((item) => (
           <NavButton
             key={item.id}
             active={activeTab === item.id}

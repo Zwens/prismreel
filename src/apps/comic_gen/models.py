@@ -104,25 +104,6 @@ class LightingData(BaseModel):
     description: Optional[str] = Field(None, description="自然语言光影描述")
 
 
-class ProviderBackend(str, Enum):
-    DASHSCOPE = "dashscope"
-    VENDOR = "vendor"
-
-
-class ProviderRoutingConfig(BaseModel):
-    KLING_PROVIDER_MODE: ProviderBackend = Field(
-        ProviderBackend.DASHSCOPE,
-        description="Provider backend for kling-* models: dashscope or vendor",
-    )
-    VIDU_PROVIDER_MODE: ProviderBackend = Field(
-        ProviderBackend.DASHSCOPE,
-        description="Provider backend for vidu* models: dashscope or vendor",
-    )
-    PIXVERSE_PROVIDER_MODE: ProviderBackend = Field(
-        ProviderBackend.DASHSCOPE,
-        description="Provider backend for pixverse-* models: dashscope or vendor",
-    )
-
 class ImageVariant(BaseModel):
     id: str = Field(..., description="Unique identifier for the variant")
     url: str = Field(..., description="URL of the image")
@@ -211,9 +192,9 @@ class VideoTask(BaseModel):
     #   - Kling: task_id (kling/vendor mode) + request_id (header X-Kling-Request-Id)
     #   - Vidu: task_id only
     #   - PixVerse: task_id only
-    # provider_name labels the platform so the UI can render "dashscope: 1ce3..."
+    # provider_name labels the platform so the UI can render "byteplus: 1ce3..."
     # rather than guessing from model_name.
-    provider_name: Optional[str] = Field(None, description="Which provider handled this task (dashscope / kling / vidu / pixverse / etc.)")
+    provider_name: Optional[str] = Field(None, description="Which provider handled this task (byteplus / kling / vidu / google / etc.)")
     provider_task_id: Optional[str] = Field(None, description="Provider-side task ID; pasteable into the provider's console for diagnosis")
     provider_request_id: Optional[str] = Field(None, description="Provider-side request ID for support tickets (optional — not all providers return one)")
     # User annotations on this take (抽卡 review). Storyboard's candidates
@@ -474,7 +455,7 @@ class CustomVoice(BaseModel):
     For designs (PR-3i): voice_prompt retains the description for iteration;
     source_audio_url is None.
     """
-    id: str = Field(..., description="voice_id returned by dashscope customization API")
+    id: str = Field(..., description="voice_id from the TTS provider")
     label: str = Field(..., description="User-given display name (e.g. '林墨真人声')")
     origin: str = Field(..., description="'clone' (PR-3h) | 'design' (PR-3i)")
     target_model: str = Field(

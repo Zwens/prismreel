@@ -40,7 +40,8 @@ function formatSessionLabel(
 }
 
 export default function ResultGallery() {
-  const { history, startGeneration, updateGeneration, useResultAsReference } = usePlaygroundStore();
+  const { history, startGeneration, updateGeneration, useResultAsReference, removeGeneration } =
+    usePlaygroundStore();
   const t = useTranslations('playground');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'gallery'>('grid');
@@ -102,11 +103,11 @@ export default function ResultGallery() {
   const handleDelete = useCallback(async (gen: PlaygroundGeneration) => {
     try {
       await playgroundApi.deleteGeneration(gen.id);
-      usePlaygroundStore.getState().removeGeneration(gen.id);
+      removeGeneration(gen.id);
     } catch (err) {
       console.error('[Playground] Delete failed:', err);
     }
-  }, []);
+  }, [removeGeneration]);
 
   // Image result → "Generate video": set the image as i2v reference and switch mode.
   const handleGenerateVideo = useCallback(

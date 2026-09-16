@@ -12,6 +12,7 @@ from .llm import ScriptProcessor
 from .assets import AssetGenerator
 from .storyboard import StoryboardGenerator
 from .video import VideoGenerator
+from ...utils.retired_models import migrate_project_models
 from .audio import AudioGenerator
 from .export import ExportManager
 from .editing import RenderEngine, collect_render_segments
@@ -361,22 +362,29 @@ class ComicGenPipeline:
             return True
 
     def _resolve_video_backend(self, model_name: str) -> str:
+        """Which backend serves this video model.
+
+        Falls back to ``byteplus``: DashScope used to be the catch-all, but
+        after its removal Seedance on Ark is the only backend that serves an
+        unrecognised video id with any chance of working. Kling and Vidu
+        require their own credentials and would fail on a guess anyway.
+        """
         try:
             return resolve_provider_backend(model_name)
         except (KeyError, ValueError):
             logger.debug(
-                "Provider backend not registered for video model %s, defaulting to dashscope.",
+                "Provider backend not registered for video model %s; defaulting to byteplus.",
                 model_name,
             )
-            return "dashscope"
+            return "byteplus"
         except Exception as e:
             logger.warning(
                 "Unexpected error resolving provider backend for video model %s: %s. "
-                "Falling back to dashscope.",
+                "Falling back to byteplus.",
                 model_name,
                 e,
             )
-            return "dashscope"
+            return "byteplus"
 
     # ... (existing methods)
 
@@ -396,7 +404,23 @@ class ComicGenPipeline:
         data = load_json_strict(self.data_file)
         if data is None:
             return {}
-        return {k: Script(**v) for k, v in data.items()}
+
+        # 已下架模型 id 在读取时改写一次并回写落盘。DashScope 移除后，存量项目
+        # 里指向 wan / qwen-image / happyhorse / pixverse 的引用在目录里已不存在，
+        # 不改写的话用户要到点击生成时才看到「未知模型」。
+        # 回写而不是每次渲染临时换算，是为了让老 id 只存活一个版本周期，
+        # 之后 retired_models 那张表就能删掉。
+        data, changed = migrate_project_models(data)
+        scripts = {k: Script(**v) for k, v in data.items()}
+        if changed:
+            logger.info("Migrated retired model ids in project data; writing back.")
+            self.scripts = scripts
+            try:
+                self._save_data()
+            except Exception as e:
+                # 迁移只是便利功能：写回失败不该挡住应用启动，下次读取会再试。
+                logger.warning("Failed to persist migrated model ids: %s", e)
+        return scripts
 
     def _save_data(self):
         """Save data with thread lock to prevent concurrent write issues."""
@@ -3420,7 +3444,7 @@ class ComicGenPipeline:
                 )
                 self._record_generation_usage_safe(script.owner_id, "vidu", task.model, task.resolution, duration=task.duration)
             else:
-                # Default: Wanx model
+                # 兜底：BytePlus Ark（Seedance）
                 # Issue 17: persist provider IDs (Bailian / DashScope task_id +
                 # request_id) onto our VideoTask the moment wanx gets them, BEFORE
                 # the long polling loop. Lets the user copy them from the queue
@@ -3689,18 +3713,11 @@ class ComicGenPipeline:
         if dialogue_text:
             speaker = self.resolve_dialogue_speaker(script, frame)
             if speaker:
-                model_override = None
-                family_override = None
-                if speaker.voice_id:
-                    custom = self.find_custom_voice(speaker.voice_id)
-                    if custom:
-                        model_override = custom.target_model
-                        family_override = custom.family
+                # 所有音色现在同属一个 Gemini TTS 模型，不再需要按音色覆盖
+                # model/family；旧 voice_id 在 TTS 层按 voice_migration.yaml 迁移。
                 self.audio_generator.generate_dialogue(
                     frame, speaker, speed, pitch, volume,
                     instructions=instructions,
-                    model_override=model_override,
-                    family_override=family_override,
                 )
 
         self._save_data()
@@ -4402,296 +4419,6 @@ class ComicGenPipeline:
             self._save_data()
             self._save_series_data_unlocked()
             return series
-
-    # ─────────────────────────────────────────────────────────────
-    # PR-3h/i · Custom voice (clone + design) management
-    # Per Q16.1: series-level pool. Episodes / characters in the series
-    # share access via VoicePickerModal's 我的复刻 / 我的设计 tabs.
-    # ─────────────────────────────────────────────────────────────
-
-    def create_voice_clone(
-        self,
-        series_id: str,
-        audio_url: str,
-        label: str,
-        target_model: str = "cosyvoice-v3.5-plus",
-    ) -> 'CustomVoice':
-        """Clone a voice from a reference audio URL via dashscope customization.
-
-        Calls /services/audio/tts/customization with model='voice-enrollment'
-        action='create_voice'. Persists the returned voice_id under
-        series.custom_voices[]. Returns the CustomVoice entry.
-
-        Per doc: audio must be ≤10MB, MP3/WAV/M4A, ≥16kHz, 10-20s recommended.
-        Frontend should pre-validate before calling.
-        """
-        import requests
-        from .models import CustomVoice  # local import to avoid circular
-
-        with self._save_lock:
-            series = self.series_store.get(series_id)
-            if not series:
-                raise ValueError(f"Series not found: {series_id}")
-
-            api_key = os.getenv("DASHSCOPE_API_KEY")
-            if not api_key:
-                raise RuntimeError("DASHSCOPE_API_KEY not configured")
-
-            # Dashscope customization endpoint (Beijing region; intl uses
-            # dashscope-intl URL — TODO when PrismReel supports intl deployment)
-            url = "https://dashscope.aliyuncs.com/api/v1/services/audio/tts/customization"
-            payload = {
-                "model": "voice-enrollment",
-                "input": {
-                    "action": "create_voice",
-                    "target_model": target_model,
-                    "prefix": label[:20],  # API has prefix length limit
-                    "url": audio_url,
-                },
-            }
-            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-
-            logger.info(f"[voice/clone] creating voice for series={series_id} label='{label}' target={target_model}")
-            resp = requests.post(url, json=payload, headers=headers, timeout=60)
-            if resp.status_code != 200:
-                logger.error(f"[voice/clone] dashscope error {resp.status_code}: {resp.text[:500]}")
-                raise RuntimeError(f"Voice clone failed: HTTP {resp.status_code} — {resp.text[:200]}")
-
-            data = resp.json()
-            # Per doc shape: output.voice (CosyVoice) or output.voice_id (Qwen-TTS)
-            voice_id = (
-                data.get("output", {}).get("voice")
-                or data.get("output", {}).get("voice_id")
-                or data.get("voice")
-            )
-            if not voice_id:
-                logger.error(f"[voice/clone] no voice_id in response: {data}")
-                raise RuntimeError(f"Voice clone succeeded but voice_id missing in response: {data}")
-
-            custom = CustomVoice(
-                id=str(voice_id),
-                label=label,
-                origin="clone",
-                target_model=target_model,
-                family="cosyvoice",  # PR-3h hardcodes CosyVoice clone target
-                source_audio_url=audio_url,
-            )
-            if series.custom_voices is None:
-                series.custom_voices = []
-            series.custom_voices.append(custom)
-            series.updated_at = time.time()
-            self._save_series_data_unlocked()
-            logger.info(f"[voice/clone] success voice_id={voice_id} stored on series={series_id}")
-            return custom
-
-    def list_custom_voices(self, series_id: str) -> List['CustomVoice']:
-        """Return all custom voices in a series (clones + designs).
-        Empty list if series has none or doesn't exist."""
-        series = self.series_store.get(series_id)
-        if not series:
-            return []
-        return list(series.custom_voices or [])
-
-    def delete_custom_voice(self, series_id: str, voice_id: str) -> bool:
-        """Remove a custom voice entry. Returns True if removed, False if
-        not found. Note: does NOT call dashscope to delete the underlying
-        voice (the platform allows re-use for 24h; cleanup is best-effort)."""
-        with self._save_lock:
-            series = self.series_store.get(series_id)
-            if not series or not series.custom_voices:
-                return False
-            before = len(series.custom_voices)
-            series.custom_voices = [v for v in series.custom_voices if v.id != voice_id]
-            removed = before != len(series.custom_voices)
-            if removed:
-                series.updated_at = time.time()
-                self._save_series_data_unlocked()
-            return removed
-
-    def find_custom_voice(self, voice_id: str) -> Optional['CustomVoice']:
-        """Search all series for a custom voice by voice_id. Used by
-        /voice/preview to resolve target_model for cloned/designed voices
-        (which aren't in the static TTS_VOICE_REGISTRY)."""
-        for series in self.series_store.values():
-            for cv in (series.custom_voices or []):
-                if cv.id == voice_id:
-                    return cv
-        return None
-
-    # ─────────────────────────────────────────────────────────────
-    # PR-3i · Voice design (iterate: prompt → preview → accept)
-    # Unlike clone (audio-driven, 1 shot), design is text-driven and
-    # users naturally iterate. Each preview mints a new voice on
-    # dashscope; we only persist the voice the user explicitly accepts.
-    # ─────────────────────────────────────────────────────────────
-
-    def voice_design_preview(
-        self,
-        voice_prompt: str,
-        preview_text: str,
-        target_model: str = "cosyvoice-v3.5-plus",
-    ) -> Dict[str, Any]:
-        """Mint a new design voice via dashscope (preview returned inline).
-
-        Per dashscope contract: create_voice with voice_prompt MUST be paired
-        with preview_text in the same call; the API returns both the voice_id
-        and a preview audio URL. We download the URL into our cache dir so
-        the frontend can play it through the same /files static mount used
-        by /voice/preview.
-
-        Does NOT persist; user iterates by re-calling with tweaked params.
-        """
-        import requests
-        import hashlib
-
-        api_key = os.getenv("DASHSCOPE_API_KEY")
-        if not api_key:
-            raise RuntimeError("DASHSCOPE_API_KEY not configured")
-
-        url = "https://dashscope.aliyuncs.com/api/v1/services/audio/tts/customization"
-        payload = {
-            "model": "voice-enrollment",
-            "input": {
-                "action": "create_voice",
-                "target_model": target_model,
-                "prefix": "design",
-                "voice_prompt": voice_prompt[:500],
-                "preview_text": (preview_text or "你好，这是一段音色测试。")[:200],
-            },
-        }
-        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-
-        logger.info(f"[voice/design] preview voice_prompt='{voice_prompt[:60]}…' target={target_model}")
-        # dashscope voice design has variable latency (10-60s); the customization
-        # service occasionally returns its own timeout. Retry once on 5xx/timeout.
-        resp = None
-        last_err = None
-        for attempt in range(2):
-            try:
-                resp = requests.post(url, json=payload, headers=headers, timeout=120)
-                if resp.status_code == 200:
-                    break
-                last_err = f"HTTP {resp.status_code} — {resp.text[:200]}"
-                if resp.status_code < 500 and "Timeout" not in (resp.text or ""):
-                    break  # client error, don't retry
-                logger.warning(f"[voice/design] attempt {attempt+1} failed: {last_err}; retrying")
-            except requests.RequestException as e:
-                last_err = str(e)
-                logger.warning(f"[voice/design] attempt {attempt+1} network error: {e}; retrying")
-        if resp is None or resp.status_code != 200:
-            logger.error(f"[voice/design] all attempts failed: {last_err}")
-            raise RuntimeError(f"Voice design failed: {last_err}")
-
-        data = resp.json()
-        output = data.get("output", {}) or {}
-        voice_id = output.get("voice") or output.get("voice_id") or data.get("voice")
-        remote_preview = output.get("preview_audio") or output.get("preview_audio_url") or output.get("audio_url")
-        if not voice_id:
-            logger.error(f"[voice/design] no voice_id in response: {data}")
-            raise RuntimeError(f"Voice design API returned no voice_id: {data}")
-
-        voice_id_str = str(voice_id)
-
-        cache_dir = "output/cache/voice_design_preview"
-        os.makedirs(cache_dir, exist_ok=True)
-        cache_key = hashlib.md5(f"{voice_id_str}|{preview_text}".encode("utf-8")).hexdigest()
-        cache_path = os.path.join(cache_dir, f"{cache_key}.mp3")
-
-        if remote_preview:
-            # Download the dashscope-served preview into our cache.
-            try:
-                audio_resp = requests.get(remote_preview, timeout=60)
-                audio_resp.raise_for_status()
-                with open(cache_path, "wb") as f:
-                    f.write(audio_resp.content)
-            except Exception as e:
-                logger.warning(f"[voice/design] preview download failed, falling back to local TTS: {e}")
-                remote_preview = None
-
-        if not remote_preview:
-            if not self.audio_generator.tts:
-                raise RuntimeError("TTS unavailable; cannot synthesize preview")
-            self.audio_generator.tts.synthesize(
-                text=preview_text,
-                output_path=cache_path,
-                voice=voice_id_str,
-                model_override=target_model,
-                family_override="cosyvoice",
-            )
-
-        preview_url = f"cache/voice_design_preview/{cache_key}.mp3"
-        return {"voice_id": voice_id_str, "preview_url": preview_url, "target_model": target_model}
-
-    def voice_design_save(
-        self,
-        series_id: str,
-        voice_id: str,
-        voice_prompt: str,
-        label: str,
-        target_model: str = "cosyvoice-v3.5-plus",
-    ) -> 'CustomVoice':
-        """Persist a previewed design voice into series.custom_voices[]."""
-        from .models import CustomVoice
-
-        with self._save_lock:
-            series = self.series_store.get(series_id)
-            if not series:
-                raise ValueError(f"Series not found: {series_id}")
-
-            existing = next(
-                (cv for cv in (series.custom_voices or []) if cv.id == voice_id),
-                None,
-            )
-            if existing:
-                logger.info(f"[voice/design] save: voice_id={voice_id} already exists; returning existing")
-                return existing
-
-            custom = CustomVoice(
-                id=voice_id,
-                label=label,
-                origin="design",
-                target_model=target_model,
-                family="cosyvoice",
-                voice_prompt=voice_prompt[:500],
-            )
-            if series.custom_voices is None:
-                series.custom_voices = []
-            series.custom_voices.append(custom)
-            series.updated_at = time.time()
-            self._save_series_data_unlocked()
-            logger.info(f"[voice/design] saved voice_id={voice_id} to series={series_id}")
-            return custom
-
-    def translate_character_to_voice_prompt(self, description: str) -> str:
-        """LLM helper: convert a character description into a CosyVoice
-        voice_prompt suitable for /services/audio/tts/customization.
-
-        The prompt should describe vocal qualities (timbre, pace, age, mood)
-        in concise Chinese. CosyVoice voice_prompt cap is 500 chars; we
-        target ~120-200 to leave headroom for tone hints.
-        """
-        from .llm_adapter import LLMAdapter
-
-        adapter = LLMAdapter()
-        if not adapter.is_configured:
-            raise RuntimeError("LLM adapter not configured (missing DASHSCOPE_API_KEY)")
-
-        system_prompt = (
-            "你是一个语音设计师，擅长将角色设定转化为简洁的中文音色描述。"
-            "输出要求："
-            "1. 只描述音色、语速、年龄、情绪，不要描写外貌或剧情。"
-            "2. 用 100-200 字中文，单段无标题，不带引号或多余说明。"
-            "3. 重点：性别·年龄·音色质感·语速·气质氛围。"
-        )
-        user_prompt = f"角色设定：\n{description.strip()[:1000]}\n\n请输出音色描述。"
-
-        text = adapter.chat(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-        )
-        return (text or "").strip()[:500]
 
     def get_series_episodes(self, series_id: str) -> List[Script]:
         """Get all Episodes belonging to a Series, in order."""

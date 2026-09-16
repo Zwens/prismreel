@@ -1,7 +1,7 @@
 """Playground service layer -- orchestrates AI generation by delegating to existing model adapters.
 
-Routes based on model_id to the appropriate adapter (WanxModel, KlingModel,
-ViduModel, BytePlusVideoModel, WanxImageModel).  Mirrors the
+Routes based on model_id to the appropriate adapter (BytePlusVideoModel, KlingModel,
+ViduModel, GeminiImageModel).  Mirrors the
 routing logic in ``src/apps/comic_gen/pipeline.py:process_video_task()``.
 """
 
@@ -20,6 +20,7 @@ from .models import (
 )
 from .storage import PlaygroundStorage
 from ...utils import get_logger
+from ...utils.media_refs import to_posix_media_path
 from ...utils.system_check import get_ffmpeg_path
 
 logger = get_logger(__name__)
@@ -39,8 +40,8 @@ class PlaygroundService:
     def __init__(self, storage: PlaygroundStorage):
         self.storage = storage
         # Lazy-initialised model instances (cached for the lifetime of the service)
-        self._wanx_model = None
-        self._wanx_image_model = None
+        self._default_video_model = None
+        self._default_image_model = None
         self._kling_model = None
         self._vidu_model = None
         self._byteplus_video_model = None
@@ -232,11 +233,11 @@ class PlaygroundService:
                 if is_vidu_image_model(model_lower):
                     self._generate_image_vidu(gen, out_path, idx)
                 else:
-                    self._generate_image_wanx(gen, out_path, idx)
+                    self._generate_image_default(gen, out_path, idx)
 
                 output_entry = PlaygroundOutput(
                     id=str(uuid.uuid4()),
-                    media_path=out_path,
+                    media_path=to_posix_media_path(out_path),
                     media_type="image",
                 )
                 gen.outputs.append(output_entry)
@@ -248,12 +249,12 @@ class PlaygroundService:
         if failures and not gen.outputs:
             raise RuntimeError(f"All {len(failures)} batch items failed: {failures[0]}")
 
-    def _generate_image_wanx(self, gen: PlaygroundGeneration, out_path: str, _idx: int) -> None:
-        """Delegate to :class:`WanxImageModel` (DashScope image generation)."""
-        from ...models.image import WanxImageModel
+    def _generate_image_default(self, gen: PlaygroundGeneration, out_path: str, _idx: int) -> None:
+        """Delegate to :class:`GeminiImageModel` (default image generation)."""
+        from ...models.gemini_image import GeminiImageModel
 
-        if self._wanx_image_model is None:
-            self._wanx_image_model = WanxImageModel({})
+        if self._default_image_model is None:
+            self._default_image_model = GeminiImageModel({})
 
         params = gen.parameters
         kwargs = {
@@ -271,7 +272,7 @@ class PlaygroundService:
         if ref_paths:
             kwargs["ref_image_paths"] = ref_paths
 
-        self._wanx_image_model.generate(
+        self._default_image_model.generate(
             prompt=gen.prompt,
             output_path=out_path,
             **kwargs,
@@ -321,17 +322,15 @@ class PlaygroundService:
                     usage = self._generate_video_kling(gen, out_path)
                 elif model_lower.startswith("vidu") or model_lower.startswith("viduq"):
                     usage = self._generate_video_vidu(gen, out_path)
-                elif model_lower.startswith("happyhorse"):
-                    usage = self._generate_video_wanx(gen, out_path)
-                elif model_lower.startswith("pixverse"):
-                    usage = self._generate_video_wanx(gen, out_path)
                 else:
-                    usage = self._generate_video_wanx(gen, out_path)
+                    # happyhorse / pixverse 随 DashScope 下线，专属分支已移除；
+                    # 未识别的 id 一并落到 Seedance 兜底。
+                    usage = self._generate_video_default(gen, out_path)
 
                 total_tokens, cost_usd = self._record_video_usage(gen, usage)
                 output_entry = PlaygroundOutput(
                     id=str(uuid.uuid4()),
-                    media_path=out_path,
+                    media_path=to_posix_media_path(out_path),
                     media_type="video",
                     thumbnail_path=self._extract_video_thumbnail(out_path),
                     total_tokens=total_tokens,
@@ -417,16 +416,16 @@ class PlaygroundService:
             logger.warning("Thumbnail extraction timed out for %s", video_path)
             return None
 
-        return thumb_path
+        return to_posix_media_path(thumb_path)
 
     # -- adapter delegates ------------------------------------------------
 
-    def _generate_video_wanx(self, gen: PlaygroundGeneration, out_path: str) -> Optional[dict]:
-        """Delegate to :class:`WanxModel` (DashScope video generation -- wan2.x / happyhorse)."""
-        from ...models.wanx import WanxModel
+    def _generate_video_default(self, gen: PlaygroundGeneration, out_path: str) -> Optional[dict]:
+        """Delegate to :class:`BytePlusVideoModel` (Seedance on BytePlus Ark)."""
+        from ...models.byteplus import BytePlusVideoModel
 
-        if self._wanx_model is None:
-            self._wanx_model = WanxModel({})
+        if self._default_video_model is None:
+            self._default_video_model = BytePlusVideoModel({})
 
         params = gen.parameters
         img_path, img_url = self._resolve_first_input_media(gen)
@@ -451,7 +450,7 @@ class PlaygroundService:
         if gen.mode == PlaygroundMode.V2V and gen.input_media:
             kwargs["video_url"] = gen.input_media[0]
 
-        self._wanx_model.generate(
+        self._default_video_model.generate(
             prompt=gen.prompt,
             output_path=out_path,
             img_path=img_path,
@@ -485,6 +484,29 @@ class PlaygroundService:
         if gen.mode == PlaygroundMode.R2V and gen.input_media:
             kwargs["generation_mode"] = "r2v"
             kwargs["ref_image_urls"] = list(gen.input_media)
+
+        # v2v: input_media[0] is the source/reference clip; anything after it is
+        # a reference image. Ark's omni-reference scenario accepts both in one
+        # content array (role=reference_video plus role=reference_image), which
+        # is what lets a character sheet drive the look while a clip drives the
+        # motion.
+        #
+        # Without video_url the source clip never reaches the adapter and the
+        # request goes out as a plain prompt-only generation — it succeeds,
+        # bills, and returns something unrelated to the clip the user picked.
+        if gen.mode == PlaygroundMode.V2V and gen.input_media:
+            kwargs["video_url"] = gen.input_media[0]
+            if len(gen.input_media) > 1:
+                kwargs["ref_image_urls"] = list(gen.input_media[1:])
+            task_type = params.get("task_type")
+            if task_type:
+                kwargs["task_type"] = task_type
+
+            # The generic first-frame resolution above grabbed input_media[0],
+            # which for v2v is the *video*. Passing it on would put an mp4 URL
+            # into Ark's image_url field and send the clip twice — once
+            # correctly as reference_video and once as a bogus first frame.
+            img_path, img_url = None, None
 
         # i2v: optional second entry is the last frame (Ark first_frame +
         # last_frame scenario). Only img_url is wired through to Ark today

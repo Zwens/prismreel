@@ -28,14 +28,15 @@ export default function EnvConfigChecker() {
   const checkEnvConfig = async () => {
     try {
       const config = await api.getEnvConfig();
-      // 空值和空字符串都视为未配置。DashScope 是默认路由，但配置为
-      // LLM_PROVIDER=openai（Gemini 等 OpenAI 兼容端点）并填了对应 key
-      // 时同样视为已配置，不强制要求 DashScope。
-      const dashscopeKey = config.DASHSCOPE_API_KEY?.trim();
-      const openaiKey = config.OPENAI_API_KEY?.trim();
+      // 空值和空字符串都视为未配置。Gemini 是默认路由，但配置为
+      // LLM_PROVIDER=openai（第三方 OpenAI 兼容端点）并填了对应 key
+      // 时同样视为已配置，不强制要求 Gemini。
+      const asText = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+      const geminiKey = asText(config.GEMINI_API_KEY);
+      const openaiKey = asText(config.OPENAI_API_KEY);
       const usingOpenAiProvider = config.LLM_PROVIDER === "openai";
       const hasRequired =
-        (dashscopeKey && dashscopeKey.length > 0) ||
+        (geminiKey && geminiKey.length > 0) ||
         (usingOpenAiProvider && openaiKey && openaiKey.length > 0);
       
       if (!hasRequired) {

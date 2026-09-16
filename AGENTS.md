@@ -26,7 +26,7 @@ When the user asks to do any of the following in this repository:
 
 - onboard a new model into PrismReel
 - update model docs, model versions, defaults, or parameters
-- refresh Wan / Kling / Vidu / PixVerse model support
+- refresh Gemini / Seedance / Kling / Vidu model support
 - run the PrismReel model onboarding workflow
 - review whether a model change is catalog-only or also needs runtime / UI work
 - use `/prismreel-model-onboarding`
@@ -64,7 +64,7 @@ If both Claude and Codex guidance exist, preserve behavior parity unless the use
 
 ## Overview
 
-The AI Comic Generator is a complete AI-powered comic video production platform that supports the full workflow from script to finished video. It uses Next.js frontend with FastAPI backend, integrating AI services like Qwen from Alibaba Cloud.
+PrismReel is a complete AI-powered comic video production platform that supports the full workflow from script to finished video. It uses a Next.js frontend with a FastAPI backend, and integrates Google Gemini (LLM, image, TTS) plus BytePlus ModelArk / Kling / Vidu for video generation.
 
 ## Architecture
 
@@ -77,9 +77,9 @@ The AI Comic Generator is a complete AI-powered comic video production platform 
 
 ### Backend
 - Framework: FastAPI (Python 3.11+)
-- AI integration: Alibaba Cloud Qwen/Wanx services via DashScope
+- AI integration: Google Gemini (LLM via its OpenAI-compatible layer, Nano Banana images, TTS), BytePlus ModelArk (Seedance video), Kling and Vidu vendor APIs. DashScope has been removed.
 - Data validation: Pydantic
-- File storage: Local + Alibaba Cloud OSS
+- File storage: Local-first under `output/`, with Alibaba Cloud OSS as an optional mirror
 
 ### Core Components
 
@@ -109,8 +109,10 @@ src/
 │   ├── video.py         # Video generation
 │   ├── audio.py         # Audio generation
 │   └── export.py        # Video export/synthesis
-├── models/              # AI model wrappers
-├── utils/               # Utility functions (OSS integration)
+├── apps/playground/     # Playground + AI Video backend (API + Service)
+├── models/              # AI model wrappers (gemini_image / byteplus / kling / vidu)
+├── audio/               # Gemini TTS (gemini_tts.py) behind the TTSProcessor facade
+├── utils/               # Utility functions (OSS integration, provider registry)
 └── config.py            # Global configuration
 ```
 
@@ -120,7 +122,7 @@ src/
 ```bash
 # Copy environment template
 cp .env.example .env
-# Edit .env and add your Alibaba Cloud API keys
+# Edit .env and add GEMINI_API_KEY (required); ARK_API_KEY for Seedance video
 ```
 
 ### Backend Development
@@ -192,8 +194,9 @@ output/
 ```
 
 ### Project Data
-User project data is stored in `~/.tron/comic/`:
+User project data is stored in `~/.prismreel/`:
 - `projects.json` - Main project database
+- `config.json` - Packaged-app settings written by the settings dialog
 - `app.log` - Application logs
 
 ## Key API Endpoints
@@ -252,7 +255,7 @@ User project data is stored in `~/.tron/comic/`:
 
 ### Logs
 - Backend logs appear in terminal when running start_backend.sh
-- Desktop app logs saved to: `~/.tron/comic/app.log`
+- Desktop app logs saved to: `~/.prismreel/app.log`
 
 ## Deployment
 - Frontend: Built with Next.js, can be deployed as static files

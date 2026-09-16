@@ -23,12 +23,13 @@
 
 PrismReel 是一个 **AI 原生的短漫剧 & 视频创作平台**。它将创意文本转化为可发布的动态视频，提供从剧本分析到成片导出的完整创作链路，同时支持独立的图像/视频生成能力。
 
-PrismReel 目前包含两个核心模块：
+PrismReel 目前包含三个核心模块：
 
 | 模块 | 定位 |
 |------|------|
 | **PrismReel Studio** | Pipeline-first 漫剧/视频生产（剧本→分镜→资产→视频→合成→导出） |
 | **PrismReel Playground** | 独立图像/视频生成工具台（无需剧本上下文，即开即用） |
+| **AI 视频** | 单发视频生成页，只做 T2V / I2V / V2V，素材取自应用内已有资产 |
 
 ---
 
@@ -44,7 +45,7 @@ PrismReel 目前包含两个核心模块：
 - **可控美术指导** — 自定义视觉风格，全片画风统一
 - **多模型资产生成** — 角色三视图、场景定调图、道具参考图
 - **AI 分镜视频** — I2V / R2V 多模式视频生成 + 批量抽卡
-- **智能配音** — CosyVoice / Qwen3-TTS 多音色对白合成
+- **智能配音** — Gemini TTS 30 音色对白合成，语气可用自然语言指令控制
 - **一键合成导出** — 时间线编辑 + FFmpeg 拼接成片
 
 </td>
@@ -52,8 +53,8 @@ PrismReel 目前包含两个核心模块：
 
 ### 🎨 Playground — 独立生成工具台
 
-- **6 种生成模式** — 图像生成、文生视频、图生视频、参考生视频、视频编辑
-- **10+ AI 模型** — Wan 2.7、Seedance 2.0/2.0 Fast/2.0 Mini/2.5、Kling V3、Vidu Q3、HappyHorse 等
+- **6 种生成模式** — 文生图 / 图生图 / 文生视频 / 图生视频 / 参考生视频 / 视频编辑
+- **13 条模型线** — Nano Banana Pro / 2 / 2 Lite、Seedance 2.5 / 2.0 / 2.0 Fast / 2.0 Mini、Kling V3、Vidu Q3 Pro / Turbo / Drama、Vidu Q3 Fast / Lite Image
 - **动态参数** — 每个模型独立参数（尺寸/分辨率/时长/画质）
 - **并发任务** — 多任务同时执行，实时状态追踪
 - **Prompt 模板** — 收藏/复用/历史记录
@@ -94,15 +95,20 @@ PrismReel 目前包含两个核心模块：
 
 | Provider | 模型 | 能力 |
 |----------|------|------|
-| **DashScope** | Wan 2.7 Image/Video, Qwen Image 2.0, HappyHorse 1.0 | T2I, I2I, I2V, R2V, T2V, V2V |
-| **DashScope** | Kling V3 | I2V, R2V |
-| **DashScope** | Vidu Q3 Pro / Turbo | I2V, R2V |
-| **DashScope** | PixVerse V6 / C1 | I2V, R2V |
-| **BytePlus ModelArk** | Seedance 2.0 / 2.0 Fast / 2.0 Mini / 2.5 | T2V, I2V, R2V |
+| **Google Gemini** | Nano Banana 2 `gemini-3.1-flash-image` — 默认图像模型 | T2I, I2I |
+| **Google Gemini** | Nano Banana Pro `gemini-3-pro-image` | T2I, I2I |
+| **Google Gemini** | Nano Banana 2 Lite `gemini-3.1-flash-lite-image` | T2I, I2I |
+| **Google Gemini** | Gemini 3.8 Flash（不可用时回退 3.5 / 2.5 Flash） | 剧本分析、Prompt 润色 |
+| **Google Gemini** | `gemini-3.1-flash-tts-preview` — 30 音色 | TTS 配音 |
+| **BytePlus ModelArk** | Seedance 2.5 — 默认 I2V / R2V 模型 | T2V, I2V, R2V, V2V<sup>†</sup> |
+| **BytePlus ModelArk** | Seedance 2.0 / 2.0 Fast / 2.0 Mini | T2V, I2V, R2V |
 | **Kling 原厂** | Kling V3 | I2V, R2V |
-| **Vidu 原厂** | Vidu Q3 Pro / Turbo | I2V, R2V |
-| **DashScope** | CosyVoice, Qwen3-TTS | TTS 配音 |
-| **DashScope** | Qwen 3.7 Plus | 剧本分析、Prompt 润色 |
+| **Vidu 原厂** | Vidu Q3 Pro / Turbo / Drama | I2V, R2V |
+| **Vidu 原厂** | Vidu Q3 Fast Image / Lite Image | T2I, I2I |
+
+<sup>†</sup> Seedance 2.5 的 V2V（编辑 / 续写）运行时已打通，但 catalog 中仍为 `hidden`，默认不在模型选择器里出现。
+
+> 自 Gemini + Ark 迁移起，DashScope 已从模型侧完全移除；Kling 与 Vidu 不再有代理后端，只能用原厂凭证直连。
 
 ---
 
@@ -123,7 +129,7 @@ cd prismreel
 
 # 配置 API Key
 cp .env.example .env
-# 编辑 .env，填入 DASHSCOPE_API_KEY（必填）
+# 编辑 .env，填入 GEMINI_API_KEY（必填）；要生成视频再填 ARK_API_KEY
 
 # 启动（后端 17177 + 前端 3008，自动开浏览器）
 npm run dev
@@ -147,6 +153,7 @@ cd frontend && npm install && npm run dev  # http://localhost:3008
 
 - **Studio**: http://localhost:3008
 - **Playground 创作台**: http://localhost:3008/#/playground
+- **AI 视频**: http://localhost:3008/#/ai-video
 - **API Docs**: http://localhost:17177/docs
 
 ---
@@ -157,10 +164,10 @@ PrismReel 采用 **本地优先** 的架构，最简配置只需一个 API Key�
 
 | 模式 | 必填 | 可用能力 |
 |------|------|----------|
-| **基础** | `DASHSCOPE_API_KEY` | Wan/Qwen/HappyHorse/PixVerse/Kling(代理)/Vidu(代理) + TTS |
-| **+ BytePlus ModelArk** | + `ARK_API_KEY` | + Seedance 2.0 / 2.0 Fast / 2.0 Mini / 2.5 |
-| **+ Kling 原厂** | + `KLING_ACCESS_KEY` + `KLING_SECRET_KEY` | Kling 直连 |
-| **+ Vidu 原厂** | + `VIDU_API_KEY` | Vidu 直连 |
+| **基础** | `GEMINI_API_KEY` | 剧本分析 / Prompt 润色 + 图像生成（Nano Banana 系列）+ TTS 配音 |
+| **+ BytePlus ModelArk** | + `ARK_API_KEY` | + Seedance 2.5 / 2.0 / 2.0 Fast / 2.0 Mini 视频生成 |
+| **+ Kling 原厂** | + `KLING_ACCESS_KEY` + `KLING_SECRET_KEY` | + Kling V3 视频生成 |
+| **+ Vidu 原厂** | + `VIDU_API_KEY` | + Vidu Q3 视频生成与图像生成 |
 | **+ OSS** | + 阿里云 OSS 凭证 | 云端媒体镜像 + 签名 URL |
 
 <details>
@@ -194,7 +201,7 @@ prismreel/
 ├── src/
 │   ├── apps/comic_gen/        # Studio 后端 (API + Pipeline)
 │   ├── apps/playground/       # Playground 后端 (API + Service)
-│   ├── models/                # AI 模型适配器 (Wanx/Kling/Vidu/BytePlus)
+│   ├── models/                # AI 模型适配器 (Gemini/Kling/Vidu/BytePlus)
 │   └── audio/                 # TTS 语音合成
 ├── config/model_catalog/      # 模型目录 (YAML → JSON)
 └── output/                    # 生成产物 (本地存储)

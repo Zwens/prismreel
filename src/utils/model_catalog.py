@@ -6,7 +6,9 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 import yaml
 
 
-SUPPORTED_PROVIDER_BACKENDS = ("dashscope", "vendor", "byteplus")
+# 必须与 provider_registry.SUPPORTED_PROVIDER_BACKENDS 保持一致；
+# 分叉过一次，表现为校验脚本 PASSED 而整个测试套件在 collection 阶段全炸。
+SUPPORTED_PROVIDER_BACKENDS = ("vendor", "byteplus", "google")
 SUPPORTED_MODEL_STATUSES = ("active", "planned", "deprecated", "hidden")
 SUPPORTED_SELECTION_GROUPS = ("t2i", "i2i", "image", "i2v", "r2v", "t2v")
 VISIBLE_MODEL_SURFACES = ("project_settings", "series_settings", "video_sidebar", "global_settings")
@@ -1063,10 +1065,13 @@ class CatalogAccessor:
         entry = self._model_lines.get(model_line_id)
         return dict(entry) if entry else None
 
-    def get_gateway(
-        self, canonical_mode_id: str, backend: str = "dashscope"
-    ) -> Optional[str]:
-        """Return the gateway value for a canonical mode on a specific backend."""
+    def get_gateway(self, canonical_mode_id: str, backend: str) -> Optional[str]:
+        """Return the gateway value for a canonical mode on a specific backend.
+
+        `backend` is required: DashScope used to be the implicit default, and
+        after its removal there is no backend that "most models use" to fall
+        back to. Callers must say which one they mean.
+        """
         runtime = self.get_mode_runtime(canonical_mode_id)
         if runtime is None:
             return None

@@ -4,13 +4,14 @@ from typing import Dict, Mapping, Optional, Sequence, Tuple
 
 from .model_catalog import build_provider_family_configs, load_generated_model_catalog
 
-SUPPORTED_PROVIDER_BACKENDS = ("dashscope", "vendor", "byteplus")
+# DashScope 已随迁移整体下线；保留在这里会让一个失效的 backend 通过校验。
+SUPPORTED_PROVIDER_BACKENDS = ("vendor", "byteplus", "google")
 
 
 @dataclass
 class ProviderFamilyConfig:
     model_family: str
-    backend_default: str = "dashscope"
+    backend_default: str = "vendor"
     backend_env_key: Optional[str] = None
     credential_sources: Dict[str, Tuple[str, ...]] = field(default_factory=dict)
     supported_modalities: Tuple[str, ...] = field(default_factory=tuple)
@@ -63,178 +64,43 @@ class ProviderRegistry:
 
 
 DEFAULT_PROVIDER_FAMILIES: Tuple[ProviderFamilyConfig, ...] = (
+    # 仅在生成目录加载失败时兜底。DashScope 下线后 wan / qwen-image /
+    # happyhorse / pixverse 四个家族已删除，这里同步移除。
     ProviderFamilyConfig(
-        model_family="wan2.7-",
-        backend_default="dashscope",
-        credential_sources={
-            "dashscope": ("DASHSCOPE_API_KEY",),
-        },
-        supported_modalities=("t2i", "i2i", "image", "i2v", "r2v"),
-        image_input_mode={
-            "dashscope": "dashscope_multimodal_message",
-        },
-        audio_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-        },
-        reference_video_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-        },
+        model_family="gemini-",
+        backend_default="google",
+        credential_sources={"google": ("GEMINI_API_KEY",)},
+        supported_modalities=("t2i", "i2i"),
+        image_input_mode={"google": "gemini_inline_base64"},
+        audio_input_mode={},
+        reference_video_input_mode={},
     ),
     ProviderFamilyConfig(
-        model_family="wan2.6-",
-        backend_default="dashscope",
-        credential_sources={
-            "dashscope": ("DASHSCOPE_API_KEY",),
-        },
-        supported_modalities=("t2i", "i2i", "i2v", "r2v"),
-        image_input_mode={
-            "dashscope": "dashscope_multimodal_message",
-        },
-        audio_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-        },
-        reference_video_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-        },
+        model_family="seedance",
+        backend_default="byteplus",
+        credential_sources={"byteplus": ("ARK_API_KEY",)},
+        supported_modalities=("t2v", "i2v", "r2v", "v2v"),
+        image_input_mode={"byteplus": "byteplus_ark_image_url"},
+        audio_input_mode={},
+        reference_video_input_mode={"byteplus": "byteplus_ark_video_url"},
     ),
     ProviderFamilyConfig(
-        model_family="qwen-image-",
-        backend_default="dashscope",
-        credential_sources={
-            "dashscope": ("DASHSCOPE_API_KEY",),
-        },
-        supported_modalities=("t2i", "i2i", "image"),
-        image_input_mode={
-            "dashscope": "dashscope_multimodal_message",
-        },
-        audio_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-        },
-        reference_video_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-        },
-    ),
-    ProviderFamilyConfig(
-        model_family="kling/kling-",
-        backend_default="dashscope",
-        backend_env_key="KLING_PROVIDER_MODE",
-        credential_sources={
-            "dashscope": ("DASHSCOPE_API_KEY",),
-            "vendor": ("KLING_ACCESS_KEY", "KLING_SECRET_KEY"),
-        },
+        model_family="kling",
+        backend_default="vendor",
+        credential_sources={"vendor": ("KLING_ACCESS_KEY", "KLING_SECRET_KEY")},
         supported_modalities=("t2v", "i2v", "r2v"),
-        image_input_mode={
-            "dashscope": "dashscope_image_to_video",
-            "vendor": "kling_vendor_base64_image",
-        },
-        audio_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-            "vendor": "kling_vendor_audio_url",
-        },
-        reference_video_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-            "vendor": "kling_vendor_video_url",
-        },
-    ),
-    ProviderFamilyConfig(
-        model_family="kling-",
-        backend_default="dashscope",
-        backend_env_key="KLING_PROVIDER_MODE",
-        credential_sources={
-            "dashscope": ("DASHSCOPE_API_KEY",),
-            "vendor": ("KLING_ACCESS_KEY", "KLING_SECRET_KEY"),
-        },
-        supported_modalities=("t2v", "i2v", "r2v"),
-        image_input_mode={
-            "dashscope": "dashscope_image_to_video",
-            "vendor": "kling_vendor_base64_image",
-        },
-        audio_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-            "vendor": "kling_vendor_audio_url",
-        },
-        reference_video_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-            "vendor": "kling_vendor_video_url",
-        },
-    ),
-    ProviderFamilyConfig(
-        model_family="vidu/vidu",
-        backend_default="dashscope",
-        backend_env_key="VIDU_PROVIDER_MODE",
-        credential_sources={
-            "dashscope": ("DASHSCOPE_API_KEY",),
-            "vendor": ("VIDU_API_KEY",),
-        },
-        supported_modalities=("t2v", "i2v", "r2v"),
-        image_input_mode={
-            "dashscope": "dashscope_image_to_video",
-            "vendor": "vidu_vendor_image_url",
-        },
-        audio_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-            "vendor": "vidu_vendor_audio_url",
-        },
-        reference_video_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-            "vendor": "vidu_vendor_video_url",
-        },
+        image_input_mode={"vendor": "kling_vendor_base64_image"},
+        audio_input_mode={"vendor": "kling_vendor_audio_url"},
+        reference_video_input_mode={"vendor": "kling_vendor_video_url"},
     ),
     ProviderFamilyConfig(
         model_family="vidu",
-        backend_default="dashscope",
-        backend_env_key="VIDU_PROVIDER_MODE",
-        credential_sources={
-            "dashscope": ("DASHSCOPE_API_KEY",),
-            "vendor": ("VIDU_API_KEY",),
-        },
-        supported_modalities=("t2v", "i2v", "r2v"),
-        image_input_mode={
-            "dashscope": "dashscope_image_to_video",
-            "vendor": "vidu_vendor_image_url",
-        },
-        audio_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-            "vendor": "vidu_vendor_audio_url",
-        },
-        reference_video_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-            "vendor": "vidu_vendor_video_url",
-        },
-    ),
-    ProviderFamilyConfig(
-        model_family="pixverse/pixverse-",
-        backend_default="dashscope",
-        credential_sources={
-            "dashscope": ("DASHSCOPE_API_KEY",),
-        },
-        supported_modalities=("t2v", "i2v", "r2v"),
-        image_input_mode={
-            "dashscope": "dashscope_image_to_video",
-        },
-        audio_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-        },
-        reference_video_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-        },
-    ),
-    ProviderFamilyConfig(
-        model_family="pixverse-",
-        backend_default="dashscope",
-        credential_sources={
-            "dashscope": ("DASHSCOPE_API_KEY",),
-        },
-        supported_modalities=("t2v", "i2v", "r2v"),
-        image_input_mode={
-            "dashscope": "dashscope_image_to_video",
-        },
-        audio_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-        },
-        reference_video_input_mode={
-            "dashscope": "dashscope_temp_file_url",
-        },
+        backend_default="vendor",
+        credential_sources={"vendor": ("VIDU_API_KEY",)},
+        supported_modalities=("t2v", "i2v", "r2v", "t2i", "i2i"),
+        image_input_mode={"vendor": "vidu_vendor_image_url"},
+        audio_input_mode={"vendor": "vidu_vendor_audio_url"},
+        reference_video_input_mode={"vendor": "vidu_vendor_video_url"},
     ),
 )
 
@@ -271,5 +137,13 @@ def get_gateway_for_model(
     if canonical_id is None:
         canonical_id = model_id  # already canonical or unknown
 
-    resolved_backend = backend or "dashscope"
+    # 不再硬编码兜底 backend —— DashScope 下线后没有一个「大多数模型都用」的
+    # 默认值可写死。按模型所属家族解析，解析不出就不猜。
+    if backend:
+        resolved_backend = backend
+    else:
+        try:
+            resolved_backend = resolve_provider_backend(model_id)
+        except (KeyError, ValueError):
+            return None
     return accessor.get_gateway(canonical_id, resolved_backend)

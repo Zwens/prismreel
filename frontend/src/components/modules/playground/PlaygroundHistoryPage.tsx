@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { playgroundApi } from '@/lib/api';
 import { usePlaygroundStore } from './usePlaygroundStore';
-import { toGeneration } from './PlaygroundPage';
+import { toGeneration } from './useGenerationRunner';
 import ResultGallery from './ResultGallery';
 
 /**

@@ -23,7 +23,7 @@ describe('i18n configuration', () => {
         const messages = getMessages('zh');
         expect(messages).toBeDefined();
         expect(messages.common.save).toBe('保存');
-        expect(messages.nav.workspace).toBe('工作区');
+        expect(messages.nav.workspace).toBe("漫画生成");
         expect(messages.settings.title).toBe('设置');
     });
 
@@ -31,7 +31,7 @@ describe('i18n configuration', () => {
         const messages = getMessages('zh-Hant');
         expect(messages).toBeDefined();
         expect(messages.common.save).toBe('儲存');
-        expect(messages.nav.workspace).toBe('工作區');
+        expect(messages.nav.workspace).toBe("漫畫生成");
         expect(messages.settings.title).toBe('設定');
     });
 
@@ -39,7 +39,7 @@ describe('i18n configuration', () => {
         const messages = getMessages('en');
         expect(messages).toBeDefined();
         expect(messages.common.save).toBe('Save');
-        expect(messages.nav.workspace).toBe('Workspace');
+        expect(messages.nav.workspace).toBe("Comic Generator");
         expect(messages.settings.title).toBe('Settings');
     });
 

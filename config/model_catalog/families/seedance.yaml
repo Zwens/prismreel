@@ -15,10 +15,16 @@ supported_modalities:
   - t2v
   - i2v
   - r2v
+  # v2v 由 2026-09-08 实测确认：四个在售 dreamina-seedance 型号的 task_type
+  # 均含 VideoEditing 且 input_modalities 含 video。此前目录漏标。
+  - v2v
 docs:
   official_snapshot_ids:
     - byteplus/modelark-seedance/2026-09-02
 transport:
+  video_input_mode:
+    # Ark 的 content 数组接受 video_url 项，与 image_url 同构。
+    byteplus: byteplus_ark_video_url
   image_input_mode:
     # Ark takes an image_url item that may be a public URL or a data URI.
     byteplus: byteplus_ark_image_url
@@ -31,11 +37,17 @@ transport:
   # audio role for it (`edit` can alter a source video's audio, but that
   # is an output-side concern).
   audio_input_mode: {}
-  # Not "unsupported" -- Ark does accept content.role = reference_video on
-  # Seedance 2.5 and the 2.0 series, and vedit / vext both require it. We
-  # simply have not wired it yet; P3 fills in the byteplus entry here.
+  # Ark accepts content.role = reference_video on Seedance 2.5 and the 2.0
+  # series; vedit / vext both require it, and so does the dance-swap flow,
+  # which sends a locally-produced depth video.
+  #
+  # provider_media routes both the "video" and "reference_video" modalities
+  # through this map (see _mode_for_modality), so leaving it empty meant a
+  # local clip was handed to Ark as a bare filesystem path and rejected with
+  # `content[n].video_url.url ... invalid url`.
   # See docs/api-reference/byteplus-ark-seedance-seedream.md §2.4.
-  reference_video_input_mode: {}
+  reference_video_input_mode:
+    byteplus: byteplus_ark_video_url
 models:
   - id: seedance/seedance-2.0-video
     display_name: Seedance 2.0
@@ -498,3 +510,43 @@ models:
           reference_images:
             max: 50
             reference_type: image
+
+      v2v:
+        legacy_id: seedance-2.5-v2v
+        display_name: Seedance 2.5 V2V
+        description: Video editing — re-edit an existing clip from a prompt
+        # 与 wan2.7-videoedit / happyhorse-1.0-video-edit 保持同一形态：
+        # SUPPORTED_SELECTION_GROUPS 里没有 v2v 槽位，既有先例是挂 i2v 组 +
+        # status: hidden（不进模型选择器），由创作台按 capabilities 取用。
+        status: hidden
+        capabilities: [v2v]
+        runtime:
+          byteplus:
+            api_model_id: dreamina-seedance-2-5-260628
+        ui:
+          selection_group: i2v
+          visible_in: [project_settings, series_settings, video_sidebar, global_settings]
+          order: 90
+          badges: [new]
+        duration:
+          type: slider
+          min: 4
+          max: 30
+          step: 1
+          default: 5
+          allow_auto: true
+        params:
+          resolution:
+            options: [480p, 720p, 1080p]
+            default: 720p
+          ratio:
+            options: ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9", adaptive]
+            default: adaptive
+          seed: true
+          negativePrompt: false
+          promptExtend: false
+          watermark: true
+        inputs:
+          reference_videos:
+            max: 1
+            reference_type: video

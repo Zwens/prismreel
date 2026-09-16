@@ -32,8 +32,8 @@ describe('modelRequiresCredentials', () => {
         expect(isModelCredentialReady('seedance-2.0-r2v', { ARK_API_KEY: '' })).toBe(false);
     });
 
-    it('dashscope 系模型要求 DASHSCOPE_API_KEY', () => {
-        expect(modelRequiresCredentials('happyhorse-1.0-i2v')).toContain('DASHSCOPE_API_KEY');
+    it('Gemini 图像模型要求 GEMINI_API_KEY', () => {
+        expect(modelRequiresCredentials('gemini-3.1-flash-image')).toContain('GEMINI_API_KEY');
     });
 
     it('未知模型返回空数组，不误报', () => {

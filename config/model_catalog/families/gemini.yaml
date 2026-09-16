@@ -1,0 +1,120 @@
+family: gemini
+display_name: "Gemini Image (Nano Banana)"
+provider: google
+routing_prefixes:
+  - gemini-
+supported_backends:
+  - google
+default_backend: google
+credential_sources:
+  google:
+    - GEMINI_API_KEY
+supported_modalities:
+  - t2i
+  - i2i
+transport:
+  # Reference images are base64-inlined into the request body. Gemini cannot
+  # fetch localhost or private OSS paths, and inlining avoids needing a public
+  # URL for every asset — the same reason the LLM vision path inlines.
+  image_input_mode:
+    google: gemini_inline_base64
+  # Left deliberately empty rather than omitted: the catalog validator wants
+  # all three keys, and an empty map makes provider_media raise a clear
+  # "family 'gemini' does not support backend 'google' for modality X"
+  # instead of silently sending something the API will reject.
+  audio_input_mode: {}
+  reference_video_input_mode: {}
+docs:
+  official_snapshot_ids:
+    - google/gemini-image/2026-09-08
+models:
+  - id: gemini-3-pro-image
+    display_name: Nano Banana Pro
+    description: Highest-fidelity Gemini image model; 2K/4K output and the strongest character consistency
+    status: active
+    release_stage: stable
+    capabilities: [t2i, i2i]
+    docs:
+      context_hub_doc_ids: [google/gemini-image]
+    runtime:
+      google:
+        gateway: google
+        api_model_id: gemini-3-pro-image
+    ui:
+      selection_group: image
+      visible_in: [project_settings, series_settings, global_settings]
+      order: 120
+      badges: [new]
+    params:
+      # Sizes are mapped to Gemini aspect ratios by size_to_aspect_ratio();
+      # only ratios the API accepts are offered here.
+      size:
+        options: ["1024*1024", "1024*576", "576*1024", "1024*768", "768*1024", "1024*1536", "1536*1024"]
+        default: "1024*1024"
+      negativePrompt: true
+      seed: false
+    inputs:
+      # 前端 getMaxReferenceImages() 读的是 inputs.reference_images.max；
+      # 写在 params 下会被忽略，UI 会按默认值 3 封顶。
+      reference_images:
+        max: 14
+        reference_type: image
+
+  - id: gemini-3.1-flash-image
+    display_name: Nano Banana 2
+    description: Default image model; fast, supports up to 14 reference images including 4 for character consistency
+    status: active
+    release_stage: stable
+    capabilities: [t2i, i2i]
+    docs:
+      context_hub_doc_ids: [google/gemini-image]
+    runtime:
+      google:
+        gateway: google
+        api_model_id: gemini-3.1-flash-image
+    ui:
+      selection_group: image
+      visible_in: [project_settings, series_settings, global_settings]
+      order: 110
+      badges: [new]
+    params:
+      size:
+        options: ["1024*1024", "1024*576", "576*1024", "1024*768", "768*1024", "1024*1536", "1536*1024"]
+        default: "1024*1024"
+      negativePrompt: true
+      seed: false
+    inputs:
+      # 前端 getMaxReferenceImages() 读的是 inputs.reference_images.max；
+      # 写在 params 下会被忽略，UI 会按默认值 3 封顶。
+      reference_images:
+        max: 14
+        reference_type: image
+
+  - id: gemini-3.1-flash-lite-image
+    display_name: Nano Banana 2 Lite
+    description: Cheapest Gemini image model; 0.5K/1K output only
+    status: active
+    release_stage: stable
+    capabilities: [t2i, i2i]
+    docs:
+      context_hub_doc_ids: [google/gemini-image]
+    runtime:
+      google:
+        gateway: google
+        api_model_id: gemini-3.1-flash-lite-image
+    ui:
+      selection_group: image
+      visible_in: [project_settings, series_settings, global_settings]
+      order: 100
+    params:
+      size:
+        options: ["1024*1024", "1024*576", "576*1024"]
+        default: "1024*1024"
+      negativePrompt: true
+      seed: false
+    inputs:
+      # 前端 getMaxReferenceImages() 读的是 inputs.reference_images.max；
+      # 写在 params 下会被忽略，UI 会按默认值 3 封顶。
+      reference_images:
+        max: 14
+        reference_type: image

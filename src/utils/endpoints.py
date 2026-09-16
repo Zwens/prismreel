@@ -2,7 +2,7 @@ import os
 
 # Provider endpoint registry: {provider_key: default_base_url}
 PROVIDER_DEFAULTS = {
-    "DASHSCOPE": "https://dashscope.aliyuncs.com",
+    "GEMINI": "https://generativelanguage.googleapis.com",
     "KLING": "https://api-beijing.klingai.com/v1",
     "VIDU": "https://api.vidu.cn/ent/v2",
 }

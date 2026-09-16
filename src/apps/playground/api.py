@@ -12,6 +12,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFi
 
 from .models import (
     CreateTemplateRequest,
+    DepthVideoRequest,
     EstimateCostRequest,
     EstimateCostResponse,
     GenerateRequest,
@@ -20,11 +21,13 @@ from .models import (
     SaveToLibraryRequest,
     UpdateTemplateRequest,
 )
+from .depth_service import DepthJobManager
 from .service import PlaygroundService
 from .storage import PlaygroundStorage
 from ..comic_gen import auth
 from ...utils import get_logger
-from ...utils.upload_guard import validate_image_upload
+from ...utils.media_refs import to_posix_media_path
+from ...utils.upload_guard import save_video_upload, validate_image_upload
 
 logger = get_logger(__name__)
 
@@ -225,7 +228,59 @@ def upload_media(file: UploadFile = File(...)):
     dest = os.path.join(UPLOAD_DIR, filename)
     with open(dest, "wb") as f:
         f.write(data)
-    return {"path": dest}
+    return {"path": to_posix_media_path(dest)}
+
+
+def upload_video(file: UploadFile = File(...), _user=Depends(auth.require_login)):
+    """Upload a reference video (the dance clip that drives motion)."""
+    dest = save_video_upload(file, os.path.join(UPLOAD_DIR, str(uuid.uuid4())))
+    return {"path": to_posix_media_path(dest)}
 
 
 router.add_api_route("/upload", upload_media, methods=["POST"])
+router.add_api_route("/upload-video", upload_video, methods=["POST"])
+
+# ---------------------------------------------------------------------------
+# Depth preprocessing (local GPU) — step 2 of the dance-swap flow
+# ---------------------------------------------------------------------------
+
+_depth_jobs = DepthJobManager()
+
+
+def depth_capability(_user=Depends(auth.require_login)):
+    """What this machine can do, so the UI can warn before a long run."""
+    return _depth_jobs.capability()
+
+
+def create_depth_job(
+    request: DepthVideoRequest,
+    background_tasks: BackgroundTasks,
+    _user=Depends(auth.require_login),
+):
+    """Kick off depth extraction for an already-uploaded clip."""
+    if not os.path.exists(request.source_video):
+        raise HTTPException(status_code=400, detail=f"找不到视频：{request.source_video}")
+
+    job = _depth_jobs.create(request.source_video)
+    background_tasks.add_task(
+        _depth_jobs.run,
+        job.id,
+        encoder=request.encoder or "auto",
+        input_size=request.input_size,
+        max_seconds=request.max_seconds,
+        target_fps=request.target_fps,
+        contrast=request.contrast or "percentile",
+    )
+    return job.to_dict()
+
+
+def get_depth_job(job_id: str, _user=Depends(auth.require_login)):
+    job = _depth_jobs.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Depth job not found")
+    return job.to_dict()
+
+
+router.add_api_route("/depth/capability", depth_capability, methods=["GET"])
+router.add_api_route("/depth/jobs", create_depth_job, methods=["POST"])
+router.add_api_route("/depth/jobs/{job_id}", get_depth_job, methods=["GET"])

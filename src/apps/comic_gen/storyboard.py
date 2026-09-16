@@ -2,7 +2,8 @@ import os
 import time
 from typing import Dict, Any, List
 from .models import StoryboardFrame, Character, Scene, Prop, GenerationStatus, ImageAsset, ImageVariant
-from ...models.image import WanxImageModel, resolve_image_adapter
+from ...models.image import resolve_image_adapter
+from ...models.gemini_image import GeminiImageModel
 from ...utils import get_logger
 from ...utils.media_refs import to_project_media_ref
 from ...utils.oss_utils import is_object_key
@@ -12,7 +13,7 @@ logger = get_logger(__name__)
 class StoryboardGenerator:
     def __init__(self, config: Dict[str, Any] = None):
         self.config = config or {}
-        self.model = WanxImageModel(self.config.get('model', {}))
+        self.model = GeminiImageModel(self.config.get('model', {}))
         self.output_dir = self.config.get('output_dir', 'output/storyboard')
 
     def generate_storyboard(self, script: Any, characters: List[Character] = None, scenes: List[Scene] = None) -> Any:

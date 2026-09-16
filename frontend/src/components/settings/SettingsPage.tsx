@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { Save, Loader2, ChevronDown, ChevronRight, FolderOpen, WifiOff, Copy, Check } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { api, type EnvConfigPayload, type ProviderMode, API_URL } from "@/lib/api";
+import { api, type EnvConfigPayload, API_URL } from "@/lib/api";
 import { ASPECT_RATIOS } from "@/store/projectStore";
 import {
   DEFAULT_MODEL_SETTINGS,
@@ -30,19 +30,16 @@ import {
   settingsInputClass,
 } from "./SettingsControls";
 
-const APP_VERSION = "v0.2.0";
+const APP_VERSION = "v1.5.0";
 
 type EnvConfig = EnvConfigPayload & {
-  DASHSCOPE_API_KEY: string;
+  GEMINI_API_KEY: string;
   ALIBABA_CLOUD_ACCESS_KEY_ID: string;
   ALIBABA_CLOUD_ACCESS_KEY_SECRET: string;
   OSS_ENABLE: boolean;
   OSS_BUCKET_NAME: string;
   OSS_ENDPOINT: string;
   OSS_BASE_PATH: string;
-  KLING_PROVIDER_MODE: ProviderMode;
-  VIDU_PROVIDER_MODE: ProviderMode;
-  PIXVERSE_PROVIDER_MODE: ProviderMode;
   KLING_ACCESS_KEY: string;
   KLING_SECRET_KEY: string;
   VIDU_API_KEY: string;
@@ -53,23 +50,20 @@ type EnvConfig = EnvConfigPayload & {
 };
 
 const ENDPOINT_PROVIDERS = [
-  { key: "DASHSCOPE_BASE_URL", label: "DashScope", placeholder: "https://dashscope.aliyuncs.com" },
+  { key: "GEMINI_BASE_URL", label: "Gemini", placeholder: "https://generativelanguage.googleapis.com" },
   { key: "KLING_BASE_URL", label: "Kling", placeholder: "https://api-beijing.klingai.com/v1" },
   { key: "VIDU_BASE_URL", label: "Vidu", placeholder: "https://api.vidu.cn/ent/v2" },
   { key: "ARK_BASE_URL", label: "Ark (Seedance)", placeholder: "https://ark.ap-southeast.bytepluses.com/api/v3" },
 ];
 
 const DEFAULT_CONFIG: EnvConfig = {
-  DASHSCOPE_API_KEY: "",
+  GEMINI_API_KEY: "",
   ALIBABA_CLOUD_ACCESS_KEY_ID: "",
   ALIBABA_CLOUD_ACCESS_KEY_SECRET: "",
   OSS_ENABLE: true,
   OSS_BUCKET_NAME: "",
   OSS_ENDPOINT: "",
   OSS_BASE_PATH: "",
-  KLING_PROVIDER_MODE: "dashscope",
-  VIDU_PROVIDER_MODE: "dashscope",
-  PIXVERSE_PROVIDER_MODE: "dashscope",
   KLING_ACCESS_KEY: "",
   KLING_SECRET_KEY: "",
   VIDU_API_KEY: "",
@@ -79,27 +73,17 @@ const DEFAULT_CONFIG: EnvConfig = {
   endpoint_overrides: {},
 };
 
-const normalizeProviderMode = (mode?: string): ProviderMode => (mode === "vendor" ? "vendor" : "dashscope");
-
 const normalizeEnvConfig = (existing: EnvConfig, data?: EnvConfigPayload): EnvConfig => ({
   ...existing,
   ...data,
-  KLING_PROVIDER_MODE: normalizeProviderMode(data?.KLING_PROVIDER_MODE ?? existing.KLING_PROVIDER_MODE),
-  VIDU_PROVIDER_MODE: normalizeProviderMode(data?.VIDU_PROVIDER_MODE ?? existing.VIDU_PROVIDER_MODE),
-  PIXVERSE_PROVIDER_MODE: normalizeProviderMode(data?.PIXVERSE_PROVIDER_MODE ?? existing.PIXVERSE_PROVIDER_MODE),
   endpoint_overrides: data?.endpoint_overrides ?? existing.endpoint_overrides ?? {},
 });
 
 const getValidationErrors = (env: EnvConfig): string[] => {
   const errors: string[] = [];
-  if (!env.DASHSCOPE_API_KEY?.trim()) errors.push("DashScope API Key");
-  if (env.KLING_PROVIDER_MODE === "vendor") {
-    if (!env.KLING_ACCESS_KEY?.trim()) errors.push("Kling Access Key (vendor mode)");
-    if (!env.KLING_SECRET_KEY?.trim()) errors.push("Kling Secret Key (vendor mode)");
-  }
-  if (env.VIDU_PROVIDER_MODE === "vendor" && !env.VIDU_API_KEY?.trim()) {
-    errors.push("Vidu API Key (vendor mode)");
-  }
+  if (!env.GEMINI_API_KEY?.trim()) errors.push("Gemini API Key");
+  // 视频生成全部走 BytePlus Ark 上的 Seedance，缺它出不了视频。
+  if (!env.ARK_API_KEY?.trim()) errors.push("Ark API Key");
   return errors;
 };
 
@@ -675,67 +659,48 @@ export default function SettingsPage() {
         </div>
       ) : (
         <div className="space-y-1">
-          <FormRow label={t("dashscopeKeyLabel")} hint={t("dashscopeKeyHint")}>
-            <FieldLabel>DASHSCOPE_API_KEY *</FieldLabel>
+          <FormRow label={t("geminiKeyLabel")} hint={t("geminiKeyHint")}>
+            <FieldLabel>GEMINI_API_KEY *</FieldLabel>
             <KeyField
-              value={config.DASHSCOPE_API_KEY}
-              onChange={(v) => handleChange("DASHSCOPE_API_KEY", v)}
-              placeholder="sk-..."
+              value={config.GEMINI_API_KEY}
+              onChange={(v) => handleChange("GEMINI_API_KEY", v)}
+              placeholder="AIza..."
               status={
-                config.DASHSCOPE_API_KEY?.trim()
+                config.GEMINI_API_KEY?.trim()
                   ? { kind: "ok", text: t("filled") }
                   : { kind: "warn", text: t("notConfiguredUnavailable") }
               }
             />
           </FormRow>
 
+          {/* Kling / Vidu：DashScope 代理通道拔除后只剩直连，模式切换器随之移除。
+              未填凭证时目录的凭证就绪机制会把这两家的模型标为不可用。 */}
           <FormRow label={t("klingLabel")} hint={t("klingHint")}>
-            <ModeSegment
-              value={config.KLING_PROVIDER_MODE}
-              onChange={(v) => handleChange("KLING_PROVIDER_MODE", v)}
-              options={[
-                { id: "dashscope", label: "DashScope" },
-                { id: "vendor", label: t("vendorDirect") },
-              ]}
-            />
-            {config.KLING_PROVIDER_MODE === "vendor" && (
-              <div className="space-y-3 mt-3">
-                <div>
-                  <FieldLabel>KLING_ACCESS_KEY *</FieldLabel>
-                  <KeyField value={config.KLING_ACCESS_KEY} onChange={(v) => handleChange("KLING_ACCESS_KEY", v)} placeholder={t("klingAccessKeyPlaceholder")} />
-                </div>
-                <div>
-                  <FieldLabel>KLING_SECRET_KEY *</FieldLabel>
-                  <KeyField value={config.KLING_SECRET_KEY} onChange={(v) => handleChange("KLING_SECRET_KEY", v)} placeholder={t("klingSecretKeyPlaceholder")} />
-                </div>
-              </div>
-            )}
+            <FieldLabel>KLING_ACCESS_KEY</FieldLabel>
+            <KeyField value={config.KLING_ACCESS_KEY} onChange={(v) => handleChange("KLING_ACCESS_KEY", v)} placeholder={t("klingAccessKeyPlaceholder")} />
+            <div className="mt-3">
+              <FieldLabel>KLING_SECRET_KEY</FieldLabel>
+              <KeyField value={config.KLING_SECRET_KEY} onChange={(v) => handleChange("KLING_SECRET_KEY", v)} placeholder={t("klingSecretKeyPlaceholder")} />
+            </div>
           </FormRow>
 
           <FormRow label="Vidu" hint={t("viduHint")}>
-            <ModeSegment
-              value={config.VIDU_PROVIDER_MODE}
-              onChange={(v) => handleChange("VIDU_PROVIDER_MODE", v)}
-              options={[
-                { id: "dashscope", label: "DashScope" },
-                { id: "vendor", label: t("vendorDirect") },
-              ]}
-            />
-            {config.VIDU_PROVIDER_MODE === "vendor" && (
-              <div className="mt-3">
-                <FieldLabel>VIDU_API_KEY *</FieldLabel>
-                <KeyField value={config.VIDU_API_KEY} onChange={(v) => handleChange("VIDU_API_KEY", v)} placeholder={t("viduApiKeyPlaceholder")} />
-              </div>
-            )}
+            <FieldLabel>VIDU_API_KEY</FieldLabel>
+            <KeyField value={config.VIDU_API_KEY} onChange={(v) => handleChange("VIDU_API_KEY", v)} placeholder={t("viduApiKeyPlaceholder")} />
           </FormRow>
 
           {/* BytePlus / Volcano Ark — used by the whole Seedance family. */}
           <FormRow label={t("arkLabel")} hint={t("arkHint")}>
-            <FieldLabel>ARK_API_KEY</FieldLabel>
+            <FieldLabel>ARK_API_KEY *</FieldLabel>
             <KeyField
               value={config.ARK_API_KEY}
               onChange={(v) => setConfig((c) => ({ ...c, ARK_API_KEY: v }))}
               placeholder="ark-..."
+              status={
+                config.ARK_API_KEY?.trim()
+                  ? { kind: "ok", text: t("filled") }
+                  : { kind: "warn", text: t("notConfiguredUnavailable") }
+              }
             />
             <div className="mt-3">
               <FieldLabel>{t("arkRegionLabel")}</FieldLabel>

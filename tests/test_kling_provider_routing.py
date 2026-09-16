@@ -92,47 +92,6 @@ def test_pipeline_routes_kling_vendor_mode_to_vendor_adapter(monkeypatch):
     assert calls["vendor_kwargs"]["img_path"] == "/tmp/downloaded-kling.png"
     assert task.status == "completed"
 
-
-def test_pipeline_routes_kling_dashscope_mode_to_wanx_without_vendor_credentials(monkeypatch):
-    monkeypatch.setenv("KLING_PROVIDER_MODE", "dashscope")
-    monkeypatch.delenv("KLING_ACCESS_KEY", raising=False)
-    monkeypatch.delenv("KLING_SECRET_KEY", raising=False)
-
-    task = VideoTask(
-        id="task-kling-dashscope",
-        project_id="script-1",
-        image_url="https://example.com/ref.png",
-        prompt="demo",
-        model="kling-v1",
-    )
-
-    calls = {}
-
-    class FakeKlingModel:
-        def __init__(self, config):
-            calls["vendor_init"] = config
-
-        def generate(self, **kwargs):
-            calls["vendor_kwargs"] = kwargs
-            raise AssertionError("Vendor adapter should not be used in dashscope mode")
-
-    class FakeWanxModel:
-        def generate(self, **kwargs):
-            calls["wanx_kwargs"] = kwargs
-            return kwargs["output_path"], 0.0
-
-    monkeypatch.setattr("src.models.kling.KlingModel", FakeKlingModel)
-
-    pipeline = _build_pipeline(task, FakeWanxModel())
-    pipeline.process_video_task("script-1", "task-kling-dashscope")
-
-    assert "wanx_kwargs" in calls
-    assert "vendor_kwargs" not in calls
-    assert calls["wanx_kwargs"]["model"] == "kling-v1"
-    assert calls["wanx_kwargs"]["img_path"] == "/tmp/downloaded-kling.png"
-    assert task.status == "completed"
-
-
 def test_vendor_kling_local_image_uses_base64_payload(monkeypatch, tmp_path):
     captured = {}
     local_path = _write_output_png("uploads/test_kling_vendor_ref.png")

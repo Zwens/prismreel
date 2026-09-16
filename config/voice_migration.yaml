@@ -1,0 +1,47 @@
+# 存量 CosyVoice 音色 → Gemini 预置音色的迁移映射
+#
+# DashScope 下线后 CosyVoice 的 78 个音色全部失效。存量项目里有 51 处角色音色
+# 绑定，涉及下面 7 个音色。项目读取时按此表改写并回写落盘，改写一次之后老 id
+# 就不再出现，本表可在后续版本删除。
+#
+# 硬约束：性别必须一致。男声映射成女声（或反之）会毁掉一整集已完成的配音，
+# 且不会报错、只有听了才知道。tests/test_gemini_tts.py 里有断言守着。
+#
+# Gemini 那 30 个音色的性别 Google 没有标注（官方只给一个特征词），此处依据的
+# 是 2026-09-08 对全部 30 个音色朗读同一句性别中立中文的人工试听结果。
+#
+# 未列入本表的历史 voice_id 不做静默替换 —— 在角色配音面板标记为「音色已失效，
+# 请重选」，让用户自己挑，而不是我们猜一个再悄悄换掉。
+
+version: 1
+
+mappings:
+  # 龙小淳（知性女）· 存量 17 处，用量最高，优先保证匹配度
+  # Kore 的特征词是 Firm，试听为女声，沉稳清晰，最接近「知性」。
+  longxiaochun_v2: Kore
+
+  # 龙哲（暖心男）· 11 处
+  # Achird 特征词 Friendly，男声，亲和感对应「暖心」。
+  longzhe_v2: Achird
+
+  # 龙诚（睿智青年）· 8 处
+  # Sadaltager 特征词 Knowledgeable，男声，直接对应「睿智」。
+  longcheng_v2: Sadaltager
+
+  # 龙泽（阳光男）· 6 处
+  # Puck 特征词 Upbeat，男声，对应「阳光」。
+  longze_v2: Puck
+
+  # 龙小诚（低音男）· 4 处
+  # Algenib 特征词 Gravelly，男声，沙砾质感对应「低音」。
+  longxiaocheng_v2: Algenib
+
+  # 龙修（博学男）· 3 处
+  # Charon 特征词 Informative，男声，讲述感对应「博学」。
+  # 注：Rasalgethi 同为 Informative 男声，是等价备选。
+  longxiu_v2: Charon
+
+  # 龙翰（深情男）· 2 处
+  # Algieba 特征词 Smooth，男声，圆润绵长对应「深情」。
+  # 注：Enceladus（Breathy 男声）气声更重，偏私语感，作为备选。
+  longhan_v2: Algieba

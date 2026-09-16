@@ -70,27 +70,11 @@
   "voicePicker": {
     "title": "選擇音色",
     "close": "關閉",
-    "tabSystem": "系統音色",
-    "tabClone": "我的復刻",
-    "tabDesign": "我的設計",
     "recommended": "推薦",
     "basedOnCharacter": "基於角色 {gender}",
-    "groupCosyvoice": "CosyVoice 標準",
-    "groupStandardZh": "Qwen3-TTS 標準",
-    "groupDialect": "方言",
-    "groupInternational": "國際",
-    "cloneEmptyTitle": "暫無復刻音色",
-    "cloneEmptyBody": "上傳一段 10-20 秒的參考音訊，讓 AI 復刻成專屬角色音色。",
-    "cloneCreateBtn": "+ 上傳新音訊",
-    "cloneNeedsSeries": "需要先把專案關聯到系列才能使用音色復刻（復刻音色按系列共享）",
     "comingSoonInPR3h": "PR-3h 即將交付",
     "originClone": "復刻",
     "originDesign": "設計",
-    "confirmDelete": "確定要刪除此音色嗎？已繫結的角色會失效。",
-    "designEmptyTitle": "暫無設計音色",
-    "designEmptyBody": "描述你想要的音色（如「溫柔知性女聲，30 歲左右」），AI 從零生成專屬音色。",
-    "designCreateBtn": "+ 設計新音色",
-    "designNeedsSeries": "需要先把專案關聯到系列才能使用音色設計（設計音色按系列共享）",
     "comingSoonInPR3i": "PR-3i 即將交付",
     "noSelection": "請選擇音色",
     "cancel": "取消",
@@ -99,7 +83,10 @@
     "previewTextNamed": "你好，我是{name}。今天遇到件有趣的事，讓我慢慢說給你聽。",
     "previewTextDefault": "你好，這是音色試聽。今天遇到件有趣的事，讓我慢慢說給你聽。",
     "playPreviewAria": "播放試聽",
-    "deleteVoiceAria": "刪除自定義音色"
+    "deleteVoiceAria": "刪除自定義音色",
+    "groupFemale": "女聲",
+    "groupMale": "男聲",
+    "groupOther": "其他"
   },
   "dialogueAudio": {
     "title": "對白音訊",
@@ -441,7 +428,32 @@
     "settings": "設定",
     "logout": "登出",
     "workspaceAria": "PrismReel Studio · 漫畫生成",
-    "mainNavAria": "主導航"
+    "mainNavAria": "主導航",
+    "aivideo": "AI 影片"
+  },
+  "aivideo": {
+    "eyebrow": "單條生成",
+    "title": "AI 影片",
+    "subtitle": "直接取用系統裡已有的素材，生成單條影片",
+    "groupVideo": "影片模式",
+    "mode": {
+      "t2v": "文生影片",
+      "i2v": "圖生影片",
+      "v2v": "影片編輯"
+    },
+    "noModels": "該模式暫無可用模型",
+    "noModelsHint": "模型目錄裡沒有支援該模式的可用模型，請改選其他模式",
+    "generate": "生成",
+    "generateBatch": "生成 {count} 條",
+    "resultsCount": "{count} 條結果",
+    "taskType": {
+      "label": "任務類型",
+      "auto": "自動判定",
+      "edit": "編輯",
+      "extend": "續寫",
+      "hint": "編輯會保持原影片的畫幅與時長，這兩項已自動鎖定",
+      "unsupported": "當前模型不支援顯式指定，將由模型自動判定"
+    }
   },
   "workspace": {
     "title": "我的工作區",
@@ -580,10 +592,12 @@
     "secPromptsDesc": "新建專案的預設系統提示詞（留空使用內建預設）。",
     "promptPlaceholder": "留空使用系統預設…",
     "secApiTitle": "供應商憑證",
-    "secApiDesc": "DashScope 優先；按需開啟供應商直連。",
+    "secApiDesc": "Gemini 承擔文本與提示詞潤色，Ark 承擔影片生成；DashScope 正在下線。",
     "loadingConfig": "載入配置中…",
+    "geminiKeyLabel": "Gemini 金鑰",
+    "geminiKeyHint": "Google Gemini 官網直連憑證（必填）。承擔劇本、分鏡與提示詞潤色。",
     "dashscopeKeyLabel": "DashScope 金鑰",
-    "dashscopeKeyHint": "阿里雲百鍊 / 通義系列服務憑證（必填）。",
+    "dashscopeKeyHint": "下線中：LLM 已切至 Gemini，影像生成尚未遷移，暫時仍需填寫。",
     "filled": "已填寫",
     "notConfiguredUnavailable": "未配置 · 模型不可用",
     "klingLabel": "可靈 Kling",
@@ -665,11 +679,11 @@
     "arkRegionIntl": "國際版 (BytePlus)",
     "arkRegionCn": "國內版 (火山引擎)",
     "arkRegionHint": "國際版走 ark.ap-southeast.bytepluses.com，國內版走 ark.cn-beijing.volces.com。",
-    "usageLinkLabel": "查看用量與預估費用"
+    "usageLinkLabel": "檢視用量與預估費用"
   },
   "project": {
-    "dashscopeApiKeyLabel": "DashScope API Key",
-    "dashscopeKeyPlaceholder": "DashScope 優先路由必填",
+    "dashscopeApiKeyLabel": "Gemini API Key",
+    "dashscopeKeyPlaceholder": "必填，驅動劇本分析、影像生成與配音",
     "ossCredentialPlaceholder": "可選，啟用 OSS 映象時填寫",
     "ossBucketLabel": "OSS Bucket 名稱",
     "ossBucketPlaceholder": "your_bucket_name（可選）",
@@ -769,7 +783,7 @@
     "viewDefault": "檢視完整預設提示詞",
     "promptConfigTitle": "提示詞配置",
     "modelSettingsTitle": "模型設定",
-    "usageLinkLabel": "查看用量與預估費用"
+    "usageLinkLabel": "檢視用量與預估費用"
   },
   "series": {
     "characterLabel": "角色",
@@ -1152,7 +1166,7 @@
     "searchPlaceholder": "搜尋資產...",
     "assetCount": "{count} 個資產",
     "noAssets": "暫無資產",
-    "noAssetsHint": "僅收錄「漫畫生成」的角色/場景/道具；在系列或專案中生成資產後，它們會出現在這裡。影片生成的內容請至「生成歷史」查看",
+    "noAssetsHint": "僅收錄「漫畫生成」的角色/場景/道具；在系列或專案中生成資產後，它們會出現在這裡。影片生成的內容請至「生成歷史」檢視",
     "series": "系列",
     "project": "專案",
     "gallery": "畫廊",
@@ -1946,7 +1960,8 @@
       "t2v": "文生",
       "i2v": "圖生",
       "r2v": "參考生",
-      "v2v": "編輯"
+      "v2v": "編輯",
+      "groupWorkflow": "組合流程"
     },
     "modeCard": {
       "heading": "你想創作什麼？",
@@ -1965,7 +1980,7 @@
       },
       "i2v": {
         "title": "首尾幀生成影片",
-        "description": "上傳首幀圖，選填末幀圖，讓畫面動起來變成影片。"
+        "description": "上傳首幀圖，選填尾幀圖，讓畫面動起來變成影片。"
       },
       "r2v": {
         "title": "多參考圖生成影片",
@@ -1973,7 +1988,7 @@
       },
       "v2v": {
         "title": "編輯影片",
-        "description": "上傳一段來源影片，描述你想怎麼轉換它。"
+        "description": "上傳一段源影片，描述你想怎麼轉換它。"
       }
     },
     "results": {
@@ -2025,9 +2040,9 @@
       "labelReferenceOptional": "參考圖片（可選）",
       "labelRefMaterialAV": "參考素材（圖片/影片/音訊）",
       "firstFrame": "首幀",
-      "lastFrame": "末幀",
-      "lastFrameOptional": "末幀（可選）",
-      "addLastFrame": "加入末幀圖片",
+      "lastFrame": "尾幀",
+      "lastFrameOptional": "尾幀（可選）",
+      "addLastFrame": "加入尾幀圖片",
       "imageIndex": "Image {index}"
     },
     "prompt": {
@@ -2077,16 +2092,22 @@
       "daysAgo": "{count} 天前",
       "monthsAgo": "{count} 個月前"
     },
-    "assetPicker": {
-      "tabAll": "全部",
-      "tabImage": "圖片",
-      "tabVideo": "影片",
-      "tabOfficial": "官方角色",
+    "assetSourcePicker": {
       "title": "選擇素材",
+      "close": "關閉",
+      "tabLibrary": "素材庫",
+      "tabSeries": "系列",
+      "tabProject": "專案",
+      "tabHistory": "生成歷史",
       "loading": "載入中...",
       "retry": "重試",
+      "loadFailed": "載入失敗",
       "empty": "暫無可用素材",
-      "emptyHint": "在 Playground 中生成內容後，輸出將出現在這裡",
+      "pickSeries": "先選擇一個系列",
+      "pickProject": "先選擇一個專案",
+      "noSeries": "還沒有系列",
+      "noProject": "還沒有專案",
+      "shotLabel": "鏡頭 {index}",
       "cancel": "取消",
       "select": "選擇"
     },
@@ -2124,13 +2145,67 @@
     "noResults": "暫無結果",
     "genFailed": "生成失敗",
     "noMedia": "暫無媒體",
-    "seedLabel": "隨機種子"
+    "seedLabel": "隨機種子",
+    "dance": {
+      "cardTitle": "真人換裝舞蹈",
+      "cardDescription": "三步走：換裝三視圖 → 黑白深度動作 → 合成成片",
+      "regenerate": "重新生成",
+      "step1": {
+        "title": "換裝三視圖",
+        "hint": "上傳人物照，生成正面、側面、背面三個視角的換裝角色圖",
+        "portrait": "人物照",
+        "outfitRef": "服裝參考（可選）",
+        "outfitLabel": "服裝描述",
+        "outfitPlaceholder": "例如：淡紫色緞面吊帶裙 + 白色運動鞋",
+        "styleLabel": "畫面風格",
+        "style": {
+          "illustration": "半寫實插畫",
+          "anime": "二次元",
+          "photoreal": "寫實照片"
+        },
+        "photorealWarning": "寫實風格的三視圖會被影片廠商判定為真人而拒絕，只能單獨留用，無法進入第 3 步合成。",
+        "run": "生成三視圖",
+        "running": "生成中…",
+        "saveAsCharacter": "存為角色"
+      },
+      "step2": {
+        "title": "動作參考",
+        "hint": "上傳舞蹈影片，在本機顯示卡上擷取黑白深度動作。原影片裡那個人的長相不會離開這台電腦。",
+        "gpu": "顯示卡：{name}，顯示記憶體 {vram} GB",
+        "cpu": "未偵測到可用顯示卡，將使用 CPU",
+        "plan": "自動選用 {encoder} 模型，推理解析度 {size}",
+        "danceVideo": "舞蹈影片",
+        "maxSeconds": "擷取長度（秒）",
+        "wholeClip": "整段",
+        "targetFps": "抽幀影格率",
+        "sourceFps": "原影格率",
+        "fpsHint": "耗時只跟影格數走。把影格率降到 12 大約能省一半時間，對動作參考通常夠用。",
+        "run": "擷取深度動作",
+        "running": "處理中…",
+        "stats": "{frames} 影格，用時 {seconds} 秒（{encoder} @ {size}，尖峰顯示記憶體 {vram} GB）"
+      },
+      "step3": {
+        "title": "合成成片",
+        "hint": "把角色與動作交給影片模型，生成最終影片",
+        "useSheet": "使用第 1 步的三視圖",
+        "useSheetOn": "人物取自三視圖，動作取自深度影片。注意：寫實風格的三視圖會被廠商拒絕。",
+        "useSheetOff": "不帶參考圖，人物保持原影片裡的樣子，只依描述換裝換景。這條路不受真人限制。",
+        "scene": "場景描述",
+        "scenePlaceholder": "例如：明亮的空舞蹈室，木地板",
+        "resolution": "解析度",
+        "prompt": "提示詞",
+        "resetPrompt": "恢復自動生成的提示詞",
+        "run": "合成",
+        "running": "合成中…",
+        "saveToLibrary": "存入素材庫"
+      }
+    }
   },
   "usage": {
     "pageTitle": "用量",
     "myUsageTitle": "我的用量",
     "adminUsageTitle": "所有使用者用量",
-    "llmSection": "LLM 文字生成",
+    "llmSection": "LLM 文本生成",
     "videoSection": "影片生成",
     "otherSection": "其他生成（僅計次數）",
     "columnProvider": "供應商",
@@ -2144,7 +2219,7 @@
     "modeI2v": "首幀生影片",
     "modeR2v": "參考圖生影片",
     "durationSeconds": "{seconds}秒",
-    "costEstimateNote": "費用為依官方公開價目表估算，可能與實際帳單有出入。",
+    "costEstimateNote": "費用為依官方公開價目表估算，可能與實際賬單有出入。",
     "noCostAvailable": "—",
     "loading": "載入中...",
     "backToSettings": "返回設定"

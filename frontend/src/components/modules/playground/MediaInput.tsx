@@ -3,9 +3,10 @@
 import { useRef, useState, useCallback } from 'react';
 import { ImagePlus, Film, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { API_URL, playgroundApi } from '@/lib/api';
+import { playgroundApi } from '@/lib/api';
+import { mediaUrl } from '@/lib/mediaPath';
 import { usePlaygroundStore, type PlaygroundMode } from './usePlaygroundStore';
-import AssetPickerModal from './AssetPickerModal';
+import AssetSourcePicker from './AssetSourcePicker';
 import { isOfficialCharacterRef, getOfficialCharacterDisplay } from '@/lib/officialCharacterCache';
 
 // ---------------------------------------------------------------------------
@@ -100,7 +101,7 @@ function resolveMediaSrc(path: string): string {
     return getOfficialCharacterDisplay(path)?.thumbnailUrl ?? '';
   }
   if (/^(https?:|blob:|data:|\/)/i.test(path)) return path;
-  return `${API_URL}/files/${path.replace(/^output\//, '')}`;
+  return mediaUrl(path);
 }
 
 // ---------------------------------------------------------------------------
@@ -290,7 +291,7 @@ function FirstLastFrameInput() {
         onChange={handleFileChange(slot)}
         className="hidden"
       />
-      <AssetPickerModal
+      <AssetSourcePicker
         isOpen={showAssetPicker === slot}
         onClose={() => setShowAssetPicker(null)}
         onSelect={handleAssetSelect(slot)}
@@ -434,7 +435,7 @@ export default function MediaInput() {
     setInputMedia([...inputMedia, path]);
   };
 
-  // Determine accept type for AssetPickerModal
+  // Determine accept type for AssetSourcePicker
   const acceptType: 'image' | 'video' | 'all' =
     mode === 'r2v' && isSeedance
       ? 'all'
@@ -518,7 +519,7 @@ export default function MediaInput() {
 
         {fileInput}
 
-        <AssetPickerModal
+        <AssetSourcePicker
           isOpen={showAssetPicker}
           onClose={() => setShowAssetPicker(false)}
           onSelect={handleAssetSelect}
@@ -637,7 +638,7 @@ export default function MediaInput() {
 
       {fileInput}
 
-      <AssetPickerModal
+      <AssetSourcePicker
         isOpen={showAssetPicker}
         onClose={() => setShowAssetPicker(false)}
         onSelect={handleAssetSelect}

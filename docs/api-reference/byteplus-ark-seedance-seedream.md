@@ -90,8 +90,82 @@ Seedance 2.5 的 1080p 与 2.0 的 4K 输出使用 10-bit 色深 + H.265/HEVC，
 | `edit` | 编辑原视频的画面或音频 | `content` 至少一个 `reference_video`；源视频 **4–30 秒**；`ratio` 必须 `adaptive`；`duration` 必须 `-1` |
 | `extend` | 向前或向后续写原视频 | `content` 至少一个 `reference_video`；`ratio` 必须 `adaptive` |
 
-显式指定时在建任务阶段同步校验并立即报错；`auto` 则可能建成任务后才异步失败。
+~~显式指定时在建任务阶段同步校验并立即报错~~；`auto` 则可能建成任务后才异步失败。
 即使显式指定，模型仍会依据 prompt 二次判定，不一致会抛 `InvalidParameter.TaskTypeMismatch`。
+
+> **实测更正（2026-09-08）**：**没有同步校验**。显式指定 `edit` 并违反硬约束时，建任务
+> 请求照常返回 `HTTP 200` 和任务 id，随后任务以 `status: failed` 结束。
+> **但失败任务 `usage` 缺失、不计费**——所以"不会白花钱"这个结论成立，只是机制是
+> 异步失败而非同步拒绝。含义：客户端的提交前校验是**唯一**能立即给出可操作错误的一环，
+> 不能依赖厂商同步拒绝。
+>
+> 实测到的 `InvalidParameter.TaskTypeConstraint` 原文（两种违规各一）：
+>
+> ```
+> The parameter `ratio` specified in the request is not valid. Seedance identified
+> your task as video editing based on your prompt. For this task type, the output
+> ratio and duration follow the input video selected by the model for editing, and
+> the video selected must satisfy the duration requirement of 4 to 30 seconds.
+> Issues: [0] `ratio` must be `adaptive`.
+> ```
+>
+> ```
+> ... Issues: [0] `duration` must be -1.
+> ```
+>
+> 结构固定：一句"哪个参数非法" + 一段该任务类型的约束说明 + `Issues: [i] ...` 逐条列出。
+> 前端做文案映射时按 `Issues:` 之后的部分取更贴近用户，前面那段是通用说明。
+>
+> **`InvalidParameter.TaskTypeMismatch` 触发不了，两个方向都试过**：
+>
+> | 显式子类型 | prompt 意图 | 结果 |
+> |---|---|---|
+> | `extend` | 编辑（"把天空整个换成夜晚的星空，保持其他不变"） | 成功出片，21 秒，5.67 USD |
+> | `edit` | 续写（"接着这段视频往后继续拍下去…不要改动已有画面"） | 成功出片，5 秒，1.39 USD |
+>
+> 结论：**显式指定子类型后，模型按参数执行，不会因 prompt 意图相反而否决**。文档所称
+> "即使显式指定，模型仍会依据 prompt 二次判定，不一致会抛 TaskTypeMismatch"在这两个
+> 用例上均未复现。该错误码的触发条件不明——可能只在 `auto` 模式下出现（此时判定结果与
+> 输入的物理约束冲突），也可能需要更极端的矛盾。前端映射可先按通用错误处理。
+>
+> 注意 `TaskTypeConstraint` 的文案里有一句 "Seedance identified your task as video
+> editing **based on your prompt**"——即便请求里显式写了 `edit`，它仍表述为"依据 prompt
+> 判定"。所以该文案不能反推模型忽略了显式参数。
+
+**已实调验证（2026-09-08）**。此前 content 里 video 项的确切 JSON 结构在文档中缺失，
+只写了 `content.role = reference_video`。以下形状经真实建任务确认被接受：
+
+```json
+{"type": "video_url", "video_url": {"url": "<可 GET 的 URL>"}, "role": "reference_video"}
+```
+
+同一次请求确认：`omni_reference_task_type: "edit"` 被接受；`--ratio adaptive` 解析为
+源视频自身的比例（源为 9:16，返回 `ratio: "9:16"`）；`--duration -1` 使输出保持源片长度
+（源 20.6 秒，返回 `duration: 20`）。任务 `cgt-20260908173854-tqf85`，约 3.5 分钟完成。
+
+**extend 同批验证**：`omni_reference_task_type: "extend"` 被接受，任务成功出片；
+`ratio adaptive` 同样解析为源片比例（9:16），`duration: -1` 下输出 21 秒（源 20.6 秒）。
+计价 885,600 tokens = 5.67 USD，与 edit 基本同量级。
+
+**实测计价与估算公式**：三次真实任务的用量高度线性——
+
+| 源片 | 输出 | 源+输出 | tokens | tokens/秒 | USD |
+|---|---|---|---|---|---|
+| 20.6s | 20s | 40.6s | 872,100 | 21,480 | 5.58 |
+| 20.6s | 21s | 41.6s | 885,600 | 21,288 | 5.67 |
+| 5.1s | 5s | 10.1s | 216,900 | 21,475 | 1.39 |
+
+即 720p 下约 **21,400 tokens / (源片秒数 + 输出秒数)**，按 6.40 USD/百万 token 折
+**≈ 0.137 USD 每秒（源+输出合计）**。
+
+据此估 v2v 成本：`USD ≈ 0.137 × (源片秒数 + 输出秒数)`。edit 的输出秒数等于源片秒数，
+所以 edit ≈ `0.274 × 源片秒数`。
+
+**不要套用官方"典型场景"折算表**（720p 0.231 USD/秒）：那张表的前提是无视频输入，
+而 v2v 的源视频本身也计入输入 token。按输出秒数算，本次 edit 实为 0.28 USD/输出秒。
+
+源视频必须是厂商可 GET 的地址。OSS 签名 URL 可用，但签名绑定 HTTP 方法：
+`sign_url('GET', ...)` 签出的地址对 HEAD 返回 403，验证可达性要用带 Range 的 GET。
 
 `content.role = reference_video` 支持的模型：**Seedance 2.5 与 Seedance 2.0 系列**。
 也就是 2.0 系列可以做编辑/续写，但**没有** `omni_reference_task_type` 参数可用，只能靠自动判定。

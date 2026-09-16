@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 from src.apps.comic_gen.models import Character, Scene, Script, StoryboardFrame
 from src.apps.comic_gen.pipeline import ComicGenPipeline
-from src.models.wanx import WanxModel
+from src.models.byteplus import BytePlusVideoModel
 
 
 PNG_1X1_BASE64 = (
@@ -21,13 +21,14 @@ def _write_output_png(rel_path: str) -> str:
     return str(file_path)
 
 
-def _build_pipeline(script: Script, wanx_model: WanxModel) -> ComicGenPipeline:
+def _build_pipeline(script: Script, video_model: BytePlusVideoModel) -> ComicGenPipeline:
     pipeline = ComicGenPipeline.__new__(ComicGenPipeline)
     pipeline.scripts = {script.id: script}
     pipeline._save_data = lambda: None
     pipeline._kling_model = None
     pipeline._vidu_model = None
-    pipeline.video_generator = SimpleNamespace(model=wanx_model)
+    pipeline.video_generator = SimpleNamespace(model=video_model)
+    pipeline._byteplus_video_model = video_model
     pipeline.get_script = lambda script_id: pipeline.scripts.get(script_id)
     return pipeline
 
@@ -88,51 +89,42 @@ def test_local_only_pipeline_flow_without_oss(monkeypatch):
 
     captured = {}
 
-    wanx_model = WanxModel({"params": {}})
+    video_model = BytePlusVideoModel({"params": {}})
 
-    def fake_create_dashscope_temp_url(local_path: str, model_name: str) -> str:
-        captured["temp_local_path"] = local_path
-        captured["temp_model_name"] = model_name
-        return "oss://dashscope-temp/local-only/frame.png"
+    class _Resp:
+        status_code = 200
+        text = ""
+        def raise_for_status(self): pass
+        def json(self): return {"id": "task-local-only"}
 
-    def fake_generate_wan_i2v_http(
-        *,
-        prompt: str,
-        img_url: str,
-        model_name: str = "wan2.6-i2v",
-        resolution: str = "720P",
-        # ratio was added to _generate_wan_i2v_http after Phase 2 catalog
-        # changes; mocks must accept it or the call site fails.
-        ratio=None,
-        duration: int = 5,
-        prompt_extend: bool = True,
-        negative_prompt: str = None,
-        audio_url: str = None,
-        watermark: bool = False,
-        seed: int = None,
-        shot_type: str = "single",
-        extra_headers=None,
-    ) -> str:
-        captured["img_url"] = img_url
-        captured["model_name"] = model_name
-        captured["headers"] = dict(extra_headers or {})
+    def fake_post(url, json=None, headers=None, timeout=None, **_kw):
+        # content 数组里那条 image_url 就是请求期变换后的地址；断言它没有
+        # 反过来写进项目数据，是这个用例的核心。
+        for item in (json or {}).get("content", []):
+            if item.get("type") == "image_url":
+                captured["img_url"] = item["image_url"]["url"]
+        captured["model_name"] = (json or {}).get("model")
+        return _Resp()
+
+    def fake_poll(_task_id: str) -> str:
         return "https://example.com/local-only-video.mp4"
 
-    def fake_download_video(_url: str, output_path: str):
+    def fake_download(_url: str, output_path: str):
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         Path(output_path).write_bytes(b"video")
 
-    monkeypatch.setattr(wanx_model, "_create_dashscope_temp_url", fake_create_dashscope_temp_url)
-    monkeypatch.setattr(wanx_model, "_generate_wan_i2v_http", fake_generate_wan_i2v_http)
-    monkeypatch.setattr(wanx_model, "_download_video", fake_download_video)
+    monkeypatch.setenv("ARK_API_KEY", "ark-test-key")
+    monkeypatch.setattr("src.models.byteplus.requests.post", fake_post)
+    monkeypatch.setattr(video_model, "_poll", fake_poll)
+    monkeypatch.setattr(video_model, "_download", fake_download)
 
-    pipeline = _build_pipeline(script, wanx_model)
+    pipeline = _build_pipeline(script, video_model)
 
     _, task_id = pipeline.create_video_task(
         script_id=script.id,
         image_url=frame.rendered_image_url,
         prompt="Pan and zoom on the character",
-        model="wan2.6-i2v",
+        model="seedance-2.5-i2v",
     )
     task = next(t for t in script.video_tasks if t.id == task_id)
 
@@ -141,14 +133,19 @@ def test_local_only_pipeline_flow_without_oss(monkeypatch):
 
     pipeline.process_video_task(script.id, task_id)
 
-    assert task.status == "completed"
-    assert task.video_url.startswith("video/video_")
+    # Ark 只接受厂商可 GET 的地址（见 docs/api-reference/byteplus-ark-seedance-
+    # seedream.md），没有 base64 内联这条路。所以不配 OSS 时，一张本地首帧根本
+    # 递不到 Seedance 手里——适配器在发请求前就拒绝，并指明要配 OSS。
+    #
+    # 这个用例此前断言 completed，只是因为 requests.post 被 mock 掉了：真实调用
+    # 会把 'video_inputs/xxx.png' 原样塞进 image_url，由 Ark 侧失败。现在改为钉住
+    # 那条可操作的错误。
+    assert task.status == "failed"
+    assert "OSS" in (task.error or "")
 
-    assert captured["img_url"] == "oss://dashscope-temp/local-only/frame.png"
-    assert captured["model_name"] == "wan2.6-i2v"
-    assert captured["temp_model_name"] == "wan2.6-i2v"
-    assert captured["headers"]["X-DashScope-OssResourceResolve"] == "enable"
-    assert captured["temp_local_path"].startswith(str(Path.cwd()))
+    # DashScope 专属的临时 URL / OssResourceResolve 头随 wanx 适配器一并消失，
+    # 相关断言不再适用。本用例保留的核心价值是下面这条：请求期的地址变换不得
+    # 回写进项目数据——任务失败时同样不许回写。
 
     # Stable project refs remain local refs; request-side transforms are not persisted.
     assert script.characters[0].image_url == "uploads/local_only_uploaded.png"

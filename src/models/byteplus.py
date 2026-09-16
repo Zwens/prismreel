@@ -23,6 +23,7 @@ id makes generate() raise rather than guessing.
 
 import logging
 import os
+import subprocess
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -58,7 +59,20 @@ ARK_MODEL_IDS = {
     "seedance-2.5-t2v": "dreamina-seedance-2-5-260628",
     "seedance-2.5-i2v": "dreamina-seedance-2-5-260628",
     "seedance-2.5-r2v": "dreamina-seedance-2-5-260628",
+    "seedance-2.5-v2v": "dreamina-seedance-2-5-260628",
 }
+
+# Editing and extension are sub-types of one omni-reference task, not separate
+# models — and only 2.5 accepts the parameter that selects them. Sending it to
+# a 2.0 model turns an otherwise valid task into a rejected one, so the wire id
+# decides whether it goes out at all.
+ARK_OMNI_TASK_TYPE_MODELS = {"dreamina-seedance-2-5-260628"}
+
+OMNI_TASK_TYPES = ("auto", "reference", "edit", "extend")
+
+# docs/api-reference/byteplus-ark-seedance-seedream.md §2.4
+EDIT_SOURCE_MIN_SECONDS = 4
+EDIT_SOURCE_MAX_SECONDS = 30
 
 POLL_INTERVAL = 5
 MAX_WAIT = 1800
@@ -125,6 +139,78 @@ def build_param_flags(
     return " ".join(parts)
 
 
+def probe_video_duration(src: Optional[str]) -> Optional[float]:
+    """Length of a local source video in seconds, or None when it cannot be
+    told cheaply.
+
+    None is not a failure: a source living on OSS would need a download to
+    probe, and Ark validates an explicit sub-type synchronously anyway. So an
+    unprobeable source is passed through rather than blocked — guessing here
+    would reject valid requests to avoid a round trip.
+    """
+    if not src or src.startswith(("http://", "https://")):
+        return None
+    if not os.path.exists(src):
+        return None
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", src],
+            capture_output=True, text=True, timeout=15,
+        )
+        return float((out.stdout or "").strip())
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+
+
+def validate_omni_task(
+    task_type: Optional[str],
+    *,
+    videos: List[str],
+    ratio: Optional[str],
+    duration: Optional[int],
+    source_seconds: Optional[float],
+) -> None:
+    """Reject a request Ark would reject, before it is ever sent.
+
+    Verified 2026-09-08: Ark does NOT validate these synchronously, despite the
+    vendor doc saying so. A violating request gets HTTP 200 and a task id, and
+    only then fails asynchronously — the failed task is free, but the user has
+    waited minutes to be told a field was wrong. So this is the only check that
+    can answer immediately, not a second line behind the vendor's.
+    """
+    if task_type is None or task_type == "auto":
+        return
+    if task_type not in OMNI_TASK_TYPES:
+        raise ValueError(
+            f"Unknown task_type {task_type!r}; expected one of {', '.join(OMNI_TASK_TYPES)}"
+        )
+    if task_type == "reference":
+        return
+
+    if not videos:
+        raise ValueError(
+            f"task_type={task_type!r} needs a source video (content role reference_video)"
+        )
+    if (ratio or "").strip() != "adaptive":
+        raise ValueError(
+            f"task_type={task_type!r} requires ratio 'adaptive', got {ratio!r}"
+        )
+
+    if task_type == "edit":
+        if duration is not None and duration != -1:
+            raise ValueError(
+                f"task_type='edit' keeps the source length, so duration must be -1, got {duration!r}"
+            )
+        if source_seconds is not None and not (
+            EDIT_SOURCE_MIN_SECONDS <= source_seconds <= EDIT_SOURCE_MAX_SECONDS
+        ):
+            raise ValueError(
+                f"task_type='edit' needs a source video of "
+                f"{EDIT_SOURCE_MIN_SECONDS}-{EDIT_SOURCE_MAX_SECONDS}s, got {source_seconds:.1f}s"
+            )
+
+
 def explain_ark_error(status_code: int, body_text: str) -> str:
     """Turn an Ark error body into a message worth showing the user.
 
@@ -153,13 +239,23 @@ def explain_ark_error(status_code: int, body_text: str) -> str:
 
 
 def build_ark_content(
-    prompt: str, images: List[Tuple[str, Optional[str]]], flags: str
+    prompt: str,
+    images: List[Tuple[str, Optional[str]]],
+    flags: str,
+    videos: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
     """The `content` array: one text item, then one image_url item per
-    reference. Each image carries its Ark `role` (`first_frame`,
-    `last_frame`, or `reference_image`) — Ark's first-frame, first+last-frame,
-    and omni-reference scenarios are mutually exclusive, so role is what
-    tells it which scenario this request is."""
+    reference, then one video_url item per source video. Order is preserved —
+    for R2V it is what the model maps to its reference slots.
+
+    Each image carries its Ark `role` (`first_frame`, `last_frame`, or
+    `reference_image`) — Ark's first-frame, first+last-frame, and
+    omni-reference scenarios are mutually exclusive, so role is what tells it
+    which scenario this request is.
+
+    The video item carries role=reference_video, which is what marks it as the
+    subject of an edit or extension rather than another reference.
+    """
     text = " ".join(part for part in [(prompt or "").strip(), flags.strip()] if part)
     content: List[Dict[str, Any]] = [{"type": "text", "text": text}]
     for url, role in images:
@@ -168,6 +264,13 @@ def build_ark_content(
             if role:
                 item["role"] = role
             content.append(item)
+    for url in videos or []:
+        if url:
+            content.append({
+                "type": "video_url",
+                "video_url": {"url": url},
+                "role": "reference_video",
+            })
     return content
 
 
@@ -219,6 +322,28 @@ class BytePlusVideoModel(VideoGenModel):
         )
         return resolved.value
 
+    def _resolve_ark_video_url(self, ref: Optional[str], *, model_name: Optional[str]) -> Optional[str]:
+        """Resolve a source/reference clip to a URL Ark can fetch.
+
+        Same contract as ``_resolve_ark_image_url``, and needed for the same
+        reason: Ark's `video_url.url` only accepts a fetchable URL. Passing a
+        local path through unresolved gets
+        ``InvalidParameter: content[n].video_url.url ... invalid url`` — which
+        is what happened for every locally-produced clip until this existed.
+        """
+        if not ref:
+            return None
+        if ref.startswith(("http://", "https://")):
+            return ref
+        resolved = resolve_media_input(
+            ref,
+            model_name=model_name or "",
+            modality="reference_video",
+            backend="byteplus",
+            uploader=OSSImageUploader(),
+        )
+        return resolved.value
+
     def generate(self, prompt: str, output_path: str, img_url: Optional[str] = None,
                  img_path: Optional[str] = None, **kwargs) -> Tuple[str, float, Optional[dict]]:
         start = time.time()
@@ -254,6 +379,31 @@ class BytePlusVideoModel(VideoGenModel):
             # opaque vendor-side 400 with no hint of which id was bad.
             raise ValueError(f"Unrecognized Seedance model id: {model_name!r}")
 
+        # Two lists on purpose. `videos` is what Ark gets and must be fetchable
+        # URLs; `raw_videos` keeps the caller's original refs so the duration
+        # probe below still reads a local file directly. Probing the signed
+        # OSS URL instead would make ffprobe do a network round trip for
+        # something already on disk, and a probe failure silently disables the
+        # edit-window check rather than enforcing it.
+        raw_videos: List[str] = []
+        videos: List[str] = []
+        for src in [kwargs.get("video_url")] + list(kwargs.get("reference_video_urls") or []):
+            if not src or src in raw_videos:
+                continue
+            resolved_video = self._resolve_ark_video_url(src, model_name=model_name)
+            if resolved_video and resolved_video not in videos:
+                raw_videos.append(src)
+                videos.append(resolved_video)
+
+        task_type = (kwargs.get("task_type") or None)
+        validate_omni_task(
+            task_type,
+            videos=videos,
+            ratio=kwargs.get("aspect_ratio"),
+            duration=kwargs.get("duration"),
+            source_seconds=probe_video_duration(raw_videos[0]) if raw_videos else None,
+        )
+
         flags = build_param_flags(
             resolution=kwargs.get("resolution"),
             duration=kwargs.get("duration"),
@@ -262,8 +412,12 @@ class BytePlusVideoModel(VideoGenModel):
         )
         body = {
             "model": wire_model_id,
-            "content": build_ark_content(prompt, images, flags),
+            "content": build_ark_content(prompt, images, flags, videos),
         }
+        # "auto" is the vendor default; spelling it out adds a field for no
+        # behaviour, and 2.0 rejects the field outright.
+        if task_type and task_type != "auto" and wire_model_id in ARK_OMNI_TASK_TYPE_MODELS:
+            body["omni_reference_task_type"] = task_type
 
         url = self._tasks_url()
         logger.info("[BytePlus/Seedance] POST %s model=%s images=%d",

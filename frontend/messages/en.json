@@ -70,27 +70,11 @@
   "voicePicker": {
     "title": "Pick voice",
     "close": "Close",
-    "tabSystem": "System",
-    "tabClone": "My Clones",
-    "tabDesign": "My Designs",
     "recommended": "Recommended",
     "basedOnCharacter": "based on character ({gender})",
-    "groupCosyvoice": "CosyVoice standard",
-    "groupStandardZh": "Qwen3-TTS standard",
-    "groupDialect": "Dialect",
-    "groupInternational": "International",
-    "cloneEmptyTitle": "No cloned voices yet",
-    "cloneEmptyBody": "Upload a 10-20s reference clip and let AI clone a custom voice.",
-    "cloneCreateBtn": "+ Upload new audio",
-    "cloneNeedsSeries": "Link this project to a series first — cloned voices are shared at series level.",
     "comingSoonInPR3h": "Ships in PR-3h",
     "originClone": "Clone",
     "originDesign": "Design",
-    "confirmDelete": "Delete this voice? Characters using it will become unbound.",
-    "designEmptyTitle": "No designed voices yet",
-    "designEmptyBody": "Describe the voice you want (e.g. 'warm 30-something female') and AI generates a custom one.",
-    "designCreateBtn": "+ Design new voice",
-    "designNeedsSeries": "Link this project to a series first — designed voices are shared at series level.",
     "comingSoonInPR3i": "Ships in PR-3i",
     "noSelection": "Pick a voice",
     "cancel": "Cancel",
@@ -99,7 +83,10 @@
     "previewTextNamed": "Hi, I'm {name}. Something interesting happened today — let me tell you all about it.",
     "previewTextDefault": "Hi, this is a voice preview. Something interesting happened today — let me tell you all about it.",
     "playPreviewAria": "Play preview",
-    "deleteVoiceAria": "Delete custom voice"
+    "deleteVoiceAria": "Delete custom voice",
+    "groupFemale": "Female",
+    "groupMale": "Male",
+    "groupOther": "Other"
   },
   "dialogueAudio": {
     "title": "Dialogue Audio",
@@ -441,7 +428,32 @@
     "settings": "Settings",
     "logout": "Log out",
     "workspaceAria": "PrismReel Studio · Comic Generator",
-    "mainNavAria": "Main navigation"
+    "mainNavAria": "Main navigation",
+    "aivideo": "AI Video"
+  },
+  "aivideo": {
+    "eyebrow": "Single shot",
+    "title": "AI Video",
+    "subtitle": "Generate one video, straight from the assets you already have",
+    "groupVideo": "Video modes",
+    "mode": {
+      "t2v": "Text to video",
+      "i2v": "Image to video",
+      "v2v": "Video edit"
+    },
+    "noModels": "No model available for this mode",
+    "noModelsHint": "The catalog has no usable model for this mode — pick another one",
+    "generate": "Generate",
+    "generateBatch": "Generate {count}",
+    "resultsCount": "{count} results",
+    "taskType": {
+      "label": "Task type",
+      "auto": "Auto",
+      "edit": "Edit",
+      "extend": "Extend",
+      "hint": "Editing keeps the source ratio and length, so both are locked",
+      "unsupported": "This model cannot be told explicitly; it will decide on its own"
+    }
   },
   "workspace": {
     "title": "My Workspace",
@@ -580,10 +592,12 @@
     "secPromptsDesc": "Default system prompts for new projects (leave empty to use the built-in default).",
     "promptPlaceholder": "Leave empty to use the system default…",
     "secApiTitle": "Provider credentials",
-    "secApiDesc": "DashScope first; enable direct provider connections as needed.",
+    "secApiDesc": "Gemini powers text and prompt polish, Ark powers video generation; DashScope is being retired.",
     "loadingConfig": "Loading config…",
+    "geminiKeyLabel": "Gemini key",
+    "geminiKeyHint": "Google Gemini direct credentials (required). Powers script, storyboard and prompt polish.",
     "dashscopeKeyLabel": "DashScope key",
-    "dashscopeKeyHint": "Aliyun Bailian / Tongyi service credentials (required).",
+    "dashscopeKeyHint": "Being retired: the LLM now runs on Gemini, image generation has not migrated yet, so this is still needed.",
     "filled": "Filled in",
     "notConfiguredUnavailable": "Not configured · models unavailable",
     "klingLabel": "Kling",
@@ -668,8 +682,8 @@
     "usageLinkLabel": "View usage & estimated cost"
   },
   "project": {
-    "dashscopeApiKeyLabel": "DashScope API Key",
-    "dashscopeKeyPlaceholder": "Required for DashScope-first model routing",
+    "dashscopeApiKeyLabel": "Gemini API Key",
+    "dashscopeKeyPlaceholder": "Required - powers script analysis, image generation and TTS",
     "ossCredentialPlaceholder": "Optional, used when OSS mirror is enabled",
     "ossBucketLabel": "OSS Bucket Name",
     "ossBucketPlaceholder": "your_bucket_name (optional)",
@@ -1946,7 +1960,8 @@
       "t2v": "Text",
       "i2v": "Image",
       "r2v": "Reference",
-      "v2v": "Edit"
+      "v2v": "Edit",
+      "groupWorkflow": "Workflows"
     },
     "modeCard": {
       "heading": "What do you want to create?",
@@ -2077,16 +2092,22 @@
       "daysAgo": "{count}d ago",
       "monthsAgo": "{count}mo ago"
     },
-    "assetPicker": {
-      "tabAll": "All",
-      "tabImage": "Images",
-      "tabVideo": "Videos",
-      "tabOfficial": "Official characters",
+    "assetSourcePicker": {
       "title": "Select media",
+      "close": "Close",
+      "tabLibrary": "Library",
+      "tabSeries": "Series",
+      "tabProject": "Project",
+      "tabHistory": "History",
       "loading": "Loading…",
       "retry": "Retry",
+      "loadFailed": "Failed to load",
       "empty": "No media available",
-      "emptyHint": "Generate something in the Playground and your outputs will appear here",
+      "pickSeries": "Pick a series first",
+      "pickProject": "Pick a project first",
+      "noSeries": "No series yet",
+      "noProject": "No projects yet",
+      "shotLabel": "Shot {index}",
       "cancel": "Cancel",
       "select": "Select"
     },
@@ -2124,7 +2145,61 @@
     "noResults": "No results to display",
     "genFailed": "Generation failed",
     "noMedia": "No media",
-    "seedLabel": "Seed"
+    "seedLabel": "Seed",
+    "dance": {
+      "cardTitle": "Dance Outfit Swap",
+      "cardDescription": "Three steps: outfit turnaround sheet, depth motion pass, composed clip",
+      "regenerate": "Regenerate",
+      "step1": {
+        "title": "Character sheet",
+        "hint": "Upload a portrait and get front, side and back views in the new outfit",
+        "portrait": "Portrait",
+        "outfitRef": "Outfit reference (optional)",
+        "outfitLabel": "Outfit",
+        "outfitPlaceholder": "e.g. lavender satin slip dress with white sneakers",
+        "styleLabel": "Style",
+        "style": {
+          "illustration": "Illustration",
+          "anime": "Anime",
+          "photoreal": "Photoreal"
+        },
+        "photorealWarning": "A photoreal sheet is rejected by the video vendor as a real person, so it can be kept on its own but cannot be used in step 3.",
+        "run": "Generate sheet",
+        "running": "Generating…",
+        "saveAsCharacter": "Save as character"
+      },
+      "step2": {
+        "title": "Motion reference",
+        "hint": "Upload a dance clip. Depth is extracted on your own GPU, so the dancer's likeness never leaves this machine.",
+        "gpu": "GPU: {name}, {vram} GB VRAM",
+        "cpu": "No usable GPU detected; falling back to CPU",
+        "plan": "Auto-selected {encoder} at input size {size}",
+        "danceVideo": "Dance clip",
+        "maxSeconds": "Trim to (s)",
+        "wholeClip": "Whole clip",
+        "targetFps": "Target fps",
+        "sourceFps": "Source fps",
+        "fpsHint": "Cost scales with frame count. Halving fps to 12 roughly halves the wait and is usually enough for a motion reference.",
+        "run": "Extract depth",
+        "running": "Working…",
+        "stats": "{frames} frames in {seconds}s ({encoder} @ {size}, peak {vram} GB)"
+      },
+      "step3": {
+        "title": "Compose",
+        "hint": "Hand the character and the motion to the video model",
+        "useSheet": "Use the sheet from step 1",
+        "useSheetOn": "Character comes from the sheet, motion from the depth clip. Note: a photoreal sheet will be rejected.",
+        "useSheetOff": "No reference image: the original person is kept and only the outfit and scene change. This path is not restricted.",
+        "scene": "Scene",
+        "scenePlaceholder": "e.g. a bright empty dance studio with a wooden floor",
+        "resolution": "Resolution",
+        "prompt": "Prompt",
+        "resetPrompt": "Reset to suggested prompt",
+        "run": "Compose",
+        "running": "Composing…",
+        "saveToLibrary": "Save to library"
+      }
+    }
   },
   "usage": {
     "pageTitle": "Usage",

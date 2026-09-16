@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Sparkles } from 'lucide-react';
 import ModeCardSelector from './ModeCardSelector';
+import DanceSwapWizard from './dance/DanceSwapWizard';
 import ModeSelector from './ModeSelector';
 import ModelSelector from './ModelSelector';
 import MediaInput from './MediaInput';
@@ -12,8 +12,9 @@ import ParameterBar from './ParameterBar';
 import ResultGallery from './ResultGallery';
 import CostEstimate from './CostEstimate';
 import { ArrowLeft } from 'lucide-react';
-import { usePlaygroundStore, type PlaygroundMode, type PlaygroundGeneration, type QueuedRequest } from './usePlaygroundStore';
-import { playgroundApi, type PlaygroundGenerationResponse } from '@/lib/api';
+import { usePlaygroundStore, type PlaygroundMode } from './usePlaygroundStore';
+import { getModelsForMode } from './playgroundModels';
+import { useGenerationRunner } from './useGenerationRunner';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -33,39 +34,6 @@ const MODE_LABELS: Record<PlaygroundMode, string> = {
 const MODES_WITH_MEDIA: PlaygroundMode[] = ['i2i', 'i2v', 'r2v', 'v2v'];
 const MODES_WITH_OPTIONAL_MEDIA: PlaygroundMode[] = ['t2i'];
 
-/** Polling interval for generation status (ms) */
-const POLL_INTERVAL = 2000;
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Convert API response to store-compatible PlaygroundGeneration */
-export function toGeneration(resp: PlaygroundGenerationResponse): PlaygroundGeneration {
-  return {
-    id: resp.id,
-    mode: resp.mode as PlaygroundMode,
-    model_id: resp.model_id,
-    prompt: resp.prompt,
-    negative_prompt: resp.negative_prompt,
-    input_media: resp.input_media,
-    parameters: resp.parameters,
-    batch_size: resp.batch_size,
-    outputs: resp.outputs.map((o) => ({
-      id: o.id,
-      media_path: o.media_path,
-      media_type: o.media_type as 'image' | 'video',
-      thumbnail_path: o.thumbnail_path,
-      saved_to_library: o.saved_to_library,
-      total_tokens: o.total_tokens,
-      cost_usd: o.cost_usd,
-    })),
-    status: resp.status as PlaygroundGeneration['status'],
-    error: resp.error,
-    created_at: resp.created_at,
-  };
-}
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -73,165 +41,32 @@ export function toGeneration(resp: PlaygroundGenerationResponse): PlaygroundGene
 export default function PlaygroundPage() {
   const t = useTranslations('playground');
 
+  // Compose state the header and controls render from. The queue, the POST and
+  // the poller all live in useGenerationRunner, which the AI-video page shares.
   const mode = usePlaygroundStore((s) => s.mode);
-  const modelId = usePlaygroundStore((s) => s.modelId);
   const prompt = usePlaygroundStore((s) => s.prompt);
-  const negativePrompt = usePlaygroundStore((s) => s.negativePrompt);
-  const inputMedia = usePlaygroundStore((s) => s.inputMedia);
-  const parameters = usePlaygroundStore((s) => s.parameters);
-  const batchSize = usePlaygroundStore((s) => s.batchSize);
   const history = usePlaygroundStore((s) => s.history);
-  const setHistory = usePlaygroundStore((s) => s.setHistory);
-  const setTemplates = usePlaygroundStore((s) => s.setTemplates);
-  const startGeneration = usePlaygroundStore((s) => s.startGeneration);
-  const updateGeneration = usePlaygroundStore((s) => s.updateGeneration);
-  const enqueueRequest = usePlaygroundStore((s) => s.enqueueRequest);
-  const markDispatching = usePlaygroundStore((s) => s.markDispatching);
-  const removeFromQueue = usePlaygroundStore((s) => s.removeFromQueue);
-  const queue = usePlaygroundStore((s) => s.queue);
-  const activeCount = usePlaygroundStore((s) => s.activeGenerationIds.length);
-  const maxConcurrent = usePlaygroundStore((s) => s.maxConcurrent);
+  const batchSize = usePlaygroundStore((s) => s.batchSize);
   const playgroundStage = usePlaygroundStore((s) => s.playgroundStage);
   const setPlaygroundStage = usePlaygroundStore((s) => s.setPlaygroundStage);
+  const { generate } = useGenerationRunner();
 
-  const pollTimers = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
-
-  // ─── Fetch initial data on mount ───────────────────────────────────────────
-
-  useEffect(() => {
-    playgroundApi.getHistory().then((items) => {
-      setHistory(items.map(toGeneration));
-    }).catch((err) => {
-      console.error('[Playground] Failed to fetch history:', err);
-    });
-
-    playgroundApi.getTemplates().then((items) => {
-      setTemplates(
-        items.map((t) => ({
-          id: t.id,
-          name: t.name,
-          category: t.category,
-          prompt: t.prompt,
-          negative_prompt: t.negative_prompt,
-          default_mode: t.default_mode as PlaygroundMode | undefined,
-          default_model_id: t.default_model_id,
-          default_parameters: t.default_parameters,
-          created_at: t.created_at,
-          updated_at: t.updated_at,
-        }))
-      );
-    }).catch((err) => {
-      console.error('[Playground] Failed to fetch templates:', err);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ─── Cleanup poll timers ───────────────────────────────────────────────────
-
-  useEffect(() => {
-    return () => {
-      pollTimers.current.forEach((timer) => clearInterval(timer));
-      pollTimers.current.clear();
-    };
-  }, []);
-
-  // ─── Status poller ─────────────────────────────────────────────────────────
-
-  const startPolling = useCallback((generationId: string) => {
-    // Prevent duplicate timers
-    if (pollTimers.current.has(generationId)) return;
-
-    const timer = setInterval(async () => {
-      try {
-        const statusResp = await playgroundApi.getGenerationStatus(generationId);
-        const isTerminal = statusResp.status === 'completed' || statusResp.status === 'failed';
-
-        // Fetch full generation data for complete update
-        const fullResp = await playgroundApi.getGeneration(generationId);
-        updateGeneration(toGeneration(fullResp));
-
-        if (isTerminal) {
-          clearInterval(timer);
-          pollTimers.current.delete(generationId);
-        }
-      } catch (err) {
-        console.error('[Playground] Poll failed for', generationId, err);
-        clearInterval(timer);
-        pollTimers.current.delete(generationId);
-      }
-    }, POLL_INTERVAL);
-
-    pollTimers.current.set(generationId, timer);
-  }, [updateGeneration]);
-
-  // ─── Generate handler — enqueue a request; the dispatcher runs it ──────────
-
-  const handleGenerate = useCallback(() => {
+  // 三段式 UI 是 Playground 独有的：提交后要切到结果视图。AI 视频页没有
+  // stage 概念，所以这一步留在页面里，而不是塞进共用的 runner。
+  const handleGenerate = () => {
     if (!prompt.trim()) return;
-    // Auto-detect i2i: t2i + reference images -> i2i
-    const effectiveMode = (mode === 't2i' && inputMedia.length > 0) ? 'i2i' : mode;
-    enqueueRequest({
-      mode: effectiveMode,
-      modelId,
-      prompt: prompt.trim(),
-      negativePrompt: negativePrompt || undefined,
-      inputMedia,
-      parameters,
-      batchSize,
-    });
+    generate();
     setPlaygroundStage('results');
-  }, [mode, modelId, prompt, negativePrompt, inputMedia, parameters, batchSize, enqueueRequest, setPlaygroundStage]);
-
-  // ─── Queue dispatcher — POST a queued request, then poll for status ────────
-
-  const dispatchRequest = useCallback(async (req: QueuedRequest) => {
-    try {
-      const resp = await playgroundApi.generate({
-        mode: req.mode,
-        model_id: req.modelId,
-        prompt: req.prompt,
-        negative_prompt: req.negativePrompt || undefined,
-        input_media: req.inputMedia.length > 0 ? req.inputMedia : undefined,
-        parameters: Object.keys(req.parameters).length > 0 ? req.parameters : undefined,
-        batch_size: req.batchSize > 1 ? req.batchSize : undefined,
-      });
-      const gen = toGeneration(resp);
-      startGeneration(gen);
-      removeFromQueue(req.id);
-      if (gen.status !== 'completed' && gen.status !== 'failed') {
-        startPolling(gen.id);
-      }
-    } catch (err) {
-      console.error('[Playground] Dispatch failed:', err);
-      removeFromQueue(req.id);
-    }
-  }, [startGeneration, removeFromQueue, startPolling]);
-
-  // Pump: dispatch pending requests up to the concurrency limit.
-  const pump = useCallback(() => {
-    const s = usePlaygroundStore.getState();
-    const dispatching = s.queue.filter((q) => q.status === 'dispatching').length;
-    let slots = s.maxConcurrent - s.activeGenerationIds.length - dispatching;
-    if (slots <= 0) return;
-    for (const req of s.queue) {
-      if (slots <= 0) break;
-      if (req.status !== 'pending') continue;
-      slots -= 1;
-      markDispatching(req.id);
-      dispatchRequest(req);
-    }
-  }, [markDispatching, dispatchRequest]);
-
-  // Run the pump whenever the queue, in-flight count, or concurrency changes.
-  useEffect(() => {
-    pump();
-  }, [queue, activeCount, maxConcurrent, pump]);
+  };
 
   // ─── Derived values ────────────────────────────────────────────────────────
 
   const resultCount = history.reduce((n, g) => n + g.outputs.length, 0);
   const showMediaInput = MODES_WITH_MEDIA.includes(mode) || MODES_WITH_OPTIONAL_MEDIA.includes(mode);
-  const canGenerate = prompt.trim().length > 0;
+  // A mode nothing can serve is not submittable. Without this the button stays
+  // live and posts whatever model id the previous mode left behind.
+  const hasModel = getModelsForMode(mode).length > 0;
+  const canGenerate = hasModel && prompt.trim().length > 0;
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -282,6 +117,13 @@ export default function PlaygroundPage() {
         </div>
       )}
 
+      {/* ═══ STAGE: DANCE SWAP WIZARD ═══ */}
+      {playgroundStage === 'dance' && (
+        <div className="flex-1 overflow-y-auto scrollbar-thin">
+          <DanceSwapWizard />
+        </div>
+      )}
+
       {/* ═══ STAGE: COMPOSE (full-width, no scroll) ═══ */}
       {playgroundStage === 'compose' && (
         <div className="flex flex-1 flex-col overflow-y-auto scrollbar-thin px-7 py-6">
@@ -318,6 +160,11 @@ export default function PlaygroundPage() {
                   {t('compose.modelLabel')}
                 </div>
                 <ModelSelector />
+                {!hasModel && (
+                  <p className="mt-2 text-[0.6875rem] leading-relaxed text-status-failed-fg">
+                    {t('model.noModels')}
+                  </p>
+                )}
                 <div className="my-4 h-px bg-border-subtle" />
                 <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
                   {t('compose.parametersLabel')}
@@ -398,6 +245,11 @@ export default function PlaygroundPage() {
                 {t('compose.modelLabel')}
               </div>
               <ModelSelector />
+              {!hasModel && (
+                <p className="mt-2 text-[0.6875rem] leading-relaxed text-status-failed-fg">
+                  {t('model.noModels')}
+                </p>
+              )}
               <div className="my-4 h-px bg-border-subtle" />
               <div className="mb-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
                 {t('compose.parametersLabel')}
