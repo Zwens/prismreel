@@ -194,10 +194,10 @@ cd frontend && node scripts/check-playground-colors.mjs  # 颜色守卫
 |---|------|------|------|
 | 1 | Branding 落地 | ✅ 已完成 | `SettingsPage.tsx` `renderAbout()` 已有 `PrismReelBranding` + 斜体琥珀 Slogan「"Render Noise into Narrative"」+ 版本号区块 |
 | 2 | 资产库筛选栏 | 🟡 部分完成 | `AssetLibraryPage.tsx` 已有类型 pill-tabs + `starredOnly` 收藏筛选，但未接入 Line B mockup 描述的独立 `.side` 二级侧边筛选栏结构 |
-| 3 | Playground / Modals 对齐 Line B | 🟡 部分完成 | `PlaygroundPage.tsx` 已有 9 处 `atelier` class；`PlaygroundHistoryPage.tsx`、通用 Modal（`UploadAssetModal.tsx`、`ModelSettingsModal.tsx`）尚无 `atelier` class，未对齐 |
+| 3 | Playground / Modals 对齐 Line B | ✅ 已完成（2026-09-16 补齐） | `PlaygroundPage.tsx`／`PlaygroundHistoryPage.tsx`（直接复用 `ResultGallery`，无需改动）均已对齐；`UploadAssetModal.tsx`、`ModelSettingsModal.tsx` 已补上 `atelier-card` + `atelier-display`，写法与 `PlaygroundPage.tsx` 一致，commit `31b2c38` |
 | 4 | 设置图标确认 | ✅ 已定案 | `GlobalSidebar.tsx` 用 lucide `Settings`（单齿轮），已贴 mockup，双齿轮方案未采用 |
 
-剩余待办：② 资产库二级筛选栏结构、③ Playground 历史页 + 通用 Modal 元件的 Line B 对齐。
+剩余待办仅 ②：资产库二级筛选栏结构（是否要真的搬成 mockup 的独立 `.side` 侧边栏，或接受现有顶部 pill-tabs 为功能等价方案，待决策）。
 
 ---
 
