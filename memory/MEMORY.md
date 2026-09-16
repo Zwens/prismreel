@@ -59,6 +59,9 @@
 ## 多租戶登入系統操作
 - [**🔴 邀請碼兌換入口是獨立`/redeem?code=`頁面，非登入頁**](feedback_invite_redeem_ui_location_unverified_wrong_guidance.md) — 2026-09-10首次踩坑，未查前端就講錯操作位置，被使用者當場糾正
 
+## Line B 視覺重構（HANDOFF.md，2026-09-16 現況核實+補齊）
+- [**✅ HANDOFF.md macOS路徑已更新對應本機Windows repo；四項下一步待辦核實：①④已完成、③本輪補齊、②資產庫二級篩選欄仍待決策**](feedback_ui_change_visual_verify_blocked_by_login_pattern_reuse_accepted_2026-09-16.md) — commit `b1b8297`（文件更新）+`31b2c38`（Modal對齊）+`16e0d88`（狀態更新）；本機dev環境現需登入無法自動化截圖，複用`PlaygroundPage.tsx`已驗證pattern跳過視覺驗收
+
 ## 導覽命名重構（2026-09-12，解決ComicGen/Playground命名落差誤導）
 - [**✅ 「資料遺失」誤判已結案：查證時混淆ComicGen(漫畫生成)與Playground(影片生成)兩條獨立產線**](feedback_output_data_loss_was_misdiagnosis_two_pipelines_confused_2026-09-12.md) — 2026-09-11判定的VPS資料遺失，2026-09-12重查證實Playground資料從未丟失，只是查錯路徑；已推動導覽重新命名根治
 - [**✅ 工作區/資產庫/創作台重新命名為漫畫生成/素材庫/影片生成+新增獨立生成歷史分頁（feat/nav-rename-and-history-tab分支）**](feedback_output_data_loss_was_misdiagnosis_two_pipelines_confused_2026-09-12.md) — 生成歷史分頁直接重用PlaygroundPage的ResultGallery，跳過select/compose階段
