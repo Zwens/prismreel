@@ -1,21 +1,22 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Image as ImageIcon, Film, Loader2, Layers, LayoutGrid, Clapperboard, History } from 'lucide-react';
+import { X, Check, Image as ImageIcon, Film, Loader2, Layers, LayoutGrid, Clapperboard, History, UserRound } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api, playgroundApi } from '@/lib/api';
 import { mediaUrl } from '@/lib/mediaPath';
 import { resolveAssetMedia } from '@/lib/assetImageResolver';
+import { isOfficialCharacterRef, rememberOfficialCharacter, getOfficialCharacterDisplay } from '@/lib/officialCharacterCache';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-/** The four places a user's existing media can come from. Replaces the
+/** The five places a user's existing media can come from. Replaces the
  *  history-only AssetPickerModal, which could not reach anything the user had
  *  built in the library, a series or a storyboard. */
-export type AssetSource = 'library' | 'series' | 'project' | 'history';
+export type AssetSource = 'library' | 'series' | 'project' | 'history' | 'official';
 
 interface AssetSourcePickerProps {
   isOpen: boolean;
@@ -47,8 +48,13 @@ function fileName(path: string): string {
 }
 
 /** Display URL. Mirrors lib/utils getAssetUrl — OSS records are already
- *  absolute, locally produced ones are output-relative. */
+ *  absolute, locally produced ones are output-relative. An `asset://` path
+ *  has no filesystem location; its thumbnail lives in officialCharacterCache,
+ *  populated when the official source loads. */
 function toDisplayUrl(path: string): string {
+  if (isOfficialCharacterRef(path)) {
+    return getOfficialCharacterDisplay(path)?.thumbnailUrl ?? '';
+  }
   return mediaUrl(path);
 }
 
@@ -83,6 +89,72 @@ function itemsFromAssetBag(
 }
 
 // ---------------------------------------------------------------------------
+// CharacterThumbnail — loads only when scrolled near view (avoids hundreds
+// of simultaneous requests when the official character grid renders), and
+// retries a transient failure (CDN edge-cache race, brief network blip)
+// before giving up and showing the text fallback card.
+// ---------------------------------------------------------------------------
+
+const THUMBNAIL_MAX_RETRIES = 2;
+const THUMBNAIL_RETRY_DELAY_MS = 800;
+
+function CharacterThumbnail({
+  src,
+  alt,
+  onGiveUp,
+}: {
+  src: string;
+  alt: string;
+  onGiveUp: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [gaveUp, setGaveUp] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const handleError = useCallback(() => {
+    setAttempt((prev) => {
+      const next = prev + 1;
+      if (next > THUMBNAIL_MAX_RETRIES) {
+        setGaveUp(true);
+        onGiveUp();
+        return prev;
+      }
+      window.setTimeout(() => setAttempt(next), THUMBNAIL_RETRY_DELAY_MS * next);
+      return prev;
+    });
+  }, [onGiveUp]);
+
+  if (!shouldLoad || gaveUp) {
+    return <div ref={containerRef} className="w-full h-full" />;
+  }
+
+  const retrySrc = attempt === 0 ? src : `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`;
+
+  return (
+    <div ref={containerRef} className="w-full h-full">
+      <img key={attempt} src={retrySrc} alt={alt} className="w-full h-full object-cover" onError={handleError} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Animation
 // ---------------------------------------------------------------------------
 
@@ -105,10 +177,11 @@ export default function AssetSourcePicker({
 }: AssetSourcePickerProps) {
   const t = useTranslations('playground.assetSourcePicker');
 
-  // Character / scene / prop / storyboard sources only ever hold stills, so a
-  // video-only slot is left with history as its single meaningful source.
+  // Character / scene / prop / storyboard / official sources only ever hold
+  // stills, so a video-only slot is left with history as its single
+  // meaningful source.
   const sources: AssetSource[] = useMemo(
-    () => (accept === 'video' ? ['history'] : ['library', 'series', 'project', 'history']),
+    () => (accept === 'video' ? ['history'] : ['library', 'series', 'project', 'history', 'official']),
     [accept],
   );
 
@@ -121,6 +194,7 @@ export default function AssetSourcePicker({
   const [selected, setSelected] = useState<string | null>(null);
   /** listSeries() embeds each series' assets; kept so drilling in is instant. */
   const [seriesCache, setSeriesCache] = useState<any[]>([]);
+  const [failedThumbnails, setFailedThumbnails] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setActiveSource(sources[0]);
@@ -139,6 +213,7 @@ export default function AssetSourcePicker({
     setItems([]);
     setContainers([]);
     setPickedContainerId(null);
+    setFailedThumbnails(new Set());
     try {
       if (source === 'library') {
         const pool = await api.listLibraryAssets();
@@ -152,6 +227,18 @@ export default function AssetSourcePicker({
       } else if (source === 'project') {
         const list = await api.getProjects();
         setContainers((list ?? []).map((p: any) => ({ id: p.id, title: p.title })));
+      } else if (source === 'official') {
+        const characters = await playgroundApi.getOfficialCharacters();
+        setItems(
+          (characters ?? []).map((char: any) => {
+            const path = `asset://${char.asset_id}`;
+            const label = `${char.nationality} · ${char.occupation}`;
+            // Written on load, not on select, so the grid's own thumbnails
+            // resolve immediately via toDisplayUrl without waiting on a click.
+            rememberOfficialCharacter(path, { thumbnailUrl: char.thumbnail_url, label });
+            return { key: `official-${char.asset_id}`, path, type: 'image' as const, label };
+          }),
+        );
       } else {
         const history = await playgroundApi.getHistory(100, 0);
         const seen = new Set<string>();
@@ -282,12 +369,14 @@ export default function AssetSourcePicker({
     series: LayoutGrid,
     project: Clapperboard,
     history: History,
+    official: UserRound,
   };
   const SOURCE_LABEL: Record<AssetSource, string> = {
     library: t('tabLibrary'),
     series: t('tabSeries'),
     project: t('tabProject'),
     history: t('tabHistory'),
+    official: t('tabOfficial'),
   };
 
   return (
@@ -422,7 +511,9 @@ export default function AssetSourcePicker({
                 <div role="listbox" className="grid grid-cols-5 gap-3 2xl:grid-cols-6">
                   {visibleItems.map((item) => {
                     const isSelected = selected === item.path;
+                    const isOfficial = isOfficialCharacterRef(item.path);
                     const url = toDisplayUrl(item.path);
+                    const thumbnailFailed = isOfficial && failedThumbnails.has(item.path);
                     return (
                       <button
                         key={item.key}
@@ -438,7 +529,18 @@ export default function AssetSourcePicker({
                             : 'border border-border-subtle hover:border-primary/50',
                         ].join(' ')}
                       >
-                        {item.type === 'video' ? (
+                        {thumbnailFailed ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 px-2 text-center">
+                            <UserRound className="w-6 h-6 text-text-muted" />
+                            <span className="text-[0.625rem] text-text-muted line-clamp-2">{item.label}</span>
+                          </div>
+                        ) : isOfficial ? (
+                          <CharacterThumbnail
+                            src={url}
+                            alt={item.label}
+                            onGiveUp={() => setFailedThumbnails((prev) => new Set(prev).add(item.path))}
+                          />
+                        ) : item.type === 'video' ? (
                           <video src={url} className="w-full h-full object-cover" muted preload="metadata" />
                         ) : (
                           <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" />

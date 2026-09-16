@@ -42,6 +42,7 @@ const mockListSeries = vi.fn();
 const mockGetProjects = vi.fn();
 const mockGetProject = vi.fn();
 const mockGetHistory = vi.fn();
+const mockGetOfficialCharacters = vi.fn();
 
 vi.mock('@/lib/api', () => ({
     API_URL: 'http://localhost:17177',
@@ -53,7 +54,17 @@ vi.mock('@/lib/api', () => ({
     },
     playgroundApi: {
         getHistory: (...a: any[]) => mockGetHistory(...a),
+        getOfficialCharacters: (...a: any[]) => mockGetOfficialCharacters(...a),
     },
+}));
+
+const mockRememberOfficialCharacter = vi.fn();
+
+vi.mock('@/lib/officialCharacterCache', () => ({
+    isOfficialCharacterRef: (path: string) => path.startsWith('asset://'),
+    rememberOfficialCharacter: (...a: any[]) => mockRememberOfficialCharacter(...a),
+    getOfficialCharacterDisplay: (path: string) =>
+        mockRememberOfficialCharacter.mock.calls.find((c) => c[0] === path)?.[1],
 }));
 
 import AssetSourcePicker from '../AssetSourcePicker';
@@ -110,6 +121,16 @@ const history = [
     },
 ];
 
+const officialCharacters = [
+    {
+        asset_id: 'oc1',
+        nationality: '日本',
+        occupation: '偶像',
+        biography: '一个官方角色',
+        thumbnail_url: 'https://cdn.example.com/oc1.png',
+    },
+];
+
 function setup(props: Partial<React.ComponentProps<typeof AssetSourcePicker>> = {}) {
     const onSelect = vi.fn();
     const onClose = vi.fn();
@@ -132,18 +153,20 @@ beforeEach(() => {
     mockGetProjects.mockResolvedValue(projectList);
     mockGetProject.mockResolvedValue(projectDetail);
     mockGetHistory.mockResolvedValue(history);
+    mockGetOfficialCharacters.mockResolvedValue(officialCharacters);
 });
 
 // ── Tests ──
 
 describe('AssetSourcePicker — sources', () => {
-    it('offers all four sources, not just generation history', async () => {
+    it('offers all five sources, not just generation history', async () => {
         setup();
 
         expect(await screen.findByRole('tab', { name: '素材库' })).toBeInTheDocument();
         expect(screen.getByRole('tab', { name: '系列' })).toBeInTheDocument();
         expect(screen.getByRole('tab', { name: '项目' })).toBeInTheDocument();
         expect(screen.getByRole('tab', { name: '生成历史' })).toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: '官方角色' })).toBeInTheDocument();
     });
 
     it('opens on the global library rather than history', async () => {
@@ -243,5 +266,38 @@ describe('AssetSourcePicker — accept filter', () => {
 
         expect(await screen.findByRole('tab', { name: '生成历史' })).toBeInTheDocument();
         expect(screen.queryByRole('tab', { name: '素材库' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('tab', { name: '官方角色' })).not.toBeInTheDocument();
+    });
+});
+
+describe('AssetSourcePicker — official character source', () => {
+    it('lists official characters fetched from the dedicated endpoint', async () => {
+        setup();
+
+        fireEvent.click(await screen.findByRole('tab', { name: '官方角色' }));
+
+        expect(await screen.findByRole('option', { name: /日本 · 偶像/ })).toBeInTheDocument();
+        expect(mockGetOfficialCharacters).toHaveBeenCalled();
+    });
+
+    it('remembers the thumbnail/label for the asset:// path and selects it on confirm', async () => {
+        const { onSelect } = setup();
+
+        fireEvent.click(await screen.findByRole('tab', { name: '官方角色' }));
+        fireEvent.click(await screen.findByRole('option', { name: /日本 · 偶像/ }));
+        fireEvent.click(screen.getByRole('button', { name: '选择' }));
+
+        expect(mockRememberOfficialCharacter).toHaveBeenCalledWith('asset://oc1', {
+            thumbnailUrl: 'https://cdn.example.com/oc1.png',
+            label: '日本 · 偶像',
+        });
+        expect(onSelect).toHaveBeenCalledWith('asset://oc1');
+    });
+
+    it('does not fetch official characters until that tab is opened', async () => {
+        setup();
+
+        await waitFor(() => expect(mockListLibraryAssets).toHaveBeenCalled());
+        expect(mockGetOfficialCharacters).not.toHaveBeenCalled();
     });
 });
