@@ -320,6 +320,28 @@ class BytePlusVideoModel(VideoGenModel):
         )
         return resolved.value
 
+    def _resolve_ark_video_url(self, ref: Optional[str], *, model_name: Optional[str]) -> Optional[str]:
+        """Resolve a source/reference clip to a URL Ark can fetch.
+
+        Same contract as ``_resolve_ark_image_url``, and needed for the same
+        reason: Ark's `video_url.url` only accepts a fetchable URL. Passing a
+        local path through unresolved gets
+        ``InvalidParameter: content[n].video_url.url ... invalid url`` — which
+        is what happened for every locally-produced clip until this existed.
+        """
+        if not ref:
+            return None
+        if ref.startswith(("http://", "https://")):
+            return ref
+        resolved = resolve_media_input(
+            ref,
+            model_name=model_name or "",
+            modality="reference_video",
+            backend="byteplus",
+            uploader=OSSImageUploader(),
+        )
+        return resolved.value
+
     def generate(self, prompt: str, output_path: str, img_url: Optional[str] = None,
                  img_path: Optional[str] = None, **kwargs) -> Tuple[str, float, Optional[dict]]:
         start = time.time()
@@ -355,10 +377,21 @@ class BytePlusVideoModel(VideoGenModel):
             # opaque vendor-side 400 with no hint of which id was bad.
             raise ValueError(f"Unrecognized Seedance model id: {model_name!r}")
 
+        # Two lists on purpose. `videos` is what Ark gets and must be fetchable
+        # URLs; `raw_videos` keeps the caller's original refs so the duration
+        # probe below still reads a local file directly. Probing the signed
+        # OSS URL instead would make ffprobe do a network round trip for
+        # something already on disk, and a probe failure silently disables the
+        # edit-window check rather than enforcing it.
+        raw_videos: List[str] = []
         videos: List[str] = []
         for src in [kwargs.get("video_url")] + list(kwargs.get("reference_video_urls") or []):
-            if src and src not in videos:
-                videos.append(src)
+            if not src or src in raw_videos:
+                continue
+            resolved_video = self._resolve_ark_video_url(src, model_name=model_name)
+            if resolved_video and resolved_video not in videos:
+                raw_videos.append(src)
+                videos.append(resolved_video)
 
         task_type = (kwargs.get("task_type") or None)
         validate_omni_task(
@@ -366,7 +399,7 @@ class BytePlusVideoModel(VideoGenModel):
             videos=videos,
             ratio=kwargs.get("aspect_ratio"),
             duration=kwargs.get("duration"),
-            source_seconds=probe_video_duration(videos[0]) if videos else None,
+            source_seconds=probe_video_duration(raw_videos[0]) if raw_videos else None,
         )
 
         flags = build_param_flags(

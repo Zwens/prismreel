@@ -1960,7 +1960,8 @@
       "t2v": "Text",
       "i2v": "Image",
       "r2v": "Reference",
-      "v2v": "Edit"
+      "v2v": "Edit",
+      "groupWorkflow": "Workflows"
     },
     "modeCard": {
       "heading": "What do you want to create?",
@@ -2143,7 +2144,61 @@
     "noResults": "No results to display",
     "genFailed": "Generation failed",
     "noMedia": "No media",
-    "seedLabel": "Seed"
+    "seedLabel": "Seed",
+    "dance": {
+      "cardTitle": "Dance Outfit Swap",
+      "cardDescription": "Three steps: outfit turnaround sheet, depth motion pass, composed clip",
+      "regenerate": "Regenerate",
+      "step1": {
+        "title": "Character sheet",
+        "hint": "Upload a portrait and get front, side and back views in the new outfit",
+        "portrait": "Portrait",
+        "outfitRef": "Outfit reference (optional)",
+        "outfitLabel": "Outfit",
+        "outfitPlaceholder": "e.g. lavender satin slip dress with white sneakers",
+        "styleLabel": "Style",
+        "style": {
+          "illustration": "Illustration",
+          "anime": "Anime",
+          "photoreal": "Photoreal"
+        },
+        "photorealWarning": "A photoreal sheet is rejected by the video vendor as a real person, so it can be kept on its own but cannot be used in step 3.",
+        "run": "Generate sheet",
+        "running": "Generating…",
+        "saveAsCharacter": "Save as character"
+      },
+      "step2": {
+        "title": "Motion reference",
+        "hint": "Upload a dance clip. Depth is extracted on your own GPU, so the dancer's likeness never leaves this machine.",
+        "gpu": "GPU: {name}, {vram} GB VRAM",
+        "cpu": "No usable GPU detected; falling back to CPU",
+        "plan": "Auto-selected {encoder} at input size {size}",
+        "danceVideo": "Dance clip",
+        "maxSeconds": "Trim to (s)",
+        "wholeClip": "Whole clip",
+        "targetFps": "Target fps",
+        "sourceFps": "Source fps",
+        "fpsHint": "Cost scales with frame count. Halving fps to 12 roughly halves the wait and is usually enough for a motion reference.",
+        "run": "Extract depth",
+        "running": "Working…",
+        "stats": "{frames} frames in {seconds}s ({encoder} @ {size}, peak {vram} GB)"
+      },
+      "step3": {
+        "title": "Compose",
+        "hint": "Hand the character and the motion to the video model",
+        "useSheet": "Use the sheet from step 1",
+        "useSheetOn": "Character comes from the sheet, motion from the depth clip. Note: a photoreal sheet will be rejected.",
+        "useSheetOff": "No reference image: the original person is kept and only the outfit and scene change. This path is not restricted.",
+        "scene": "Scene",
+        "scenePlaceholder": "e.g. a bright empty dance studio with a wooden floor",
+        "resolution": "Resolution",
+        "prompt": "Prompt",
+        "resetPrompt": "Reset to suggested prompt",
+        "run": "Compose",
+        "running": "Composing…",
+        "saveToLibrary": "Save to library"
+      }
+    }
   },
   "usage": {
     "pageTitle": "Usage",

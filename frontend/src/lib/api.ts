@@ -1705,6 +1705,46 @@ export interface PlaygroundTemplateResponse {
   updated_at: string;
 }
 
+export interface PlaygroundDepthCapability {
+  available: boolean;
+  device?: "cuda" | "cpu";
+  gpu_name?: string;
+  vram_gb?: number | null;
+  recommended_encoder?: string;
+  recommended_input_size?: number;
+  warning?: string;
+  reason?: string;
+}
+
+export interface PlaygroundDepthRequest {
+  source_video: string;
+  encoder?: string;
+  input_size?: number;
+  max_seconds?: number;
+  target_fps?: number;
+  contrast?: string;
+}
+
+export interface PlaygroundDepthJob {
+  id: string;
+  source_video: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  progress: number;
+  message: string;
+  output_path?: string | null;
+  error?: string | null;
+  info: {
+    frames?: number;
+    fps?: number;
+    encoder?: string;
+    device?: string;
+    input_size?: number;
+    elapsed_sec?: number;
+    peak_vram_gb?: number | null;
+  };
+  created_at: string;
+}
+
 export const playgroundApi = {
   generate: (data: PlaygroundGenerateRequest) =>
     axios.post<PlaygroundGenerationResponse>(API_URL + "/playground/generate", data).then(r => r.data),
@@ -1747,4 +1787,23 @@ export const playgroundApi = {
       headers: { "Content-Type": "multipart/form-data" },
     }).then(r => r.data);
   },
+
+  uploadVideo: (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return axios.post<{ path: string }>(API_URL + "/playground/upload-video", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }).then(r => r.data);
+  },
+
+  // -- Depth preprocessing (runs on the user's own GPU) --------------------
+
+  getDepthCapability: () =>
+    axios.get<PlaygroundDepthCapability>(API_URL + "/playground/depth/capability").then(r => r.data),
+
+  createDepthJob: (data: PlaygroundDepthRequest) =>
+    axios.post<PlaygroundDepthJob>(API_URL + "/playground/depth/jobs", data).then(r => r.data),
+
+  getDepthJob: (id: string) =>
+    axios.get<PlaygroundDepthJob>(API_URL + "/playground/depth/jobs/" + id).then(r => r.data),
 };

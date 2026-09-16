@@ -46,3 +46,25 @@ openai>=1.0.0
 # 并把该路径直接存进数据模型，所以 Vidu adapter 必须把字节转码成调用方要的
 # 格式，见 src/models/vidu.py 的 _download_vidu_image。
 pillow>=10.0.0
+
+# 本地深度视频推理（真人换装舞蹈流程的第 2 步，src/models/depth_video.py +
+# src/vendor/video_depth_anything）。这一步跑在用户自己的显卡上，不走任何厂商
+# API——因为所有能用的视频厂商都会拒绝写实真人参考图，而深度图里没有脸。
+#
+# torch 此前只是 demucs 的传递依赖。**必须装 CUDA 构建**：CPU 构建能跑但慢到
+# 不可用，且 pip 默认装的就是 CPU 版。装法：
+#   pip install --index-url https://download.pytorch.org/whl/cu124 \
+#       torch==2.6.0 torchvision==0.21.0
+#
+# 不需要 xformers：内置代码已改用 torch 自带的 scaled_dot_product_attention，
+# 见 src/vendor/NOTICE.md。
+torch>=2.0.0
+torchvision>=0.15.0
+# 内置的 VDA 推理代码直接 import 这三个。
+einops>=0.4.1
+easydict>=1.13
+tqdm>=4.60.0
+# 深度管线的视频读写与灰度编码走 cv2（不用 decord/imageio：decord 的 wheel 已
+# 停止维护，imageio 在缺 imageio-ffmpeg 时会挑 tifffile 插件去写 .mp4，跑完
+# 整段推理才在最后一步崩）。
+opencv-python>=4.8.0

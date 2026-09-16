@@ -174,7 +174,7 @@ def test_edit_rejects_a_source_video_outside_four_to_thirty_seconds(model, no_ne
     with pytest.raises(ValueError, match="4|30"):
         model.generate("把天空改成黄昏", "out.mp4",
                        model_name="seedance-2.5-v2v",
-                       video_url="/tmp/clip.mp4",
+                       video_url="https://oss.example/clip.mp4",
                        task_type="edit",
                        aspect_ratio="adaptive", duration=-1)
 
@@ -193,7 +193,7 @@ def test_edit_accepts_a_source_video_inside_the_window(model, monkeypatch):
     with pytest.raises(RuntimeError):
         model.generate("把天空改成黄昏", "out.mp4",
                        model_name="seedance-2.5-v2v",
-                       video_url="/tmp/clip.mp4",
+                       video_url="https://oss.example/clip.mp4",
                        task_type="edit",
                        aspect_ratio="adaptive", duration=-1)
 
@@ -348,3 +348,114 @@ def test_service_surfaces_a_constraint_violation_instead_of_calling_ark(monkeypa
 
     with pytest.raises(ValueError, match="adaptive"):
         service._generate_video_seedance(gen, "out.mp4")
+
+
+# ---------------------------------------------------------------------------
+# Reference images alongside the source clip
+#
+# This is what the dance-swap flow needs: a character sheet decides who is in
+# the shot, the clip decides how they move. Ark takes both in one content array
+# (role=reference_image + role=reference_video), but the service used to send
+# only the video.
+# ---------------------------------------------------------------------------
+
+def _image_items(body):
+    return [item for item in body["content"] if item["type"] == "image_url"]
+
+
+def test_the_source_clip_is_not_also_sent_as_an_image(monkeypatch):
+    """Regression: input_media[0] is a video, and the generic first-frame
+    resolution used to hand it straight to Ark's image_url field, sending the
+    clip twice — once correctly and once as a bogus first frame."""
+    body = _capture_ark_body(monkeypatch, _v2v_generation(aspect_ratio="adaptive"))
+
+    assert _image_items(body) == []
+
+
+def test_trailing_media_entries_become_reference_images(monkeypatch):
+    from src.apps.playground.models import PlaygroundGeneration, PlaygroundMode
+
+    gen = PlaygroundGeneration(
+        id="gen-2",
+        mode=PlaygroundMode.V2V,
+        model_id="seedance-2.5-v2v",
+        prompt="她跳同一支舞",
+        input_media=[
+            "https://oss.example/depth.mp4",
+            "https://oss.example/sheet.png",
+        ],
+        parameters={"task_type": "reference", "aspect_ratio": "adaptive"},
+        created_at="2026-09-15T00:00:00Z",
+    )
+    body = _capture_ark_body(monkeypatch, gen)
+
+    assert _image_items(body) == [
+        {
+            "type": "image_url",
+            "image_url": {"url": "https://oss.example/sheet.png"},
+            "role": "reference_image",
+        }
+    ]
+    assert {
+        "type": "video_url",
+        "video_url": {"url": "https://oss.example/depth.mp4"},
+        "role": "reference_video",
+    } in body["content"]
+
+
+def test_the_text_item_still_leads_when_both_kinds_are_attached(monkeypatch):
+    from src.apps.playground.models import PlaygroundGeneration, PlaygroundMode
+
+    gen = PlaygroundGeneration(
+        id="gen-3",
+        mode=PlaygroundMode.V2V,
+        model_id="seedance-2.5-v2v",
+        prompt="她跳同一支舞",
+        input_media=["https://oss.example/depth.mp4", "https://oss.example/sheet.png"],
+        parameters={"task_type": "reference", "aspect_ratio": "adaptive"},
+        created_at="2026-09-15T00:00:00Z",
+    )
+    body = _capture_ark_body(monkeypatch, gen)
+
+    assert body["content"][0]["type"] == "text"
+
+
+def test_a_local_clip_without_oss_fails_locally_rather_than_at_ark(model, no_network, monkeypatch):
+    """A filesystem path is not something Ark can fetch. Resolving it is the
+    adapter's job, and when there is nowhere to upload it the user should be
+    told that here — not handed Ark's
+    `content[n].video_url.url ... invalid url` from a request that already
+    cost a round trip."""
+    monkeypatch.setenv("ARK_API_KEY", "test-key")
+
+    with pytest.raises(ValueError, match="URL-compatible"):
+        model.generate("她跳同一支舞", "out.mp4",
+                       model_name="seedance-2.5-v2v",
+                       video_url="output/playground/depth/depth_local.mp4",
+                       task_type="reference",
+                       aspect_ratio="adaptive")
+
+
+def test_a_remote_clip_is_passed_through_untouched(model, monkeypatch):
+    captured = {}
+
+    def fake_post(url, json=None, headers=None, timeout=None):
+        captured["body"] = json
+        raise RuntimeError("stop after capture")
+
+    monkeypatch.setenv("ARK_API_KEY", "test-key")
+    monkeypatch.setattr("src.models.byteplus.requests.post", fake_post)
+    monkeypatch.setattr("src.models.byteplus.probe_video_duration", lambda _src: 10.0)
+
+    with pytest.raises(RuntimeError, match="stop after capture"):
+        model.generate("她跳同一支舞", "out.mp4",
+                       model_name="seedance-2.5-v2v",
+                       video_url="https://oss.example/clip.mp4",
+                       task_type="reference",
+                       aspect_ratio="adaptive")
+
+    assert {
+        "type": "video_url",
+        "video_url": {"url": "https://oss.example/clip.mp4"},
+        "role": "reference_video",
+    } in captured["body"]["content"]

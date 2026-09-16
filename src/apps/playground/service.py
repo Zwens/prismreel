@@ -20,6 +20,7 @@ from .models import (
 )
 from .storage import PlaygroundStorage
 from ...utils import get_logger
+from ...utils.media_refs import to_posix_media_path
 from ...utils.system_check import get_ffmpeg_path
 
 logger = get_logger(__name__)
@@ -236,7 +237,7 @@ class PlaygroundService:
 
                 output_entry = PlaygroundOutput(
                     id=str(uuid.uuid4()),
-                    media_path=out_path,
+                    media_path=to_posix_media_path(out_path),
                     media_type="image",
                 )
                 gen.outputs.append(output_entry)
@@ -329,7 +330,7 @@ class PlaygroundService:
                 total_tokens, cost_usd = self._record_video_usage(gen, usage)
                 output_entry = PlaygroundOutput(
                     id=str(uuid.uuid4()),
-                    media_path=out_path,
+                    media_path=to_posix_media_path(out_path),
                     media_type="video",
                     thumbnail_path=self._extract_video_thumbnail(out_path),
                     total_tokens=total_tokens,
@@ -415,7 +416,7 @@ class PlaygroundService:
             logger.warning("Thumbnail extraction timed out for %s", video_path)
             return None
 
-        return thumb_path
+        return to_posix_media_path(thumb_path)
 
     # -- adapter delegates ------------------------------------------------
 
@@ -484,15 +485,28 @@ class PlaygroundService:
             kwargs["generation_mode"] = "r2v"
             kwargs["ref_image_urls"] = list(gen.input_media)
 
-        # v2v: the source clip, plus the optional edit / extend sub-type.
-        # Without this the source video never reaches the adapter and the
+        # v2v: input_media[0] is the source/reference clip; anything after it is
+        # a reference image. Ark's omni-reference scenario accepts both in one
+        # content array (role=reference_video plus role=reference_image), which
+        # is what lets a character sheet drive the look while a clip drives the
+        # motion.
+        #
+        # Without video_url the source clip never reaches the adapter and the
         # request goes out as a plain prompt-only generation — it succeeds,
         # bills, and returns something unrelated to the clip the user picked.
         if gen.mode == PlaygroundMode.V2V and gen.input_media:
             kwargs["video_url"] = gen.input_media[0]
+            if len(gen.input_media) > 1:
+                kwargs["ref_image_urls"] = list(gen.input_media[1:])
             task_type = params.get("task_type")
             if task_type:
                 kwargs["task_type"] = task_type
+
+            # The generic first-frame resolution above grabbed input_media[0],
+            # which for v2v is the *video*. Passing it on would put an mp4 URL
+            # into Ark's image_url field and send the clip twice — once
+            # correctly as reference_video and once as a bogus first frame.
+            img_path, img_url = None, None
 
         # i2v: optional second entry is the last frame (Ark first_frame +
         # last_frame scenario). Only img_url is wired through to Ark today

@@ -12,6 +12,26 @@ class PlaygroundMode(str, Enum):
     V2V = "v2v"
 
 
+class DepthVideoRequest(BaseModel):
+    source_video: str = Field(..., description="Path to an uploaded reference clip")
+    encoder: Optional[str] = Field(
+        "auto", description="Depth encoder: auto (pick by VRAM) | vitl | vits"
+    )
+    input_size: Optional[int] = Field(
+        None, description="Inference resolution; omit to size it to available VRAM"
+    )
+    max_seconds: Optional[float] = Field(
+        None, description="Trim the source to this many seconds before inference"
+    )
+    target_fps: Optional[float] = Field(
+        None, description="Resample to this fps; fewer frames is the main speed lever"
+    )
+    contrast: Optional[str] = Field(
+        "percentile",
+        description="Grayscale mapping: percentile (subject-weighted) | raw (min/max)",
+    )
+
+
 class PlaygroundOutput(BaseModel):
     id: str = Field(..., description="Unique identifier (UUID)")
     media_path: str = Field(..., description="Generated file path relative to output/")

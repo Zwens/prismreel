@@ -57,7 +57,11 @@ let queueSeq = 0;
 
 export type PlaygroundMode = 't2i' | 'i2i' | 't2v' | 'i2v' | 'r2v' | 'v2v';
 
-export type PlaygroundStage = 'select' | 'compose' | 'results';
+// 'dance' is the multi-step character-swap wizard. It is a stage rather than
+// a PlaygroundMode because it is not a model capability — it composes i2i
+// and v2v internally, and adding it to PlaygroundMode would leak a
+// non-existent capability into model filtering and per-mode preferences.
+export type PlaygroundStage = 'select' | 'compose' | 'results' | 'dance';
 
 export interface PlaygroundOutput {
   id: string;

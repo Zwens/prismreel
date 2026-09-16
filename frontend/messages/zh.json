@@ -1960,7 +1960,8 @@
       "t2v": "文生",
       "i2v": "图生",
       "r2v": "参考生",
-      "v2v": "编辑"
+      "v2v": "编辑",
+      "groupWorkflow": "组合流程"
     },
     "modeCard": {
       "heading": "你想创作什么？",
@@ -2143,7 +2144,61 @@
     "noResults": "暂无结果",
     "genFailed": "生成失败",
     "noMedia": "暂无媒体",
-    "seedLabel": "随机种子"
+    "seedLabel": "随机种子",
+    "dance": {
+      "cardTitle": "真人换装舞蹈",
+      "cardDescription": "三步走：换装三视图 → 黑白深度动作 → 合成成片",
+      "regenerate": "重新生成",
+      "step1": {
+        "title": "换装三视图",
+        "hint": "上传人物照，生成正面、侧面、背面三个视角的换装角色图",
+        "portrait": "人物照",
+        "outfitRef": "服装参考（可选）",
+        "outfitLabel": "服装描述",
+        "outfitPlaceholder": "例如：淡紫色缎面吊带裙 + 白色运动鞋",
+        "styleLabel": "画面风格",
+        "style": {
+          "illustration": "半写实插画",
+          "anime": "二次元",
+          "photoreal": "写实照片"
+        },
+        "photorealWarning": "写实风格的三视图会被视频厂商判定为真人而拒绝，只能单独留用，无法进入第 3 步合成。",
+        "run": "生成三视图",
+        "running": "生成中…",
+        "saveAsCharacter": "存为角色"
+      },
+      "step2": {
+        "title": "动作参考",
+        "hint": "上传舞蹈视频，在本机显卡上提取黑白深度动作。原视频里那个人的长相不会离开这台电脑。",
+        "gpu": "显卡：{name}，显存 {vram} GB",
+        "cpu": "未检测到可用显卡，将使用 CPU",
+        "plan": "自动选用 {encoder} 模型，推理分辨率 {size}",
+        "danceVideo": "舞蹈视频",
+        "maxSeconds": "截取时长（秒）",
+        "wholeClip": "整段",
+        "targetFps": "抽帧帧率",
+        "sourceFps": "原帧率",
+        "fpsHint": "耗时只跟帧数走。把帧率降到 12 大约能省一半时间，对动作参考通常够用。",
+        "run": "提取深度动作",
+        "running": "处理中…",
+        "stats": "{frames} 帧，用时 {seconds} 秒（{encoder} @ {size}，峰值显存 {vram} GB）"
+      },
+      "step3": {
+        "title": "合成成片",
+        "hint": "把角色和动作交给视频模型，生成最终片子",
+        "useSheet": "使用第 1 步的三视图",
+        "useSheetOn": "人物取自三视图，动作取自深度视频。注意：写实风格的三视图会被厂商拒绝。",
+        "useSheetOff": "不带参考图，人物保持原视频里的样子，只按描述换装换景。这条路不受真人限制。",
+        "scene": "场景描述",
+        "scenePlaceholder": "例如：明亮的空舞蹈室，木地板",
+        "resolution": "分辨率",
+        "prompt": "提示词",
+        "resetPrompt": "恢复自动生成的提示词",
+        "run": "合成",
+        "running": "合成中…",
+        "saveToLibrary": "存入素材库"
+      }
+    }
   },
   "usage": {
     "pageTitle": "用量",

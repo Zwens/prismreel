@@ -1960,7 +1960,8 @@
       "t2v": "文生",
       "i2v": "圖生",
       "r2v": "參考生",
-      "v2v": "編輯"
+      "v2v": "編輯",
+      "groupWorkflow": "組合流程"
     },
     "modeCard": {
       "heading": "你想創作什麼？",
@@ -2143,7 +2144,61 @@
     "noResults": "暫無結果",
     "genFailed": "生成失敗",
     "noMedia": "暫無媒體",
-    "seedLabel": "隨機種子"
+    "seedLabel": "隨機種子",
+    "dance": {
+      "cardTitle": "真人換裝舞蹈",
+      "cardDescription": "三步走：換裝三視圖 → 黑白深度動作 → 合成成片",
+      "regenerate": "重新生成",
+      "step1": {
+        "title": "換裝三視圖",
+        "hint": "上傳人物照，生成正面、側面、背面三個視角的換裝角色圖",
+        "portrait": "人物照",
+        "outfitRef": "服裝參考（可選）",
+        "outfitLabel": "服裝描述",
+        "outfitPlaceholder": "例如：淡紫色緞面吊帶裙 + 白色運動鞋",
+        "styleLabel": "畫面風格",
+        "style": {
+          "illustration": "半寫實插畫",
+          "anime": "二次元",
+          "photoreal": "寫實照片"
+        },
+        "photorealWarning": "寫實風格的三視圖會被影片廠商判定為真人而拒絕，只能單獨留用，無法進入第 3 步合成。",
+        "run": "生成三視圖",
+        "running": "生成中…",
+        "saveAsCharacter": "存為角色"
+      },
+      "step2": {
+        "title": "動作參考",
+        "hint": "上傳舞蹈影片，在本機顯示卡上擷取黑白深度動作。原影片裡那個人的長相不會離開這台電腦。",
+        "gpu": "顯示卡：{name}，顯示記憶體 {vram} GB",
+        "cpu": "未偵測到可用顯示卡，將使用 CPU",
+        "plan": "自動選用 {encoder} 模型，推理解析度 {size}",
+        "danceVideo": "舞蹈影片",
+        "maxSeconds": "擷取長度（秒）",
+        "wholeClip": "整段",
+        "targetFps": "抽幀影格率",
+        "sourceFps": "原影格率",
+        "fpsHint": "耗時只跟影格數走。把影格率降到 12 大約能省一半時間，對動作參考通常夠用。",
+        "run": "擷取深度動作",
+        "running": "處理中…",
+        "stats": "{frames} 影格，用時 {seconds} 秒（{encoder} @ {size}，尖峰顯示記憶體 {vram} GB）"
+      },
+      "step3": {
+        "title": "合成成片",
+        "hint": "把角色與動作交給影片模型，生成最終影片",
+        "useSheet": "使用第 1 步的三視圖",
+        "useSheetOn": "人物取自三視圖，動作取自深度影片。注意：寫實風格的三視圖會被廠商拒絕。",
+        "useSheetOff": "不帶參考圖，人物保持原影片裡的樣子，只依描述換裝換景。這條路不受真人限制。",
+        "scene": "場景描述",
+        "scenePlaceholder": "例如：明亮的空舞蹈室，木地板",
+        "resolution": "解析度",
+        "prompt": "提示詞",
+        "resetPrompt": "恢復自動生成的提示詞",
+        "run": "合成",
+        "running": "合成中…",
+        "saveToLibrary": "存入素材庫"
+      }
+    }
   },
   "usage": {
     "pageTitle": "用量",

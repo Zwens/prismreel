@@ -37,11 +37,17 @@ transport:
   # audio role for it (`edit` can alter a source video's audio, but that
   # is an output-side concern).
   audio_input_mode: {}
-  # Not "unsupported" -- Ark does accept content.role = reference_video on
-  # Seedance 2.5 and the 2.0 series, and vedit / vext both require it. We
-  # simply have not wired it yet; P3 fills in the byteplus entry here.
+  # Ark accepts content.role = reference_video on Seedance 2.5 and the 2.0
+  # series; vedit / vext both require it, and so does the dance-swap flow,
+  # which sends a locally-produced depth video.
+  #
+  # provider_media routes both the "video" and "reference_video" modalities
+  # through this map (see _mode_for_modality), so leaving it empty meant a
+  # local clip was handed to Ark as a bare filesystem path and rejected with
+  # `content[n].video_url.url ... invalid url`.
   # See docs/api-reference/byteplus-ark-seedance-seedream.md §2.4.
-  reference_video_input_mode: {}
+  reference_video_input_mode:
+    byteplus: byteplus_ark_video_url
 models:
   - id: seedance/seedance-2.0-video
     display_name: Seedance 2.0

@@ -179,7 +179,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       }
     },
     "vidu": {
@@ -513,7 +515,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       }
     },
     "seedance/seedance-2.0-mini-video": {
@@ -573,7 +577,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       }
     },
     "seedance/seedance-2.0-video": {
@@ -633,7 +639,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       }
     },
     "seedance/seedance-2.5-video": {
@@ -695,7 +703,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       }
     },
     "vidu/vidu/vidu-q3-fast-image": {
@@ -1542,7 +1552,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -1665,7 +1677,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -1783,7 +1797,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -1909,7 +1925,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -2032,7 +2050,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -2155,7 +2175,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -2273,7 +2295,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -2399,7 +2423,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -2520,7 +2546,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -2648,7 +2676,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -2776,7 +2806,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -2899,7 +2931,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -3027,7 +3061,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -4261,7 +4297,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -4392,7 +4430,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -4518,7 +4558,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -4650,7 +4692,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -4782,7 +4826,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -4909,7 +4955,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -5043,7 +5091,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -5177,7 +5227,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -5306,7 +5358,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -5443,7 +5497,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -5580,7 +5636,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -5712,7 +5770,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [
@@ -5849,7 +5909,9 @@
         "image_input_mode": {
           "byteplus": "byteplus_ark_image_url"
         },
-        "reference_video_input_mode": {}
+        "reference_video_input_mode": {
+          "byteplus": "byteplus_ark_video_url"
+        }
       },
       "ui": {
         "badges": [

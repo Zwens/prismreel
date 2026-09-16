@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Sparkles } from 'lucide-react';
 import ModeCardSelector from './ModeCardSelector';
+import DanceSwapWizard from './dance/DanceSwapWizard';
 import ModeSelector from './ModeSelector';
 import ModelSelector from './ModelSelector';
 import MediaInput from './MediaInput';
@@ -113,6 +114,13 @@ export default function PlaygroundPage() {
       {playgroundStage === 'select' && (
         <div className="flex-1 overflow-y-auto scrollbar-thin">
           <ModeCardSelector />
+        </div>
+      )}
+
+      {/* ═══ STAGE: DANCE SWAP WIZARD ═══ */}
+      {playgroundStage === 'dance' && (
+        <div className="flex-1 overflow-y-auto scrollbar-thin">
+          <DanceSwapWizard />
         </div>
       )}
 
