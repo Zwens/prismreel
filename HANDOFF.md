@@ -2,10 +2,16 @@
 
 > 写给接手的 Claude Code 同学。本文涵盖工作区现状、设计参考（Line A/B mockup）、
 > 已完成工作、遗留决策与下一步建议。
+>
+> **2026-09-16 更新**：本文原写于 macOS 环境（repo 名 `tron-comic`，独立 worktree
+> `feat/atelier-pilot-*`）。该 worktree/分支已不存在——相关改动已合并回 `main`，
+> 专案改名为 `prismreel`，工作环境迁移到 Windows 本机 repo + VPS（202.182.117.182）
+> 部署。以下第 1 节仓库/分支资讯为历史记录，实际请参照本机 `main` 分支现状；
+> 第 6 节四项下一步待办的当前完成度见文末新增段落。
 
 ---
 
-## 1. 仓库与分支
+## 1. 仓库与分支（历史记录，环境已迁移，见文首更新说明）
 
 ```
 主仓: /Users/hoshinoren/Documents/code/project/video_gen/gitlab/tron-comic
@@ -181,6 +187,17 @@ cd frontend && node scripts/check-playground-colors.mjs  # 颜色守卫
 2. **资产库筛选栏**：接入 60px 导轨 + 二级筛选栏（类型/系列/收藏），验证空间分配
 3. **Playground / Modals 对齐 Line B**：逐步迁移剩余页面
 4. **设置图标确认**：确认是单齿轮（贴 mockup）还是双齿轮（偏离但用户偏好）
+
+### 2026-09-16 现状核实（对照本机 `main` 分支代码）
+
+| # | 项目 | 状态 | 依据 |
+|---|------|------|------|
+| 1 | Branding 落地 | ✅ 已完成 | `SettingsPage.tsx` `renderAbout()` 已有 `PrismReelBranding` + 斜体琥珀 Slogan「"Render Noise into Narrative"」+ 版本号区块 |
+| 2 | 资产库筛选栏 | 🟡 部分完成 | `AssetLibraryPage.tsx` 已有类型 pill-tabs + `starredOnly` 收藏筛选，但未接入 Line B mockup 描述的独立 `.side` 二级侧边筛选栏结构 |
+| 3 | Playground / Modals 对齐 Line B | 🟡 部分完成 | `PlaygroundPage.tsx` 已有 9 处 `atelier` class；`PlaygroundHistoryPage.tsx`、通用 Modal（`UploadAssetModal.tsx`、`ModelSettingsModal.tsx`）尚无 `atelier` class，未对齐 |
+| 4 | 设置图标确认 | ✅ 已定案 | `GlobalSidebar.tsx` 用 lucide `Settings`（单齿轮），已贴 mockup，双齿轮方案未采用 |
+
+剩余待办：② 资产库二级筛选栏结构、③ Playground 历史页 + 通用 Modal 元件的 Line B 对齐。
 
 ---
 
