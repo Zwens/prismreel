@@ -89,7 +89,7 @@ export default function ModelSettingsModal({ isOpen, onClose }: ModelSettingsMod
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-elevated rounded-2xl border border-glass-border w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
+                    className="glass-panel atelier-card rounded-2xl border border-glass-border w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
@@ -99,7 +99,7 @@ export default function ModelSettingsModal({ isOpen, onClose }: ModelSettingsMod
                                 <Settings size={20} className="text-blue-400" />
                             </div>
                             <div>
-                                <h2 className="text-lg font-bold text-foreground">{t("genSettings")}</h2>
+                                <h2 className="font-display atelier-display text-lg font-semibold text-foreground">{t("genSettings")}</h2>
                                 <p className="text-xs text-text-muted">{t("genSettingsDesc")}</p>
                             </div>
                         </div>
