@@ -1,7 +1,16 @@
 # PrismReel Studio 前端重构 — Handoff
 
-> 写给接手的 Claude Code 同学。本文涵盖工作区现状、设计参考（Line A/B mockup）、
-> 已完成工作、遗留决策与下一步建议。
+> ⚠️ **2026-09-16 二次核实：本文全篇为上游专案历史文件，非本用户的需求/决策记录。**
+> `AI 短片系統 Prismreel`（GitHub `Zwens/prismreel`）是 fork 自阿里巴巴开源专案
+> `alibaba/lumenx`（LumenX Studio）。本文所有 Line A/B 设计选型、"用户明确选择了
+> Line B" 等语句，均出自上游专案作者（`Mike4Ellis`／`Star-Lotus`／`zhusw`／
+> `matu.xx`，皆为 `alibaba-inc.com`／协作者邮箱，经 `git log --all --format="%an <%ae>"`
+> 核实，非本用户 `wmzic929@gmail.com`），随 fork 一并带入本仓库历史（582 commits）。
+> 本用户从未选择或授权此视觉重构。**第 6 节"下一步建议"及文末"待决策"事项
+> （资产库二级筛选栏是否照抄 mockup）一律视为上游遗留待办，非本专案需求，
+> 不需执行，除非用户明确重新下达指示。**
+>
+> 以下原文保留作历史参照，不代表本用户意图。
 >
 > **2026-09-16 更新**：本文原写于 macOS 环境（repo 名 `tron-comic`，独立 worktree
 > `feat/atelier-pilot-*`）。该 worktree/分支已不存在——相关改动已合并回 `main`，
