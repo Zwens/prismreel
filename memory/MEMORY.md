@@ -2,6 +2,9 @@
 
 > 進入本專案工作時 Read 載入。工作區共用規則見根目錄 CLAUDE.md。
 
+## 🔴 待辦：真人換裝舞蹈三項UI修復已push，卡在CI build未完成待驗收（2026-09-16）
+- [**🔴 三個commit(54c35a3/57ba767/be41788)已push main，最後一次build因VPS系統負載過高(load 20.4)異常緩慢，容器尚未切到新版**](project_dance_swap_library_features_pending_verify_2026-09-16.md) — 新session接手先查`docker images prismreel-frontend` CreatedAt是否晚於09:54:52判斷完成與否；VPS負載排查由使用者另一個session處理，本session不重複介入
+
 ## GitHub上游整合
 - [**✅ Gemini+Ark模型遷移大合併完成，含官方角色斷點修復+安全審查誤判查證（2026-09-16）**](project_gemini_ark_upstream_integration_2026-09-16.md) — DashScope全家族下架；官方角色tab移植進新AssetSourcePicker；部署驗證需CI success+容器穩定性+live三層；記錄鑑權全域middleware模式避免誤判
 - [**✅ VPS憑證缺口已補齊：GEMINI_API_KEY寫入+OPENAI_API_KEY清空+LLM_PROVIDER改gemini，容器內真實LLM呼叫驗證成功（2026-09-16）**](feedback_env_openai_key_field_actually_holds_gemini_key_2026-09-16.md) — 過程中意外揪出更深層問題見下一條；圖像生成/TTS套件已補齊但未逐一實測
