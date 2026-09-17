@@ -120,6 +120,7 @@ export interface Prop {
     name: string;
     description: string;
     image_url?: string;
+    video_url?: string;
     image_asset?: ImageAsset;
     video_assets?: VideoTask[];
     video_prompt?: string;

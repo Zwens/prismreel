@@ -64,6 +64,14 @@ function getImageUrl(asset: Character | Scene | Prop, type: AssetTab): string | 
   return raw ? mediaUrl(raw) : undefined;
 }
 
+/** prop 素材若来自视频输出（如真人换装合成），image_url 为空、video_url 有值——
+ *  卡片改用 <video> 呈现首帧，而非塞进 <img> 造成破图。仅 prop 需要（scene/character 目前无此来源）。 */
+function getVideoUrl(asset: Character | Scene | Prop, type: AssetTab): string | undefined {
+  if (type !== "props") return undefined;
+  const raw = (asset as Prop).video_url;
+  return raw ? mediaUrl(raw) : undefined;
+}
+
 function variantCount(asset: Character | Scene | Prop, type: AssetTab): number {
   if (type === "characters") return characterVariants(asset as Character).length;
   return (asset as Scene | Prop).image_asset?.variants?.length ?? 0;
@@ -533,6 +541,7 @@ export default function AssetLibraryPage() {
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {grp.items.map(({ asset, type, src }, i) => {
                       const url = getImageUrl(asset, type);
+                      const videoUrl = getVideoUrl(asset, type);
                       const vc = variantCount(asset, type);
                       const isSel = selected?.sourceId === src.id && selected?.assetId === asset.id && selected?.type === type;
                       const isStar = !!asset.starred;
@@ -577,6 +586,15 @@ export default function AssetLibraryPage() {
                               ) : (
                                 <img src={url} alt={asset.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                               )
+                            ) : videoUrl ? (
+                              <video
+                                src={videoUrl}
+                                muted
+                                loop
+                                playsInline
+                                autoPlay
+                                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                              />
                             ) : (
                               // 无图：atelier 文字/渐变封面（取代发灰占位图标）— 确定性渐变 + 颗粒 + 首字母
                               <div

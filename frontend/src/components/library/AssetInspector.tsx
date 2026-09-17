@@ -164,6 +164,10 @@ export default function AssetInspector({
   const activeVariant = variants.find((v) => v.id === activeVariantId) ?? variants[0];
   const rawHeroUrl = activeVariant?.url ?? fallbackUrl(asset, type);
   const heroUrl = rawHeroUrl ? mediaUrl(rawHeroUrl) : undefined;
+  // prop 素材若来自视频输出（如真人换装合成），无 image_url/variant 时退回 video_url，
+  // 与 AssetLibraryPage 卡片列表的 getVideoUrl 逻辑一致。
+  const rawHeroVideoUrl = !heroUrl && type === "props" ? (asset as Prop).video_url : undefined;
+  const heroVideoUrl = rawHeroVideoUrl ? mediaUrl(rawHeroVideoUrl) : undefined;
   const prompt = activeVariant?.prompt_used ?? "";
 
   // 元数据行（数据驱动）：先放现有四项，再在字段存在时追加 SEED/MODEL/SIZE。
@@ -310,6 +314,8 @@ export default function AssetInspector({
             />
             <img src={heroUrl} alt={asset.name} className="relative w-full h-full object-contain" />
           </>
+        ) : heroVideoUrl ? (
+          <video src={heroVideoUrl} muted loop playsInline autoPlay controls className="relative w-full h-full object-contain" />
         ) : (
           // 无图像：确定性渐变封面 + 颗粒，替代发灰占位图标。
           <>

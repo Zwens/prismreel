@@ -184,15 +184,16 @@ class PlaygroundService:
             # time when both modules are fully initialised.
             from ..comic_gen.api import pipeline as comic_pipeline
 
-            asset = comic_pipeline.create_library_asset(
-                asset_type,
-                {
-                    "name": asset_name,
-                    "description": prompt_text,
-                    # Point the library record at the freshly-copied file.
-                    "image_url": dest_path,
-                },
-            )
+            library_payload = {
+                "name": asset_name,
+                "description": prompt_text,
+            }
+            if target_output.media_type == "video":
+                library_payload["video_url"] = dest_path
+            else:
+                library_payload["image_url"] = dest_path
+
+            asset = comic_pipeline.create_library_asset(asset_type, library_payload)
             logger.info(
                 "save_to_library: created global %s asset %s from output %s",
                 asset_type,

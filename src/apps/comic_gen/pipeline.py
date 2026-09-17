@@ -4133,6 +4133,7 @@ class ComicGenPipeline:
             name = payload.get("name") or "未命名"
             description = payload.get("description") or ""
             image_url = payload.get("image_url")
+            video_url = payload.get("video_url")
             if asset_type == "character":
                 ref_sheet = AssetUnit()
                 if image_url:
@@ -4160,6 +4161,7 @@ class ComicGenPipeline:
                     name=name,
                     description=description,
                     image_url=image_url,
+                    video_url=video_url,
                 )
             else:
                 raise ValueError(f"Invalid asset type: {asset_type}")
