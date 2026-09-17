@@ -9,6 +9,7 @@ import PromptInput from '@/components/modules/playground/PromptInput';
 import ParameterBar from '@/components/modules/playground/ParameterBar';
 import ResultGallery from '@/components/modules/playground/ResultGallery';
 import QueuePanel from '@/components/modules/playground/QueuePanel';
+import CostEstimate from '@/components/modules/playground/CostEstimate';
 import { getModelsForMode } from '@/components/modules/playground/playgroundModels';
 import { useGenerationRunner } from '@/components/modules/playground/useGenerationRunner';
 import {
@@ -233,6 +234,8 @@ function AiVideoWorkspace() {
           </div>
 
           {hasModel && <ParameterBar />}
+
+          <CostEstimate />
 
           <button
             type="button"
