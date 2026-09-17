@@ -10,6 +10,7 @@ import { toast } from '@/store/toastStore';
 import AssetSourcePicker from '../AssetSourcePicker';
 import { useDanceSwap, type StepResult } from './useDanceSwap';
 import type { SheetStyle } from './prompts';
+import GridOverlayPicker, { type GridOverlaySize } from '@/components/shared/GridOverlayPicker';
 
 function describeSaveError(err: unknown): string {
   const anyErr = err as { response?: { data?: { detail?: string } }; message?: string };
@@ -188,6 +189,7 @@ export default function DanceSwapWizard() {
 
   const [showSheetPicker, setShowSheetPicker] = useState(false);
   const [showDanceVideoPicker, setShowDanceVideoPicker] = useState(false);
+  const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-6 py-6">
@@ -218,6 +220,8 @@ export default function DanceSwapWizard() {
           </button>
         </div>
 
+        <GridOverlayPicker value={gridSize} onChange={setGridSize} />
+
         {state.sheetSource === 'generate' ? (
           <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -225,14 +229,14 @@ export default function DanceSwapWizard() {
                 label={t('step1.portrait')}
                 accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                 value={state.portraitPath}
-                onPick={(f) => void actions.uploadPortrait(f)}
+                onPick={(f) => void actions.uploadPortrait(f, gridSize)}
                 icon={<ImagePlus size={20} aria-hidden="true" />}
               />
               <FilePick
                 label={t('step1.outfitRef')}
                 accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                 value={state.outfitRefPath}
-                onPick={(f) => void actions.uploadOutfitRef(f)}
+                onPick={(f) => void actions.uploadOutfitRef(f, gridSize)}
                 icon={<Shirt size={20} aria-hidden="true" />}
               />
             </div>
@@ -322,7 +326,7 @@ export default function DanceSwapWizard() {
                 label={t('step1.sheetFile')}
                 accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                 value={state.sheet?.mediaPath ?? null}
-                onPick={(f) => void actions.uploadSheet(f)}
+                onPick={(f) => void actions.uploadSheet(f, gridSize)}
                 icon={<ImagePlus size={20} aria-hidden="true" />}
               />
               <button

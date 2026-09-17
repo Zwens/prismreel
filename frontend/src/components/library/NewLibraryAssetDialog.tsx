@@ -6,6 +6,7 @@ import { X, Loader2, Plus, Upload, Image as ImageIcon } from "lucide-react";
 import { api } from "@/lib/api";
 import { getAssetUrl } from "@/lib/utils";
 import { toast } from "@/store/toastStore";
+import GridOverlayPicker, { type GridOverlaySize } from "@/components/shared/GridOverlayPicker";
 
 type AssetTab = "characters" | "scenes" | "props";
 
@@ -32,6 +33,7 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
   const [imageUrl, setImageUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
 
   const nameRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,7 +68,7 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
     if (!file) return;
     setUploading(true);
     try {
-      const { image_url } = await api.uploadLibraryImage(file);
+      const { image_url } = await api.uploadLibraryImage(file, gridSize);
       setImageUrl(image_url);
       toast.success(t("uploadSuccess"));
     } catch (err) {
@@ -242,6 +244,8 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
                 {uploading ? t("uploading") : t("uploadImageButton")}
               </button>
             </div>
+
+            <GridOverlayPicker value={gridSize} onChange={setGridSize} className="mt-3" />
 
             {/* 备选：直接填图片 URL */}
             <label

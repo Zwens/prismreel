@@ -1,5 +1,6 @@
 import axios from "axios";
 import { DEFAULT_I2V_MODEL_ID } from "@/lib/modelCatalog";
+import type { GridOverlaySize } from "@/components/shared/GridOverlayPicker";
 
 // Dynamic API URL detection (no port enumeration):
 // 1. Explicit override: NEXT_PUBLIC_API_URL (any env / proxy setup).
@@ -453,11 +454,11 @@ export const api = {
      *  The caller does cheap front-side checks first to avoid a
      *  round-trip on obvious rejects (file type / size from the File
      *  object) and surfaces backend errors verbatim otherwise. */
-    uploadT2IFrame: async (scriptId: string, frameId: string, file: File) => {
+    uploadT2IFrame: async (scriptId: string, frameId: string, file: File, gridSize: GridOverlaySize = 0) => {
         const formData = new FormData();
         formData.append("file", file);
         const res = await axios.post(
-            `${API_URL}/projects/${scriptId}/frames/${frameId}/upload_t2i`,
+            `${API_URL}/projects/${scriptId}/frames/${frameId}/upload_t2i?grid_size=${gridSize}`,
             formData,
             { headers: { "Content-Type": "multipart/form-data" } },
         );
@@ -489,10 +490,10 @@ export const api = {
     },
 
 
-    uploadFile: async (file: File) => {
+    uploadFile: async (file: File, gridSize: GridOverlaySize = 0) => {
         const formData = new FormData();
         formData.append("file", file);
-        const response = await fetch(`${API_URL}/upload`, {
+        const response = await fetch(`${API_URL}/upload?grid_size=${gridSize}`, {
             method: "POST",
             body: formData,
         });
@@ -582,13 +583,15 @@ export const api = {
         assetId: string,
         file: File,
         uploadType: string,
-        description?: string
+        description?: string,
+        gridSize: GridOverlaySize = 0
     ) => {
         const formData = new FormData();
         formData.append("file", file);
 
         const params = new URLSearchParams({
             upload_type: uploadType,
+            grid_size: String(gridSize),
         });
         if (description) {
             params.append("description", description);
@@ -1227,11 +1230,11 @@ export const api = {
         return res.data;
     },
 
-    uploadFrameImage: async (scriptId: string, frameId: string, file: File) => {
+    uploadFrameImage: async (scriptId: string, frameId: string, file: File, gridSize: GridOverlaySize = 0) => {
         const formData = new FormData();
         formData.append("file", file);
         const response = await fetch(
-            `${API_URL}/projects/${scriptId}/frames/${frameId}/upload_image`,
+            `${API_URL}/projects/${scriptId}/frames/${frameId}/upload_image?grid_size=${gridSize}`,
             { method: "POST", body: formData }
         );
         if (!response.ok) {
@@ -1285,12 +1288,14 @@ export const api = {
     /** 上传一张本地图片到全局资产库，返回可被前端加载的 image_url。
      *  后端契约：POST /library/assets/upload，multipart 字段名 "file" → { image_url }。
      *  调用方拿到 image_url 后传给 createLibraryAsset。 */
-    uploadLibraryImage: async (file: File): Promise<{ image_url: string }> => {
+    uploadLibraryImage: async (file: File, gridSize: GridOverlaySize = 0): Promise<{ image_url: string }> => {
         const formData = new FormData();
         formData.append("file", file);
-        const res = await axios.post<{ image_url: string }>(`${API_URL}/library/assets/upload`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-        });
+        const res = await axios.post<{ image_url: string }>(
+            `${API_URL}/library/assets/upload?grid_size=${gridSize}`,
+            formData,
+            { headers: { "Content-Type": "multipart/form-data" } },
+        );
         return res.data;
     },
     /** 补丁更新全局资产（仅发送的字段生效，PATCH 语义）。后端：PUT /library/assets/{type}/{id}。assetType 单数。 */
@@ -1794,10 +1799,10 @@ export const playgroundApi = {
     axios.get<OfficialDigitalCharacterResponse[]>(API_URL + "/playground/official-characters").then(r => r.data),
 
   // Upload media file for playground input (returns file path)
-  uploadMedia: (file: File) => {
+  uploadMedia: (file: File, gridSize: GridOverlaySize = 0) => {
     const formData = new FormData();
     formData.append("file", file);
-    return axios.post<{ path: string }>(API_URL + "/playground/upload", formData, {
+    return axios.post<{ path: string }>(API_URL + `/playground/upload?grid_size=${gridSize}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }).then(r => r.data);
   },

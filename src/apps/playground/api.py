@@ -28,6 +28,7 @@ from ..comic_gen import auth
 from ...utils import get_logger
 from ...utils.media_refs import to_posix_media_path
 from ...utils.upload_guard import save_video_upload, validate_image_upload
+from ...utils.grid_overlay import apply_grid_overlay
 
 logger = get_logger(__name__)
 
@@ -220,10 +221,11 @@ router.add_api_route("/templates/{template_id}", delete_template, methods=["DELE
 UPLOAD_DIR = os.path.join("output", "playground", "uploads")
 
 
-def upload_media(file: UploadFile = File(...)):
+def upload_media(file: UploadFile = File(...), grid_size: int = 0):
     """Upload a media file for use as playground input (reference image, first frame, etc.)."""
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     data, ext = validate_image_upload(file)
+    data = apply_grid_overlay(data, ext, grid_size)
     filename = f"{uuid.uuid4()}.{ext}"
     dest = os.path.join(UPLOAD_DIR, filename)
     with open(dest, "wb") as f:

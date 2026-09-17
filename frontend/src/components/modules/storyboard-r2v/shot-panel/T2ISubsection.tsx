@@ -21,6 +21,7 @@ import clsx from "clsx";
 import { useTranslations } from "next-intl";
 import { PendingTaskAffordance } from "@/components/shared/PendingTaskAffordance";
 import PreviewImage from "@/components/shared/preview/PreviewImage";
+import GridOverlayPicker, { type GridOverlaySize } from "@/components/shared/GridOverlayPicker";
 import { debugLog } from "@/lib/debugLog";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
@@ -71,8 +72,10 @@ interface T2ISubsectionProps {
     onGenerate: () => void;
     /** Upload an external image as a first-frame candidate. Returns the
      *  upload error code (or void if success). Host owns the actual
-     *  api.uploadT2IFrame call + state mutation. */
-    onUpload: (file: File) => Promise<T2IUploadError | void>;
+     *  api.uploadT2IFrame call + state mutation. gridSize is the user's
+     *  grid-overlay choice from the picker rendered alongside the upload
+     *  controls (0 = original, 4/5 = burn in an NxN grid). */
+    onUpload: (file: File, gridSize: GridOverlaySize) => Promise<T2IUploadError | void>;
     resolveUrl?: (url: string) => string;
 }
 
@@ -145,7 +148,7 @@ interface HeroProps {
     inFlightTaskId?: string;
     inFlightStatus?: "pending" | "processing" | "completed" | "failed";
     onGenerate: () => void;
-    onUpload: (file: File) => Promise<T2IUploadError | void>;
+    onUpload: (file: File, gridSize: GridOverlaySize) => Promise<T2IUploadError | void>;
 }
 
 function Hero({
@@ -154,6 +157,7 @@ function Hero({
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState<T2IUploadError | null>(null);
     const [dragHot, setDragHot] = useState(false);
+    const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     const handleFile = async (file: File) => {
@@ -168,7 +172,7 @@ function Hero({
         }
         setUploading(true);
         try {
-            const result = await onUpload(file);
+            const result = await onUpload(file, gridSize);
             if (result) setUploadError(result);
         } catch (e) {
             debugLog.error("Studio", "T2I upload failed", e);
@@ -282,6 +286,8 @@ function Hero({
                         />
                     </div>
 
+                    <GridOverlayPicker value={gridSize} onChange={setGridSize} className="pt-1" />
+
                     {uploadError ? (
                         <p
                             role="alert"
@@ -313,7 +319,7 @@ interface CompactProps {
     onSelect: (index: number) => void;
     onRemove: (index: number) => void;
     onGenerate: () => void;
-    onUpload: (file: File) => Promise<T2IUploadError | void>;
+    onUpload: (file: File, gridSize: GridOverlaySize) => Promise<T2IUploadError | void>;
 }
 
 function Compact({
@@ -343,6 +349,7 @@ function Compact({
     const [menuOpen, setMenuOpen] = useState(false);
     const [uploadError, setUploadError] = useState<T2IUploadError | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
     const inputRef = useRef<HTMLInputElement | null>(null);
     const closeTimer = useRef<number | null>(null);
 
@@ -386,7 +393,7 @@ function Compact({
         }
         setUploading(true);
         try {
-            const result = await onUpload(file);
+            const result = await onUpload(file, gridSize);
             if (result) setUploadError(result);
         } catch (e) {
             debugLog.error("Studio", "T2I upload failed", e);
@@ -575,6 +582,8 @@ function Compact({
                     inFlightStatus={inFlightStatus}
                 />
             ) : null}
+
+            <GridOverlayPicker value={gridSize} onChange={setGridSize} className="mt-1.5" />
 
             {uploadError ? (
                 <p

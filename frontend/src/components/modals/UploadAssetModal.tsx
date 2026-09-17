@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Upload, Image as ImageIcon, User, Layout, Eye } from "lucide-react";
+import GridOverlayPicker, { type GridOverlaySize } from "@/components/shared/GridOverlayPicker";
 
 interface UploadAssetModalProps {
     isOpen: boolean;
@@ -36,6 +37,7 @@ export default function UploadAssetModal({
     const [description, setDescription] = useState(defaultDescription);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const uploadTypes = assetType === "character" ? [
@@ -95,7 +97,8 @@ export default function UploadAssetModal({
                 assetId,
                 selectedFile,
                 uploadType,
-                description
+                description,
+                gridSize
             );
             onUploadComplete(updatedScript);
             handleClose();
@@ -111,6 +114,7 @@ export default function UploadAssetModal({
         setPreviewUrl(null);
         setError(null);
         setDescription(defaultDescription);
+        setGridSize(0);
         onClose();
     };
 
@@ -219,6 +223,7 @@ export default function UploadAssetModal({
                                 </>
                             )}
                         </div>
+                        <GridOverlayPicker value={gridSize} onChange={setGridSize} className="mt-3" />
                     </div>
 
                     {/* Description Editor */}

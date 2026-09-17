@@ -9,6 +9,7 @@ import {
   type PlaygroundGenerationResponse,
 } from '@/lib/api';
 import { buildComposePrompt, buildOutfitOnlyPrompt, buildThreeViewPrompt, type SheetStyle } from './prompts';
+import type { GridOverlaySize } from '@/components/shared/GridOverlayPicker';
 
 // ---------------------------------------------------------------------------
 // The three-step dance-swap flow.
@@ -205,12 +206,14 @@ export function useDanceSwap() {
   // -- step 1 -----------------------------------------------------------
 
   const uploadPortrait = useCallback(
-    (file: File) => playgroundApi.uploadMedia(file).then((r) => patch({ portraitPath: r.path })),
+    (file: File, gridSize: GridOverlaySize = 0) =>
+      playgroundApi.uploadMedia(file, gridSize).then((r) => patch({ portraitPath: r.path })),
     [patch],
   );
 
   const uploadOutfitRef = useCallback(
-    (file: File) => playgroundApi.uploadMedia(file).then((r) => patch({ outfitRefPath: r.path })),
+    (file: File, gridSize: GridOverlaySize = 0) =>
+      playgroundApi.uploadMedia(file, gridSize).then((r) => patch({ outfitRefPath: r.path })),
     [patch],
   );
 
@@ -241,8 +244,8 @@ export function useDanceSwap() {
    *  generation behind it, so generationId/outputId are empty — saveToLibrary
    *  branches on that to skip the history-lookup save path. */
   const uploadSheet = useCallback(
-    (file: File) =>
-      playgroundApi.uploadMedia(file).then((r) =>
+    (file: File, gridSize: GridOverlaySize = 0) =>
+      playgroundApi.uploadMedia(file, gridSize).then((r) =>
         patch({
           sheetState: 'done',
           sheetError: null,

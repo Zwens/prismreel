@@ -48,6 +48,7 @@ from .llm import ScriptProcessor, DEFAULT_STORYBOARD_POLISH_PROMPT, DEFAULT_VIDE
 from ...utils.oss_utils import OSSImageUploader, sign_oss_urls_in_data
 from ...utils import setup_logging
 from ...utils.upload_guard import validate_image_upload
+from ...utils.grid_overlay import apply_grid_overlay
 from ...utils.rate_limit import is_rate_limited
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv, set_key
@@ -512,10 +513,11 @@ def check_system():
 
 
 @app.post("/upload")
-def upload_file(file: UploadFile = File(...)):
+def upload_file(file: UploadFile = File(...), grid_size: int = 0):
     """Uploads a file and returns its URL (OSS if configured, else local)."""
     try:
         data, ext = validate_image_upload(file)
+        data = apply_grid_overlay(data, ext, grid_size)
         filename = f"{uuid.uuid4()}.{ext}"
         file_path = os.path.join("output/uploads", filename)
 
@@ -546,6 +548,7 @@ def upload_asset(
     asset_id: str,
     upload_type: str,
     description: Optional[str] = None,
+    grid_size: int = 0,
     file: UploadFile = File(...),
     script: Script = Depends(get_owned_script),
 ):
@@ -556,11 +559,13 @@ def upload_asset(
     - asset_type: "character", "scene", or "prop"
     - upload_type: "full_body", "head_shot", "three_views", or "image" (for scene/prop)
     - description: Optional modified description for the asset
+    - grid_size: 0 (original), 4, or 5 — burns an evenly-spaced grid into the photo
     """
     script_id = script.id
     try:
         # 1. Save file locally first
         data, ext = validate_image_upload(file)
+        data = apply_grid_overlay(data, ext, grid_size)
         filename = f"{uuid.uuid4()}.{ext}"
         file_path = os.path.join("output/uploads", filename)
 
@@ -1152,7 +1157,7 @@ def create_library_asset(request: CreateLibraryAssetRequest, _user=Depends(auth.
 
 
 @app.post("/library/assets/upload")
-def upload_library_asset_image(file: UploadFile = File(...), _user=Depends(auth.require_login)):
+def upload_library_asset_image(file: UploadFile = File(...), grid_size: int = 0, _user=Depends(auth.require_login)):
     """Upload an image to use as a global library asset's master image.
 
     Saves the file under output/uploads/ (served via the /files static mount)
@@ -1166,6 +1171,7 @@ def upload_library_asset_image(file: UploadFile = File(...), _user=Depends(auth.
     """
     try:
         data, ext = validate_image_upload(file)
+        data = apply_grid_overlay(data, ext, grid_size)
         filename = f"{uuid.uuid4()}.{ext}"
         file_path = os.path.join("output/uploads", filename)
         with open(file_path, "wb") as buffer:
@@ -3664,11 +3670,12 @@ def extract_last_frame(frame_id: str, request: ExtractLastFrameRequest, script: 
 
 
 @app.post("/projects/{script_id}/frames/{frame_id}/upload_image")
-def upload_frame_image(frame_id: str, file: UploadFile = File(...), script: Script = Depends(get_owned_script)):
+def upload_frame_image(frame_id: str, file: UploadFile = File(...), grid_size: int = 0, script: Script = Depends(get_owned_script)):
     """Upload an image as a variant for a frame's rendered_image_asset."""
     try:
         # Save file locally first
         data, ext = validate_image_upload(file)
+        data = apply_grid_overlay(data, ext, grid_size)
         filename = f"{uuid.uuid4()}.{ext}"
         file_path = os.path.join("output/uploads", filename)
 
@@ -3695,7 +3702,7 @@ _T2I_UPLOAD_ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 @app.post("/projects/{script_id}/frames/{frame_id}/upload_t2i")
-async def upload_t2i_frame(frame_id: str, file: UploadFile = File(...), script: Script = Depends(get_owned_script)):
+async def upload_t2i_frame(frame_id: str, file: UploadFile = File(...), grid_size: int = 0, script: Script = Depends(get_owned_script)):
     """Upload an external image as a T2I首帧 candidate for an I2V flow.
 
     Validation:
@@ -3746,6 +3753,13 @@ async def upload_t2i_frame(frame_id: str, file: UploadFile = File(...), script: 
                 except OSError:
                     pass
             raise HTTPException(status_code=500, detail=f"Upload write failed: {e}")
+
+        if grid_size:
+            with open(abs_path, "rb") as f:
+                raw = f.read()
+            gridded = apply_grid_overlay(raw, ext.lstrip("."), grid_size)
+            with open(abs_path, "wb") as f:
+                f.write(gridded)
 
         # `pipeline.upload_t2i_frame` synchronously serializes + writes the
         # whole projects.json (~50-500KB) — wrap in to_thread so we don't
