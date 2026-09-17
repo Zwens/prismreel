@@ -16,6 +16,7 @@ import {
   createPlaygroundStore,
   PlaygroundStoreProvider,
   usePlaygroundStore,
+  countVisibleResults,
   type PlaygroundMode,
   type PlaygroundStoreApi,
 } from '@/components/modules/playground/usePlaygroundStore';
@@ -86,7 +87,7 @@ function AiVideoWorkspace() {
   const hasModel = availableModels.length > 0;
   const canGenerate = hasModel && prompt.trim().length > 0;
 
-  const resultCount = history.reduce((n, g) => n + g.outputs.length, 0);
+  const resultCount = countVisibleResults(history);
   const showMediaInput = MODES_NEEDING_MEDIA.includes(mode);
 
   const showTaskType = mode === 'v2v' && hasModel;

@@ -88,6 +88,17 @@ export interface PlaygroundGeneration {
   created_at: string;
 }
 
+/** Card count as ResultGallery's grid actually renders it: a completed
+ *  generation expands into one tile per output, everything else (pending /
+ *  processing / failed) is one tile. Keeps header badges honest against what
+ *  the grid shows instead of drifting to a separate outputs.length sum. */
+export function countVisibleResults(history: PlaygroundGeneration[]): number {
+  return history.reduce(
+    (n, g) => n + (g.status === 'completed' && g.outputs.length > 0 ? g.outputs.length : 1),
+    0,
+  );
+}
+
 export interface PlaygroundTemplate {
   id: string;
   name: string;

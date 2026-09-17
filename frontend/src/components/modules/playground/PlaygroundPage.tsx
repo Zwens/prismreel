@@ -12,7 +12,7 @@ import ParameterBar from './ParameterBar';
 import ResultGallery from './ResultGallery';
 import CostEstimate from './CostEstimate';
 import { ArrowLeft } from 'lucide-react';
-import { usePlaygroundStore, type PlaygroundMode } from './usePlaygroundStore';
+import { usePlaygroundStore, countVisibleResults, type PlaygroundMode } from './usePlaygroundStore';
 import { getModelsForMode } from './playgroundModels';
 import { useGenerationRunner } from './useGenerationRunner';
 
@@ -61,7 +61,7 @@ export default function PlaygroundPage() {
 
   // ─── Derived values ────────────────────────────────────────────────────────
 
-  const resultCount = history.reduce((n, g) => n + g.outputs.length, 0);
+  const resultCount = countVisibleResults(history);
   const showMediaInput = MODES_WITH_MEDIA.includes(mode) || MODES_WITH_OPTIONAL_MEDIA.includes(mode);
   // A mode nothing can serve is not submittable. Without this the button stays
   // live and posts whatever model id the previous mode left behind.

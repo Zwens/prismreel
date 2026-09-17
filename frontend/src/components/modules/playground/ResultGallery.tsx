@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Sparkles, Grid3x3, GalleryHorizontal } from 'lucide-react';
-import { usePlaygroundStore, type PlaygroundGeneration } from './usePlaygroundStore';
+import { usePlaygroundStore, countVisibleResults, type PlaygroundGeneration } from './usePlaygroundStore';
 import { playgroundApi } from '@/lib/api';
 import ResultCard from './ResultCard';
 import GalleryView from './GalleryView';
@@ -214,7 +214,7 @@ export default function ResultGallery() {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden min-w-0">
       {/* Header */}
       <div className="px-7 py-4 flex items-center justify-between border-b border-border-subtle shrink-0">
         <div className="flex flex-col gap-1">
@@ -226,7 +226,7 @@ export default function ResultGallery() {
               {t('results.title')}
             </span>
             <span className="font-mono text-[0.625rem] bg-elevated text-text-secondary rounded px-[6px] py-[1px]">
-              {filtered.reduce((n, g) => n + g.outputs.length, 0)}
+              {countVisibleResults(filtered)}
             </span>
           </div>
         </div>

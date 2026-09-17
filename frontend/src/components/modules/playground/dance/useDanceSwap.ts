@@ -231,7 +231,7 @@ export function useDanceSwap() {
         parameters: { size: '1536*1024' },
         batch_size: 1,
       });
-      patch({ sheetState: 'done', sheet: firstOutput(gen) });
+      patch({ sheetState: 'done', sheet: firstOutput(gen), useSheet: true });
     } catch (err) {
       patch({ sheetState: 'error', sheetError: describeError(err) });
     }
@@ -247,6 +247,7 @@ export function useDanceSwap() {
           sheetState: 'done',
           sheetError: null,
           sheet: { generationId: '', outputId: '', mediaPath: r.path, mediaType: 'image' },
+          useSheet: true,
         }),
       ),
     [patch],
@@ -261,6 +262,7 @@ export function useDanceSwap() {
         sheetState: 'done',
         sheetError: null,
         sheet: { generationId: '', outputId: '', mediaPath: path, mediaType: 'image' },
+        useSheet: true,
       }),
     [patch],
   );
