@@ -810,7 +810,6 @@ export default function VideoCreator({ onTaskCreated, remixData, onRemixClear, p
                                 ) : (
                                     /* Upload Mode Content */
                                     <div className="space-y-4">
-                                        <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />
                                         <div className="grid grid-cols-3 gap-4">
                                             {selectedImages.map((img, idx) => (
                                                 <div key={idx} className="relative aspect-video bg-surface rounded-xl overflow-hidden border border-glass-border group">
@@ -868,6 +867,8 @@ export default function VideoCreator({ onTaskCreated, remixData, onRemixClear, p
                                                 </div>
                                             </div>
                                         )}
+
+                                        <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />
                                     </div>
                                 )}
                             </div>
