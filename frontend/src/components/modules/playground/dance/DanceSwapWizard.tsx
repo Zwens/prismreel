@@ -6,9 +6,15 @@ import {
   AlertTriangle, Bookmark, Check, Cpu, FolderOpen, ImagePlus, Loader2, RotateCcw, Shirt, Upload, Wand2,
 } from 'lucide-react';
 import { mediaUrl } from '@/lib/mediaPath';
+import { toast } from '@/store/toastStore';
 import AssetSourcePicker from '../AssetSourcePicker';
 import { useDanceSwap, type StepResult } from './useDanceSwap';
 import type { SheetStyle } from './prompts';
+
+function describeSaveError(err: unknown): string {
+  const anyErr = err as { response?: { data?: { detail?: string } }; message?: string };
+  return anyErr?.response?.data?.detail || anyErr?.message || String(err);
+}
 
 // ---------------------------------------------------------------------------
 // Small building blocks
@@ -41,12 +47,15 @@ function StepShell({
   );
 }
 
+const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png'];
+
 function FilePick({
   label, accept, value, onPick, icon,
 }: {
   label: string; accept: string; value: string | null;
   onPick: (f: File) => void; icon: ReactNode;
 }) {
+  const t = useTranslations('playground.dance');
   const ref = useRef<HTMLInputElement>(null);
   const isVideo = accept.startsWith('video');
   return (
@@ -79,7 +88,16 @@ function FilePick({
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) onPick(f);
+          if (!f) return;
+          if (!isVideo) {
+            const ext = f.name.split('.').pop()?.toLowerCase();
+            if (!ext || !ALLOWED_IMAGE_EXTENSIONS.includes(ext)) {
+              toast.error(t('invalidImageFormat'));
+              e.target.value = '';
+              return;
+            }
+          }
+          onPick(f);
           e.target.value = '';
         }}
       />
@@ -121,19 +139,31 @@ function SaveToLibrary({
   result: StepResult; category: string; label: string;
   onSave: (r: StepResult, c: string) => Promise<unknown>;
 }) {
-  const savedRef = useRef(false);
+  const t = useTranslations('playground.dance');
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
   return (
     <button
       type="button"
+      disabled={status !== 'idle'}
       onClick={() => {
-        if (savedRef.current) return;
-        savedRef.current = true;
-        void onSave(result, category);
+        setStatus('saving');
+        onSave(result, category)
+          .then(() => {
+            setStatus('saved');
+            toast.success(t('saveSuccess'));
+          })
+          .catch((err) => {
+            setStatus('idle');
+            toast.error(t('saveFailed'), { body: describeSaveError(err) });
+          });
       }}
-      className="flex items-center gap-1.5 rounded-[10px] border border-glass-border bg-glass px-2.5 py-1.5 font-mono text-[0.625rem] text-text-muted transition-colors hover:text-foreground cursor-pointer"
+      className="flex items-center gap-1.5 rounded-[10px] border border-glass-border bg-glass px-2.5 py-1.5 font-mono text-[0.625rem] text-text-muted transition-colors hover:text-foreground cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
     >
-      <Bookmark size={12} aria-hidden="true" />
-      {label}
+      {status === 'saving'
+        ? <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+        : <Bookmark size={12} aria-hidden="true" />}
+      {status === 'saved' ? t('saveSuccess') : label}
     </button>
   );
 }
@@ -193,14 +223,14 @@ export default function DanceSwapWizard() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FilePick
                 label={t('step1.portrait')}
-                accept="image/*"
+                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                 value={state.portraitPath}
                 onPick={(f) => void actions.uploadPortrait(f)}
                 icon={<ImagePlus size={20} aria-hidden="true" />}
               />
               <FilePick
                 label={t('step1.outfitRef')}
-                accept="image/*"
+                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                 value={state.outfitRefPath}
                 onPick={(f) => void actions.uploadOutfitRef(f)}
                 icon={<Shirt size={20} aria-hidden="true" />}
@@ -290,7 +320,7 @@ export default function DanceSwapWizard() {
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <FilePick
                 label={t('step1.sheetFile')}
-                accept="image/*"
+                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                 value={state.sheet?.mediaPath ?? null}
                 onPick={(f) => void actions.uploadSheet(f)}
                 icon={<ImagePlus size={20} aria-hidden="true" />}

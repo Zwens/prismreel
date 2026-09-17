@@ -2153,6 +2153,9 @@
       "cardDescription": "三步走：换装三视图 → 黑白深度动作 → 合成成片",
       "regenerate": "重新生成",
       "pickFromLibrary": "从素材库选择",
+      "saveSuccess": "已存为角色",
+      "saveFailed": "保存失败，请重试",
+      "invalidImageFormat": "文件格式不支持，请上传 jpg、jpeg 或 png 格式的图片",
       "step1": {
         "title": "换装三视图",
         "hint": "上传人物照，生成正面、侧面、背面三个视角的换装角色图",
