@@ -343,7 +343,7 @@ export default function DanceSwapWizard() {
               isOpen={showSheetPicker}
               onClose={() => setShowSheetPicker(false)}
               onSelect={(path) => {
-                actions.pickSheet(path);
+                void actions.pickSheet(path, gridSize);
                 setShowSheetPicker(false);
               }}
               accept="image"

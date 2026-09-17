@@ -294,16 +294,25 @@ export function useDanceSwap() {
 
   /** Same as uploadSheet, but the path comes from AssetSourcePicker (library /
    *  series / project / history / official) instead of a fresh file upload —
-   *  no new upload call needed, the asset already lives on the server. */
+   *  the asset already lives on the server, but a requested grid still needs
+   *  to be burned in server-side (the source asset itself has no grid). */
   const pickSheet = useCallback(
-    (path: string) =>
-      patch({
-        sheetState: 'done',
-        sheetError: null,
-        sheet: { generationId: '', outputId: '', mediaPath: path, mediaType: 'image' },
-        useSheet: true,
-      }),
-    [patch],
+    (path: string, gridSize: GridOverlaySize = 0) => {
+      const apply = gridSize > 0
+        ? playgroundApi.applyGridToMedia(path, gridSize)
+        : Promise.resolve(null);
+      return apply.then(() =>
+        patch({
+          sheetState: 'done',
+          sheetError: null,
+          sheet: { generationId: '', outputId: '', mediaPath: path, mediaType: 'image' },
+          useSheet: true,
+          sheetHasGridOverlay: gridSize > 0,
+          appendGridOverlayNegative: gridSize > 0 ? true : state.appendGridOverlayNegative,
+        }),
+      );
+    },
+    [patch, state.appendGridOverlayNegative],
   );
 
   // -- step 2 -----------------------------------------------------------
