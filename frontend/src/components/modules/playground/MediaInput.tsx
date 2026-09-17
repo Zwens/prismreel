@@ -8,7 +8,7 @@ import { mediaUrl } from '@/lib/mediaPath';
 import { usePlaygroundStore, type PlaygroundMode } from './usePlaygroundStore';
 import AssetSourcePicker from './AssetSourcePicker';
 import { isOfficialCharacterRef, getOfficialCharacterDisplay } from '@/lib/officialCharacterCache';
-import GridOverlayPicker, { type GridOverlaySize } from '@/components/shared/GridOverlayPicker';
+import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice } from '@/components/shared/GridOverlayPicker';
 
 // ---------------------------------------------------------------------------
 // Mode config
@@ -202,7 +202,7 @@ function FirstLastFrameInput() {
   const lastFrameInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState<'first' | 'last' | null>(null);
   const [showAssetPicker, setShowAssetPicker] = useState<'first' | 'last' | null>(null);
-  const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
+  const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
 
   const firstFrame = inputMedia[0];
   const lastFrame = inputMedia[1];
@@ -212,7 +212,8 @@ function FirstLastFrameInput() {
   const uploadTo = async (slot: 'first' | 'last', file: File) => {
     setUploading(slot);
     try {
-      const result = await playgroundApi.uploadMedia(file, gridSize);
+      const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+      const result = await playgroundApi.uploadMedia(file, gridSize, gridColor);
       const uploadedIsGrid = gridSize > 0;
       if (slot === 'first') {
         setInputMedia(
@@ -314,7 +315,7 @@ function FirstLastFrameInput() {
 
   return (
     <div className="space-y-4">
-      <GridOverlayPicker value={gridSize} onChange={setGridSize} />
+      <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />
       {renderSlot('first', firstFrame, firstFrameInputRef, t('media.firstFrame'), t('compose.mediaFirstFrame'), removeFirstFrame)}
       {renderSlot('last', lastFrame, lastFrameInputRef, t('media.lastFrame'), t('media.lastFrameOptional'), removeLastFrame, !firstFrame)}
     </div>
@@ -337,7 +338,7 @@ export default function MediaInput() {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [showAssetPicker, setShowAssetPicker] = useState(false);
-  const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
+  const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
 
   // i2v has fixed first-frame/last-frame slots (Ark role semantics), not an
   // arbitrary reference list — it gets its own component instead of sharing
@@ -380,12 +381,13 @@ export default function MediaInput() {
 
     setUploading(true);
     try {
+      const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
       const isImageUpload = toUpload.map((file) => file.type.startsWith('image/'));
       const results = await Promise.all(
         // Grid overlay only makes sense on still images — the Seedance r2v
         // mode also accepts video/audio through this same dropzone, and
         // apply_grid_overlay would 400 on a non-image extension.
-        toUpload.map((file, i) => playgroundApi.uploadMedia(file, isImageUpload[i] ? gridSize : 0))
+        toUpload.map((file, i) => playgroundApi.uploadMedia(file, isImageUpload[i] ? gridSize : 0, gridColor))
       );
       const newPaths = results.map((r) => r.path);
       const newFlags = isImageUpload.map((isImage) => isImage && gridSize > 0);
@@ -491,7 +493,7 @@ export default function MediaInput() {
   if (!hasMedia) {
     return (
       <div className="space-y-2">
-        {acceptsImages && <GridOverlayPicker value={gridSize} onChange={setGridSize} />}
+        {acceptsImages && <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />}
         <div
           onClick={handleClick}
           onDragOver={handleDragOver}
@@ -563,7 +565,7 @@ export default function MediaInput() {
 
   return (
     <div className="space-y-2">
-      {acceptsImages && <GridOverlayPicker value={gridSize} onChange={setGridSize} />}
+      {acceptsImages && <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />}
       {config.multiple ? (
         <div className="space-y-3">
           {/* Thumbnail row */}

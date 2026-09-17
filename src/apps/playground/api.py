@@ -221,11 +221,11 @@ router.add_api_route("/templates/{template_id}", delete_template, methods=["DELE
 UPLOAD_DIR = os.path.join("output", "playground", "uploads")
 
 
-def upload_media(file: UploadFile = File(...), grid_size: int = 0):
+def upload_media(file: UploadFile = File(...), grid_size: int = 0, grid_color: str = "black"):
     """Upload a media file for use as playground input (reference image, first frame, etc.)."""
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     data, ext = validate_image_upload(file)
-    data = apply_grid_overlay(data, ext, grid_size)
+    data = apply_grid_overlay(data, ext, grid_size, grid_color)
     filename = f"{uuid.uuid4()}.{ext}"
     dest = os.path.join(UPLOAD_DIR, filename)
     with open(dest, "wb") as f:
@@ -239,7 +239,7 @@ def upload_video(file: UploadFile = File(...), _user=Depends(auth.require_login)
     return {"path": to_posix_media_path(dest)}
 
 
-def apply_grid_to_media(path: str, grid_size: int = 0):
+def apply_grid_to_media(path: str, grid_size: int = 0, grid_color: str = "black"):
     """Burn a grid into an existing local media file (e.g. a fresh AI generation),
     in place. Rejects anything outside output/ via resolve_local_media_path.
     """
@@ -249,7 +249,7 @@ def apply_grid_to_media(path: str, grid_size: int = 0):
     ext = os.path.splitext(abs_path)[1].lstrip(".")
     with open(abs_path, "rb") as f:
         data = f.read()
-    data = apply_grid_overlay(data, ext, grid_size)
+    data = apply_grid_overlay(data, ext, grid_size, grid_color)
     with open(abs_path, "wb") as f:
         f.write(data)
     return {"path": to_posix_media_path(path), "has_grid_overlay": grid_size > 0}

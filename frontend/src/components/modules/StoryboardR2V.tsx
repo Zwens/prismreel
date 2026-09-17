@@ -2253,7 +2253,7 @@ export default function StoryboardR2V() {
                                             return next;
                                         }))}
                                         onGenerate={() => generateT2I(index)}
-                                        onUpload={async (file, gridSize) => {
+                                        onUpload={async (file, gridSize, gridColor) => {
                                             // Issue 10: upload an external image as a T2I首幀 candidate.
                                             // Backend appends + auto-selects; we mirror state from the
                                             // returned frame (single source of truth for the URL the
@@ -2303,6 +2303,7 @@ export default function StoryboardR2V() {
                                                     effectiveFrameId,
                                                     file,
                                                     gridSize,
+                                                    gridColor,
                                                 );
                                                 if (!updatedFrame) return { code: "network", detail: "empty response" };
                                                 const nextUrls: string[] = updatedFrame.t2i_image_urls ?? [];

@@ -9,7 +9,7 @@ import {
   type PlaygroundGenerationResponse,
 } from '@/lib/api';
 import { buildComposePrompt, buildOutfitOnlyPrompt, buildThreeViewPrompt, type SheetStyle } from './prompts';
-import type { GridOverlaySize } from '@/components/shared/GridOverlayPicker';
+import type { GridOverlaySize, GridOverlayColor } from '@/components/shared/GridOverlayPicker';
 import { GRID_OVERLAY_GUIDANCE_PROMPT, GRID_OVERLAY_EXCLUDE_PROMPT_SUFFIX } from '../usePlaygroundStore';
 
 // ---------------------------------------------------------------------------
@@ -221,8 +221,8 @@ export function useDanceSwap() {
   // -- step 1 -----------------------------------------------------------
 
   const uploadPortrait = useCallback(
-    (file: File, gridSize: GridOverlaySize = 0) =>
-      playgroundApi.uploadMedia(file, gridSize).then((r) =>
+    (file: File, gridSize: GridOverlaySize = 0, gridColor: GridOverlayColor = 'black') =>
+      playgroundApi.uploadMedia(file, gridSize, gridColor).then((r) =>
         patch({
           portraitPath: r.path,
           sheetHasGridOverlay: gridSize > 0 || state.sheetHasGridOverlay,
@@ -233,8 +233,8 @@ export function useDanceSwap() {
   );
 
   const uploadOutfitRef = useCallback(
-    (file: File, gridSize: GridOverlaySize = 0) =>
-      playgroundApi.uploadMedia(file, gridSize).then((r) =>
+    (file: File, gridSize: GridOverlaySize = 0, gridColor: GridOverlayColor = 'black') =>
+      playgroundApi.uploadMedia(file, gridSize, gridColor).then((r) =>
         patch({
           outfitRefPath: r.path,
           sheetHasGridOverlay: gridSize > 0 || state.sheetHasGridOverlay,
@@ -244,7 +244,7 @@ export function useDanceSwap() {
     [patch, state.sheetHasGridOverlay, state.appendGridOverlayNegative],
   );
 
-  const generateSheet = useCallback(async (gridSize: GridOverlaySize = 0) => {
+  const generateSheet = useCallback(async (gridSize: GridOverlaySize = 0, gridColor: GridOverlayColor = 'black') => {
     if (!state.portraitPath) return;
     patch({ sheetState: 'running', sheetError: null });
     try {
@@ -266,7 +266,7 @@ export function useDanceSwap() {
       // freshly generated image the same way an upload would carry one in,
       // so the checkbox below (and downstream consumers) see it consistently.
       if (result && gridSize > 0) {
-        await playgroundApi.applyGridToMedia(result.mediaPath, gridSize);
+        await playgroundApi.applyGridToMedia(result.mediaPath, gridSize, gridColor);
       }
       patch({
         sheetState: 'done',
@@ -322,9 +322,9 @@ export function useDanceSwap() {
    *  can show a loading state and a toast around this single call instead of
    *  the grid silently riding along with the upload/pick itself. */
   const applyGridToSheet = useCallback(
-    async (gridSize: GridOverlaySize) => {
+    async (gridSize: GridOverlaySize, gridColor: GridOverlayColor = 'black') => {
       if (!state.sheet) return;
-      const r = await playgroundApi.applyGridToMedia(state.sheet.mediaPath, gridSize);
+      const r = await playgroundApi.applyGridToMedia(state.sheet.mediaPath, gridSize, gridColor);
       // The backend burns the grid in place — same path in, same path out —
       // so <img src> never changes and the browser keeps showing the stale
       // cached bitmap. previewCacheBust forces a refetch without putting a

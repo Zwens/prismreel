@@ -6,7 +6,7 @@ import { X, Loader2, Plus, Upload, Image as ImageIcon } from "lucide-react";
 import { api } from "@/lib/api";
 import { getAssetUrl } from "@/lib/utils";
 import { toast } from "@/store/toastStore";
-import GridOverlayPicker, { type GridOverlaySize } from "@/components/shared/GridOverlayPicker";
+import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice } from "@/components/shared/GridOverlayPicker";
 
 type AssetTab = "characters" | "scenes" | "props";
 
@@ -34,7 +34,7 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
   const [imageHasGridOverlay, setImageHasGridOverlay] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
+  const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
 
   const nameRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -69,7 +69,8 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
     if (!file) return;
     setUploading(true);
     try {
-      const { image_url, has_grid_overlay } = await api.uploadLibraryImage(file, gridSize);
+      const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+      const { image_url, has_grid_overlay } = await api.uploadLibraryImage(file, gridSize, gridColor);
       setImageUrl(image_url);
       setImageHasGridOverlay(has_grid_overlay);
       toast.success(t("uploadSuccess"));
@@ -248,7 +249,7 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
               </button>
             </div>
 
-            <GridOverlayPicker value={gridSize} onChange={setGridSize} className="mt-3" />
+            <GridOverlayPicker value={gridChoice} onChange={setGridChoice} className="mt-3" />
 
             {/* 備選：直接填圖片 URL */}
             <label

@@ -23,7 +23,7 @@ import { Users, MapPin, Box, AlertTriangle, Sparkles, Plus, Upload, X, Loader2, 
 import { useTranslations } from "next-intl";
 import { useProjectStore } from "@/store/projectStore";
 import { api } from "@/lib/api";
-import GridOverlayPicker, { type GridOverlaySize } from "@/components/shared/GridOverlayPicker";
+import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice } from "@/components/shared/GridOverlayPicker";
 import { toast } from "@/store/toastStore";
 import { getAssetUrl } from "@/lib/utils";
 import { useLightbox } from "@/components/shared/preview/LightboxProvider";
@@ -456,14 +456,14 @@ function AddCastPlaceholderModal({
     const [voiceId, setVoiceId] = useState("");  // P2-c — character voice binding
     const [uploading, setUploading] = useState(false);
     const [imageUrl, setImageUrl] = useState<string>("");
-    const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
+    const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Reset state when modal closes / kind changes
     const reset = () => {
         setName(""); setPersona(""); setDescription(""); setVoiceId("");
-        setImageUrl(""); setGridSize(0); setError(null); setTab("ai");
+        setImageUrl(""); setGridChoice('none'); setError(null); setTab("ai");
     };
 
     if (!kind) return null;
@@ -476,7 +476,8 @@ function AddCastPlaceholderModal({
         setUploading(true);
         setError(null);
         try {
-            const result = await api.uploadFile(file, gridSize);
+            const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+            const result = await api.uploadFile(file, gridSize, gridColor);
             setImageUrl(result.url || "");
         } catch (err: any) {
             setError(err?.response?.data?.detail || err?.message || "Upload failed");
@@ -619,7 +620,7 @@ function AddCastPlaceholderModal({
                     {tab === "upload" && (
                         <div>
                             <label className="block text-xs font-medium text-text-secondary mb-1.5">{t("fieldImageUpload")}</label>
-                            <GridOverlayPicker value={gridSize} onChange={setGridSize} className="mb-2" />
+                            <GridOverlayPicker value={gridChoice} onChange={setGridChoice} className="mb-2" />
                             {imageUrl ? (
                                 <div className="relative">
                                     <PreviewImage src={imageUrl} className="w-full aspect-video rounded-lg" />

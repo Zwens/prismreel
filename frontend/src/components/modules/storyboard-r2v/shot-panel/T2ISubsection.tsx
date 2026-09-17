@@ -21,7 +21,7 @@ import clsx from "clsx";
 import { useTranslations } from "next-intl";
 import { PendingTaskAffordance } from "@/components/shared/PendingTaskAffordance";
 import PreviewImage from "@/components/shared/preview/PreviewImage";
-import GridOverlayPicker, { type GridOverlaySize } from "@/components/shared/GridOverlayPicker";
+import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice, type GridOverlayColor, type GridOverlaySize } from "@/components/shared/GridOverlayPicker";
 import { debugLog } from "@/lib/debugLog";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
@@ -72,10 +72,10 @@ interface T2ISubsectionProps {
     onGenerate: () => void;
     /** Upload an external image as a first-frame candidate. Returns the
      *  upload error code (or void if success). Host owns the actual
-     *  api.uploadT2IFrame call + state mutation. gridSize is the user's
-     *  grid-overlay choice from the picker rendered alongside the upload
-     *  controls (0 = original, 4/5 = burn in an NxN grid). */
-    onUpload: (file: File, gridSize: GridOverlaySize) => Promise<T2IUploadError | void>;
+     *  api.uploadT2IFrame call + state mutation. gridSize/gridColor are the
+     *  user's grid-overlay choice from the picker rendered alongside the
+     *  upload controls (0 = original, 6 = burn in a 6x6 grid). */
+    onUpload: (file: File, gridSize: GridOverlaySize, gridColor: GridOverlayColor) => Promise<T2IUploadError | void>;
     resolveUrl?: (url: string) => string;
 }
 
@@ -148,7 +148,7 @@ interface HeroProps {
     inFlightTaskId?: string;
     inFlightStatus?: "pending" | "processing" | "completed" | "failed";
     onGenerate: () => void;
-    onUpload: (file: File, gridSize: GridOverlaySize) => Promise<T2IUploadError | void>;
+    onUpload: (file: File, gridSize: GridOverlaySize, gridColor: GridOverlayColor) => Promise<T2IUploadError | void>;
 }
 
 function Hero({
@@ -157,7 +157,7 @@ function Hero({
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState<T2IUploadError | null>(null);
     const [dragHot, setDragHot] = useState(false);
-    const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
+    const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     const handleFile = async (file: File) => {
@@ -172,7 +172,8 @@ function Hero({
         }
         setUploading(true);
         try {
-            const result = await onUpload(file, gridSize);
+            const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+            const result = await onUpload(file, gridSize, gridColor);
             if (result) setUploadError(result);
         } catch (e) {
             debugLog.error("Studio", "T2I upload failed", e);
@@ -286,7 +287,7 @@ function Hero({
                         />
                     </div>
 
-                    <GridOverlayPicker value={gridSize} onChange={setGridSize} className="pt-1" />
+                    <GridOverlayPicker value={gridChoice} onChange={setGridChoice} className="pt-1" />
 
                     {uploadError ? (
                         <p
@@ -319,7 +320,7 @@ interface CompactProps {
     onSelect: (index: number) => void;
     onRemove: (index: number) => void;
     onGenerate: () => void;
-    onUpload: (file: File, gridSize: GridOverlaySize) => Promise<T2IUploadError | void>;
+    onUpload: (file: File, gridSize: GridOverlaySize, gridColor: GridOverlayColor) => Promise<T2IUploadError | void>;
 }
 
 function Compact({
@@ -349,7 +350,7 @@ function Compact({
     const [menuOpen, setMenuOpen] = useState(false);
     const [uploadError, setUploadError] = useState<T2IUploadError | null>(null);
     const [uploading, setUploading] = useState(false);
-    const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
+    const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
     const inputRef = useRef<HTMLInputElement | null>(null);
     const closeTimer = useRef<number | null>(null);
 
@@ -393,7 +394,8 @@ function Compact({
         }
         setUploading(true);
         try {
-            const result = await onUpload(file, gridSize);
+            const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+            const result = await onUpload(file, gridSize, gridColor);
             if (result) setUploadError(result);
         } catch (e) {
             debugLog.error("Studio", "T2I upload failed", e);
@@ -583,7 +585,7 @@ function Compact({
                 />
             ) : null}
 
-            <GridOverlayPicker value={gridSize} onChange={setGridSize} className="mt-1.5" />
+            <GridOverlayPicker value={gridChoice} onChange={setGridChoice} className="mt-1.5" />
 
             {uploadError ? (
                 <p

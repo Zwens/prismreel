@@ -27,7 +27,7 @@ import PromptBuilder, { PromptSegment, PromptBuilderRef } from "./PromptBuilder"
 import ShotPresetPicker from "./ShotPresetPicker";
 import { ACTION_GROUPS, CAMERA_GROUPS } from "./shotPresets";
 import type { VideoParams } from "@/store/projectStore";
-import GridOverlayPicker, { type GridOverlaySize } from "@/components/shared/GridOverlayPicker";
+import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice } from "@/components/shared/GridOverlayPicker";
 
 interface VideoCreatorProps {
     onTaskCreated: (project: any) => void;
@@ -82,7 +82,7 @@ export default function VideoCreator({ onTaskCreated, remixData, onRemixClear, p
     };
 
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
-    const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
+    const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
     const [selectedReferenceVideos, setSelectedReferenceVideos] = useState<string[]>([]); // New state for R2V
     const [uploadingPaths, setUploadingPaths] = useState<Record<string, string>>({}); // Map blobUrl -> serverUrl
     const [activeTab, setActiveTab] = useState<"storyboard" | "upload">("storyboard");
@@ -221,7 +221,8 @@ export default function VideoCreator({ onTaskCreated, remixData, onRemixClear, p
 
             // Background Upload
             try {
-                const res = await api.uploadFile(file, gridSize);
+                const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+                const res = await api.uploadFile(file, gridSize, gridColor);
                 setUploadingPaths(prev => ({ ...prev, [blobUrl]: res.url }));
             } catch (error) {
                 console.error("Upload failed", error);
@@ -809,7 +810,7 @@ export default function VideoCreator({ onTaskCreated, remixData, onRemixClear, p
                                 ) : (
                                     /* Upload Mode Content */
                                     <div className="space-y-4">
-                                        <GridOverlayPicker value={gridSize} onChange={setGridSize} />
+                                        <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />
                                         <div className="grid grid-cols-3 gap-4">
                                             {selectedImages.map((img, idx) => (
                                                 <div key={idx} className="relative aspect-video bg-surface rounded-xl overflow-hidden border border-glass-border group">

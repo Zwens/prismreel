@@ -1,6 +1,6 @@
 import axios from "axios";
 import { DEFAULT_I2V_MODEL_ID } from "@/lib/modelCatalog";
-import type { GridOverlaySize } from "@/components/shared/GridOverlayPicker";
+import type { GridOverlaySize, GridOverlayColor } from "@/components/shared/GridOverlayPicker";
 
 // Dynamic API URL detection (no port enumeration):
 // 1. Explicit override: NEXT_PUBLIC_API_URL (any env / proxy setup).
@@ -454,11 +454,11 @@ export const api = {
      *  The caller does cheap front-side checks first to avoid a
      *  round-trip on obvious rejects (file type / size from the File
      *  object) and surfaces backend errors verbatim otherwise. */
-    uploadT2IFrame: async (scriptId: string, frameId: string, file: File, gridSize: GridOverlaySize = 0) => {
+    uploadT2IFrame: async (scriptId: string, frameId: string, file: File, gridSize: GridOverlaySize = 0, gridColor: GridOverlayColor = "black") => {
         const formData = new FormData();
         formData.append("file", file);
         const res = await axios.post(
-            `${API_URL}/projects/${scriptId}/frames/${frameId}/upload_t2i?grid_size=${gridSize}`,
+            `${API_URL}/projects/${scriptId}/frames/${frameId}/upload_t2i?grid_size=${gridSize}&grid_color=${gridColor}`,
             formData,
             { headers: { "Content-Type": "multipart/form-data" } },
         );
@@ -490,10 +490,10 @@ export const api = {
     },
 
 
-    uploadFile: async (file: File, gridSize: GridOverlaySize = 0) => {
+    uploadFile: async (file: File, gridSize: GridOverlaySize = 0, gridColor: GridOverlayColor = "black") => {
         const formData = new FormData();
         formData.append("file", file);
-        const response = await fetch(`${API_URL}/upload?grid_size=${gridSize}`, {
+        const response = await fetch(`${API_URL}/upload?grid_size=${gridSize}&grid_color=${gridColor}`, {
             method: "POST",
             body: formData,
         });
@@ -584,7 +584,8 @@ export const api = {
         file: File,
         uploadType: string,
         description?: string,
-        gridSize: GridOverlaySize = 0
+        gridSize: GridOverlaySize = 0,
+        gridColor: GridOverlayColor = "black"
     ) => {
         const formData = new FormData();
         formData.append("file", file);
@@ -592,6 +593,7 @@ export const api = {
         const params = new URLSearchParams({
             upload_type: uploadType,
             grid_size: String(gridSize),
+            grid_color: gridColor,
         });
         if (description) {
             params.append("description", description);
@@ -1230,11 +1232,11 @@ export const api = {
         return res.data;
     },
 
-    uploadFrameImage: async (scriptId: string, frameId: string, file: File, gridSize: GridOverlaySize = 0) => {
+    uploadFrameImage: async (scriptId: string, frameId: string, file: File, gridSize: GridOverlaySize = 0, gridColor: GridOverlayColor = "black") => {
         const formData = new FormData();
         formData.append("file", file);
         const response = await fetch(
-            `${API_URL}/projects/${scriptId}/frames/${frameId}/upload_image?grid_size=${gridSize}`,
+            `${API_URL}/projects/${scriptId}/frames/${frameId}/upload_image?grid_size=${gridSize}&grid_color=${gridColor}`,
             { method: "POST", body: formData }
         );
         if (!response.ok) {
@@ -1288,11 +1290,11 @@ export const api = {
     /** 上传一张本地图片到全局资产库，返回可被前端加载的 image_url。
      *  后端契约：POST /library/assets/upload，multipart 字段名 "file" → { image_url, has_grid_overlay }。
      *  调用方拿到 image_url + has_grid_overlay 后一并传给 createLibraryAsset（两步请求，后端无法在第二步自行推断是否有网格）。 */
-    uploadLibraryImage: async (file: File, gridSize: GridOverlaySize = 0): Promise<{ image_url: string; has_grid_overlay: boolean }> => {
+    uploadLibraryImage: async (file: File, gridSize: GridOverlaySize = 0, gridColor: GridOverlayColor = "black"): Promise<{ image_url: string; has_grid_overlay: boolean }> => {
         const formData = new FormData();
         formData.append("file", file);
         const res = await axios.post<{ image_url: string; has_grid_overlay: boolean }>(
-            `${API_URL}/library/assets/upload?grid_size=${gridSize}`,
+            `${API_URL}/library/assets/upload?grid_size=${gridSize}&grid_color=${gridColor}`,
             formData,
             { headers: { "Content-Type": "multipart/form-data" } },
         );
@@ -1800,10 +1802,10 @@ export const playgroundApi = {
     axios.get<OfficialDigitalCharacterResponse[]>(API_URL + "/playground/official-characters").then(r => r.data),
 
   // Upload media file for playground input (returns file path)
-  uploadMedia: (file: File, gridSize: GridOverlaySize = 0) => {
+  uploadMedia: (file: File, gridSize: GridOverlaySize = 0, gridColor: GridOverlayColor = "black") => {
     const formData = new FormData();
     formData.append("file", file);
-    return axios.post<{ path: string }>(API_URL + `/playground/upload?grid_size=${gridSize}`, formData, {
+    return axios.post<{ path: string }>(API_URL + `/playground/upload?grid_size=${gridSize}&grid_color=${gridColor}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }).then(r => r.data);
   },
@@ -1818,9 +1820,9 @@ export const playgroundApi = {
 
   // Burn a grid into an existing local media file in place (e.g. a fresh
   // AI generation the user asked to have a grid overlay applied to).
-  applyGridToMedia: (path: string, gridSize: GridOverlaySize) =>
+  applyGridToMedia: (path: string, gridSize: GridOverlaySize, gridColor: GridOverlayColor = "black") =>
     axios.post<{ path: string; has_grid_overlay: boolean }>(
-      API_URL + `/playground/apply-grid?${new URLSearchParams({ path, grid_size: String(gridSize) })}`
+      API_URL + `/playground/apply-grid?${new URLSearchParams({ path, grid_size: String(gridSize), grid_color: gridColor })}`
     ).then(r => r.data),
 
   // -- Depth preprocessing (runs on the user's own GPU) --------------------

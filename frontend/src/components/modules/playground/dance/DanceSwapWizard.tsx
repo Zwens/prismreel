@@ -10,7 +10,7 @@ import { toast } from '@/store/toastStore';
 import AssetSourcePicker from '../AssetSourcePicker';
 import { useDanceSwap, type StepResult } from './useDanceSwap';
 import type { SheetStyle } from './prompts';
-import GridOverlayPicker, { type GridOverlaySize } from '@/components/shared/GridOverlayPicker';
+import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice, type GridOverlayColor, type GridOverlaySize } from '@/components/shared/GridOverlayPicker';
 
 function describeSaveError(err: unknown): string {
   const anyErr = err as { response?: { data?: { detail?: string } }; message?: string };
@@ -177,14 +177,14 @@ function GridBurnBar({
   hasGridOverlay, onApply,
 }: {
   hasGridOverlay: boolean;
-  onApply: (gridSize: GridOverlaySize) => Promise<unknown>;
+  onApply: (gridSize: GridOverlaySize, gridColor: GridOverlayColor) => Promise<unknown>;
 }) {
   const t = useTranslations('playground.dance');
-  const [applying, setApplying] = useState<GridOverlaySize | null>(null);
-  const OPTIONS: { value: GridOverlaySize; label: string }[] = [
-    { value: 0, label: t('gridOriginal') },
-    { value: 4, label: t('grid4x4') },
-    { value: 5, label: t('grid5x5') },
+  const [applying, setApplying] = useState<GridOverlayChoice | null>(null);
+  const OPTIONS: { value: GridOverlayChoice; label: string }[] = [
+    { value: 'none', label: t('gridOriginal') },
+    { value: 'black', label: t('grid6x6Black') },
+    { value: 'white', label: t('grid6x6White') },
   ];
 
   return (
@@ -200,9 +200,10 @@ function GridBurnBar({
             disabled={applying !== null}
             onClick={() => {
               setApplying(opt.value);
-              onApply(opt.value)
+              const { size, color } = gridChoiceToParams(opt.value);
+              onApply(size, color)
                 .then(() => {
-                  toast.success(opt.value > 0 ? t('gridApplySuccess') : t('gridClearSuccess'));
+                  toast.success(opt.value !== 'none' ? t('gridApplySuccess') : t('gridClearSuccess'));
                 })
                 .catch((err) => {
                   toast.error(t('gridApplyFailed'), { body: describeSaveError(err) });
@@ -210,7 +211,7 @@ function GridBurnBar({
                 .finally(() => setApplying(null));
             }}
             className={`flex items-center gap-1.5 rounded-[10px] border px-2.5 py-1.5 font-mono text-[0.6875rem] transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
-              hasGridOverlay && opt.value > 0
+              hasGridOverlay && opt.value !== 'none'
                 ? 'border-primary bg-primary/10 text-foreground'
                 : 'border-glass-border bg-glass text-text-muted hover:text-foreground'
             }`}
@@ -245,7 +246,8 @@ export default function DanceSwapWizard() {
 
   const [showSheetPicker, setShowSheetPicker] = useState(false);
   const [showDanceVideoPicker, setShowDanceVideoPicker] = useState(false);
-  const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
+  const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
+  const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-6 py-6">
@@ -334,10 +336,10 @@ export default function DanceSwapWizard() {
               )}
             </div>
 
-            <GridOverlayPicker value={gridSize} onChange={setGridSize} />
+            <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />
 
             <RunButton
-              onClick={() => void actions.generateSheet(gridSize)}
+              onClick={() => void actions.generateSheet(gridSize, gridColor)}
               disabled={!state.portraitPath}
               running={state.sheetState === 'running'}
               label={t('step1.run')}
@@ -362,7 +364,7 @@ export default function DanceSwapWizard() {
                   />
                   <button
                     type="button"
-                    onClick={() => void actions.generateSheet(gridSize)}
+                    onClick={() => void actions.generateSheet(gridSize, gridColor)}
                     className="flex items-center gap-1.5 rounded-[10px] border border-glass-border bg-glass px-2.5 py-1.5 font-mono text-[0.625rem] text-text-muted transition-colors hover:text-foreground cursor-pointer"
                   >
                     <RotateCcw size={12} aria-hidden="true" />
@@ -412,7 +414,7 @@ export default function DanceSwapWizard() {
                 />
                 <GridBurnBar
                   hasGridOverlay={state.sheetHasGridOverlay}
-                  onApply={(size) => actions.applyGridToSheet(size)}
+                  onApply={(size, color) => actions.applyGridToSheet(size, color)}
                 />
                 <SaveToLibrary
                   result={state.sheet}

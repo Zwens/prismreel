@@ -1,25 +1,34 @@
 "use client";
 /**
- * GridOverlayPicker — 照片上傳前的網格疊加三選一（原圖 / 4x4 / 5x5）。
+ * GridOverlayPicker — 照片上傳前的網格疊加三選一（原圖 / 6×6黑線 / 6×6白線）。
  *
- * 後端 `apply_grid_overlay` 會把網格線永久燒進照片本體（不可逆），
- * 所有 6 個照片上傳入口共用同一份文案，避免各處措辭漂移。
+ * 後端 `apply_grid_overlay` 會把網格線永久燒進照片本體（不可逆，固定 6×6、10px 線寬），
+ * 所有上傳入口共用同一份文案，避免各處措辭漂移。
  */
 import clsx from "clsx";
 
-export type GridOverlaySize = 0 | 4 | 5;
+export type GridOverlaySize = 0 | 6;
+export type GridOverlayColor = "black" | "white";
+/** What the picker hands back to the caller — "none" means no grid at all. */
+export type GridOverlayChoice = "none" | GridOverlayColor;
 
 export interface GridOverlayPickerProps {
-    value: GridOverlaySize;
-    onChange: (value: GridOverlaySize) => void;
+    value: GridOverlayChoice;
+    onChange: (value: GridOverlayChoice) => void;
     className?: string;
 }
 
-const OPTIONS: { value: GridOverlaySize; label: string }[] = [
-    { value: 0, label: "原圖" },
-    { value: 4, label: "4×4 網格" },
-    { value: 5, label: "5×5 網格" },
+const OPTIONS: { value: GridOverlayChoice; label: string }[] = [
+    { value: "none", label: "原圖" },
+    { value: "black", label: "6×6 網格（黑線）" },
+    { value: "white", label: "6×6 網格（白線）" },
 ];
+
+/** Translate a picker choice into the {size, color} pair the upload/apply-grid
+ *  API calls take. "none" always maps to size 0 regardless of color. */
+export function gridChoiceToParams(choice: GridOverlayChoice): { size: GridOverlaySize; color: GridOverlayColor } {
+    return choice === "none" ? { size: 0, color: "black" } : { size: 6, color: choice };
+}
 
 export default function GridOverlayPicker({ value, onChange, className }: GridOverlayPickerProps) {
     return (

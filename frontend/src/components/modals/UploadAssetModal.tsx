@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Upload, Image as ImageIcon, User, Layout, Eye } from "lucide-react";
-import GridOverlayPicker, { type GridOverlaySize } from "@/components/shared/GridOverlayPicker";
+import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice } from "@/components/shared/GridOverlayPicker";
 
 interface UploadAssetModalProps {
     isOpen: boolean;
@@ -37,7 +37,7 @@ export default function UploadAssetModal({
     const [description, setDescription] = useState(defaultDescription);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
+    const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const uploadTypes = assetType === "character" ? [
@@ -91,6 +91,7 @@ export default function UploadAssetModal({
         try {
             // Use api.uploadAsset which uses the correct backend API URL
             const { api } = await import("@/lib/api");
+            const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
             const updatedScript = await api.uploadAsset(
                 scriptId,
                 assetType,
@@ -98,7 +99,8 @@ export default function UploadAssetModal({
                 selectedFile,
                 uploadType,
                 description,
-                gridSize
+                gridSize,
+                gridColor
             );
             onUploadComplete(updatedScript);
             handleClose();
@@ -114,7 +116,7 @@ export default function UploadAssetModal({
         setPreviewUrl(null);
         setError(null);
         setDescription(defaultDescription);
-        setGridSize(0);
+        setGridChoice('none');
         onClose();
     };
 
@@ -223,7 +225,7 @@ export default function UploadAssetModal({
                                 </>
                             )}
                         </div>
-                        <GridOverlayPicker value={gridSize} onChange={setGridSize} className="mt-3" />
+                        <GridOverlayPicker value={gridChoice} onChange={setGridChoice} className="mt-3" />
                     </div>
 
                     {/* Description Editor */}
