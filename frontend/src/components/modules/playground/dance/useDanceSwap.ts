@@ -38,6 +38,11 @@ export interface StepResult {
   outputId: string;
   mediaPath: string;
   mediaType: 'image' | 'video';
+  /** Bumped whenever mediaPath's underlying file was overwritten in place
+   *  (grid burn-in) so <img src> can append it as a cache-busting query
+   *  string. mediaPath itself must stay a bare path — it's sent verbatim to
+   *  compose/save-to-library, which shouldn't see a stray query string. */
+  previewCacheBust?: number;
 }
 
 export interface DanceSwapState {
@@ -277,43 +282,61 @@ export function useDanceSwap() {
 
   /** 'upload' mode: the user already has a three-view sheet. There's no
    *  generation behind it, so generationId/outputId are empty — saveToLibrary
-   *  branches on that to skip the history-lookup save path. */
+   *  branches on that to skip the history-lookup save path.
+   *
+   *  Never takes a gridSize — grid burn-in here is a separate, explicit step
+   *  the user triggers after seeing the sheet preview (applyGridToSheet
+   *  below), not something silently baked in at upload time. */
   const uploadSheet = useCallback(
-    (file: File, gridSize: GridOverlaySize = 0) =>
-      playgroundApi.uploadMedia(file, gridSize).then((r) =>
+    (file: File) =>
+      playgroundApi.uploadMedia(file, 0).then((r) =>
         patch({
           sheetState: 'done',
           sheetError: null,
           sheet: { generationId: '', outputId: '', mediaPath: r.path, mediaType: 'image' },
           useSheet: true,
-          sheetHasGridOverlay: gridSize > 0,
-          appendGridOverlayNegative: gridSize > 0 ? true : state.appendGridOverlayNegative,
+          sheetHasGridOverlay: false,
         }),
       ),
-    [patch, state.appendGridOverlayNegative],
+    [patch],
   );
 
   /** Same as uploadSheet, but the path comes from AssetSourcePicker (library /
-   *  series / project / history / official) instead of a fresh file upload —
-   *  the asset already lives on the server, but a requested grid still needs
-   *  to be burned in server-side (the source asset itself has no grid). */
+   *  series / project / history / official) instead of a fresh file upload.
+   *  Also never burns a grid up front — see uploadSheet. */
   const pickSheet = useCallback(
-    (path: string, gridSize: GridOverlaySize = 0) => {
-      const apply = gridSize > 0
-        ? playgroundApi.applyGridToMedia(path, gridSize)
-        : Promise.resolve(null);
-      return apply.then(() =>
-        patch({
-          sheetState: 'done',
-          sheetError: null,
-          sheet: { generationId: '', outputId: '', mediaPath: path, mediaType: 'image' },
-          useSheet: true,
-          sheetHasGridOverlay: gridSize > 0,
-          appendGridOverlayNegative: gridSize > 0 ? true : state.appendGridOverlayNegative,
-        }),
-      );
+    (path: string) =>
+      patch({
+        sheetState: 'done',
+        sheetError: null,
+        sheet: { generationId: '', outputId: '', mediaPath: path, mediaType: 'image' },
+        useSheet: true,
+        sheetHasGridOverlay: false,
+      }),
+    [patch],
+  );
+
+  /** Explicit, user-triggered grid burn-in on the sheet currently shown in
+   *  step 1's "I already have a sheet" tab. Runs after the sheet exists (an
+   *  upload or a library pick already landed in state.sheet), so the caller
+   *  can show a loading state and a toast around this single call instead of
+   *  the grid silently riding along with the upload/pick itself. */
+  const applyGridToSheet = useCallback(
+    async (gridSize: GridOverlaySize) => {
+      if (!state.sheet) return;
+      const r = await playgroundApi.applyGridToMedia(state.sheet.mediaPath, gridSize);
+      // The backend burns the grid in place — same path in, same path out —
+      // so <img src> never changes and the browser keeps showing the stale
+      // cached bitmap. previewCacheBust forces a refetch without putting a
+      // query string into mediaPath itself (compose/save-to-library send
+      // mediaPath verbatim to the backend).
+      patch({
+        sheet: { ...state.sheet, mediaPath: r.path, previewCacheBust: Date.now() },
+        sheetHasGridOverlay: gridSize > 0,
+        appendGridOverlayNegative: gridSize > 0 ? true : state.appendGridOverlayNegative,
+      });
     },
-    [patch, state.appendGridOverlayNegative],
+    [state.sheet, state.appendGridOverlayNegative, patch],
   );
 
   // -- step 2 -----------------------------------------------------------
@@ -465,6 +488,7 @@ export function useDanceSwap() {
       generateSheet,
       uploadSheet,
       pickSheet,
+      applyGridToSheet,
       uploadDanceVideo,
       pickDanceVideo,
       generateDepth,

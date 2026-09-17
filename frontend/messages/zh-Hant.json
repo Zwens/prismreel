@@ -2157,6 +2157,13 @@
       "saveSuccess": "已存為角色",
       "saveFailed": "儲存失敗，請重試",
       "invalidImageFormat": "檔案格式不支援，請上傳 jpg、jpeg 或 png 格式的圖片",
+      "gridBurnLabel": "網格疊加",
+      "gridOriginal": "原圖",
+      "grid4x4": "4×4 網格",
+      "grid5x5": "5×5 網格",
+      "gridApplySuccess": "已套用網格",
+      "gridClearSuccess": "已還原為原圖",
+      "gridApplyFailed": "網格套用失敗，請重試",
       "step1": {
         "title": "換裝三視圖",
         "hint": "上傳人物照，生成正面、側面、背面三個視角的換裝角色圖",

@@ -2157,6 +2157,13 @@
       "saveSuccess": "Saved as character",
       "saveFailed": "Save failed, please retry",
       "invalidImageFormat": "Unsupported file format. Please upload a jpg, jpeg, or png image",
+      "gridBurnLabel": "Grid overlay",
+      "gridOriginal": "Original",
+      "grid4x4": "4×4 grid",
+      "grid5x5": "5×5 grid",
+      "gridApplySuccess": "Grid applied",
+      "gridClearSuccess": "Reverted to original",
+      "gridApplyFailed": "Grid apply failed, please retry",
       "step1": {
         "title": "Character sheet",
         "hint": "Upload a portrait and get front, side and back views in the new outfit",

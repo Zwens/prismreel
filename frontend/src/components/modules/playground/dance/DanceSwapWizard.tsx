@@ -169,6 +169,61 @@ function SaveToLibrary({
   );
 }
 
+/** Explicit grid burn-in for a sheet that's already been uploaded/picked
+ *  (step 1's "I already have a sheet" tab). Shown only once state.sheet
+ *  exists, so the user picks the grid size against the actual sheet image,
+ *  not a not-yet-chosen file — clicking a size is the trigger itself. */
+function GridBurnBar({
+  hasGridOverlay, onApply,
+}: {
+  hasGridOverlay: boolean;
+  onApply: (gridSize: GridOverlaySize) => Promise<unknown>;
+}) {
+  const t = useTranslations('playground.dance');
+  const [applying, setApplying] = useState<GridOverlaySize | null>(null);
+  const OPTIONS: { value: GridOverlaySize; label: string }[] = [
+    { value: 0, label: t('gridOriginal') },
+    { value: 4, label: t('grid4x4') },
+    { value: 5, label: t('grid5x5') },
+  ];
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
+        {t('gridBurnLabel')}
+      </span>
+      <div className="flex gap-1.5">
+        {OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            disabled={applying !== null}
+            onClick={() => {
+              setApplying(opt.value);
+              onApply(opt.value)
+                .then(() => {
+                  toast.success(opt.value > 0 ? t('gridApplySuccess') : t('gridClearSuccess'));
+                })
+                .catch((err) => {
+                  toast.error(t('gridApplyFailed'), { body: describeSaveError(err) });
+                })
+                .finally(() => setApplying(null));
+            }}
+            className={`flex items-center gap-1.5 rounded-[10px] border px-2.5 py-1.5 font-mono text-[0.6875rem] transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
+              hasGridOverlay && opt.value > 0
+                ? 'border-primary bg-primary/10 text-foreground'
+                : 'border-glass-border bg-glass text-text-muted hover:text-foreground'
+            }`}
+          >
+            {applying === opt.value && <Loader2 size={12} className="animate-spin" aria-hidden="true" />}
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Wizard
 // ---------------------------------------------------------------------------
@@ -221,8 +276,6 @@ export default function DanceSwapWizard() {
           </button>
         </div>
 
-        <GridOverlayPicker value={gridSize} onChange={setGridSize} />
-
         {state.sheetSource === 'generate' ? (
           <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -230,14 +283,14 @@ export default function DanceSwapWizard() {
                 label={t('step1.portrait')}
                 accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                 value={state.portraitPath}
-                onPick={(f) => void actions.uploadPortrait(f, gridSize)}
+                onPick={(f) => void actions.uploadPortrait(f)}
                 icon={<ImagePlus size={20} aria-hidden="true" />}
               />
               <FilePick
                 label={t('step1.outfitRef')}
                 accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                 value={state.outfitRefPath}
-                onPick={(f) => void actions.uploadOutfitRef(f, gridSize)}
+                onPick={(f) => void actions.uploadOutfitRef(f)}
                 icon={<Shirt size={20} aria-hidden="true" />}
               />
             </div>
@@ -280,6 +333,8 @@ export default function DanceSwapWizard() {
                 </p>
               )}
             </div>
+
+            <GridOverlayPicker value={gridSize} onChange={setGridSize} />
 
             <RunButton
               onClick={() => void actions.generateSheet(gridSize)}
@@ -327,7 +382,7 @@ export default function DanceSwapWizard() {
                 label={t('step1.sheetFile')}
                 accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                 value={state.sheet?.mediaPath ?? null}
-                onPick={(f) => void actions.uploadSheet(f, gridSize)}
+                onPick={(f) => void actions.uploadSheet(f)}
                 icon={<ImagePlus size={20} aria-hidden="true" />}
               />
               <button
@@ -343,7 +398,7 @@ export default function DanceSwapWizard() {
               isOpen={showSheetPicker}
               onClose={() => setShowSheetPicker(false)}
               onSelect={(path) => {
-                void actions.pickSheet(path, gridSize);
+                void actions.pickSheet(path);
                 setShowSheetPicker(false);
               }}
               accept="image"
@@ -351,9 +406,13 @@ export default function DanceSwapWizard() {
             {state.sheet && (
               <div className="flex flex-col gap-2">
                 <img
-                  src={mediaUrl(state.sheet.mediaPath)}
+                  src={mediaUrl(state.sheet.mediaPath) + (state.sheet.previewCacheBust ? `?t=${state.sheet.previewCacheBust}` : '')}
                   alt={t('step1.title')}
                   className="w-full rounded-[14px] border border-border-subtle"
+                />
+                <GridBurnBar
+                  hasGridOverlay={state.sheetHasGridOverlay}
+                  onApply={(size) => actions.applyGridToSheet(size)}
                 />
                 <SaveToLibrary
                   result={state.sheet}

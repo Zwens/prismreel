@@ -2157,6 +2157,13 @@
       "saveSuccess": "已存为角色",
       "saveFailed": "保存失败，请重试",
       "invalidImageFormat": "文件格式不支持，请上传 jpg、jpeg 或 png 格式的图片",
+      "gridBurnLabel": "网格叠加",
+      "gridOriginal": "原图",
+      "grid4x4": "4×4 网格",
+      "grid5x5": "5×5 网格",
+      "gridApplySuccess": "已套用网格",
+      "gridClearSuccess": "已还原为原图",
+      "gridApplyFailed": "网格套用失败，请重试",
       "step1": {
         "title": "换装三视图",
         "hint": "上传人物照，生成正面、侧面、背面三个视角的换装角色图",
