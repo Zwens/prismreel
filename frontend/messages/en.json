@@ -2008,6 +2008,7 @@
       "saveToLibrary": "Save to library",
       "saved": "Saved",
       "costEstimateNote": "Actual billed cost from the provider",
+      "tokenCountNote": "Total tokens consumed by this generation",
       "featured": "Featured",
       "useAsReference": "Use as reference",
       "download": "Download",

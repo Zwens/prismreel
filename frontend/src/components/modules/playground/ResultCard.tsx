@@ -304,6 +304,11 @@ function CompletedCard({ generation, outputIndex, onGenerateVideo, onOpenDetail 
               ${output.cost_usd.toFixed(3)}
             </span>
           )}
+          {typeof output?.total_tokens === 'number' && (
+            <span className="font-mono text-[0.5625rem] bg-glass text-text-muted rounded px-[6px] py-[2px]" title={t('card.tokenCountNote')}>
+              {output.total_tokens.toLocaleString()} tok
+            </span>
+          )}
           <span className="font-mono text-[0.5625rem] text-text-muted ml-auto">{formatTime(created_at)}</span>
           {saved && (
             <span className="flex items-center gap-0.5 text-[0.5625rem] text-primary">

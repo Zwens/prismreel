@@ -2008,6 +2008,7 @@
       "saveToLibrary": "儲存到資產庫",
       "saved": "已儲存",
       "costEstimateNote": "供應商實際計費金額",
+      "tokenCountNote": "本次生成消耗的 token 總數",
       "featured": "精選",
       "useAsReference": "用作參考圖",
       "download": "下載",

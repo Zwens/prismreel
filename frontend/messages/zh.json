@@ -2008,6 +2008,7 @@
       "saveToLibrary": "保存到资产库",
       "saved": "已保存",
       "costEstimateNote": "供应商实际计费金额",
+      "tokenCountNote": "本次生成消耗的 token 总数",
       "featured": "精选",
       "useAsReference": "用作参考图",
       "download": "下载",
