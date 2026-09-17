@@ -1,9 +1,9 @@
 "use client";
 /**
- * GridOverlayPicker — 照片上传前的网格叠加三选一（原图 / 4x4 / 5x5）。
+ * GridOverlayPicker — 照片上傳前的網格疊加三選一（原圖 / 4x4 / 5x5）。
  *
- * 后端 `apply_grid_overlay` 会把网格线永久烧进照片本体（不可逆），
- * 所有 6 个照片上传入口共用同一份文案，避免各处措辞漂移。
+ * 後端 `apply_grid_overlay` 會把網格線永久燒進照片本體（不可逆），
+ * 所有 6 個照片上傳入口共用同一份文案，避免各處措辭漂移。
  */
 import clsx from "clsx";
 
@@ -16,9 +16,9 @@ export interface GridOverlayPickerProps {
 }
 
 const OPTIONS: { value: GridOverlaySize; label: string }[] = [
-    { value: 0, label: "原图" },
-    { value: 4, label: "4×4 网格" },
-    { value: 5, label: "5×5 网格" },
+    { value: 0, label: "原圖" },
+    { value: 4, label: "4×4 網格" },
+    { value: 5, label: "5×5 網格" },
 ];
 
 export default function GridOverlayPicker({ value, onChange, className }: GridOverlayPickerProps) {
@@ -42,10 +42,10 @@ export default function GridOverlayPicker({ value, onChange, className }: GridOv
                 ))}
             </div>
             <p className="text-[0.6875rem] leading-snug text-text-muted">
-                真人照片建议使用网格叠加，辅助 AI 识别人物比例与构图。
+                真人照片建議使用網格疊加，輔助 AI 識別人物比例與構圖。
             </p>
             <p className="text-[0.6875rem] leading-snug text-amber-500/90">
-                网格叠加会永久修改照片，请自行保留原图备份。
+                網格疊加會永久修改照片，請自行保留原圖備份。
             </p>
         </div>
     );
