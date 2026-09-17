@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useCallback, useRef } from 'react';
-import { usePlaygroundStore, usePlaygroundStoreApi, type PlaygroundMode, type PlaygroundGeneration, type QueuedRequest } from './usePlaygroundStore';
+import { usePlaygroundStore, usePlaygroundStoreApi, GRID_OVERLAY_NEGATIVE_PROMPT, type PlaygroundMode, type PlaygroundGeneration, type QueuedRequest } from './usePlaygroundStore';
 import { playgroundApi, type PlaygroundGenerationResponse } from '@/lib/api';
 
 // ---------------------------------------------------------------------------
@@ -61,6 +61,7 @@ export function useGenerationRunner(): GenerationRunner {
   const modelId = usePlaygroundStore((s) => s.modelId);
   const prompt = usePlaygroundStore((s) => s.prompt);
   const negativePrompt = usePlaygroundStore((s) => s.negativePrompt);
+  const appendGridOverlayNegative = usePlaygroundStore((s) => s.appendGridOverlayNegative);
   const inputMedia = usePlaygroundStore((s) => s.inputMedia);
   const parameters = usePlaygroundStore((s) => s.parameters);
   const batchSize = usePlaygroundStore((s) => s.batchSize);
@@ -155,16 +156,21 @@ export function useGenerationRunner(): GenerationRunner {
     if (!prompt.trim()) return;
     // Auto-detect i2i: t2i + reference images -> i2i
     const effectiveMode = (mode === 't2i' && inputMedia.length > 0) ? 'i2i' : mode;
+    // Grid overlay lines are baked into the pixels — leaving them out of the
+    // negative prompt lets the model reproduce them in the output.
+    const effectiveNegativePrompt = appendGridOverlayNegative
+      ? [negativePrompt, GRID_OVERLAY_NEGATIVE_PROMPT].filter(Boolean).join(', ')
+      : negativePrompt;
     enqueueRequest({
       mode: effectiveMode,
       modelId,
       prompt: prompt.trim(),
-      negativePrompt: negativePrompt || undefined,
+      negativePrompt: effectiveNegativePrompt || undefined,
       inputMedia,
       parameters,
       batchSize,
     });
-  }, [mode, modelId, prompt, negativePrompt, inputMedia, parameters, batchSize, enqueueRequest]);
+  }, [mode, modelId, prompt, negativePrompt, appendGridOverlayNegative, inputMedia, parameters, batchSize, enqueueRequest]);
 
   // ─── Queue dispatcher — POST a queued request, then poll for status ────────
 

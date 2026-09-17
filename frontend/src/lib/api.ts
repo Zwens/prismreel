@@ -1280,18 +1280,18 @@ export const api = {
      *  assetType 为单数（"character"|"scene"|"prop"）。data 可含 name/description/persona/image_url/voice_id。 */
     createLibraryAsset: async (
         assetType: string,
-        data: { name: string; description?: string; persona?: string; image_url?: string; voice_id?: string },
+        data: { name: string; description?: string; persona?: string; image_url?: string; voice_id?: string; has_grid_overlay?: boolean },
     ) => {
         const res = await axios.post(`${API_URL}/library/assets`, { asset_type: assetType, ...data });
         return res.data;
     },
     /** 上传一张本地图片到全局资产库，返回可被前端加载的 image_url。
-     *  后端契约：POST /library/assets/upload，multipart 字段名 "file" → { image_url }。
-     *  调用方拿到 image_url 后传给 createLibraryAsset。 */
-    uploadLibraryImage: async (file: File, gridSize: GridOverlaySize = 0): Promise<{ image_url: string }> => {
+     *  后端契约：POST /library/assets/upload，multipart 字段名 "file" → { image_url, has_grid_overlay }。
+     *  调用方拿到 image_url + has_grid_overlay 后一并传给 createLibraryAsset（两步请求，后端无法在第二步自行推断是否有网格）。 */
+    uploadLibraryImage: async (file: File, gridSize: GridOverlaySize = 0): Promise<{ image_url: string; has_grid_overlay: boolean }> => {
         const formData = new FormData();
         formData.append("file", file);
-        const res = await axios.post<{ image_url: string }>(
+        const res = await axios.post<{ image_url: string; has_grid_overlay: boolean }>(
             `${API_URL}/library/assets/upload?grid_size=${gridSize}`,
             formData,
             { headers: { "Content-Type": "multipart/form-data" } },
@@ -1311,6 +1311,7 @@ export const api = {
             starred?: boolean;
             locked?: boolean;
             visual_weight?: number;
+            has_grid_overlay?: boolean;
         },
     ) => {
         const res = await axios.put(`${API_URL}/library/assets/${assetType}/${assetId}`, patch);

@@ -2052,7 +2052,8 @@
       "history": "歷史",
       "negativeLabel": "負面提示詞",
       "negativePlaceholder": "不希望出現的內容...",
-      "multiImageHint": "多圖引用請用「Image 1」「Image 2」（依上傳順序，需有空格），@Image1 語法僅限官方 Playground 網頁，這裡不生效"
+      "multiImageHint": "多圖引用請用「Image 1」「Image 2」（依上傳順序，需有空格），@Image1 語法僅限官方 Playground 網頁，這裡不生效",
+      "excludeGridOverlay": "生成結果排除網格線"
     },
     "model": {
       "selectPlaceholder": "選擇模型",

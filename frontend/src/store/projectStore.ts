@@ -20,6 +20,7 @@ export interface ImageVariant {
     url: string;
     created_at: number;
     prompt_used?: string;
+    has_grid_overlay?: boolean;
 }
 
 export interface ImageAsset {

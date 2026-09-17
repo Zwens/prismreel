@@ -2052,7 +2052,8 @@
       "history": "History",
       "negativeLabel": "Negative prompt",
       "negativePlaceholder": "What you don't want to see…",
-      "multiImageHint": "Reference multiple images as \"Image 1\", \"Image 2\" (upload order, with a space) — @Image1 only works in the official Playground website, not here"
+      "multiImageHint": "Reference multiple images as \"Image 1\", \"Image 2\" (upload order, with a space) — @Image1 only works in the official Playground website, not here",
+      "excludeGridOverlay": "Exclude grid lines from the result"
     },
     "model": {
       "selectPlaceholder": "Select model",

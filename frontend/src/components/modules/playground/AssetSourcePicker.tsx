@@ -7,7 +7,7 @@ import { X, Check, Image as ImageIcon, Film, Loader2, Layers, LayoutGrid, Clappe
 import { useTranslations } from 'next-intl';
 import { api, playgroundApi } from '@/lib/api';
 import { mediaUrl } from '@/lib/mediaPath';
-import { resolveAssetMedia } from '@/lib/assetImageResolver';
+import { resolveAssetMedia, resolveAssetVariant } from '@/lib/assetImageResolver';
 import { isOfficialCharacterRef, rememberOfficialCharacter, getOfficialCharacterDisplay } from '@/lib/officialCharacterCache';
 
 // ---------------------------------------------------------------------------
@@ -22,7 +22,9 @@ export type AssetSource = 'library' | 'series' | 'project' | 'history' | 'offici
 interface AssetSourcePickerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (path: string) => void;
+  /** hasGridOverlay is only known for library/series/project items resolved
+   *  through resolveAssetVariant; history/official items always pass undefined. */
+  onSelect: (path: string, hasGridOverlay?: boolean) => void;
   accept: 'image' | 'video' | 'all';
 }
 
@@ -31,6 +33,7 @@ interface PickerItem {
   path: string;
   type: 'image' | 'video';
   label: string;
+  hasGridOverlay?: boolean;
 }
 
 /** A series or project the user drills into before seeing its assets. */
@@ -83,6 +86,7 @@ function itemsFromAssetBag(
         path: resolved.path,
         type: resolved.type,
         label: asset.name || asset.id,
+        hasGridOverlay: resolveAssetVariant(asset, kind)?.has_grid_overlay,
       });
     }
   }
@@ -359,7 +363,8 @@ export default function AssetSourcePicker({
 
   const handleConfirm = () => {
     if (!selected) return;
-    onSelect(selected);
+    const item = visibleItems.find((i) => i.path === selected);
+    onSelect(selected, item?.hasGridOverlay);
     onClose();
   };
 

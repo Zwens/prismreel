@@ -16,25 +16,26 @@ export interface ImageVariant {
     id: string;
     url: string;
     is_favorited?: boolean;
+    has_grid_overlay?: boolean;
 }
 
 /** Variants live in different slots depending on kind + legacy schema:
  *  · character → reference_sheet.image_variants (new) or full_body_asset.variants (legacy)
  *  · scene → image_asset.variants
  *  · prop → image_asset.variants
- *  Returns a normalized [{id, url, is_favorited?}] list. */
+ *  Returns a normalized [{id, url, is_favorited?, has_grid_overlay?}] list. */
 export function readVariants(entity: any, kind: CastKind): ImageVariant[] {
     if (!entity) return [];
     if (kind === "character") {
         const sheet = entity?.reference_sheet?.image_variants ?? [];
         if (sheet.length > 0) {
-            return sheet.map((v: any) => ({ id: v.id, url: v.url, is_favorited: v.is_favorited }));
+            return sheet.map((v: any) => ({ id: v.id, url: v.url, is_favorited: v.is_favorited, has_grid_overlay: v.has_grid_overlay }));
         }
         const legacy = entity?.full_body_asset?.variants ?? [];
-        return legacy.map((v: any) => ({ id: v.id, url: v.url, is_favorited: v.is_favorited }));
+        return legacy.map((v: any) => ({ id: v.id, url: v.url, is_favorited: v.is_favorited, has_grid_overlay: v.has_grid_overlay }));
     }
     const arr = entity?.image_asset?.variants ?? [];
-    return arr.map((v: any) => ({ id: v.id, url: v.url, is_favorited: v.is_favorited }));
+    return arr.map((v: any) => ({ id: v.id, url: v.url, is_favorited: v.is_favorited, has_grid_overlay: v.has_grid_overlay }));
 }
 
 /** Characters generate a reference sheet; scenes and props generate a single

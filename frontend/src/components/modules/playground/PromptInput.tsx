@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { usePlaygroundStore } from './usePlaygroundStore';
 import PromptTemplateModal from './PromptTemplateModal';
 import PromptHistoryDrawer from './PromptHistoryDrawer';
+import GridOverlayNegativeCheckbox from './GridOverlayNegativeCheckbox';
 
 export default function PromptInput() {
   const prompt = usePlaygroundStore((s) => s.prompt);
@@ -34,6 +35,8 @@ export default function PromptInput() {
           {t('prompt.multiImageHint')}
         </p>
       )}
+
+      <GridOverlayNegativeCheckbox />
 
       {/* Toolbar — below the textarea, not overlapping */}
       <div className="flex items-center gap-[6px] border-t border-border-subtle pt-2.5 mt-3">

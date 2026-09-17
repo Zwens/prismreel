@@ -31,6 +31,7 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageHasGridOverlay, setImageHasGridOverlay] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [gridSize, setGridSize] = useState<GridOverlaySize>(0);
@@ -68,8 +69,9 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
     if (!file) return;
     setUploading(true);
     try {
-      const { image_url } = await api.uploadLibraryImage(file, gridSize);
+      const { image_url, has_grid_overlay } = await api.uploadLibraryImage(file, gridSize);
       setImageUrl(image_url);
+      setImageHasGridOverlay(has_grid_overlay);
       toast.success(t("uploadSuccess"));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
@@ -94,6 +96,7 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
         name: trimmed,
         description: description.trim() || undefined,
         image_url: imageUrl.trim() || undefined,
+        has_grid_overlay: imageUrl.trim() ? imageHasGridOverlay : undefined,
       });
       toast.success(t("createSuccess"), { body: trimmed });
       onCreated();

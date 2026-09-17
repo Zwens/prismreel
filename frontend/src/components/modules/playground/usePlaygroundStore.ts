@@ -129,13 +129,30 @@ export interface QueuedRequest {
 // State & Actions
 // ---------------------------------------------------------------------------
 
-interface PlaygroundState {
+/** Negative prompt fragment appended when any input reference carries a grid
+ *  overlay — forced (source: 'upload', just baked in by apply_grid_overlay)
+ *  or opt-in (source: 'library', a checkbox next to the prompt). */
+export const GRID_OVERLAY_NEGATIVE_PROMPT =
+  'no grid lines, no overlay, no mesh, clean skin, smooth image';
+
+export interface PlaygroundState {
   // Current input
   mode: PlaygroundMode;
   modelId: string;
   prompt: string;
   negativePrompt: string;
   inputMedia: string[];
+  /** Parallel to inputMedia by index: true when that entry is known to carry
+   *  a baked-in grid overlay (fresh upload with gridSize>0, or a library pick
+   *  whose selected variant has has_grid_overlay). Drives whether MediaInput
+   *  shows the "exclude grid lines" checkbox at all. */
+  inputMediaHasGridOverlay: boolean[];
+  /** Checkbox state — whether GRID_OVERLAY_NEGATIVE_PROMPT is appended to the
+   *  negative prompt on generate. Auto-set to true whenever a grid-overlay
+   *  reference is added (forced for fresh uploads, pre-checked but toggleable
+   *  for library picks), left as-is otherwise. */
+  appendGridOverlayNegative: boolean;
+  setAppendGridOverlayNegative: (value: boolean) => void;
   parameters: Record<string, any>;
   batchSize: number;
 
@@ -182,7 +199,10 @@ interface PlaygroundState {
   setModelId: (modelId: string) => void;
   setPrompt: (prompt: string) => void;
   setNegativePrompt: (neg: string) => void;
-  setInputMedia: (media: string[]) => void;
+  /** hasGridOverlay, parallel to media by index, defaults to all-false when
+   *  omitted. Auto re-derives appendGridOverlayNegative: true the moment any
+   *  entry is true, otherwise left as the user last set it. */
+  setInputMedia: (media: string[], hasGridOverlay?: boolean[]) => void;
   /** Push a generated result back into the compose panel as reference input,
    *  switching to the appropriate mode. Image → i2i (default) or i2v when an
    *  explicit targetMode is given; video → v2v. Respects per-mode model
@@ -238,6 +258,9 @@ const initPlaygroundState: StateCreator<PlaygroundState> = (set, get) => ({
   prompt: DEFAULT_PROMPT,
   negativePrompt: '',
   inputMedia: [],
+  inputMediaHasGridOverlay: [],
+  appendGridOverlayNegative: false,
+  setAppendGridOverlayNegative: (value) => set({ appendGridOverlayNegative: value }),
   parameters: {},
   batchSize: DEFAULT_BATCH_SIZE,
 
@@ -332,7 +355,14 @@ const initPlaygroundState: StateCreator<PlaygroundState> = (set, get) => ({
 
   setNegativePrompt: (negativePrompt) => set({ negativePrompt }),
 
-  setInputMedia: (inputMedia) => set({ inputMedia }),
+  setInputMedia: (inputMedia, hasGridOverlay) => {
+    const flags = hasGridOverlay ?? inputMedia.map(() => false);
+    set((s) => ({
+      inputMedia,
+      inputMediaHasGridOverlay: flags,
+      appendGridOverlayNegative: flags.some(Boolean) ? true : s.appendGridOverlayNegative,
+    }));
+  },
 
   useResultAsReference: (mediaPath, mediaType, targetMode) => {
     const { modelPreferences } = get();
@@ -342,6 +372,7 @@ const initPlaygroundState: StateCreator<PlaygroundState> = (set, get) => ({
     set({
       mode,
       inputMedia: [mediaPath],
+      inputMediaHasGridOverlay: [false],
       ...(preferredModel !== undefined ? { modelId: preferredModel } : {}),
     });
   },
@@ -444,6 +475,8 @@ const initPlaygroundState: StateCreator<PlaygroundState> = (set, get) => ({
       prompt: DEFAULT_PROMPT,
       negativePrompt: '',
       inputMedia: [],
+      inputMediaHasGridOverlay: [],
+      appendGridOverlayNegative: false,
       parameters: {},
       batchSize: DEFAULT_BATCH_SIZE,
     }),

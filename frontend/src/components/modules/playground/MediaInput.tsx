@@ -194,6 +194,7 @@ function SingleRefPreview({
 
 function FirstLastFrameInput() {
   const inputMedia = usePlaygroundStore((s) => s.inputMedia);
+  const inputMediaHasGridOverlay = usePlaygroundStore((s) => s.inputMediaHasGridOverlay);
   const setInputMedia = usePlaygroundStore((s) => s.setInputMedia);
   const t = useTranslations('playground');
 
@@ -205,15 +206,21 @@ function FirstLastFrameInput() {
 
   const firstFrame = inputMedia[0];
   const lastFrame = inputMedia[1];
+  const firstFrameGrid = inputMediaHasGridOverlay[0] ?? false;
+  const lastFrameGrid = inputMediaHasGridOverlay[1] ?? false;
 
   const uploadTo = async (slot: 'first' | 'last', file: File) => {
     setUploading(slot);
     try {
       const result = await playgroundApi.uploadMedia(file, gridSize);
+      const uploadedIsGrid = gridSize > 0;
       if (slot === 'first') {
-        setInputMedia([result.path, ...(lastFrame ? [lastFrame] : [])]);
+        setInputMedia(
+          [result.path, ...(lastFrame ? [lastFrame] : [])],
+          [uploadedIsGrid, ...(lastFrame ? [lastFrameGrid] : [])],
+        );
       } else if (firstFrame) {
-        setInputMedia([firstFrame, result.path]);
+        setInputMedia([firstFrame, result.path], [firstFrameGrid, uploadedIsGrid]);
       }
     } catch (err) {
       console.error('[FirstLastFrameInput] upload failed:', err);
@@ -228,17 +235,20 @@ function FirstLastFrameInput() {
     e.target.value = '';
   };
 
-  const handleAssetSelect = (slot: 'first' | 'last') => (path: string) => {
+  const handleAssetSelect = (slot: 'first' | 'last') => (path: string, hasGridOverlay?: boolean) => {
     if (slot === 'first') {
-      setInputMedia([path, ...(lastFrame ? [lastFrame] : [])]);
+      setInputMedia(
+        [path, ...(lastFrame ? [lastFrame] : [])],
+        [!!hasGridOverlay, ...(lastFrame ? [lastFrameGrid] : [])],
+      );
     } else if (firstFrame) {
-      setInputMedia([firstFrame, path]);
+      setInputMedia([firstFrame, path], [firstFrameGrid, !!hasGridOverlay]);
     }
     setShowAssetPicker(null);
   };
 
   const removeFirstFrame = () => setInputMedia([]);
-  const removeLastFrame = () => setInputMedia(firstFrame ? [firstFrame] : []);
+  const removeLastFrame = () => setInputMedia(firstFrame ? [firstFrame] : [], firstFrame ? [firstFrameGrid] : []);
 
   const renderSlot = (
     slot: 'first' | 'last',
@@ -319,6 +329,7 @@ export default function MediaInput() {
   const mode = usePlaygroundStore((s) => s.mode);
   const modelId = usePlaygroundStore((s) => s.modelId);
   const inputMedia = usePlaygroundStore((s) => s.inputMedia);
+  const inputMediaHasGridOverlay = usePlaygroundStore((s) => s.inputMediaHasGridOverlay);
   const setInputMedia = usePlaygroundStore((s) => s.setInputMedia);
   const t = useTranslations('playground');
 
@@ -369,18 +380,20 @@ export default function MediaInput() {
 
     setUploading(true);
     try {
+      const isImageUpload = toUpload.map((file) => file.type.startsWith('image/'));
       const results = await Promise.all(
         // Grid overlay only makes sense on still images — the Seedance r2v
         // mode also accepts video/audio through this same dropzone, and
         // apply_grid_overlay would 400 on a non-image extension.
-        toUpload.map((file) => playgroundApi.uploadMedia(file, file.type.startsWith('image/') ? gridSize : 0))
+        toUpload.map((file, i) => playgroundApi.uploadMedia(file, isImageUpload[i] ? gridSize : 0))
       );
       const newPaths = results.map((r) => r.path);
+      const newFlags = isImageUpload.map((isImage) => isImage && gridSize > 0);
 
       if (config.multiple) {
-        setInputMedia([...inputMedia, ...newPaths]);
+        setInputMedia([...inputMedia, ...newPaths], [...inputMediaHasGridOverlay, ...newFlags]);
       } else {
-        setInputMedia(newPaths);
+        setInputMedia(newPaths, newFlags);
       }
     } catch (err) {
       console.error('[MediaInput] upload failed:', err);
@@ -431,15 +444,16 @@ export default function MediaInput() {
 
   const handleRemove = (index: number) => {
     const updated = inputMedia.filter((_, i) => i !== index);
-    setInputMedia(updated);
+    const updatedFlags = inputMediaHasGridOverlay.filter((_, i) => i !== index);
+    setInputMedia(updated, updatedFlags);
   };
 
   const handleReplace = () => {
     fileInputRef.current?.click();
   };
 
-  const handleAssetSelect = (path: string) => {
-    setInputMedia([...inputMedia, path]);
+  const handleAssetSelect = (path: string, hasGridOverlay?: boolean) => {
+    setInputMedia([...inputMedia, path], [...inputMediaHasGridOverlay, !!hasGridOverlay]);
   };
 
   // Determine accept type for AssetSourcePicker

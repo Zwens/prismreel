@@ -1,5 +1,5 @@
-import { characterImageUrl, selectedVariantUrl } from "@/lib/characterImage";
-import type { Character, ImageAsset } from "@/store/projectStore";
+import { characterImageUrl, characterSelectedVariant, selectedVariant } from "@/lib/characterImage";
+import type { Character, ImageAsset, ImageVariant } from "@/store/projectStore";
 
 /**
  * Normalisation point for the four-source asset picker.
@@ -34,7 +34,7 @@ function media(path: string | undefined | null): ResolvedMedia | null {
 
 /** Scenes and props share one container shape: `image_asset` then `image_url`. */
 function resolveImageAssetHolder(asset: { image_asset?: ImageAsset; image_url?: string }) {
-    return media(selectedVariantUrl(asset.image_asset) || asset.image_url);
+    return media(selectedVariant(asset.image_asset)?.url || asset.image_url);
 }
 
 /**
@@ -73,5 +73,22 @@ export function resolveAssetMedia(asset: unknown, kind: AssetKind): ResolvedMedi
             return media((asset as { media_path?: string }).media_path);
         default:
             return null;
+    }
+}
+
+/** Same source-of-truth as resolveAssetMedia, but returns the full selected
+ *  variant (for has_grid_overlay etc) instead of just a display path. Frame
+ *  and generation kinds don't carry variant history, so they return undefined. */
+export function resolveAssetVariant(asset: unknown, kind: AssetKind): ImageVariant | undefined {
+    if (!asset || typeof asset !== "object") return undefined;
+
+    switch (kind) {
+        case "character":
+            return characterSelectedVariant(asset as Character);
+        case "scene":
+        case "prop":
+            return selectedVariant((asset as { image_asset?: ImageAsset }).image_asset);
+        default:
+            return undefined;
     }
 }
