@@ -32,10 +32,16 @@ const STYLE_CLAUSE: Record<SheetStyle, string> = {
     'stylised anime face.',
 };
 
-export function buildThreeViewPrompt(outfit: string, style: SheetStyle): string {
+export function buildThreeViewPrompt(outfit: string, style: SheetStyle, hasGridOverlay = false): string {
   const outfitClause = outfit.trim()
     ? `Change the outfit to: ${outfit.trim()}.`
     : 'Keep the outfit from the reference image.';
+
+  const gridClause = hasGridOverlay
+    ? 'The reference image has a proportion grid overlaid on it to help you ' +
+      'read body proportions and composition accurately. Use the grid only as ' +
+      'a measurement guide — do not reproduce the grid lines in the output.'
+    : '';
 
   return [
     'Using the person in the reference image as the exact same character',
@@ -47,7 +53,8 @@ export function buildThreeViewPrompt(outfit: string, style: SheetStyle): string 
     outfitClause,
     'Plain pure white background, flat even lighting, no shadows, no text.',
     STYLE_CLAUSE[style],
-  ].join(' ');
+    gridClause,
+  ].filter(Boolean).join(' ');
 }
 
 /** The final compose prompt.

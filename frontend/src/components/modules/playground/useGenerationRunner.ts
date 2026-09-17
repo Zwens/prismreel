@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useCallback, useRef } from 'react';
-import { usePlaygroundStore, usePlaygroundStoreApi, GRID_OVERLAY_NEGATIVE_PROMPT, type PlaygroundMode, type PlaygroundGeneration, type QueuedRequest } from './usePlaygroundStore';
+import { usePlaygroundStore, usePlaygroundStoreApi, GRID_OVERLAY_NEGATIVE_PROMPT, GRID_OVERLAY_GUIDANCE_PROMPT, type PlaygroundMode, type PlaygroundGeneration, type QueuedRequest } from './usePlaygroundStore';
 import { playgroundApi, type PlaygroundGenerationResponse } from '@/lib/api';
 
 // ---------------------------------------------------------------------------
@@ -62,6 +62,7 @@ export function useGenerationRunner(): GenerationRunner {
   const prompt = usePlaygroundStore((s) => s.prompt);
   const negativePrompt = usePlaygroundStore((s) => s.negativePrompt);
   const appendGridOverlayNegative = usePlaygroundStore((s) => s.appendGridOverlayNegative);
+  const inputMediaHasGridOverlay = usePlaygroundStore((s) => s.inputMediaHasGridOverlay);
   const inputMedia = usePlaygroundStore((s) => s.inputMedia);
   const parameters = usePlaygroundStore((s) => s.parameters);
   const batchSize = usePlaygroundStore((s) => s.batchSize);
@@ -161,16 +162,21 @@ export function useGenerationRunner(): GenerationRunner {
     const effectiveNegativePrompt = appendGridOverlayNegative
       ? [negativePrompt, GRID_OVERLAY_NEGATIVE_PROMPT].filter(Boolean).join(', ')
       : negativePrompt;
+    // Tell the model the grid is a proportion guide, not part of the subject,
+    // whenever any current reference actually carries one.
+    const effectivePrompt = inputMediaHasGridOverlay.some(Boolean)
+      ? `${GRID_OVERLAY_GUIDANCE_PROMPT} ${prompt.trim()}`
+      : prompt.trim();
     enqueueRequest({
       mode: effectiveMode,
       modelId,
-      prompt: prompt.trim(),
+      prompt: effectivePrompt,
       negativePrompt: effectiveNegativePrompt || undefined,
       inputMedia,
       parameters,
       batchSize,
     });
-  }, [mode, modelId, prompt, negativePrompt, appendGridOverlayNegative, inputMedia, parameters, batchSize, enqueueRequest]);
+  }, [mode, modelId, prompt, negativePrompt, appendGridOverlayNegative, inputMediaHasGridOverlay, inputMedia, parameters, batchSize, enqueueRequest]);
 
   // ─── Queue dispatcher — POST a queued request, then poll for status ────────
 

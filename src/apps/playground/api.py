@@ -26,7 +26,7 @@ from .service import PlaygroundService
 from .storage import PlaygroundStorage
 from ..comic_gen import auth
 from ...utils import get_logger
-from ...utils.media_refs import to_posix_media_path
+from ...utils.media_refs import resolve_local_media_path, to_posix_media_path
 from ...utils.upload_guard import save_video_upload, validate_image_upload
 from ...utils.grid_overlay import apply_grid_overlay
 
@@ -239,8 +239,25 @@ def upload_video(file: UploadFile = File(...), _user=Depends(auth.require_login)
     return {"path": to_posix_media_path(dest)}
 
 
+def apply_grid_to_media(path: str, grid_size: int = 0):
+    """Burn a grid into an existing local media file (e.g. a fresh AI generation),
+    in place. Rejects anything outside output/ via resolve_local_media_path.
+    """
+    abs_path = resolve_local_media_path(path)
+    if abs_path is None or not os.path.isfile(abs_path):
+        raise HTTPException(status_code=404, detail="Media path not found")
+    ext = os.path.splitext(abs_path)[1].lstrip(".")
+    with open(abs_path, "rb") as f:
+        data = f.read()
+    data = apply_grid_overlay(data, ext, grid_size)
+    with open(abs_path, "wb") as f:
+        f.write(data)
+    return {"path": to_posix_media_path(path), "has_grid_overlay": grid_size > 0}
+
+
 router.add_api_route("/upload", upload_media, methods=["POST"])
 router.add_api_route("/upload-video", upload_video, methods=["POST"])
+router.add_api_route("/apply-grid", apply_grid_to_media, methods=["POST"])
 
 # ---------------------------------------------------------------------------
 # Depth preprocessing (local GPU) — step 2 of the dance-swap flow

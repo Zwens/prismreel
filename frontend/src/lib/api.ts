@@ -1816,6 +1816,13 @@ export const playgroundApi = {
     }).then(r => r.data);
   },
 
+  // Burn a grid into an existing local media file in place (e.g. a fresh
+  // AI generation the user asked to have a grid overlay applied to).
+  applyGridToMedia: (path: string, gridSize: GridOverlaySize) =>
+    axios.post<{ path: string; has_grid_overlay: boolean }>(
+      API_URL + `/playground/apply-grid?${new URLSearchParams({ path, grid_size: String(gridSize) })}`
+    ).then(r => r.data),
+
   // -- Depth preprocessing (runs on the user's own GPU) --------------------
 
   getDepthCapability: () =>

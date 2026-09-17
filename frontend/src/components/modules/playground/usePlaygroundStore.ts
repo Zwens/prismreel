@@ -135,6 +135,15 @@ export interface QueuedRequest {
 export const GRID_OVERLAY_NEGATIVE_PROMPT =
   'no grid lines, no overlay, no mesh, clean skin, smooth image';
 
+/** Positive-prompt fragment telling the model how to read a grid-overlaid
+ *  reference image: the grid is a proportion/composition aid, not part of
+ *  the subject, and must not be reproduced in the output. Prepended whenever
+ *  any input reference carries a baked-in grid overlay. */
+export const GRID_OVERLAY_GUIDANCE_PROMPT =
+  'The reference image has a proportion grid overlaid on it to help you read ' +
+  'body proportions and composition accurately. Use the grid only as a ' +
+  'measurement guide — do not reproduce the grid lines in the output.';
+
 export interface PlaygroundState {
   // Current input
   mode: PlaygroundMode;

@@ -181,6 +181,7 @@ const DURATION_MAX = 30;
 
 export default function DanceSwapWizard() {
   const t = useTranslations('playground.dance');
+  const tPlayground = useTranslations('playground');
   const { state, patch, effectivePrompt, actions } = useDanceSwap();
 
   const cap = state.depthCapability;
@@ -281,7 +282,7 @@ export default function DanceSwapWizard() {
             </div>
 
             <RunButton
-              onClick={() => void actions.generateSheet()}
+              onClick={() => void actions.generateSheet(gridSize)}
               disabled={!state.portraitPath}
               running={state.sheetState === 'running'}
               label={t('step1.run')}
@@ -306,7 +307,7 @@ export default function DanceSwapWizard() {
                   />
                   <button
                     type="button"
-                    onClick={() => void actions.generateSheet()}
+                    onClick={() => void actions.generateSheet(gridSize)}
                     className="flex items-center gap-1.5 rounded-[10px] border border-glass-border bg-glass px-2.5 py-1.5 font-mono text-[0.625rem] text-text-muted transition-colors hover:text-foreground cursor-pointer"
                   >
                     <RotateCcw size={12} aria-hidden="true" />
@@ -663,6 +664,18 @@ export default function DanceSwapWizard() {
             </button>
           )}
         </label>
+
+        {state.useSheet && state.sheet && state.sheetHasGridOverlay && (
+          <label className="flex items-center gap-[6px] py-[6px] font-mono text-[0.6875rem] text-text-muted cursor-pointer hover:text-foreground">
+            <input
+              type="checkbox"
+              checked={state.appendGridOverlayNegative}
+              onChange={(e) => patch({ appendGridOverlayNegative: e.target.checked })}
+              className="h-3.5 w-3.5 rounded border-border-subtle accent-primary"
+            />
+            <span>{tPlayground('prompt.excludeGridOverlay')}</span>
+          </label>
+        )}
 
         <RunButton
           onClick={() => void actions.compose()}

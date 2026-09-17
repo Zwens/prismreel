@@ -10,6 +10,7 @@ import {
 } from '@/lib/api';
 import { buildComposePrompt, buildOutfitOnlyPrompt, buildThreeViewPrompt, type SheetStyle } from './prompts';
 import type { GridOverlaySize } from '@/components/shared/GridOverlayPicker';
+import { GRID_OVERLAY_NEGATIVE_PROMPT, GRID_OVERLAY_GUIDANCE_PROMPT } from '../usePlaygroundStore';
 
 // ---------------------------------------------------------------------------
 // The three-step dance-swap flow.
@@ -52,6 +53,12 @@ export interface DanceSwapState {
   sheetState: StepState;
   sheetError: string | null;
   sheet: StepResult | null;
+  /** True once any of the step-1 inputs the sheet was built from carries a
+   *  baked-in grid overlay — drives the step-3 "exclude grid lines" checkbox. */
+  sheetHasGridOverlay: boolean;
+  /** Checkbox state — whether GRID_OVERLAY_NEGATIVE_PROMPT is appended to the
+   *  compose prompt. Auto-set to true the moment sheetHasGridOverlay flips on. */
+  appendGridOverlayNegative: boolean;
 
   // step 2 — motion reference
   /** 'extract': server runs depth extraction on the uploaded clip (needs a
@@ -92,6 +99,8 @@ const INITIAL: DanceSwapState = {
   sheetState: 'idle',
   sheetError: null,
   sheet: null,
+  sheetHasGridOverlay: false,
+  appendGridOverlayNegative: false,
 
   motionSource: 'extract',
   danceVideoPath: null,
@@ -207,17 +216,29 @@ export function useDanceSwap() {
 
   const uploadPortrait = useCallback(
     (file: File, gridSize: GridOverlaySize = 0) =>
-      playgroundApi.uploadMedia(file, gridSize).then((r) => patch({ portraitPath: r.path })),
-    [patch],
+      playgroundApi.uploadMedia(file, gridSize).then((r) =>
+        patch({
+          portraitPath: r.path,
+          sheetHasGridOverlay: gridSize > 0 || state.sheetHasGridOverlay,
+          appendGridOverlayNegative: gridSize > 0 ? true : state.appendGridOverlayNegative,
+        }),
+      ),
+    [patch, state.sheetHasGridOverlay, state.appendGridOverlayNegative],
   );
 
   const uploadOutfitRef = useCallback(
     (file: File, gridSize: GridOverlaySize = 0) =>
-      playgroundApi.uploadMedia(file, gridSize).then((r) => patch({ outfitRefPath: r.path })),
-    [patch],
+      playgroundApi.uploadMedia(file, gridSize).then((r) =>
+        patch({
+          outfitRefPath: r.path,
+          sheetHasGridOverlay: gridSize > 0 || state.sheetHasGridOverlay,
+          appendGridOverlayNegative: gridSize > 0 ? true : state.appendGridOverlayNegative,
+        }),
+      ),
+    [patch, state.sheetHasGridOverlay, state.appendGridOverlayNegative],
   );
 
-  const generateSheet = useCallback(async () => {
+  const generateSheet = useCallback(async (gridSize: GridOverlaySize = 0) => {
     if (!state.portraitPath) return;
     patch({ sheetState: 'running', sheetError: null });
     try {
@@ -225,7 +246,7 @@ export function useDanceSwap() {
       const gen = await runGeneration({
         mode: 'i2i',
         model_id: SHEET_MODEL,
-        prompt: buildThreeViewPrompt(state.outfit, state.sheetStyle),
+        prompt: buildThreeViewPrompt(state.outfit, state.sheetStyle, gridSize > 0),
         input_media: refs,
         // Landscape so three full-body views sit side by side without being
         // squeezed. Note the separator: size_to_aspect_ratio parses "W*H" and
@@ -234,11 +255,24 @@ export function useDanceSwap() {
         parameters: { size: '1536*1024' },
         batch_size: 1,
       });
-      patch({ sheetState: 'done', sheet: firstOutput(gen), useSheet: true });
+      const result = firstOutput(gen);
+      // The user asked for a grid on the sheet itself — burn it into the
+      // freshly generated image the same way an upload would carry one in,
+      // so the checkbox below (and downstream consumers) see it consistently.
+      if (result && gridSize > 0) {
+        await playgroundApi.applyGridToMedia(result.mediaPath, gridSize);
+      }
+      patch({
+        sheetState: 'done',
+        sheet: result,
+        useSheet: true,
+        sheetHasGridOverlay: gridSize > 0,
+        appendGridOverlayNegative: gridSize > 0 ? true : state.appendGridOverlayNegative,
+      });
     } catch (err) {
       patch({ sheetState: 'error', sheetError: describeError(err) });
     }
-  }, [state.portraitPath, state.outfitRefPath, state.outfit, state.sheetStyle, patch, runGeneration]);
+  }, [state.portraitPath, state.outfitRefPath, state.outfit, state.sheetStyle, state.appendGridOverlayNegative, patch, runGeneration]);
 
   /** 'upload' mode: the user already has a three-view sheet. There's no
    *  generation behind it, so generationId/outputId are empty — saveToLibrary
@@ -251,9 +285,11 @@ export function useDanceSwap() {
           sheetError: null,
           sheet: { generationId: '', outputId: '', mediaPath: r.path, mediaType: 'image' },
           useSheet: true,
+          sheetHasGridOverlay: gridSize > 0,
+          appendGridOverlayNegative: gridSize > 0 ? true : state.appendGridOverlayNegative,
         }),
       ),
-    [patch],
+    [patch, state.appendGridOverlayNegative],
   );
 
   /** Same as uploadSheet, but the path comes from AssetSourcePicker (library /
@@ -349,12 +385,22 @@ export function useDanceSwap() {
       // input_media[0] is the motion clip; anything after it is a reference
       // image. That ordering is the contract the v2v backend path expects.
       const media = [motion];
-      if (state.useSheet && state.sheet) media.push(state.sheet.mediaPath);
+      const sheetInComposition = state.useSheet && state.sheet;
+      if (sheetInComposition) media.push(state.sheet!.mediaPath);
+
+      // The sheet may carry a baked-in grid overlay (see step 1) — tell the
+      // model how to read it and, unless the user unticked the checkbox,
+      // keep the grid lines themselves out of the rendered output.
+      const gridActive = sheetInComposition && state.sheetHasGridOverlay;
+      const finalPrompt = gridActive
+        ? `${GRID_OVERLAY_GUIDANCE_PROMPT} ${effectivePrompt}`
+        : effectivePrompt;
 
       const gen = await runGeneration({
         mode: 'v2v',
         model_id: COMPOSE_MODEL,
-        prompt: effectivePrompt,
+        prompt: finalPrompt,
+        negative_prompt: gridActive && state.appendGridOverlayNegative ? GRID_OVERLAY_NEGATIVE_PROMPT : undefined,
         input_media: media,
         parameters: {
           task_type: 'reference',
@@ -369,8 +415,9 @@ export function useDanceSwap() {
       patch({ composeState: 'error', composeError: describeError(err) });
     }
   }, [
-    state.depthJob, state.danceVideoPath, state.useSheet, state.sheet,
-    state.resolution, state.aspectRatio, state.duration, effectivePrompt, patch, runGeneration,
+    state.depthJob, state.danceVideoPath, state.useSheet, state.sheet, state.sheetHasGridOverlay,
+    state.appendGridOverlayNegative, state.resolution, state.aspectRatio, state.duration,
+    effectivePrompt, patch, runGeneration,
   ]);
 
   // -- library ----------------------------------------------------------
