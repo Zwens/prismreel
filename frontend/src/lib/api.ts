@@ -1153,7 +1153,7 @@ export const api = {
             // The backend explains *why* (no BGM set, silent track, decode
             // failure) and the user can act on each — don't flatten it.
             const detail = await response.json().catch(() => null);
-            throw new Error(detail?.detail || "节拍检测失败");
+            throw new Error(detail?.detail || "節拍偵測失敗");
         }
         return response.json();
     },
@@ -1167,7 +1167,7 @@ export const api = {
         });
         if (!response.ok) {
             const detail = await response.json().catch(() => null);
-            throw new Error(detail?.detail || "按节拍对齐失败");
+            throw new Error(detail?.detail || "按節拍對齊失敗");
         }
         return response.json();
     },
@@ -1181,7 +1181,7 @@ export const api = {
         });
         if (!response.ok) {
             const detail = await response.json().catch(() => null);
-            throw new Error(detail?.detail || "保存卡点时长失败");
+            throw new Error(detail?.detail || "保存卡點時長失敗");
         }
         return response.json();
     },

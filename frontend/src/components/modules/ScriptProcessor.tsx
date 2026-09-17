@@ -134,7 +134,7 @@ export default function ScriptProcessor() {
         } catch (error: any) {
             useProjectStore.setState({ isAnalyzing: false });
             console.error("Failed to analyze script:", error);
-            const errorMessage = error?.response?.data?.detail || error?.message || "未知错误";
+            const errorMessage = error?.response?.data?.detail || error?.message || "未知錯誤";
             toast.update(toastId, {
                 kind: "error",
                 title: ts("analysisFailedShort"),

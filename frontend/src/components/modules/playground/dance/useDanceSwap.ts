@@ -189,7 +189,7 @@ export function useDanceSwap() {
                 } else if (status.status === 'failed') {
                   clearInterval(timer);
                   pollers.current.delete(timer);
-                  reject(new Error(status.error || '生成失败'));
+                  reject(new Error(status.error || '生成失敗'));
                 }
               } catch (err) {
                 clearInterval(timer);
@@ -317,7 +317,7 @@ export function useDanceSwap() {
           } else if (latest.status === 'failed') {
             clearInterval(timer);
             pollers.current.delete(timer);
-            patch({ depthState: 'error', depthError: latest.error || '深度视频生成失败' });
+            patch({ depthState: 'error', depthError: latest.error || '深度影片生成失敗' });
           }
         } catch (err) {
           clearInterval(timer);
@@ -381,7 +381,7 @@ export function useDanceSwap() {
       // register it as a library asset directly instead.
       if (!result.generationId || !result.outputId) {
         return api.createLibraryAsset(category, {
-          name: state.outfit || '换装角色',
+          name: state.outfit || '換裝角色',
           image_url: result.mediaPath,
         });
       }

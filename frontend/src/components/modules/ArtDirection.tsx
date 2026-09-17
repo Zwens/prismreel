@@ -589,7 +589,7 @@ export default function ArtDirection() {
                                         onClick={handleRestoreOriginal}
                                         className="ml-2 text-[0.5625rem] text-text-muted hover:text-foreground underline"
                                     >
-                                        还原
+                                        還原
                                     </button>
                                 </>
                             )}
@@ -854,7 +854,7 @@ function AIRecommendationModal({ style, isSelected, editing, positivePrompt, neg
                                         className="flex items-center gap-1 text-[0.6875rem] text-text-muted hover:text-foreground transition-colors"
                                     >
                                         <Pencil size={10} />
-                                        {ta("customizeBtn") || "自定义"}
+                                        {ta("customizeBtn") || "自訂"}
                                     </button>
                                 )}
                             </div>
@@ -910,7 +910,7 @@ function AIRecommendationModal({ style, isSelected, editing, positivePrompt, neg
                             leftIcon={isSelected ? <Check /> : undefined}
                             onClick={onApply}
                         >
-                            {isSelected ? (ta("currentStyle") || "当前风格") : (ta("useThisStyle") || "使用该风格")}
+                            {isSelected ? (ta("currentStyle") || "當前風格") : (ta("useThisStyle") || "使用該風格")}
                         </WorkflowActionButton>
                     </div>
                 </footer>
@@ -1089,14 +1089,14 @@ function PresetDetailModal({ preset, isSelected, editing, positivePrompt, negati
                         {/* Prompts section */}
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <p className="text-[0.6875rem] uppercase tracking-wider text-text-muted font-medium">提示词</p>
+                                <p className="text-[0.6875rem] uppercase tracking-wider text-text-muted font-medium">提示詞</p>
                                 {!editing && (
                                     <button
                                         onClick={onStartEditing}
                                         className="flex items-center gap-1.5 text-[0.6875rem] text-text-muted hover:text-foreground transition-colors"
                                     >
                                         <Pencil size={12} />
-                                        <span>自定义</span>
+                                        <span>自訂</span>
                                     </button>
                                 )}
                                 {editing && isCustomized && (
@@ -1113,7 +1113,7 @@ function PresetDetailModal({ preset, isSelected, editing, positivePrompt, negati
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-[0.625rem] text-text-muted mb-1.5">负向</p>
+                                        <p className="text-[0.625rem] text-text-muted mb-1.5">負向</p>
                                         <p className="text-[0.8125rem] text-text-secondary leading-relaxed">
                                             {preset.negative_prompt}
                                         </p>
@@ -1131,7 +1131,7 @@ function PresetDetailModal({ preset, isSelected, editing, positivePrompt, negati
                                         />
                                     </div>
                                     <div>
-                                        <p className="text-[0.625rem] text-text-muted mb-1.5">负向</p>
+                                        <p className="text-[0.625rem] text-text-muted mb-1.5">負向</p>
                                         <textarea
                                             value={negativePrompt}
                                             onChange={(e) => onNegativeChange(e.target.value)}
@@ -1158,7 +1158,7 @@ function PresetDetailModal({ preset, isSelected, editing, positivePrompt, negati
                 {/* Same-category comparison strip */}
                 {sameCategoryPresets.length > 0 && (
                     <div className="border-t border-glass-border px-6 py-3 shrink-0">
-                        <p className="text-[0.625rem] uppercase tracking-wider text-text-muted mb-2">同类风格</p>
+                        <p className="text-[0.625rem] uppercase tracking-wider text-text-muted mb-2">同類風格</p>
                         <div className="flex gap-2.5 overflow-x-auto pb-1">
                             {sameCategoryPresets.slice(0, 5).map(p => (
                                 <button
@@ -1195,7 +1195,7 @@ function PresetDetailModal({ preset, isSelected, editing, positivePrompt, negati
                         leftIcon={<Check />}
                         onClick={onApply}
                     >
-                        {isSelected ? "已选择" : isCustomized ? "应用自定义风格" : "使用此风格"}
+                        {isSelected ? "已選擇" : isCustomized ? "套用自訂風格" : "使用此風格"}
                     </WorkflowActionButton>
                 </footer>
             </motion.div>

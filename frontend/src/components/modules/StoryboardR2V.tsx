@@ -435,12 +435,12 @@ export default function StoryboardR2V() {
     const [dialogueProgress, setDialogueProgress] = useState<{ current: number; total: number } | null>(null);
 
     const PHASE1_CAPTIONS = useMemo(() => [
-        "正在分析剧本结构…",
-        "识别场景切换点…",
-        "拆分镜头与动作…",
-        "琢磨每帧的构图和节奏…",
-        "快了，安排景别和运镜…",
-        "最后润色一下…",
+        "正在分析劇本結構…",
+        "識別場景切換點…",
+        "拆分鏡頭與動作…",
+        "琢磨每幀的構圖和節奏…",
+        "快了，安排景別和運鏡…",
+        "最後潤色一下…",
     ], []);
 
     const bannerSummary = useMemo(() => {
@@ -490,15 +490,15 @@ export default function StoryboardR2V() {
             const result = await api.generateDialogueAudioBatch(currentProject.id);
             const stats = result._batch_stats;
             if (stats.failed > 0) {
-                toast.warning(`对白生成完成：${stats.generated} 条成功，${stats.failed} 条失败`);
+                toast.warning(`對白生成完成：${stats.generated} 條成功，${stats.failed} 條失敗`);
             } else if (stats.generated > 0) {
-                toast.success(`已生成 ${stats.generated} 条对白音频`);
+                toast.success(`已生成 ${stats.generated} 條對白音訊`);
             } else if (stats.no_voice > 0 && stats.skipped === 0) {
-                toast.warning(`${stats.no_voice} 条对白的角色尚未绑定语音`);
+                toast.warning(`${stats.no_voice} 條對白的角色尚未綁定語音`);
             } else if (stats.skipped > 0) {
                 toast.success(t("dialogueAllUpToDate"));
             } else {
-                toast.warning("未找到可生成的对白");
+                toast.warning("未找到可生成的對白");
             }
             const updated = await api.getProject(currentProject.id);
             if (updated?.frames) updateProject(currentProject.id, { frames: updated.frames });
@@ -745,7 +745,7 @@ export default function StoryboardR2V() {
             if (field === "shotSize") return { ...s, shotSize: typeof value === "string" ? value : null };
             if (field === "cameraAngle") return { ...s, cameraAngle: typeof value === "string" ? value : null };
             if (field === "cameraMovement") {
-                const desc = typeof value === "string" ? value : "固定镜头";
+                const desc = typeof value === "string" ? value : "固定鏡頭";
                 return {
                     ...s,
                     cameraMovementStructured: {
@@ -1014,7 +1014,7 @@ export default function StoryboardR2V() {
                     // instead of letting it 502 mid-generation.
                     setShotErrors(prev => ({
                         ...prev,
-                        [shot.id]: t("i2vNeedsFirstFrame") || "请先上传或生成首帧再生成视频。",
+                        [shot.id]: t("i2vNeedsFirstFrame") || "請先上傳或生成首幀再生成影片。",
                     }));
                     setShots(prev => prev.map((s, i) =>
                         i === index ? { ...s, videoStatus: undefined } : s,
@@ -1111,7 +1111,7 @@ export default function StoryboardR2V() {
         } else {
             const probeImage = getActiveT2IImageUrl(shot) || shot.imageUrl || "";
             if (!probeImage) {
-                const errMsg = t("i2vNeedsFirstFrame") || "请先上传或生成首帧再生成视频。";
+                const errMsg = t("i2vNeedsFirstFrame") || "請先上傳或生成首幀再生成影片。";
                 setShotErrors(prev => ({ ...prev, [shot.id]: errMsg }));
                 toast.warning(errMsg);
                 return;

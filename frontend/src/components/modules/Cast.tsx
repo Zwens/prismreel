@@ -862,8 +862,8 @@ function CastCard({ item, onOpenWorkbench }: { item: CastItem; onOpenWorkbench?:
         setPreviewing(true);
         try {
             const sampleText = item.name
-                ? `你好，我是${item.name}。今天遇到件有趣的事，让我慢慢说给你听。`
-                : "你好，这是音色试听。今天遇到件有趣的事，让我慢慢说给你听。";
+                ? `你好，我是${item.name}。今天遇到件有趣的事，讓我慢慢說給你聽。`
+                : "你好，這是音色試聽。今天遇到件有趣的事，讓我慢慢說給你聽。";
             const { url } = await api.previewVoice({ voice_id: voiceId, text: sampleText });
             const audio = new Audio(getAssetUrl(url));
             audio.onended = () => { setPlaying(false); audioRef.current = null; };

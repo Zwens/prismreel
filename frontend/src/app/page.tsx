@@ -323,7 +323,7 @@ function NewProjectTile({ onClick, episode = false }: { onClick: () => void; epi
       </span>
       <span className="text-[0.9375rem] font-semibold">{episode ? t("newEpisode") : t("newProject")}</span>
       <span className="font-mono text-[0.59375rem] uppercase tracking-wider text-text-muted">
-        {t("fromScript") || "从脚本开始"}
+        {t("fromScript") || "從腳本開始"}
       </span>
     </button>
   );
@@ -731,7 +731,7 @@ export default function Home() {
         <header className="px-4 md:px-7 pt-5 md:pt-6 pb-3 flex flex-col md:flex-row md:items-end gap-3 md:gap-5">
           <div className="flex-1 min-w-0">
             <div className="font-mono text-[0.625rem] font-medium uppercase tracking-[0.2em] text-text-muted">
-              WORKSPACE · <span className="text-primary font-semibold">{t("gallery") || "画廊"}</span>
+              WORKSPACE · <span className="text-primary font-semibold">{t("gallery") || "畫廊"}</span>
             </div>
             <h1 className="text-[1.625rem] md:text-[2.125rem] font-display atelier-display font-semibold text-foreground leading-tight tracking-tight mt-1">
               {t("title")}
@@ -829,12 +829,12 @@ export default function Home() {
               type="search"
               value={wsSearch}
               onChange={(e) => setWsSearch(e.target.value)}
-              placeholder={t("searchPlaceholder") || "搜索项目 / 系列…"}
-              aria-label={t("searchPlaceholder") || "搜索项目 / 系列…"}
+              placeholder={t("searchPlaceholder") || "搜尋專案 / 系列…"}
+              aria-label={t("searchPlaceholder") || "搜尋專案 / 系列…"}
               className="w-full bg-transparent border-0 rounded-full py-2 pl-9 pr-4 text-[0.8125rem] text-foreground placeholder-text-muted focus:outline-none"
             />
           </div>
-          <div className="inline-flex p-[3px] rounded-full bg-surface-inset atelier-pill-tabs ml-auto" role="group" aria-label={`${t("gallery") || "画廊"} / ${t("list") || "列表"}`}>
+          <div className="inline-flex p-[3px] rounded-full bg-surface-inset atelier-pill-tabs ml-auto" role="group" aria-label={`${t("gallery") || "畫廊"} / ${t("list") || "列表"}`}>
             <button
               type="button"
               onClick={() => changeViewMode("gallery")}
@@ -843,7 +843,7 @@ export default function Home() {
                 viewMode === "gallery" ? "text-foreground atelier-pill-tab-active bg-surface shadow-sm" : "text-text-muted hover:text-foreground"
               }`}
             >
-              {t("gallery") || "画廊"}
+              {t("gallery") || "畫廊"}
             </button>
             <button
               type="button"
@@ -872,7 +872,7 @@ export default function Home() {
                     RENDER NOISE INTO NARRATIVE
                   </div>
                   <p className="text-[2.125rem] font-display atelier-display font-medium italic leading-[1.25] tracking-tight text-foreground">
-                    {t("emptyQuote") || "\u201c每一座城市，都藏着一个还没被讲出来的故事。\u201d"}
+                    {t("emptyQuote") || "\u201c每一座城市，都藏著一個還沒被講出來的故事。\u201d"}
                   </p>
                   <p className="text-[0.9375rem] text-text-secondary max-w-[440px]">
                     {t("emptyHint")}
@@ -989,10 +989,10 @@ export default function Home() {
                 const sp = wsVisibleStandalone;
                 if (sp.length === 0 && wsFiltering) return null;
                 return (
-                <section aria-label={t("standaloneGroup") || "独立项目"}>
+                <section aria-label={t("standaloneGroup") || "獨立專案"}>
                   <div className="flex items-baseline gap-3 mt-6 mb-4 mx-0.5">
                     <span className="font-display atelier-display text-[1.5rem] font-semibold tracking-tight text-foreground">
-                      {t("standaloneGroup") || "独立项目"}
+                      {t("standaloneGroup") || "獨立專案"}
                     </span>
                     <span className="font-mono text-[0.625rem] uppercase tracking-wider text-text-muted">
                       {t("frames", { count: sp.length })}

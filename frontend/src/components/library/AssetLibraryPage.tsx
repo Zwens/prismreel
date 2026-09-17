@@ -323,7 +323,7 @@ export default function AssetLibraryPage() {
       <header className="px-4 md:px-7 pt-5 md:pt-6 pb-3 flex items-end gap-5">
         <div className="flex-1 min-w-0">
           <div className="font-mono text-[0.625rem] font-medium uppercase tracking-[0.2em] text-text-muted">
-            ASSET LIBRARY · <span className="text-primary font-semibold">{t("gallery") || "画廊"}</span>
+            ASSET LIBRARY · <span className="text-primary font-semibold">{t("gallery") || "畫廊"}</span>
           </div>
           <h1 className="text-[1.625rem] md:text-[2.125rem] font-display atelier-display font-semibold text-foreground leading-tight tracking-tight mt-1">
             {t("title")}

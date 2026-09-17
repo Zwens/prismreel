@@ -24,7 +24,7 @@ export function getAssetUrlWithTimestamp(path: string | null | undefined, timest
     return baseUrl + separator + `t=${timestamp || 0}`;
 }
 
-export function extractErrorDetail(error: any, fallback = "未知错误"): string {
+export function extractErrorDetail(error: any, fallback = "未知錯誤"): string {
     return error?.response?.data?.detail
         || error?.response?.data?.message
         || error?.message

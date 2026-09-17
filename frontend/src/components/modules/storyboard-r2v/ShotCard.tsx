@@ -795,7 +795,7 @@ export default function ShotCard({
                                 <FieldTagChip
                                     field="shotSize"
                                     value={shot.shotSize}
-                                    editorConfig={{ type: "preset", presets: ["特写", "近景", "中景", "全景", "远景", "大特写"] }}
+                                    editorConfig={{ type: "preset", presets: ["特寫", "近景", "中景", "全景", "遠景", "大特寫"] }}
                                     onChange={(v) => onUpdateField("shotSize", v)}
                                 />
                             )}
@@ -804,7 +804,7 @@ export default function ShotCard({
                                 <FieldTagChip
                                     field="cameraAngle"
                                     value={shot.cameraAngle}
-                                    editorConfig={{ type: "preset", presets: ["平视", "俯视", "仰视", "鸟瞰", "低角度"] }}
+                                    editorConfig={{ type: "preset", presets: ["平視", "俯視", "仰視", "鳥瞰", "低角度"] }}
                                     onChange={(v) => onUpdateField("cameraAngle", v)}
                                 />
                             )}
@@ -813,7 +813,7 @@ export default function ShotCard({
                                 <FieldTagChip
                                     field="cameraMovement"
                                     value={shot.cameraMovementStructured.description || shot.cameraMovementStructured.primary}
-                                    editorConfig={{ type: "preset", presets: ["固定镜头", "缓慢推进", "跟随平移", "环绕旋转", "快速拉远", "缓慢上升"] }}
+                                    editorConfig={{ type: "preset", presets: ["固定鏡頭", "緩慢推進", "跟隨平移", "環繞旋轉", "快速拉遠", "緩慢上升"] }}
                                     onChange={(v) => onUpdateField("cameraMovement", v)}
                                 />
                             )}
@@ -822,7 +822,7 @@ export default function ShotCard({
                                 <FieldTagChip
                                     field="transitionHint"
                                     value={shot.transitionHint}
-                                    editorConfig={{ type: "preset", presets: ["硬切", "淡入淡出", "溶解", "闪白", "划像"], allowCustom: true }}
+                                    editorConfig={{ type: "preset", presets: ["硬切", "淡入淡出", "溶解", "閃白", "劃像"], allowCustom: true }}
                                     onChange={(v) => onUpdateField("transitionHint", v)}
                                 />
                             )}
@@ -830,7 +830,7 @@ export default function ShotCard({
                             <AddFieldButton
                                 onAdd={(field: FieldType) => {
                                     if (field === "cameraMovement") {
-                                        onUpdateField("cameraMovement", "固定镜头");
+                                        onUpdateField("cameraMovement", "固定鏡頭");
                                     } else {
                                         onUpdateField(field, "");
                                     }

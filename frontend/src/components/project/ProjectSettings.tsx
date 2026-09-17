@@ -14,14 +14,14 @@ interface ProjectSettingsProps {
 }
 
 const STYLE_PRESETS = [
-    { value: "realistic", label: "Realistic (写实)", description: "Photorealistic, detailed imagery" },
+    { value: "realistic", label: "Realistic (寫實)", description: "Photorealistic, detailed imagery" },
     { value: "cartoon", label: "Cartoon (卡通)", description: "Animated, colorful style" },
-    { value: "anime", label: "Anime (动漫)", description: "Japanese animation style" },
-    { value: "cyberpunk", label: "Cyberpunk (赛博朋克)", description: "Futuristic, neon-lit aesthetic" },
+    { value: "anime", label: "Anime (動漫)", description: "Japanese animation style" },
+    { value: "cyberpunk", label: "Cyberpunk (賽博龐克)", description: "Futuristic, neon-lit aesthetic" },
     { value: "watercolor", label: "Watercolor (水彩)", description: "Soft, painterly look" },
     { value: "sketch", label: "Sketch (素描)", description: "Hand-drawn pencil style" },
-    { value: "comic", label: "Comic Book (漫画)", description: "Bold outlines, halftone shading" },
-    { value: "cinematic", label: "Cinematic (电影)", description: "Film-like, dramatic lighting" },
+    { value: "comic", label: "Comic Book (漫畫)", description: "Bold outlines, halftone shading" },
+    { value: "cinematic", label: "Cinematic (電影)", description: "Film-like, dramatic lighting" },
 ];
 
 export default function ProjectSettings({ project, isOpen, onClose, onUpdate }: ProjectSettingsProps) {
