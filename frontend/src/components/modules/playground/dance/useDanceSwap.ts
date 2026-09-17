@@ -10,7 +10,7 @@ import {
 } from '@/lib/api';
 import { buildComposePrompt, buildOutfitOnlyPrompt, buildThreeViewPrompt, type SheetStyle } from './prompts';
 import type { GridOverlaySize } from '@/components/shared/GridOverlayPicker';
-import { GRID_OVERLAY_NEGATIVE_PROMPT, GRID_OVERLAY_GUIDANCE_PROMPT } from '../usePlaygroundStore';
+import { GRID_OVERLAY_GUIDANCE_PROMPT, GRID_OVERLAY_EXCLUDE_PROMPT_SUFFIX } from '../usePlaygroundStore';
 
 // ---------------------------------------------------------------------------
 // The three-step dance-swap flow.
@@ -56,8 +56,9 @@ export interface DanceSwapState {
   /** True once any of the step-1 inputs the sheet was built from carries a
    *  baked-in grid overlay — drives the step-3 "exclude grid lines" checkbox. */
   sheetHasGridOverlay: boolean;
-  /** Checkbox state — whether GRID_OVERLAY_NEGATIVE_PROMPT is appended to the
-   *  compose prompt. Auto-set to true the moment sheetHasGridOverlay flips on. */
+  /** Checkbox state — whether GRID_OVERLAY_EXCLUDE_PROMPT_SUFFIX is appended
+   *  to the compose prompt. Auto-set to true the moment sheetHasGridOverlay
+   *  flips on. */
   appendGridOverlayNegative: boolean;
 
   // step 2 — motion reference
@@ -399,17 +400,22 @@ export function useDanceSwap() {
 
       // The sheet may carry a baked-in grid overlay (see step 1) — tell the
       // model how to read it and, unless the user unticked the checkbox,
-      // keep the grid lines themselves out of the rendered output.
+      // keep the grid lines themselves out of the rendered output. Seedance
+      // (COMPOSE_MODEL) never wires a negative_prompt field through to Ark
+      // (see _generate_video_seedance in service.py), so the exclusion has
+      // to ride in the main prompt instead of a negative_prompt param.
       const gridActive = sheetInComposition && state.sheetHasGridOverlay;
-      const finalPrompt = gridActive
-        ? `${GRID_OVERLAY_GUIDANCE_PROMPT} ${effectivePrompt}`
-        : effectivePrompt;
+      const excludeGrid = gridActive && state.appendGridOverlayNegative;
+      const finalPrompt = [
+        gridActive ? GRID_OVERLAY_GUIDANCE_PROMPT : null,
+        effectivePrompt,
+        excludeGrid ? GRID_OVERLAY_EXCLUDE_PROMPT_SUFFIX : null,
+      ].filter(Boolean).join(' ');
 
       const gen = await runGeneration({
         mode: 'v2v',
         model_id: COMPOSE_MODEL,
         prompt: finalPrompt,
-        negative_prompt: gridActive && state.appendGridOverlayNegative ? GRID_OVERLAY_NEGATIVE_PROMPT : undefined,
         input_media: media,
         parameters: {
           task_type: 'reference',

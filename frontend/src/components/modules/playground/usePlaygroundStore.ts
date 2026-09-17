@@ -144,6 +144,14 @@ export const GRID_OVERLAY_GUIDANCE_PROMPT =
   'body proportions and composition accurately. Use the grid only as a ' +
   'measurement guide — do not reproduce the grid lines in the output.';
 
+/** Positive-prompt equivalent of GRID_OVERLAY_NEGATIVE_PROMPT, for models
+ *  whose backend adapter never wires a negative_prompt field through (e.g.
+ *  BytePlus Ark / Seedance — see _generate_video_seedance in service.py,
+ *  which drops gen.negative_prompt entirely). Append to the main prompt
+ *  instead of relying on a negative_prompt param that silently goes nowhere. */
+export const GRID_OVERLAY_EXCLUDE_PROMPT_SUFFIX =
+  'Output a clean image with no grid lines, no overlay mesh, smooth uninterrupted skin and surfaces.';
+
 export interface PlaygroundState {
   // Current input
   mode: PlaygroundMode;
