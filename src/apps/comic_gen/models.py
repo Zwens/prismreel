@@ -113,6 +113,7 @@ class ImageVariant(BaseModel):
     # NEW: 上传来源标记
     is_uploaded_source: bool = Field(False, description="Whether this is a user-uploaded source file")
     upload_type: Optional[str] = Field(None, description="Upload type if is_uploaded_source: full_body/head_shot/three_views/image")
+    has_grid_overlay: bool = Field(False, description="Whether apply_grid_overlay burned a proportion grid into this image")
 
 # Maximum variants to keep per asset (excluding favorited ones)
 MAX_VARIANTS_PER_ASSET = 10

@@ -1191,18 +1191,19 @@ class ComicGenPipeline:
         return script
 
     def add_uploaded_asset_variant(
-        self, 
-        script_id: str, 
-        asset_type: str, 
-        asset_id: str, 
-        upload_type: str, 
-        image_url: str, 
-        description: Optional[str] = None
+        self,
+        script_id: str,
+        asset_type: str,
+        asset_id: str,
+        upload_type: str,
+        image_url: str,
+        description: Optional[str] = None,
+        has_grid_overlay: bool = False,
     ) -> Script:
         """
         Adds an uploaded image as a new variant to an asset.
         The uploaded image is marked with is_uploaded_source=True.
-        
+
         Args:
             script_id: The project ID
             asset_type: "character", "scene", or "prop"
@@ -1210,6 +1211,7 @@ class ComicGenPipeline:
             upload_type: "full_body", "head_shot", "three_views", or "image"
             image_url: URL of the uploaded image (OSS Object Key)
             description: Optional modified description for reverse generation
+            has_grid_overlay: Whether apply_grid_overlay burned a grid into this upload
         """
         from .models import ImageVariant, AssetUnit
         
@@ -1235,7 +1237,8 @@ class ComicGenPipeline:
             url=image_url,
             prompt_used=description or target_asset.description,
             is_uploaded_source=True,
-            upload_type=upload_type
+            upload_type=upload_type,
+            has_grid_overlay=has_grid_overlay,
         )
         
         # Update description if provided
@@ -1276,7 +1279,8 @@ class ComicGenPipeline:
                 url=image_url,
                 prompt_used=description or target_asset.description,
                 is_uploaded_source=True,
-                upload_type=upload_type
+                upload_type=upload_type,
+                has_grid_overlay=has_grid_overlay,
             )
             
             if upload_type == "full_body":
@@ -1307,14 +1311,15 @@ class ComicGenPipeline:
             logger.info(f"Added uploaded variant {new_variant.id} to character {asset_id} {upload_type}")
             
         elif asset_type in ["scene", "prop"]:
-            # Scene and Prop have a single 'image' asset unit
-            if not hasattr(target_asset, 'image') or target_asset.image is None:
-                target_asset.image = AssetUnit()
-            
-            target_asset.image.image_variants.append(new_variant)
-            target_asset.image.selected_image_id = new_variant.id
-            target_asset.image.image_updated_at = time.time()
-            
+            # Scene and Prop share a single `image_asset: ImageAsset` container
+            # (variants/selected_id — NOT AssetUnit's image_variants/selected_image_id).
+            from .models import ImageAsset
+            if target_asset.image_asset is None:
+                target_asset.image_asset = ImageAsset()
+
+            target_asset.image_asset.variants.append(new_variant)
+            target_asset.image_asset.selected_id = new_variant.id
+
             # Also update legacy image_url field
             target_asset.image_url = image_url
             
@@ -2326,7 +2331,7 @@ class ComicGenPipeline:
         self._save_data()
         return script
 
-    def upload_frame_image(self, script_id: str, frame_id: str, image_path: str) -> Script:
+    def upload_frame_image(self, script_id: str, frame_id: str, image_path: str, has_grid_overlay: bool = False) -> Script:
         """Upload an image as a variant of the frame's rendered_image_asset."""
         from .models import ImageVariant, ImageAsset
 
@@ -2354,6 +2359,7 @@ class ComicGenPipeline:
             prompt_used="User uploaded image",
             is_uploaded_source=True,
             upload_type="image",
+            has_grid_overlay=has_grid_overlay,
         )
 
         if not frame.rendered_image_asset:
@@ -4127,17 +4133,18 @@ class ComicGenPipeline:
         through a request model). Recognized payload keys: name,
         description, image_url, persona (characters), voice_id
         (characters)."""
-        from .models import Character, Scene, Prop, AssetUnit, ImageVariant
+        from .models import Character, Scene, Prop, AssetUnit, ImageAsset, ImageVariant
         with self._save_lock:
             payload = dict(payload or {})
             name = payload.get("name") or "未命名"
             description = payload.get("description") or ""
             image_url = payload.get("image_url")
             video_url = payload.get("video_url")
+            has_grid_overlay = bool(payload.get("has_grid_overlay"))
             if asset_type == "character":
                 ref_sheet = AssetUnit()
                 if image_url:
-                    variant = ImageVariant(id=f"img_{uuid.uuid4().hex[:12]}", url=image_url)
+                    variant = ImageVariant(id=f"img_{uuid.uuid4().hex[:12]}", url=image_url, has_grid_overlay=has_grid_overlay)
                     ref_sheet.image_variants.append(variant)
                     ref_sheet.selected_image_id = variant.id
                 asset = Character(
@@ -4149,19 +4156,31 @@ class ComicGenPipeline:
                     reference_sheet=ref_sheet,
                 )
             elif asset_type == "scene":
+                image_asset = ImageAsset()
+                if image_url:
+                    variant = ImageVariant(id=f"img_{uuid.uuid4().hex[:12]}", url=image_url, has_grid_overlay=has_grid_overlay)
+                    image_asset.variants.append(variant)
+                    image_asset.selected_id = variant.id
                 asset = Scene(
                     id=f"scene_{uuid.uuid4().hex[:12]}",
                     name=name,
                     description=description,
                     image_url=image_url,
+                    image_asset=image_asset,
                 )
             elif asset_type == "prop":
+                image_asset = ImageAsset()
+                if image_url:
+                    variant = ImageVariant(id=f"img_{uuid.uuid4().hex[:12]}", url=image_url, has_grid_overlay=has_grid_overlay)
+                    image_asset.variants.append(variant)
+                    image_asset.selected_id = variant.id
                 asset = Prop(
                     id=f"prop_{uuid.uuid4().hex[:12]}",
                     name=name,
                     description=description,
                     image_url=image_url,
                     video_url=video_url,
+                    image_asset=image_asset,
                 )
             else:
                 raise ValueError(f"Invalid asset type: {asset_type}")
@@ -4173,12 +4192,29 @@ class ComicGenPipeline:
         """Patch attributes of a global library asset and persist. Mirrors
         update_series_asset_attributes — only sets keys that exist on the
         asset, and never touches id/status (use create/delete to manage
-        those)."""
+        those).
+
+        `has_grid_overlay` is not a real asset field — when the patch also
+        carries `image_url`, it is consumed here to tag the new variant
+        appended to that asset type's variant container (reference_sheet for
+        character, image_asset for scene/prop) instead of being set directly."""
+        from .models import ImageVariant
         with self._save_lock:
             asset = self._find_library_asset(asset_type, asset_id)
-            for key, value in (patch or {}).items():
+            patch = dict(patch or {})
+            has_grid_overlay = bool(patch.pop("has_grid_overlay", False))
+            new_image_url = patch.get("image_url")
+            for key, value in patch.items():
                 if hasattr(asset, key) and key not in ("id", "status"):
                     setattr(asset, key, value)
+            if new_image_url:
+                variant = ImageVariant(id=f"img_{uuid.uuid4().hex[:12]}", url=new_image_url, has_grid_overlay=has_grid_overlay)
+                if asset_type == "character":
+                    asset.reference_sheet.image_variants.append(variant)
+                    asset.reference_sheet.selected_image_id = variant.id
+                else:
+                    asset.image_asset.variants.append(variant)
+                    asset.image_asset.selected_id = variant.id
             self._save_library_data_unlocked()
             return asset
 

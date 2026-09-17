@@ -524,13 +524,15 @@ def upload_file(file: UploadFile = File(...), grid_size: int = 0):
         with open(file_path, "wb") as buffer:
             buffer.write(data)
 
+        has_grid_overlay = grid_size > 0
+
         # Try uploading to OSS
         oss_url = OSSImageUploader().upload_image(file_path)
         if oss_url:
-            return signed_response({"url": oss_url})
+            return signed_response({"url": oss_url, "has_grid_overlay": has_grid_overlay})
 
         # Fallback to local URL (relative path for frontend getAssetUrl)
-        return {"url": f"uploads/{filename}"}
+        return {"url": f"uploads/{filename}", "has_grid_overlay": has_grid_overlay}
     except HTTPException:
         raise
     except Exception as e:
@@ -585,7 +587,8 @@ def upload_asset(
             asset_id=asset_id,
             upload_type=upload_type,
             image_url=oss_url,
-            description=description
+            description=description,
+            has_grid_overlay=grid_size > 0,
         )
         
         if not updated_script:
@@ -1008,6 +1011,7 @@ class CreateSeriesAssetRequest(BaseModel):
     description: Optional[str] = ""
     persona: Optional[str] = ""        # characters only — grouping label
     image_url: Optional[str] = None    # optional uploaded master sheet
+    has_grid_overlay: bool = False     # whether image_url had a proportion grid burned in
     voice_id: Optional[str] = None     # characters only — TTS voice binding
 
 
@@ -1024,7 +1028,7 @@ def create_series_character(request: CreateSeriesAssetRequest, series: Series = 
     char_id = _new_id("char")
     ref_sheet = AssetUnit()
     if request.image_url:
-        variant = ImageVariant(id=_new_id("img"), url=request.image_url)
+        variant = ImageVariant(id=_new_id("img"), url=request.image_url, has_grid_overlay=request.has_grid_overlay)
         ref_sheet.image_variants.append(variant)
         ref_sheet.selected_image_id = variant.id
     char = Character(
@@ -1044,14 +1048,20 @@ def create_series_character(request: CreateSeriesAssetRequest, series: Series = 
 
 @app.post("/series/{series_id}/scenes")
 def create_series_scene(request: CreateSeriesAssetRequest, series: Series = Depends(get_owned_series)):
-    from .models import Scene
+    from .models import Scene, ImageAsset, ImageVariant
     series_id = series.id
     sid = _new_id("scene")
+    image_asset = ImageAsset()
+    if request.image_url:
+        variant = ImageVariant(id=_new_id("img"), url=request.image_url, has_grid_overlay=request.has_grid_overlay)
+        image_asset.variants.append(variant)
+        image_asset.selected_id = variant.id
     scene = Scene(
         id=sid,
         name=request.name,
         description=request.description or "",
         image_url=request.image_url,
+        image_asset=image_asset,
     )
     series.scenes.append(scene)
     series.updated_at = time.time()
@@ -1062,14 +1072,20 @@ def create_series_scene(request: CreateSeriesAssetRequest, series: Series = Depe
 
 @app.post("/series/{series_id}/props")
 def create_series_prop(request: CreateSeriesAssetRequest, series: Series = Depends(get_owned_series)):
-    from .models import Prop
+    from .models import Prop, ImageAsset, ImageVariant
     series_id = series.id
     pid = _new_id("prop")
+    image_asset = ImageAsset()
+    if request.image_url:
+        variant = ImageVariant(id=_new_id("img"), url=request.image_url, has_grid_overlay=request.has_grid_overlay)
+        image_asset.variants.append(variant)
+        image_asset.selected_id = variant.id
     prop = Prop(
         id=pid,
         name=request.name,
         description=request.description or "",
         image_url=request.image_url,
+        image_asset=image_asset,
     )
     series.props.append(prop)
     series.updated_at = time.time()
@@ -1104,6 +1120,7 @@ class CreateLibraryAssetRequest(BaseModel):
     description: Optional[str] = ""
     persona: Optional[str] = ""        # characters only — grouping label
     image_url: Optional[str] = None    # optional pre-uploaded master image
+    has_grid_overlay: bool = False     # whether image_url had a proportion grid burned in
     voice_id: Optional[str] = None     # characters only — TTS voice binding
 
 
@@ -1114,6 +1131,7 @@ class UpdateLibraryAssetRequest(BaseModel):
     description: Optional[str] = None
     persona: Optional[str] = None
     image_url: Optional[str] = None
+    has_grid_overlay: Optional[bool] = None
     voice_id: Optional[str] = None
     starred: Optional[bool] = None
     locked: Optional[bool] = None
@@ -1161,13 +1179,15 @@ def upload_library_asset_image(file: UploadFile = File(...), grid_size: int = 0,
     """Upload an image to use as a global library asset's master image.
 
     Saves the file under output/uploads/ (served via the /files static mount)
-    and returns {"image_url": <path-or-URL the frontend can load>}. When OSS
+    and returns {"image_url": ..., "has_grid_overlay": ...}. When OSS
     is configured the returned URL is the (signed) OSS URL; otherwise a local
     relative path "uploads/<name>" resolvable through the frontend's
-    getAssetUrl helper. The caller then passes this image_url to
-    POST /library/assets (image_url=...) or PATCH /library/assets/{type}/{id}
-    to attach it to a library asset. Mirrors the generic /upload endpoint but
-    returns the {image_url} contract the library UI expects.
+    getAssetUrl helper. `has_grid_overlay` echoes back whether grid_size>0 was
+    applied, since this is a two-step flow — the caller then passes both
+    image_url and has_grid_overlay to POST /library/assets (image_url=...) or
+    PATCH /library/assets/{type}/{id} to attach it to a library asset, which
+    can no longer infer grid_size on its own. Mirrors the generic /upload
+    endpoint but returns the {image_url} contract the library UI expects.
     """
     try:
         data, ext = validate_image_upload(file)
@@ -1178,9 +1198,10 @@ def upload_library_asset_image(file: UploadFile = File(...), grid_size: int = 0,
             buffer.write(data)
         # Prefer OSS when configured (signed), else fall back to local path.
         oss_url = OSSImageUploader().upload_image(file_path)
+        has_grid_overlay = grid_size > 0
         if oss_url:
-            return signed_response({"image_url": oss_url})
-        return {"image_url": f"uploads/{filename}"}
+            return signed_response({"image_url": oss_url, "has_grid_overlay": has_grid_overlay})
+        return {"image_url": f"uploads/{filename}", "has_grid_overlay": has_grid_overlay}
     except HTTPException:
         raise
     except Exception as e:
@@ -3682,7 +3703,7 @@ def upload_frame_image(frame_id: str, file: UploadFile = File(...), grid_size: i
         with open(file_path, "wb") as buffer:
             buffer.write(data)
 
-        updated_script = pipeline.upload_frame_image(script.id, frame_id, file_path)
+        updated_script = pipeline.upload_frame_image(script.id, frame_id, file_path, has_grid_overlay=grid_size > 0)
         return signed_response(merged_project_payload(updated_script))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
