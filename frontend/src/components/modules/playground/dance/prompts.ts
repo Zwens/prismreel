@@ -32,10 +32,25 @@ const STYLE_CLAUSE: Record<SheetStyle, string> = {
     'stylised anime face.',
 };
 
-export function buildThreeViewPrompt(outfit: string, style: SheetStyle, hasGridOverlay = false): string {
-  const outfitClause = outfit.trim()
-    ? `Change the outfit to: ${outfit.trim()}.`
-    : 'Keep the outfit from the reference image.';
+export function buildThreeViewPrompt(
+  outfit: string,
+  style: SheetStyle,
+  hasGridOverlay = false,
+  hasOutfitRef = false,
+): string {
+  const subjectClause = hasOutfitRef
+    ? 'The first reference image shows the person: use their exact face, hair ' +
+      'and body proportions as the character. The second reference image shows ' +
+      'only an outfit to copy the clothing design from — ignore any person, ' +
+      'face or body shown in that second image entirely.'
+    : 'Using the person in the reference image as the exact same character ' +
+      '(same face, same hair, same body proportions).';
+
+  const outfitClause = hasOutfitRef
+    ? 'Dress the character from the first image in the outfit shown in the second image.'
+    : outfit.trim()
+      ? `Change the outfit to: ${outfit.trim()}.`
+      : 'Keep the outfit from the reference image.';
 
   const gridClause = hasGridOverlay
     ? 'The reference image has a proportion grid overlaid on it to help you ' +
@@ -44,12 +59,11 @@ export function buildThreeViewPrompt(outfit: string, style: SheetStyle, hasGridO
     : '';
 
   return [
-    'Using the person in the reference image as the exact same character',
-    '(same face, same hair, same body proportions), produce a character',
-    'three-view turnaround sheet: front view, side view (90 degrees), and back',
-    'view, standing in a neutral A-pose, evenly spaced left to right in a single',
-    'image, full body head to toe in all three views, consistent scale and',
-    'eye-line across the three views.',
+    subjectClause,
+    'Produce a character three-view turnaround sheet: front view, side view',
+    '(90 degrees), and back view, standing in a neutral A-pose, evenly spaced',
+    'left to right in a single image, full body head to toe in all three views,',
+    'consistent scale and eye-line across the three views.',
     outfitClause,
     'Plain pure white background, flat even lighting, no shadows, no text.',
     STYLE_CLAUSE[style],

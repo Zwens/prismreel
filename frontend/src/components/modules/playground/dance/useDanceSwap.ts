@@ -252,7 +252,7 @@ export function useDanceSwap() {
       const gen = await runGeneration({
         mode: 'i2i',
         model_id: SHEET_MODEL,
-        prompt: buildThreeViewPrompt(state.outfit, state.sheetStyle, gridSize > 0),
+        prompt: buildThreeViewPrompt(state.outfit, state.sheetStyle, gridSize > 0, Boolean(state.outfitRefPath)),
         input_media: refs,
         // Landscape so three full-body views sit side by side without being
         // squeezed. Note the separator: size_to_aspect_ratio parses "W*H" and
