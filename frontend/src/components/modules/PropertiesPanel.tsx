@@ -722,7 +722,7 @@ function StoryboardInspector() {
                                     }}
                                     className="text-[0.625rem] text-text-secondary hover:text-foreground bg-surface px-2 py-0.5 rounded"
                                 >
-                                    复制
+                                    複製
                                 </button>
                             </div>
                             <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap bg-surface p-2 rounded">
@@ -759,7 +759,7 @@ function StoryboardInspector() {
                                         }}
                                         className="text-[0.625rem] text-white bg-purple-600 hover:bg-purple-500 px-2 py-0.5 rounded font-bold"
                                     >
-                                        应用
+                                        套用
                                     </button>
                                 </div>
                             </div>
@@ -789,7 +789,7 @@ function StoryboardInspector() {
                                     className="text-[0.625rem] text-white bg-purple-600 hover:bg-purple-500 px-2 py-1.5 rounded font-medium flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                                 >
                                     {isPolishing ? <Sparkles size={8} className="animate-spin" /> : <Sparkles size={8} />}
-                                    再润色
+                                    再潤色
                                 </button>
                             </div>
                         </div>

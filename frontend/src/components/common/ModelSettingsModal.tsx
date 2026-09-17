@@ -269,10 +269,10 @@ export default function ModelSettingsModal({ isOpen, onClose }: ModelSettingsMod
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 text-sm font-bold text-foreground">
                                 <Film size={16} className="text-pink-400" />
-                                <span>R2V · 参考生视频</span>
+                                <span>R2V · 參考生影片</span>
                             </div>
                             <p className="text-xs text-text-muted">
-                                项目级 R2V 模型默认值。Storyboard 的 R2V tab 进入时按此初始化；用户在 storyboard 内的临时切换会保存在本地、不影响这里。
+                                專案級 R2V 模型預設值。Storyboard 的 R2V tab 進入時按此初始化；使用者在 storyboard 內的臨時切換會保存在本地、不影響這裡。
                             </p>
 
                             <div className="space-y-2">

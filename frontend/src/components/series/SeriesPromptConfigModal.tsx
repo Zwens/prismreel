@@ -149,10 +149,10 @@ export default function SeriesPromptConfigModal({ isOpen, onClose, seriesId, onS
                                         onChange={(e) => setConfig(prev => ({ ...prev, polish_model: e.target.value }))}
                                         className="w-full bg-input-bg border border-glass-border rounded-lg px-3 py-2 text-sm text-text-secondary focus:outline-none focus:border-purple-500/50"
                                     >
-                                        <option value="qwen3.7-plus">qwen3.7-plus · 通义千问 3.7 Plus（最新）</option>
-                                        <option value="qwen3.6-plus">qwen3.6-plus · 通义千问 3.6 Plus（视觉）</option>
-                                        <option value="qwen3.6-flash">qwen3.6-flash · 通义千问 3.6 Flash（更快）</option>
-                                        <option value="kimi-k2.6">kimi-k2.6 · Moonshot Kimi K2.6（视觉）</option>
+                                        <option value="qwen3.7-plus">qwen3.7-plus · 通義千問 3.7 Plus（最新）</option>
+                                        <option value="qwen3.6-plus">qwen3.6-plus · 通義千問 3.6 Plus（視覺）</option>
+                                        <option value="qwen3.6-flash">qwen3.6-flash · 通義千問 3.6 Flash（更快）</option>
+                                        <option value="kimi-k2.6">kimi-k2.6 · Moonshot Kimi K2.6（視覺）</option>
                                     </select>
                                     <div className="border-b border-border-subtle pt-1" />
                                 </div>

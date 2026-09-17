@@ -221,7 +221,7 @@ export default function GroupedModelGrid({
                                             {needsKey && (
                                                 <span className="inline-flex items-center gap-1 text-[0.625rem] px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-400">
                                                     <AlertTriangle size={9} />
-                                                    未配置密钥
+                                                    未配置金鑰
                                                 </span>
                                             )}
                                             {model.badges?.map((badge) => (

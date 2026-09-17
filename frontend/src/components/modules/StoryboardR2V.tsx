@@ -2294,7 +2294,7 @@ export default function StoryboardR2V() {
                                                     } catch (createErr: any) {
                                                         debugLog.error("Studio", "Lazy createFrame failed", createErr);
                                                         const cdetail = createErr?.response?.data?.detail || createErr?.message || "create frame failed";
-                                                        return { code: "server", detail: `先创建镜头失败：${cdetail}` };
+                                                        return { code: "server", detail: `先建立鏡頭失敗：${cdetail}` };
                                                     }
                                                 }
 

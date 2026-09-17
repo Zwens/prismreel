@@ -1233,7 +1233,7 @@ export default function VideoCreator({ onTaskCreated, remixData, onRemixClear, p
                                                 }}
                                                 className="text-[0.625rem] text-text-secondary hover:text-foreground bg-surface px-2 py-0.5 rounded"
                                             >
-                                                复制
+                                                複製
                                             </button>
                                         </div>
                                         <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap bg-surface p-2 rounded">
@@ -1262,7 +1262,7 @@ export default function VideoCreator({ onTaskCreated, remixData, onRemixClear, p
                                                     }}
                                                     className="text-[0.625rem] text-foreground bg-primary hover:bg-primary/90 px-2 py-0.5 rounded font-bold"
                                                 >
-                                                    应用
+                                                    套用
                                                 </button>
                                             </div>
                                         </div>
@@ -1292,7 +1292,7 @@ export default function VideoCreator({ onTaskCreated, remixData, onRemixClear, p
                                                 className="text-xs text-foreground bg-primary hover:bg-primary/90 px-3 py-1.5 rounded font-medium flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                                             >
                                                 {isPolishing ? <Loader2 size={10} className="animate-spin" /> : <Wand2 size={10} />}
-                                                再润色
+                                                再潤色
                                             </button>
                                         </div>
                                     </div>

@@ -144,7 +144,7 @@ export default function PromptConfigModal({ isOpen, onClose }: PromptConfigModal
                                     <div>
                                         <h3 className="text-sm font-bold text-foreground">Polish 模型</h3>
                                         <p className="text-[0.625rem] text-text-muted mt-0.5">
-                                            选择 AI 润色调用的 LLM 模型。三个选项都支持视觉理解，能在润色时参考首帧/参考图。
+                                            選擇 AI 潤色呼叫的 LLM 模型。三個選項都支援視覺理解，能在潤色時參考首幀/參考圖。
                                         </p>
                                     </div>
                                     <select
@@ -152,10 +152,10 @@ export default function PromptConfigModal({ isOpen, onClose }: PromptConfigModal
                                         onChange={(e) => setConfig(prev => ({ ...prev, polish_model: e.target.value }))}
                                         className="w-full bg-surface border border-glass-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-purple-500/50"
                                     >
-                                        <option value="qwen3.7-plus">qwen3.7-plus · 通义千问 3.7 Plus（最新）</option>
-                                        <option value="qwen3.6-plus">qwen3.6-plus · 通义千问 3.6 Plus（视觉）</option>
-                                        <option value="qwen3.6-flash">qwen3.6-flash · 通义千问 3.6 Flash（更快）</option>
-                                        <option value="kimi-k2.6">kimi-k2.6 · Moonshot Kimi K2.6（视觉）</option>
+                                        <option value="qwen3.7-plus">qwen3.7-plus · 通義千問 3.7 Plus（最新）</option>
+                                        <option value="qwen3.6-plus">qwen3.6-plus · 通義千問 3.6 Plus（視覺）</option>
+                                        <option value="qwen3.6-flash">qwen3.6-flash · 通義千問 3.6 Flash（更快）</option>
+                                        <option value="kimi-k2.6">kimi-k2.6 · Moonshot Kimi K2.6（視覺）</option>
                                     </select>
                                     <div className="border-b border-border-subtle pt-1" />
                                 </div>
