@@ -237,7 +237,7 @@ const DURATION_MAX = 30;
 export default function DanceSwapWizard() {
   const t = useTranslations('playground.dance');
   const tPlayground = useTranslations('playground');
-  const { state, patch, effectivePrompt, actions } = useDanceSwap();
+  const { state, patch, effectivePrompt, finalPrompt, actions } = useDanceSwap();
 
   const cap = state.depthCapability;
   const depthInfo = state.depthJob?.info;
@@ -725,15 +725,30 @@ export default function DanceSwapWizard() {
         </label>
 
         {state.useSheet && state.sheet && state.sheetHasGridOverlay && (
-          <label className="flex items-center gap-[6px] py-[6px] font-mono text-[0.6875rem] text-text-muted cursor-pointer hover:text-foreground">
-            <input
-              type="checkbox"
-              checked={state.appendGridOverlayNegative}
-              onChange={(e) => patch({ appendGridOverlayNegative: e.target.checked })}
-              className="h-3.5 w-3.5 rounded border-border-subtle accent-primary"
-            />
-            <span>{tPlayground('prompt.excludeGridOverlay')}</span>
-          </label>
+          <>
+            <label className="flex items-center gap-[6px] py-[6px] font-mono text-[0.6875rem] text-text-muted cursor-pointer hover:text-foreground">
+              <input
+                type="checkbox"
+                checked={state.appendGridOverlayNegative}
+                onChange={(e) => patch({ appendGridOverlayNegative: e.target.checked })}
+                className="h-3.5 w-3.5 rounded border-border-subtle accent-primary"
+              />
+              <span>{tPlayground('prompt.excludeGridOverlay')}</span>
+            </label>
+            {/* The prompt textarea above only ever holds the editable
+             *  effectivePrompt — the grid guidance/exclude text is spliced in
+             *  at compose() time and never shown there. Surface the actual
+             *  string that will be sent so the checkbox isn't something the
+             *  user has to take on faith. */}
+            <div className="flex flex-col gap-1.5">
+              <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
+                {t('step3.finalPromptLabel')}
+              </span>
+              <p className="rounded-[12px] border border-border-subtle bg-surface-inset px-3 py-2.5 font-mono text-[0.6875rem] leading-relaxed text-text-muted break-words">
+                {finalPrompt}
+              </p>
+            </div>
+          </>
         )}
 
         <RunButton

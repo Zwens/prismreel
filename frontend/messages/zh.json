@@ -2224,6 +2224,7 @@
         "durationHint": "{min}–{max} 秒，留空则输出与动作视频等长",
         "prompt": "提示词",
         "resetPrompt": "恢复自动生成的提示词",
+        "finalPromptLabel": "实际送出的完整提示词（含自动附加的网格说明）",
         "run": "合成",
         "running": "合成中…",
         "saveToLibrary": "存入素材库"

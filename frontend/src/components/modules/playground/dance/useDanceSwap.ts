@@ -409,6 +409,23 @@ export function useDanceSwap() {
 
   const effectivePrompt = state.composePromptDirty ? state.composePrompt : suggestedPrompt;
 
+  // The sheet may carry a baked-in grid overlay (see step 1) — tell the
+  // model how to read it and, unless the user unticked the checkbox, keep
+  // the grid lines themselves out of the rendered output. Seedance
+  // (COMPOSE_MODEL) never wires a negative_prompt field through to Ark (see
+  // _generate_video_seedance in service.py), so the exclusion has to ride in
+  // the main prompt instead of a negative_prompt param. Computed here (not
+  // just inside compose()) so the UI can show the operator the exact text
+  // that will be sent, instead of asking them to trust the checkbox blind.
+  const sheetInComposition = Boolean(state.useSheet && state.sheet);
+  const gridActiveInComposition = sheetInComposition && state.sheetHasGridOverlay;
+  const excludeGridInComposition = gridActiveInComposition && state.appendGridOverlayNegative;
+  const finalPrompt = [
+    gridActiveInComposition ? GRID_OVERLAY_GUIDANCE_PROMPT : null,
+    effectivePrompt,
+    excludeGridInComposition ? GRID_OVERLAY_EXCLUDE_PROMPT_SUFFIX : null,
+  ].filter(Boolean).join(' ');
+
   const compose = useCallback(async () => {
     const motion = state.depthJob?.output_path || state.danceVideoPath;
     if (!motion) return;
@@ -418,22 +435,7 @@ export function useDanceSwap() {
       // input_media[0] is the motion clip; anything after it is a reference
       // image. That ordering is the contract the v2v backend path expects.
       const media = [motion];
-      const sheetInComposition = state.useSheet && state.sheet;
       if (sheetInComposition) media.push(state.sheet!.mediaPath);
-
-      // The sheet may carry a baked-in grid overlay (see step 1) — tell the
-      // model how to read it and, unless the user unticked the checkbox,
-      // keep the grid lines themselves out of the rendered output. Seedance
-      // (COMPOSE_MODEL) never wires a negative_prompt field through to Ark
-      // (see _generate_video_seedance in service.py), so the exclusion has
-      // to ride in the main prompt instead of a negative_prompt param.
-      const gridActive = sheetInComposition && state.sheetHasGridOverlay;
-      const excludeGrid = gridActive && state.appendGridOverlayNegative;
-      const finalPrompt = [
-        gridActive ? GRID_OVERLAY_GUIDANCE_PROMPT : null,
-        effectivePrompt,
-        excludeGrid ? GRID_OVERLAY_EXCLUDE_PROMPT_SUFFIX : null,
-      ].filter(Boolean).join(' ');
 
       const gen = await runGeneration({
         mode: 'v2v',
@@ -453,9 +455,8 @@ export function useDanceSwap() {
       patch({ composeState: 'error', composeError: describeError(err) });
     }
   }, [
-    state.depthJob, state.danceVideoPath, state.useSheet, state.sheet, state.sheetHasGridOverlay,
-    state.appendGridOverlayNegative, state.resolution, state.aspectRatio, state.duration,
-    effectivePrompt, patch, runGeneration,
+    state.depthJob, state.danceVideoPath, state.resolution, state.aspectRatio, state.duration,
+    sheetInComposition, state.sheet, finalPrompt, patch, runGeneration,
   ]);
 
   // -- library ----------------------------------------------------------
@@ -482,6 +483,7 @@ export function useDanceSwap() {
     patch,
     effectivePrompt,
     suggestedPrompt,
+    finalPrompt,
     actions: {
       uploadPortrait,
       uploadOutfitRef,

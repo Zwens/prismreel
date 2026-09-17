@@ -2224,6 +2224,7 @@
         "durationHint": "{min}–{max} seconds; leave blank to match the motion clip's length",
         "prompt": "Prompt",
         "resetPrompt": "Reset to suggested prompt",
+        "finalPromptLabel": "Final prompt actually sent (includes the auto-appended grid note)",
         "run": "Compose",
         "running": "Composing…",
         "saveToLibrary": "Save to library"
