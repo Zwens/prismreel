@@ -1,7 +1,7 @@
 "use client";
 /**
  * CandidateThumb — single video take cell in the candidates panel.
- * Always-visible affordances (per grill Q6 "一直可见"):
+ * Always-visible affordances (per grill Q6 "一直可見"):
  *   - ★ icon top-right (multi-select shortlist toggle)
  *   - label inline below the thumb (≤20 chars, click-to-edit)
  *   - status overlay if in-flight / failed
@@ -237,7 +237,7 @@ export default function CandidateThumb({
                 ) : null}
             </div>
 
-            {/* Label row — always visible per design grill ("不覆盖在视频上") */}
+            {/* Label row — always visible per design grill ("不覆蓋在視頻上") */}
             {editingLabel ? (
                 <input
                     ref={labelInputRef}

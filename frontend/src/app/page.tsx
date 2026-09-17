@@ -36,7 +36,7 @@ function CreateSeriesDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   const [workflowMode, setWorkflowMode] = useState<"r2v" | "i2v_legacy">("r2v");
   // R2V v2 Phase 6 — content_mode (scripted | freeform)
   const [contentMode, setContentMode] = useState<"scripted" | "freeform">("scripted");
-  // PR-3e — default per-shot generation mode (r2v=节奏优先 / i2v=画面优先)
+  // PR-3e — default per-shot generation mode (r2v=節奏優先 / i2v=畫面優先)
   const [defaultGenerationMode, setDefaultGenerationMode] = useState<"r2v" | "i2v">("r2v");
   const [isCreating, setIsCreating] = useState(false);
   const t = useTranslations("workspace");
@@ -559,7 +559,7 @@ export default function Home() {
     return () => document.removeEventListener("click", handleClick);
   }, [showCreateDropdown]);
 
-  // 监听 hash 变化
+  // 監聽 hash 變化
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash;
@@ -642,17 +642,17 @@ export default function Home() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // 项目详情页 — 全屏，无 GlobalSidebar
+  // 項目詳情頁 — 全屏，無 GlobalSidebar
   if (currentView === 'project' && projectId) {
     return <ProjectClient id={projectId} />;
   }
 
-  // 系列集数编辑 — 全屏，BreadcrumbBar 内嵌在 ProjectClient
+  // 系列集數編輯 — 全屏，BreadcrumbBar 內嵌在 ProjectClient
   if (currentView === 'series-episode' && seriesId && episodeId) {
     return <EpisodeBreadcrumbWrapper seriesId={seriesId} episodeId={episodeId} />;
   }
 
-  // 系列详情页 — 全屏，自带 BreadcrumbBar
+  // 系列詳情頁 — 全屏，自帶 BreadcrumbBar
   if (currentView === 'series' && seriesId) {
     return <SeriesDetailPage seriesId={seriesId} />;
   }
@@ -801,7 +801,7 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Toolbar — 状态横向筛选 + 搜索 + 视图切换 */}
+        {/* Toolbar — 狀態橫向篩選 + 搜索 + 視圖切換 */}
         <div className="px-7 pb-2 flex flex-wrap items-center gap-3">
           <div className="inline-flex p-[3px] rounded-full bg-surface-inset atelier-pill-tabs" role="tablist" aria-label={t("statusFilterAria")} onKeyDown={rovingKeyDown}>
             {wsStatusPills.map((pill) => {

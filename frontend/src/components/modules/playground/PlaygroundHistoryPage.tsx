@@ -7,11 +7,11 @@ import { toGeneration } from './useGenerationRunner';
 import ResultGallery from './ResultGallery';
 
 /**
- * 独立的「生成历史」页面 — 直接重用创作台（Playground）results 阶段的
- * ResultGallery（含网格/走廊双检视、筛选、详情面板），跳过 select/compose
- * 两个阶段，避免使用者进入创作台后卡在选模式画面看不到既有历史。
+ * 獨立的「生成歷史」頁面 — 直接重用創作臺（Playground）results 階段的
+ * ResultGallery（含網格/走廊雙檢視、篩選、詳情面板），跳過 select/compose
+ * 兩個階段，避免使用者進入創作臺後卡在選模式畫面看不到既有歷史。
  *
- * 若使用者从未进过创作台，store 里的 history 会是空的，这里独立补一次 fetch。
+ * 若使用者從未進過創作臺，store 裏的 history 會是空的，這裏獨立補一次 fetch。
  */
 export default function PlaygroundHistoryPage() {
   const history = usePlaygroundStore((s) => s.history);

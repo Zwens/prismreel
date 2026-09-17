@@ -76,7 +76,7 @@ const BeatSyncPanel: React.FC<BeatSyncPanelProps> = ({ scriptId, hasBgm, onTrims
         if (next < 1) return;
         const seconds = next * interval;
         // 只能剪短——渲染沒有補幀的能力，超過原片長的目標會被後端忽略，
-        // 與其發一個注定被丟棄的請求，不如在這裡就攔住。
+        // 與其發一個註定被丟棄的請求，不如在這裡就攔住。
         if (seconds > shot.source_duration_s + 1e-6) return;
 
         setBusy(true);

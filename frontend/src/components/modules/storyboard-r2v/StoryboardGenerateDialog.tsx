@@ -1,13 +1,13 @@
 "use client";
 /**
- * StoryboardGenerateDialog — wraps the LLM-driven '从剧本生成分镜' flow.
+ * StoryboardGenerateDialog — wraps the LLM-driven '從劇本生成分鏡' flow.
  *
  * Per Q grill outcomes:
  *   · Pre-flight runs in the dialog itself (no silent disabled button —
  *     user can always open the dialog and see WHY it's blocked + quick
  *     jump back to the Script step).
  *   · Confirm path replaces existing shots wholesale (clear-and-regenerate
- *     semantics, mirrors how a fresh 提取实体 → 生成分镜 onboarding feels).
+ *     semantics, mirrors how a fresh 提取實體 → 生成分鏡 onboarding feels).
  *   · Long-running call surfaces as a project-aware toast (not blocking
  *     overlay) so users can switch projects and learn when the other one
  *     finishes via the global ToastContainer.

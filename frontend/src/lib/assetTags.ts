@@ -4,9 +4,9 @@
  * The tag labels are not typed by the user — they're written by the LLM
  * that drafts and polishes each shot prompt. Despite the instruction to
  * reproduce tags verbatim, it routinely shortens the asset's real name:
- * "机械鸟" for "现代智能机械鸟", "二月红" for "二月红 (现代)". Exact
+ * "機械鳥" for "現代智能機械鳥", "二月紅" for "二月紅 (現代)". Exact
  * lookup silently dropped those references, and R2V generation then
- * refused the shot ("引用的「机械鸟」尚未生成图片") while the asset sat
+ * refused the shot ("引用的「機械鳥」尚未生成圖片") while the asset sat
  * in the cast, generated and ready.
  *
  * So: exact match first, then a UNIQUE substring match in either
@@ -61,7 +61,7 @@ export function augmentPromptWithAssetTags(
     for (const name of assetNames) {
         if (!name || seen.has(name)) continue;
         seen.add(name);
-        // Names carry parens ('张启山 (浴袍)') and slashes ('智能手环/定位玉镯');
+        // Names carry parens ('張啓山 (浴袍)') and slashes ('智能手環/定位玉鐲');
         // escape before probing or the tag that is already there never matches.
         const present = new RegExp(`\\[character\\d+:${escapeRegExp(name)}\\]`).test(text);
         if (present) continue;

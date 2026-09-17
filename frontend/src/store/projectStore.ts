@@ -140,7 +140,7 @@ export interface StoryboardFrame {
     rendered_image_asset?: ImageAsset;
     status?: string;
     locked?: boolean;
-    /** 卡点：裁剪后的镜头时长（秒）。未设置时用完整片段。 */
+    /** 卡點：裁剪後的鏡頭時長（秒）。未設置時用完整片段。 */
     trim_end_s?: number | null;
     // ... other fields
 }
@@ -220,7 +220,7 @@ export interface VideoParams {
     movementAmplitude: string;
 }
 
-/** 将动态列数映射为完整的 Tailwind class（避免 JIT 扫描不到动态拼接） */
+/** 將動態列數映射為完整的 Tailwind class（避免 JIT 掃描不到動態拼接） */
 export const GRID_COLS_CLASS: Record<number, string> = {
     2: 'grid-cols-2',
     3: 'grid-cols-3',
@@ -246,8 +246,8 @@ export interface Series {
     prompt_config?: PromptConfig;
     model_settings?: ModelSettings;
     workflow_mode?: "r2v" | "i2v_legacy";
-    /** PR-3e — Visual control preference. 'r2v' = 节奏优先 (new shots default
-     *  direct_r2v); 'i2v' = 画面优先 (new shots default t2i_i2v). */
+    /** PR-3e — Visual control preference. 'r2v' = 節奏優先 (new shots default
+     *  direct_r2v); 'i2v' = 畫面優先 (new shots default t2i_i2v). */
     default_generation_mode?: "r2v" | "i2v";
     episode_ids: string[];
     created_at: number;

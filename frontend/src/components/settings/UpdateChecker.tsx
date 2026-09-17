@@ -1,21 +1,21 @@
 "use client";
 
 /**
- * UpdateChecker — 关于页「检查更新」(Phase 2 设置规格 §B ⑥b)。
+ * UpdateChecker — 關於頁「檢查更新」(Phase 2 設置規格 §B ⑥b)。
  *
- * 纯前端、自包含、无 props：SettingsPage 直接 <UpdateChecker /> 渲染即可。
- * 手动按钮 → 拉取 GitHub releases/latest(未授权,限流 ~60/hr)→ 与本地
- * 版本比对 → 有新版仅提示并打开发布页(绝不自更新)。
+ * 純前端、自包含、無 props：SettingsPage 直接 <UpdateChecker /> 渲染即可。
+ * 手動按鈕 → 拉取 GitHub releases/latest(未授權,限流 ~60/hr)→ 與本地
+ * 版本比對 → 有新版僅提示並打開發布頁(絕不自更新)。
  *
- * 主题:仅语义 token(primary=teal 动作/链接,accent=amber 提示),
- * 状态文案用 text-text-secondary / text-text-muted。无硬编码色 / 无 white-alpha。
+ * 主題:僅語義 token(primary=teal 動作/鏈接,accent=amber 提示),
+ * 狀態文案用 text-text-secondary / text-text-muted。無硬編碼色 / 無 white-alpha。
  */
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { RefreshCw, Loader2, Check, Sparkles, ExternalLink, CircleAlert } from "lucide-react";
 
-// 本地版本常量,避免跨文件耦合(与 SettingsPage 的 APP_VERSION 同源)。
+// 本地版本常量,避免跨文件耦合(與 SettingsPage 的 APP_VERSION 同源)。
 const APP_VERSION = "v1.5.0";
 const REPO = "alibaba/prismreel";
 const LATEST_API = `https://api.github.com/repos/${REPO}/releases/latest`;
@@ -23,7 +23,7 @@ const RELEASES_URL = `https://github.com/${REPO}/releases`;
 
 type Status = "idle" | "checking" | "latest" | "update" | "error";
 
-/** 解析为可比较的数字段:剥离前导 v,按 . + - 拆分,非数字视作 0。 */
+/** 解析為可比較的數字段:剝離前導 v,按 . + - 拆分,非數字視作 0。 */
 function parseSemver(v: string): number[] {
   return v
     .trim()
@@ -35,7 +35,7 @@ function parseSemver(v: string): number[] {
     });
 }
 
-/** remote 是否比 current 更新(逐段数字比较,短的补 0;相等视为非更新)。 */
+/** remote 是否比 current 更新(逐段數字比較,短的補 0;相等視為非更新)。 */
 function isNewer(remote: string, current: string): boolean {
   const a = parseSemver(remote);
   const b = parseSemver(current);
@@ -68,7 +68,7 @@ export default function UpdateChecker() {
       const res = await fetch(LATEST_API, {
         headers: { Accept: "application/vnd.github+json" },
       });
-      // 404 = 仓库尚无任何 release;403 通常是未授权限流。
+      // 404 = 倉庫尚無任何 release;403 通常是未授權限流。
       if (res.status === 404) {
         setErrorMsg(t("updateNoRelease"));
         setStatus("error");
@@ -93,7 +93,7 @@ export default function UpdateChecker() {
     }
   };
 
-  // 状态文案颜色:中性信息 secondary / 低调错误 muted / 新版用 accent(amber)。
+  // 狀態文案顏色:中性信息 secondary / 低調錯誤 muted / 新版用 accent(amber)。
   const statusColor =
     status === "update"
       ? "text-accent"
@@ -108,7 +108,7 @@ export default function UpdateChecker() {
       <span className="text-text-secondary shrink-0">{t("updateLabel")}</span>
 
       <div className="flex items-center gap-2.5 flex-wrap justify-end">
-        {/* 结果区:屏幕阅读器实时播报 */}
+        {/* 結果區:屏幕閱讀器實時播報 */}
         <span
           role="status"
           aria-live="polite"

@@ -1,43 +1,43 @@
 "use client";
 /**
- * StepHeader — 统一 R2V workflow 4 个 step 的 page header（Charcoal v3）。
+ * StepHeader — 統一 R2V workflow 4 個 step 的 page header（Charcoal v3）。
  *
- * 设计原则：
- *   - **字体分轨**：英文 chrome（eyebrow / ghost number）走 mono；
- *     中文标题 + 副标题走 sans (Inter→PingFang fallback)。
- *     Space Grotesk 在这一层不出现 —— 它的中文 fallback 偏粗，
- *     16px 中文已经足够"工具焦点"，不需要营销 hero 尺度。
- *   - **对齐 PrismReel type scale**：标题 16px = display token 上限；
- *     副标题 12px = body-sm；eyebrow 9.5px mono uppercase 0.20em。
- *   - **克制 progress**：1px hairline + 节点，单色紫，无 glow / 无 pink halo。
- *     仅 current node 有微 ring（紫 10%），是全 panel 唯一的"有色信号"。
- *   - **Trailing slot 由 host 决定**：StepHeader 不知道每个 step 该放什么操作。
+ * 設計原則：
+ *   - **字體分軌**：英文 chrome（eyebrow / ghost number）走 mono；
+ *     中文標題 + 副標題走 sans (Inter→PingFang fallback)。
+ *     Space Grotesk 在這一層不出現 —— 它的中文 fallback 偏粗，
+ *     16px 中文已經足夠"工具焦點"，不需要營銷 hero 尺度。
+ *   - **對齊 PrismReel type scale**：標題 16px = display token 上限；
+ *     副標題 12px = body-sm；eyebrow 9.5px mono uppercase 0.20em。
+ *   - **剋制 progress**：1px hairline + 節點，單色紫，無 glow / 無 pink halo。
+ *     僅 current node 有微 ring（紫 10%），是全 panel 唯一的"有色信號"。
+ *   - **Trailing slot 由 host 決定**：StepHeader 不知道每個 step 該放什麼操作。
  *     ScriptProcessor 自己塞 [Save / Reparse]；ArtDirection 塞 [Apply]；
  *     VideoAssembly 塞 [Export] —— 各 host 的 business chrome。
  *
- * 用法见 docs/design-mocks/r2v-step-header-atelier-glow.html。
+ * 用法見 docs/design-mocks/r2v-step-header-atelier-glow.html。
  */
 import type { ReactNode } from "react";
 import clsx from "clsx";
 import { useLocale } from "next-intl";
 
 export interface StepHeaderProps {
-    /** 1-based 当前步骤号；驱动 ghost number / eyebrow / progress current 位置。 */
+    /** 1-based 當前步驟號；驅動 ghost number / eyebrow / progress current 位置。 */
     stepNumber: number;
-    /** 总步骤数。R2V workflow 默认 4。 */
+    /** 總步驟數。R2V workflow 默認 4。 */
     totalSteps?: number;
-    /** 左侧圆形 chip 里的 icon —— 调用方传 lucide icon，size + stroke 由 chip
-     *  样式约束（14px / stroke-1.5），所以 host 直接传 `<Palette />` 即可。 */
+    /** 左側圓形 chip 裏的 icon —— 調用方傳 lucide icon，size + stroke 由 chip
+     *  樣式約束（14px / stroke-1.5），所以 host 直接傳 `<Palette />` 即可。 */
     icon: ReactNode;
-    /** 已本地化的 eyebrow 名称（如 "剧本" / "风格定调" / "分镜"）。 */
+    /** 已本地化的 eyebrow 名稱（如 "劇本" / "風格定調" / "分鏡"）。 */
     sectionName: string;
-    /** 中文标题（如 "脚本编辑器" / "风格定调" / "故事板" / "时间线组装"）。 */
+    /** 中文標題（如 "腳本編輯器" / "風格定調" / "故事板" / "時間線組裝"）。 */
     title: string;
-    /** 中文副标题（一行点睛说明该 step 在做什么）。 */
+    /** 中文副標題（一行點睛說明該 step 在做什麼）。 */
     subtitle: string;
-    /** 右侧操作 / 统计槽 —— host 自决。空时显示空白（不要 placeholder）。 */
+    /** 右側操作 / 統計槽 —— host 自決。空時顯示空白（不要 placeholder）。 */
     trailing?: ReactNode;
-    /** 额外 className 注入到外层 panel（仅在特殊 layout 下使用）。 */
+    /** 額外 className 注入到外層 panel（僅在特殊 layout 下使用）。 */
     className?: string;
 }
 
@@ -54,9 +54,9 @@ export default function StepHeader({
     const stepStr = String(stepNumber).padStart(2, "0");
     const isCJK = useLocale() !== "en";
 
-    // Progress bar fill 计算：当前 step 之前的所有 segments 完整填满，
-    // 当前 step 用 current node。totalSteps=4 时，stepNumber=2 → fill 1/3 段。
-    // 计算公式：完成段数 = stepNumber - 1，总段数 = totalSteps - 1。
+    // Progress bar fill 計算：當前 step 之前的所有 segments 完整填滿，
+    // 當前 step 用 current node。totalSteps=4 時，stepNumber=2 → fill 1/3 段。
+    // 計算公式：完成段數 = stepNumber - 1，總段數 = totalSteps - 1。
     const progressPercent = totalSteps > 1
         ? Math.max(0, Math.min(1, (stepNumber - 1) / (totalSteps - 1))) * 100
         : 0;
@@ -76,9 +76,9 @@ export default function StepHeader({
                 className,
             )}
         >
-            {/* Main row — 留出底部 18px 给 progress rail */}
+            {/* Main row — 留出底部 18px 給 progress rail */}
             <div className="relative z-[1] flex h-[calc(100%-18px)] items-center gap-4 px-6">
-                {/* Icon chip — 32×32 圆形，flat dark + 紫 1px border + 内顶部 1px 高光 */}
+                {/* Icon chip — 32×32 圓形，flat dark + 紫 1px border + 內頂部 1px 高光 */}
                 <div
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-primary"
                     style={{
@@ -87,7 +87,7 @@ export default function StepHeader({
                         boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.05)",
                     }}
                 >
-                    {/* host 传的 lucide icon —— size/stroke 由全局 className 约束 */}
+                    {/* host 傳的 lucide icon —— size/stroke 由全局 className 約束 */}
                     <span className="grid h-3.5 w-3.5 place-items-center [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:stroke-[1.5]">
                         {icon}
                     </span>
@@ -95,8 +95,8 @@ export default function StepHeader({
 
                 {/* Title block */}
                 <div className="flex min-w-0 flex-1 flex-col gap-[2px]">
-                    {/* Eyebrow — 01 — 剧本 / 01 — SCRIPT。中文收紧字距并取消
-                        uppercase：0.2em 字距会把中文词拆散。 */}
+                    {/* Eyebrow — 01 — 劇本 / 01 — SCRIPT。中文收緊字距並取消
+                        uppercase：0.2em 字距會把中文詞拆散。 */}
                     <span className={clsx(
                         "mb-[1px] inline-flex items-center gap-2 font-mono text-[0.59375rem] font-normal leading-tight text-text-muted",
                         isCJK ? "tracking-[0.08em]" : "uppercase tracking-[0.2em]",
@@ -105,14 +105,14 @@ export default function StepHeader({
                         <span aria-hidden="true" className="h-px w-3 bg-glass-border" />
                         <span>{sectionName}</span>
                     </span>
-                    {/* 中文标题 — Inter Medium 16px (PrismReel display token 上限) */}
+                    {/* 中文標題 — Inter Medium 16px (PrismReel display token 上限) */}
                     <span
                         className="text-[1rem] font-medium leading-[1.3] text-foreground"
                         style={{ letterSpacing: 0 }}
                     >
                         {title}
                     </span>
-                    {/* 中文副标题 — body-sm 12px text-secondary */}
+                    {/* 中文副標題 — body-sm 12px text-secondary */}
                     <span
                         className="text-[0.75rem] font-normal leading-[1.4] text-text-secondary"
                         style={{ letterSpacing: 0 }}
@@ -121,9 +121,9 @@ export default function StepHeader({
                     </span>
                 </div>
 
-                {/* Ghost number — 现在作为 trailing 的视觉前导（inline，不再 absolute
-                   背景层），永远不与 trailing button 重叠。`-my-8` 让 80px 字号
-                   不撑爆 row，pointer-events-none + select-none 保持装饰性。 */}
+                {/* Ghost number — 現在作為 trailing 的視覺前導（inline，不再 absolute
+                   背景層），永遠不與 trailing button 重疊。`-my-8` 讓 80px 字號
+                   不撐爆 row，pointer-events-none + select-none 保持裝飾性。 */}
                 <span
                     aria-hidden="true"
                     className="ml-auto shrink-0 -my-8 select-none pointer-events-none font-mono leading-[0.85] tracking-[-0.05em]"
@@ -136,11 +136,11 @@ export default function StepHeader({
                     {stepStr}
                 </span>
 
-                {/* Trailing slot — host 自决，紧贴 ghost number 右侧 */}
+                {/* Trailing slot — host 自決，緊貼 ghost number 右側 */}
                 {trailing ? <div className="ml-4 z-[2] flex shrink-0 items-center gap-2">{trailing}</div> : null}
             </div>
 
-            {/* Progress rail — 1px hairline + 节点（无 glow / 无 pink） */}
+            {/* Progress rail — 1px hairline + 節點（無 glow / 無 pink） */}
             <div className="absolute bottom-3 left-6 right-6 z-[1] h-1.5">
                 <div
                     aria-hidden="true"

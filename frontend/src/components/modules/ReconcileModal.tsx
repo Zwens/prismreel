@@ -2,14 +2,14 @@
 /**
  * ReconcileModal — R2V v2 Phase 4 cross-episode asset reconcile.
  *
- * Triggered after Script step "提取实体" completes (only when episode is
+ * Triggered after Script step "提取實體" completes (only when episode is
  * part of a series). Shows AI-suggested matches between the just-extracted
  * entities and the parent series's shared library, defaulting to accept
  * the recommendation. Per Q6 design (A2 + Q6.1):
  *   · default = all "merge_into_series" for high-confidence (≥75)
  *   · default = all "create_new_in_series" for low-confidence (<75)
  *   · User can override per-row via inline dropdown
- *   · "[全部确认]" applies in one click
+ *   · "[全部確認]" applies in one click
  *   · "[去 Cast 查看 →]" navigates to Step 3 after apply
  */
 import { useEffect, useMemo, useState } from "react";

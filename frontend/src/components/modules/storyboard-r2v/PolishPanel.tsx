@@ -1,18 +1,18 @@
 "use client";
 /**
- * PolishPanel — Storyboard R2V workbench 的 AI 提示词润色面板。
+ * PolishPanel — Storyboard R2V workbench 的 AI 提示詞潤色面板。
  *
- * 重构 (#114) 后的核心约定：
- *   - 后端 fallback 不再静默 (#117)：失败抛 HTTP 502 + {reason, message_zh/en, prompt_cn?, prompt_en?}
- *   - 双语锚点迭代 (#119)：feedback 时传 prev_cn 让模型用 CN 锚点定位反馈意图
+ * 重構 (#114) 後的核心約定：
+ *   - 後端 fallback 不再靜默 (#117)：失敗拋 HTTP 502 + {reason, message_zh/en, prompt_cn?, prompt_en?}
+ *   - 雙語錨點迭代 (#119)：feedback 時傳 prev_cn 讓模型用 CN 錨點定位反饋意圖
  *   - UX (#118)：
- *     · 每栏独立 [📋 Copy] [↩ Apply]（顶部不再有总 Apply）
- *     · Loading 立即上 skeleton + spinner（不是仅按钮 spinner）
- *     · 错误态：复用容器槽位，红色 inline banner + 重试 + 复制原文
- *     · model_echo：黄色 warning + 保留双语原文，引导用户在 feedback 框追加要求
- *     · Copy 反馈：图标 swap ✓ Copied 1.5s 自动恢复（不依赖 toast 基础设施）
+ *     · 每欄獨立 [📋 Copy] [↩ Apply]（頂部不再有總 Apply）
+ *     · Loading 立即上 skeleton + spinner（不是僅按鈕 spinner）
+ *     · 錯誤態：複用容器槽位，紅色 inline banner + 重試 + 複製原文
+ *     · model_echo：黃色 warning + 保留雙語原文，引導用戶在 feedback 框追加要求
+ *     · Copy 反饋：圖標 swap ✓ Copied 1.5s 自動恢復（不依賴 toast 基礎設施）
  *
- * 视觉寄存于 Studio 现有 chrome-sm / display-sm / status colors token 体系。
+ * 視覺寄存於 Studio 現有 chrome-sm / display-sm / status colors token 體系。
  */
 import { useCallback, useState } from "react";
 import { Loader2, Sparkles, Check, X, RefreshCw, Copy, CornerDownLeft, AlertCircle, AlertTriangle } from "lucide-react";
@@ -39,7 +39,7 @@ interface PolishErrorState {
     reason: PolishErrorReason;
     messageZh: string;
     messageEn: string;
-    /** model_echo 时携带的原文双语，用于 warning UI 展示。 */
+    /** model_echo 時攜帶的原文雙語，用於 warning UI 展示。 */
     prompt_cn?: string;
     prompt_en?: string;
 }
@@ -56,7 +56,7 @@ interface PolishPanelProps {
     onApply: (text: string) => void;
 }
 
-/** 把后端 reason 映射到 i18n key（错误码列表与 llm.py PolishError 对齐）。 */
+/** 把後端 reason 映射到 i18n key（錯誤碼列表與 llm.py PolishError 對齊）。 */
 function reasonToI18nKey(reason: PolishErrorReason): string {
     switch (reason) {
         case "is_configured_false": return "polishErrorIsConfiguredFalse";
@@ -67,7 +67,7 @@ function reasonToI18nKey(reason: PolishErrorReason): string {
     }
 }
 
-/** 解析 axios error 成 PolishErrorState；非 502 / 无 detail 时归类为 api_error。 */
+/** 解析 axios error 成 PolishErrorState；非 502 / 無 detail 時歸類為 api_error。 */
 function parsePolishError(err: any, t: (key: string) => string): PolishErrorState {
     const detail = err?.response?.data?.detail;
     if (detail && typeof detail === "object" && typeof detail.reason === "string") {
@@ -99,12 +99,12 @@ export default function PolishPanel({
     const [error, setError] = useState<PolishErrorState | null>(null);
     const [isPolishing, setIsPolishing] = useState(false);
     const [feedback, setFeedback] = useState("");
-    /** 跟踪两栏的 "已复制" 闪烁状态。 */
+    /** 跟蹤兩欄的 "已複製" 閃爍狀態。 */
     const [copiedCol, setCopiedCol] = useState<"cn" | "en" | "original" | null>(null);
 
     const runPolish = useCallback(async (feedbackText: string = "") => {
-        // 迭代时：draft=上一版 EN，prev_cn=上一版 CN，让后端双语锚点。
-        // 首次：draft=用户原文，prev_cn 留空。
+        // 迭代時：draft=上一版 EN，prev_cn=上一版 CN，讓後端雙語錨點。
+        // 首次：draft=用戶原文，prev_cn 留空。
         const isIteration = !!feedbackText;
         const draft = isIteration ? (polished?.en ?? prompt) : prompt;
         const prevCn = isIteration ? (polished?.cn ?? "") : "";
@@ -112,8 +112,8 @@ export default function PolishPanel({
 
         setIsPolishing(true);
         setError(null);
-        // 不立即清 polished：若失败可保留上次结果继续 refine；
-        // 成功后再 setPolished 覆盖。
+        // 不立即清 polished：若失敗可保留上次結果繼續 refine；
+        // 成功後再 setPolished 覆蓋。
 
         try {
             const res = tabMode === "direct_r2v"
@@ -123,7 +123,7 @@ export default function PolishPanel({
                 setPolished({ cn: res.prompt_cn, en: res.prompt_en });
                 setFeedback("");
             } else {
-                // 200 但缺 key 走错误态
+                // 200 但缺 key 走錯誤態
                 setError({
                     reason: "missing_keys",
                     messageZh: t("polishErrorMissingKeys"),
@@ -134,8 +134,8 @@ export default function PolishPanel({
             debugLog.error("Studio", "Polish failed:", err);
             const parsed = parsePolishError(err, t);
             setError(parsed);
-            // model_echo 是 warning：仍把后端附带的双语 echo 展示给用户
-            // （这样他们能在 feedback 框里参照原文追加要求）
+            // model_echo 是 warning：仍把後端附帶的雙語 echo 展示給用戶
+            // （這樣他們能在 feedback 框裏參照原文追加要求）
             if (parsed.reason === "model_echo" && parsed.prompt_cn && parsed.prompt_en) {
                 setPolished({ cn: parsed.prompt_cn, en: parsed.prompt_en });
             }
@@ -161,7 +161,7 @@ export default function PolishPanel({
         try {
             await navigator.clipboard.writeText(text);
             setCopiedCol(col);
-            // 1.5s 自动恢复 — 与其他 Studio 按钮 swap 模式一致
+            // 1.5s 自動恢復 — 與其他 Studio 按鈕 swap 模式一致
             window.setTimeout(() => {
                 setCopiedCol(prev => (prev === col ? null : prev));
             }, 1500);
@@ -175,7 +175,7 @@ export default function PolishPanel({
     const isHardError = !!error && !isEchoWarning;
 
     // ────────────────────────────────────────────────────────────────────
-    // Trigger 按钮 — 当没有结果、没有错误、不在 loading 时显示
+    // Trigger 按鈕 — 當沒有結果、沒有錯誤、不在 loading 時顯示
     // ────────────────────────────────────────────────────────────────────
     if (!polished && !error && !isPolishing) {
         return (
@@ -197,9 +197,9 @@ export default function PolishPanel({
     // ────────────────────────────────────────────────────────────────────
     // Container shell — loading / success / error / warning 共用
     //
-    // Success / loading 态用 BorderGlow（紫粉品牌色 mesh-gradient 边框 + hover
-    // edge-light），首次结果出现时 sweep 一下做"AI 完成"仪式感。Hard error
-    // 和 echo warning 仍用素色 inline banner，不能让 brand glow 软化警示意图。
+    // Success / loading 態用 BorderGlow（紫粉品牌色 mesh-gradient 邊框 + hover
+    // edge-light），首次結果出現時 sweep 一下做"AI 完成"儀式感。Hard error
+    // 和 echo warning 仍用素色 inline banner，不能讓 brand glow 軟化警示意圖。
     // ────────────────────────────────────────────────────────────────────
     const useGlow = !isHardError && !isEchoWarning;
     const containerInner = (
@@ -233,7 +233,7 @@ export default function PolishPanel({
                 </button>
             </div>
 
-            {/* Error banner — hard errors only（echo warning 走下面的双语 + 黄色容器，不重复出 banner 行） */}
+            {/* Error banner — hard errors only（echo warning 走下面的雙語 + 黃色容器，不重複出 banner 行） */}
             {isHardError && error ? (
                 <div className="space-y-2">
                     <p className="font-sans text-body-sm leading-relaxed text-status-failed-fg">
@@ -264,14 +264,14 @@ export default function PolishPanel({
                 </div>
             ) : null}
 
-            {/* Echo warning banner — 单行，紧凑展示，用户主要靠下方 feedback 框迭代 */}
+            {/* Echo warning banner — 單行，緊湊展示，用戶主要靠下方 feedback 框迭代 */}
             {isEchoWarning && error ? (
                 <p className="font-sans text-body-sm leading-relaxed text-accent">
                     {t(reasonToI18nKey(error.reason) as any)}
                 </p>
             ) : null}
 
-            {/* CN 栏 — skeleton（loading 时）/ 文本 + 按钮 */}
+            {/* CN 欄 — skeleton（loading 時）/ 文本 + 按鈕 */}
             <BilingualColumn
                 label={t("polishCnLabel")}
                 text={polished?.cn}
@@ -286,7 +286,7 @@ export default function PolishPanel({
                 onApply={() => polished && handleApply(polished.cn)}
             />
 
-            {/* EN 栏 */}
+            {/* EN 欄 */}
             <BilingualColumn
                 label={t("polishEnLabel")}
                 text={polished?.en}
@@ -301,7 +301,7 @@ export default function PolishPanel({
                 onApply={() => polished && handleApply(polished.en)}
             />
 
-            {/* Feedback iteration — 仅在有结果时（错误态下隐藏，避免基于无效结果迭代） */}
+            {/* Feedback iteration — 僅在有結果時（錯誤態下隱藏，避免基於無效結果迭代） */}
             {polished ? (
                 <div className="flex items-center gap-2 pt-1">
                     <input
@@ -337,8 +337,8 @@ export default function PolishPanel({
     );
 
     if (useGlow) {
-        // animated 仅在首次结果产生那一帧 sweep —— mount 时间点 = polished 由
-        // null 变为 truthy 那一刻，符合"AI 生成完成"瞬间的强调意图。
+        // animated 僅在首次結果產生那一幀 sweep —— mount 時間點 = polished 由
+        // null 變為 truthy 那一刻，符合"AI 生成完成"瞬間的強調意圖。
         return (
             <BorderGlow
                 animated={!!polished}
@@ -374,9 +374,9 @@ export default function PolishPanel({
 }
 
 // ────────────────────────────────────────────────────────────────────
-// 子组件：单栏（CN 或 EN）
-//   - loading: 骨架图（不是 spinner-only），确保用户立即看到"结果即将到达"的契约
-//   - 有文字: 显示文字 + [📋 Copy] [↩ Apply] 两按钮
+// 子組件：單欄（CN 或 EN）
+//   - loading: 骨架圖（不是 spinner-only），確保用戶立即看到"結果即將到達"的契約
+//   - 有文字: 顯示文字 + [📋 Copy] [↩ Apply] 兩按鈕
 // ────────────────────────────────────────────────────────────────────
 interface BilingualColumnProps {
     label: string;
@@ -411,7 +411,7 @@ function BilingualColumn({
                 <div className="font-mono text-chrome-sm font-medium uppercase text-text-muted">
                     {label}
                 </div>
-                {/* 按钮行：loading 时隐藏，避免 skeleton 旁还有可点按钮造成空操作 */}
+                {/* 按鈕行：loading 時隱藏，避免 skeleton 旁還有可點按鈕造成空操作 */}
                 {!isLoading && text ? (
                     <div className="flex items-center gap-1">
                         <button

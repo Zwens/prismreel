@@ -9,15 +9,15 @@ interface ShotPresetPickerProps {
     label: string;
     icon: React.ReactNode;
     groups: ShotPresetGroup[];
-    /** 传入选项的 value，由调用方决定包装成什么形式插入 */
+    /** 傳入選項的 value，由調用方決定包裝成什麼形式插入 */
     onPick: (value: string) => void;
 }
 
 /**
- * 分组下拉，用于把预设的运镜/动作插入提示词。
+ * 分組下拉，用於把預設的運鏡/動作插入提示詞。
  *
- * 选完即关闭——这些选项是往提示词里追加文本，不是互斥的单选状态，
- * 所以不保留选中态，连续插两个就点两次。
+ * 選完即關閉——這些選項是往提示詞裏追加文本，不是互斥的單選狀態，
+ * 所以不保留選中態，連續插兩個就點兩次。
  */
 const ShotPresetPicker: React.FC<ShotPresetPickerProps> = ({ label, icon, groups, onPick }) => {
     const [open, setOpen] = useState(false);

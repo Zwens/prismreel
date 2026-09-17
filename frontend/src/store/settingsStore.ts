@@ -4,9 +4,9 @@ import { persist } from 'zustand/middleware';
 export type Locale = 'zh' | 'zh-Hant' | 'en';
 
 /**
- * 5 预设主题（Tasty Sam 主题系统）。
- * 3 暗（atelier-dark 默认 / bridge-dark / brand-dark）+ 2 亮（atelier-light / brand-light）。
- * 与 globals.css 的 html.<id> block、Providers/layout 切换逻辑一一对应。
+ * 5 預設主題（Tasty Sam 主題系統）。
+ * 3 暗（atelier-dark 默認 / bridge-dark / brand-dark）+ 2 亮（atelier-light / brand-light）。
+ * 與 globals.css 的 html.<id> block、Providers/layout 切換邏輯一一對應。
  */
 export type ThemePreset =
     | 'atelier-dark'
@@ -28,8 +28,8 @@ export const DEFAULT_THEME: ThemePreset = 'atelier-dark';
 interface SettingsStore {
     locale: Locale;
     theme: ThemePreset;
-    // 全局动效开关。true = 启用 motion（默认）；false = 降低动效，
-    // 由 Providers 挂载 html.no-motion 类来落地（无障碍/性能偏好）。
+    // 全局動效開關。true = 啓用 motion（默認）；false = 降低動效，
+    // 由 Providers 掛載 html.no-motion 類來落地（無障礙/性能偏好）。
     animations: boolean;
     setLocale: (locale: Locale) => void;
     setTheme: (theme: ThemePreset) => void;
@@ -49,8 +49,8 @@ export const useSettingsStore = create<SettingsStore>()(
         {
             name: 'prismreel-settings',
             version: 1,
-            // v0→v1：旧版只有 'dark' | 'light'。按产品决策，统一升级到新默认
-            // atelier-dark（不保留旧观感）。非法/缺失值同样回落默认。
+            // v0→v1：舊版只有 'dark' | 'light'。按產品決策，統一升級到新默認
+            // atelier-dark（不保留舊觀感）。非法/缺失值同樣回落默認。
             migrate: (persisted: unknown, version: number) => {
                 const state = (persisted ?? {}) as Partial<SettingsStore>;
                 const animations = typeof state.animations === 'boolean' ? state.animations : true;

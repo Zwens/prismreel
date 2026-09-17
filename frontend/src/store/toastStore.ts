@@ -23,11 +23,11 @@ export interface Toast {
     title: string;
     /** Optional body line. Plain text or short markup. */
     body?: string;
-    /** Project context — surfaces "[项目名]" prefix so cross-project
+    /** Project context — surfaces "[項目名]" prefix so cross-project
      *  notifications are unambiguous. */
     projectId?: string;
     projectTitle?: string;
-    /** Primary action (e.g. "去看看", "重试"). */
+    /** Primary action (e.g. "去看看", "重試"). */
     action?: ToastAction;
     /** Auto-dismiss after ms. 0 / undefined = sticky until user closes. */
     autoCloseMs?: number;

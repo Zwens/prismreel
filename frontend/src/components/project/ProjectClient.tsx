@@ -32,8 +32,8 @@ const CreativeCanvas = dynamic(() => import("@/components/canvas/CreativeCanvas"
 //   - Mix    → Assembly Mix phase tab (PR-3k)
 //   - Export → Assembly Export phase tab (PR-3k)
 // Both legacy and unified projects now share the 6-step shape.
-// 步骤名称走 i18n（pipeline.nav*），序号在渲染时按顺序生成 —— freeform
-// 模式跳过 Script 后无需再用正则改写 label。
+// 步驟名稱走 i18n（pipeline.nav*），序號在渲染時按順序生成 —— freeform
+// 模式跳過 Script 後無需再用正則改寫 label。
 const LEGACY_STEPS = [
     { id: "script", nameKey: "navScript", icon: BookOpen },
     { id: "art_direction", nameKey: "navArtDirection", icon: Palette },
@@ -148,7 +148,7 @@ export default function ProjectClient({ id, breadcrumbSegments }: { id: string; 
     };
 
     // Cross-module step navigation event (used by intra-module
-    // affordances like Storyboard's "画风" pill that wants to jump
+    // affordances like Storyboard's "畫風" pill that wants to jump
     // to Art Direction without prop-drilling setActiveStep into
     // every leaf component).
     useEffect(() => {

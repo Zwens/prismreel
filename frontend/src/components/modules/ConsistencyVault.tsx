@@ -998,7 +998,7 @@ function CreateAssetDialog({ type, onClose, onCreate }: { type: string; onClose:
         }
     };
 
-    // 单数类型名，用于「新建{type}」「输入{type}名称」等插值文案。
+    // 單數類型名，用於「新建{type}」「輸入{type}名稱」等插值文案。
     const typeLabel = tv(type === "character" ? "typeCharacter" : type === "scene" ? "typeScene" : "typeProp");
 
     return (

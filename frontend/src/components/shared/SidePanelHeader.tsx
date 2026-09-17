@@ -1,20 +1,20 @@
 "use client";
 /**
- * SidePanelHeader — 4 个 R2V step 右栏统一头部组件。
+ * SidePanelHeader — 4 個 R2V step 右欄統一頭部組件。
  *
- * 与 <StepHeader> 同字体语言（中文 Inter Medium / 英文 mono chrome），
- * 但更紧凑（高度 56px vs StepHeader 112px），不带 ghost number、不带
- * progress rail。专为右栏 chrome 设计。
+ * 與 <StepHeader> 同字體語言（中文 Inter Medium / 英文 mono chrome），
+ * 但更緊湊（高度 56px vs StepHeader 112px），不帶 ghost number、不帶
+ * progress rail。專為右欄 chrome 設計。
  *
- * 适用场景：
- *   · ArtDirection 风格编辑器 ("风格编辑器")
- *   · ScriptProcessor entities panel ("实体识别面板")
- *   · StoryboardR2V TaskQueuePanel ("任务队列")
- *   · VideoAssembly variants panel ("候选变体")
+ * 適用場景：
+ *   · ArtDirection 風格編輯器 ("風格編輯器")
+ *   · ScriptProcessor entities panel ("實體識別面板")
+ *   · StoryboardR2V TaskQueuePanel ("任務隊列")
+ *   · VideoAssembly variants panel ("候選變體")
  *
- * 视觉一致点：
+ * 視覺一致點：
  *   · 56px 高 · border-b border-glass-border · bg-surface
- *   · 左 icon chip 28×28 紫 6% bg + 紫 32% border（StepHeader icon 缩小版）
+ *   · 左 icon chip 28×28 紫 6% bg + 紫 32% border（StepHeader icon 縮小版）
  *   · title Inter Medium 14px / subtitle Inter 11.5px text-text-muted
  *   · 右 trailing slot（actions / counts / close button）
  */
@@ -22,13 +22,13 @@ import type { ReactNode } from "react";
 import clsx from "clsx";
 
 export interface SidePanelHeaderProps {
-    /** 左侧 icon chip 里的 lucide icon。 */
+    /** 左側 icon chip 裏的 lucide icon。 */
     icon?: ReactNode;
-    /** 中文 / 内容 title (Inter Medium 14px)。 */
+    /** 中文 / 內容 title (Inter Medium 14px)。 */
     title: string;
-    /** 一行 subtitle（可选）。 */
+    /** 一行 subtitle（可選）。 */
     subtitle?: string;
-    /** 右侧 trailing slot —— close 按钮 / counts / 操作按钮等。 */
+    /** 右側 trailing slot —— close 按鈕 / counts / 操作按鈕等。 */
     trailing?: ReactNode;
     className?: string;
 }

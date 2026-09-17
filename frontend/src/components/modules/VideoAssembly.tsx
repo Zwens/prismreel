@@ -528,7 +528,7 @@ function MixPhase({
                 </p>
             </section>
 
-            {/* 卡点紧跟 BGM 选择——节拍来自这里选的曲子，换了 BGM 就要重测 */}
+            {/* 卡點緊跟 BGM 選擇——節拍來自這裏選的曲子，換了 BGM 就要重測 */}
             <BeatSyncPanel scriptId={scriptId} hasBgm={!!bgmUrl} />
         </div>
     );

@@ -1,6 +1,6 @@
 "use client";
 /**
- * Confirm gate for「一键生成全部」on the storyboard.
+ * Confirm gate for「一鍵生成全部」on the storyboard.
  *
  * Video is the expensive step — a 13-shot run is a real bill — so the plan is
  * shown before a single provider call goes out: how many shots will run, on

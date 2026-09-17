@@ -18,7 +18,7 @@ export default function EnvConfigChecker() {
   const isPublicPage = _PUBLIC_PATH_PREFIXES.some((p) => pathname?.startsWith(p));
 
   useEffect(() => {
-    // 只在客户端执行，且只检查一次
+    // 只在客戶端執行，且只檢查一次
     if (typeof window === 'undefined' || hasChecked || isPublicPage) return;
 
     checkEnvConfig();
@@ -28,9 +28,9 @@ export default function EnvConfigChecker() {
   const checkEnvConfig = async () => {
     try {
       const config = await api.getEnvConfig();
-      // 空值和空字符串都视为未配置。Gemini 是默认路由，但配置为
-      // LLM_PROVIDER=openai（第三方 OpenAI 兼容端点）并填了对应 key
-      // 时同样视为已配置，不强制要求 Gemini。
+      // 空值和空字符串都視為未配置。Gemini 是默認路由，但配置為
+      // LLM_PROVIDER=openai（第三方 OpenAI 兼容端點）並填了對應 key
+      // 時同樣視為已配置，不強制要求 Gemini。
       const asText = (v: unknown) => (typeof v === "string" ? v.trim() : "");
       const geminiKey = asText(config.GEMINI_API_KEY);
       const openaiKey = asText(config.OPENAI_API_KEY);
@@ -45,7 +45,7 @@ export default function EnvConfigChecker() {
       }
     } catch (error) {
       console.error("Failed to check env config:", error);
-      // 如果API调用失败，也显示配置对话框
+      // 如果API調用失敗，也顯示配置對話框
       setEnvRequired(true);
       setIsEnvDialogOpen(true);
     }

@@ -4,10 +4,10 @@
  *
  * Voice catalog picker for Cast character binding. Tabbed layout
  * (Q15.5 B + Q3 C):
- *   Tab 1 系统音色 — recommended (L1.5 gender-curated 4) + grouped
- *                   (CosyVoice / Qwen3 标准 / 方言 / 国际)
- *   Tab 2 我的复刻 — placeholder (PR-3h ships voice clone)
- *   Tab 3 我的设计 — placeholder (PR-3i ships voice design)
+ *   Tab 1 系統音色 — recommended (L1.5 gender-curated 4) + grouped
+ *                   (CosyVoice / Qwen3 標準 / 方言 / 國際)
+ *   Tab 2 我的復刻 — placeholder (PR-3h ships voice clone)
+ *   Tab 3 我的設計 — placeholder (PR-3i ships voice design)
  *
  * Each voice card:
  *   - name + gender + dialect/lang tag
@@ -26,9 +26,9 @@ import { useTranslations } from "next-intl";
 import { api, type VoiceMeta } from "@/lib/api";
 import { getAssetUrl } from "@/lib/utils";
 
-// L1.5 推荐: gender-based curated 4 voices (Q4 推荐)
-// "通用最不会出错"组合。CosyVoice 下线后改为 Gemini 预置音色，性别依据是
-// 对 30 个音色的人工试听（Google 官方只给特征词，不标性别）。
+// L1.5 推薦: gender-based curated 4 voices (Q4 推薦)
+// "通用最不會出錯"組合。CosyVoice 下線後改為 Gemini 預置音色，性別依據是
+// 對 30 個音色的人工試聽（Google 官方只給特徵詞，不標性別）。
 const RECOMMENDED_BY_GENDER: Record<string, string[]> = {
     Male: ["Achird", "Sadaltager", "Puck", "Algenib"],
     Female: ["Kore", "Vindemiatrix", "Sulafat", "Erinome"],
@@ -44,10 +44,10 @@ interface VoicePickerModalProps {
     previewText?: string;
     currentVoiceId?: string;
     onApply: (voiceId: string, voiceName: string) => void;
-    /** PR-3h · Series id enables the 我的复刻 / 我的设计 tabs. When null,
-     *  those tabs show "请先关联到系列" message (orphan projects). */
+    /** PR-3h · Series id enables the 我的復刻 / 我的設計 tabs. When null,
+     *  those tabs show "請先關聯到系列" message (orphan projects). */
     seriesId?: string | null;
-    /** PR-3i · Character description for 一键转 voice_prompt LLM helper. */
+    /** PR-3i · Character description for 一鍵轉 voice_prompt LLM helper. */
     characterDescription?: string;
 }
 
@@ -166,8 +166,8 @@ export default function VoicePickerModal({
     }, [voices, characterGender]);
 
     // Group system voices by sub-category for the catalog area
-    // Gemini 的 30 个音色同属一个家族、一个模型，按 cosyvoice/qwen3 分组已无
-    // 意义。改按性别分组 —— 绑定角色时第一件事就是筛性别。
+    // Gemini 的 30 個音色同屬一個家族、一個模型，按 cosyvoice/qwen3 分組已無
+    // 意義。改按性別分組 —— 綁定角色時第一件事就是篩性別。
     const groups = useMemo(() => ({
         female: voices.filter((v) => v.gender === "Female"),
         male: voices.filter((v) => v.gender === "Male"),

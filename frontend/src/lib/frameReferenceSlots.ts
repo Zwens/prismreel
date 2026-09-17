@@ -90,7 +90,7 @@ function linkedEntities(frame: any, project: AssetPools): Array<{ entity: any; u
 /** Names of everything a frame links to, in slot order.
  *
  * Includes assets that have no reference image yet: writing the tag declares
- * the intent, and generation already refuses with a clear "尚未生成图片"
+ * the intent, and generation already refuses with a clear "尚未生成圖片"
  * message. Omitting them would silently drop the reference instead.
  */
 export function frameLinkedAssetNames(frame: any, project: AssetPools): string[] {

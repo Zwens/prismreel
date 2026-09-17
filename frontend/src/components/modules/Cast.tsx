@@ -2,7 +2,7 @@
 /**
  * Cast — R2V workflow Step 3「本集素材」（per-episode asset view）。
  *
- * Design v2 决策（docs/design/r2v-workflow-v2.md Q8 / Q9）:
+ * Design v2 決策（docs/design/r2v-workflow-v2.md Q8 / Q9）:
  *   · Cast = per-episode lens (read-only) of frame-referenced assets
  *   · Series-level CRUD lives in SeriesDetailPage (Characters/Scenes/Props tabs)
  *   · ConsistencyVault is preserved for i2v_legacy workflow only
@@ -46,15 +46,15 @@ interface CastItem {
     id: string;
     name: string;
     kind: AssetKind;
-    appearances: number;            // 出场次数（在多少 frame 中被引用）
-    referenceImageUrl?: string;     // 参考图（优先 reference_sheet → full_body fallback）
+    appearances: number;            // 出場次數（在多少 frame 中被引用）
+    referenceImageUrl?: string;     // 參考圖（優先 reference_sheet → full_body fallback）
     status: "ready" | "pending" | "new";
     persona?: string;               // R2V v2 P1-a — characters only; groups visual variants of same person
 }
 
 /**
  * Resolve a character's primary reference image URL with legacy fallback.
- * Per design v2 (Q12-补充 A): new schema is `reference_sheet`; old
+ * Per design v2 (Q12-補充 A): new schema is `reference_sheet`; old
  * schema is `full_body / three_views / head_shot`. Read with fallback
  * so existing data keeps rendering during migration.
  */
@@ -114,7 +114,7 @@ export default function Cast() {
      * Aggregate per-asset appearance counts from frame references, then
      * union with the project's entity pool so freshly-extracted assets
      * (which have NO frame references yet — frames are created in a
-     * separate '生成分镜' step) still show up in Cast.
+     * separate '生成分鏡' step) still show up in Cast.
      *
      * Earlier this only listed entities discovered through frame iteration,
      * which silently dropped every extracted character/scene/prop until
@@ -181,7 +181,7 @@ export default function Cast() {
 
     const totalCast = characters.length + scenes.length + props.length;
 
-    /* 「一键生成」— run every pending asset through the same submit path the
+    /* 「一鍵生成」— run every pending asset through the same submit path the
        workbench modal uses, with the modal's default params. Already-generated
        assets are skipped so a batch never overwrites a kept result. */
     const pendingAssets = useMemo(
@@ -840,7 +840,7 @@ function CastCard({ item, onOpenWorkbench }: { item: CastItem; onOpenWorkbench?:
             // Backend returns the updated script - sync to store
             updateProject(currentProject.id, updated);
         } catch (e) {
-            // Swallowing this left the card reading "未绑定音色" with no
+            // Swallowing this left the card reading "未綁定音色" with no
             // hint that anything went wrong — the user just re-picked
             // the same voice over and over.
             console.error("Failed to bind voice:", e);

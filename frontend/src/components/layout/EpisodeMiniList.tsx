@@ -3,7 +3,7 @@
  * EpisodeMiniList — compact episode switcher rendered at the top of
  * PipelineSidebar when the current project belongs to a Series.
  *
- * Solves the friction L3 raised in the 火山剧创 comparison: switching
+ * Solves the friction L3 raised in the 火山劇創 comparison: switching
  * between episodes of the same series used to require Series detail
  * page → pick another episode → re-open Studio (3 clicks). Now it's
  * one click while staying on the same module (e.g. Storyboard).

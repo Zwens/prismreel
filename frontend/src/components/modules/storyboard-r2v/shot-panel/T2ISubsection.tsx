@@ -1,16 +1,16 @@
 "use client";
 /**
- * T2ISubsection — t2i_i2v 模式下"先生图、再生视频"的工作流容器
+ * T2ISubsection — t2i_i2v 模式下"先生圖、再生視頻"的工作流容器
  * (Issue 10 / Task #2).
  *
- * 状态机（C 方案）：
- *   - hero 态：!hasActiveFrame  → 大号 Step 1-only CTA（生成 / 上传双口）
- *   - compact 态：hasActiveFrame → 单行折叠 + ▼/+ 控件，让位给下方 I2V Params
+ * 狀態機（C 方案）：
+ *   - hero 態：!hasActiveFrame  → 大號 Step 1-only CTA（生成 / 上傳雙口）
+ *   - compact 態：hasActiveFrame → 單行摺疊 + ▼/+ 控件，讓位給下方 I2V Params
  *
- * 触发降级：用户删空所有 T2I 且无 storyboard frame → 自动回到 hero 态。
+ * 觸發降級：用戶刪空所有 T2I 且無 storyboard frame → 自動回到 hero 態。
  *
- * 不维护"先 T2I 再 I2V"的强制阻断 — 已有 storyboard frame 时直接进入
- * compact 态、Step 2 立刻可用；只有真正空 shot 才看到 hero。
+ * 不維護"先 T2I 再 I2V"的強制阻斷 — 已有 storyboard frame 時直接進入
+ * compact 態、Step 2 立刻可用；只有真正空 shot 纔看到 hero。
  */
 import { useEffect, useRef, useState } from "react";
 import {
@@ -44,7 +44,7 @@ function formatUploadError(err: T2IUploadError, t: ReturnType<typeof useTranslat
 
 /** Upload failure surface. `code` drives default i18n message; `detail` is
  *  the actual backend reason (HTTP status text or response body) so the
- *  user / dev can diagnose instead of staring at a generic "请重试". */
+ *  user / dev can diagnose instead of staring at a generic "請重試". */
 export type T2IUploadError =
     | "type"
     | "size"
@@ -98,10 +98,10 @@ export default function T2ISubsection({
     // but PreviewImage handles URL resolution internally now (Issue 14), so we
     // don't thread `display` through any longer.
     void resolveUrl;
-    // 是否有 storyboard frame 隐式占位（不进 imageUrls，但算 Step 1 完成）
+    // 是否有 storyboard frame 隱式佔位（不進 imageUrls，但算 Step 1 完成）
     const hasStoryboardFrame = !!storyboardFrameUrl;
     const hasGeneratedOrUploaded = imageUrls.length > 0;
-    // Step 1 完成的判据：有任何 active frame 来源（T2I or storyboard）
+    // Step 1 完成的判據：有任何 active frame 來源（T2I or storyboard）
     const stepOneDone = hasGeneratedOrUploaded || hasStoryboardFrame;
 
     if (!stepOneDone) {
@@ -138,7 +138,7 @@ export default function T2ISubsection({
 
 // ────────────────────────────────────────────────────────────────────
 // Hero — Step 1 only, no active frame yet.
-// 双 CTA（生成 + 上传），含拖拽到面板的支持；按 grill Q2 推荐。
+// 雙 CTA（生成 + 上傳），含拖拽到面板的支持；按 grill Q2 推薦。
 // ────────────────────────────────────────────────────────────────────
 
 interface HeroProps {
@@ -187,9 +187,9 @@ function Hero({
 
     return (
         <div
-            // Hero 容器：玻璃边 + 内阴影 + 拖拽时高亮边。
-            // 用 padding 而不是固定高度，长短文案都能呼吸。
-            // motion-safe 兼容 reduced-motion 用户。
+            // Hero 容器：玻璃邊 + 內陰影 + 拖拽時高亮邊。
+            // 用 padding 而不是固定高度，長短文案都能呼吸。
+            // motion-safe 兼容 reduced-motion 用戶。
             onDragOver={(e) => {
                 e.preventDefault();
                 if (!uploadDisabled) setDragHot(true);
@@ -210,8 +210,8 @@ function Hero({
             )}
         >
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
-                {/* 视觉锚点 — 不是 hero metric template，是一个"占位帧"
-                    缩略，提示"这里应该有一张图"。生成中时叠加 spinner。 */}
+                {/* 視覺錨點 — 不是 hero metric template，是一個"佔位幀"
+                    縮略，提示"這裏應該有一張圖"。生成中時疊加 spinner。 */}
                 <div className="relative grid h-[88px] w-[120px] shrink-0 place-items-center overflow-hidden rounded-md border border-glass-border bg-black/40">
                     {generating ? (
                         <PendingTaskAffordance
@@ -229,7 +229,7 @@ function Hero({
                     <div className="font-mono text-chrome-sm font-medium uppercase tracking-tight text-primary/90">
                         {t("t2iHeroEyebrow")}
                     </div>
-                    {/* Title — display tier，是 hero 的视觉焦点 */}
+                    {/* Title — display tier，是 hero 的視覺焦點 */}
                     <div className="font-display text-display-sm font-semibold text-foreground">
                         {t("t2iHeroTitle")}
                     </div>
@@ -237,7 +237,7 @@ function Hero({
                         {t("t2iHeroBody")}
                     </p>
 
-                    {/* CTA row — 主生成 + 次上传 + 拖拽 hint */}
+                    {/* CTA row — 主生成 + 次上傳 + 拖拽 hint */}
                     <div className="flex flex-wrap items-center gap-2 pt-2">
                         <button
                             type="button"
@@ -304,7 +304,7 @@ function Hero({
 
 // ────────────────────────────────────────────────────────────────────
 // Compact — Step 1 done, T2I subsection collapsed to a single row.
-// 默认折叠（节省垂直空间）；processing 时自动展开。
+// 默認摺疊（節省垂直空間）；processing 時自動展開。
 // ────────────────────────────────────────────────────────────────────
 
 interface CompactProps {
@@ -327,22 +327,22 @@ function Compact({
     inFlightTaskId, inFlightStatus, promptIsEmpty,
     onSelect, onRemove, onGenerate, onUpload,
 }: CompactProps) {
-    // 数据模型：active frame 来源优先级 = getActiveT2IImageUrl 然后 fallback shot.imageUrl。
-    // 简化 v1 决定：storyboard frame thumb 只在 T2I 历史为空时显示（自动成为 active）；
-    // 用户一旦生成/上传 T2I，storyboard thumb 让位给 T2I 列表。若用户想"切回 storyboard
-    // frame"，删空 T2I 即可 — 数据模型不需要新增 useStoryboardFrame 字段。
+    // 數據模型：active frame 來源優先級 = getActiveT2IImageUrl 然後 fallback shot.imageUrl。
+    // 簡化 v1 決定：storyboard frame thumb 只在 T2I 歷史為空時顯示（自動成為 active）；
+    // 用戶一旦生成/上傳 T2I，storyboard thumb 讓位給 T2I 列表。若用戶想"切回 storyboard
+    // frame"，刪空 T2I 即可 — 數據模型不需要新增 useStoryboardFrame 字段。
     const safeIndex = imageUrls.length === 0
         ? -1
         : Math.max(0, Math.min(selectedIndex, imageUrls.length - 1));
     const showStoryboardThumb = imageUrls.length === 0 && !!storyboardFrameUrl;
     const storyboardActive = showStoryboardThumb;
 
-    // PR-3 grill Q14 (C) — candidates row default 展开:
-    // 让用户立刻看到"已有 N 张可选 / 当前正在用第几张"，建立"first
-    // frame 是多变体"的 mental model. 之前 default collapsed 导致
-    // candidates 在 hover popover 后才被发现.
+    // PR-3 grill Q14 (C) — candidates row default 展開:
+    // 讓用戶立刻看到"已有 N 張可選 / 當前正在用第幾張"，建立"first
+    // frame 是多變體"的 mental model. 之前 default collapsed 導致
+    // candidates 在 hover popover 後才被發現.
     const [expanded, setExpanded] = useState(true);
-    // processing 时强制展开，让用户看见 spinner
+    // processing 時強制展開，讓用戶看見 spinner
     const forcedOpen = generating && (inFlightStatus === "pending" || inFlightStatus === "processing");
     const open = expanded || forcedOpen;
     const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
@@ -353,10 +353,10 @@ function Compact({
     const inputRef = useRef<HTMLInputElement | null>(null);
     const closeTimer = useRef<number | null>(null);
 
-    // 自动展开后用户主动收起的意图保留（避免 inFlightStatus 再次变 processing
-    // 又强制覆盖用户的折叠选择）— 不实现，因为 forcedOpen 是单向的"安全网"。
+    // 自動展開後用戶主動收起的意圖保留（避免 inFlightStatus 再次變 processing
+    // 又強制覆蓋用戶的摺疊選擇）— 不實現，因為 forcedOpen 是單向的"安全網"。
 
-    // 计数：T2I 历史 + （仅当其为唯一来源时）storyboard frame 隐式占 1 张
+    // 計數：T2I 歷史 + （僅當其為唯一來源時）storyboard frame 隱式佔 1 張
     const total = imageUrls.length + (showStoryboardThumb ? 1 : 0);
     const currentLabel = storyboardActive
         ? "📌"
@@ -419,7 +419,7 @@ function Compact({
                     · {countLabel}
                 </span>
                 <div className="ml-auto flex items-center gap-0.5">
-                    {/* PR-3 grill Q14 (D) — Reroll button: explicit "再抽一张"
+                    {/* PR-3 grill Q14 (D) — Reroll button: explicit "再抽一張"
                         action, surfaces the "regenerate first frame with current
                         prompt" capability that was previously hidden in the
                         hover popover behind "+". Direct onGenerate call (no
@@ -445,7 +445,7 @@ function Compact({
                         {open ? <ChevronUp size={12} aria-hidden="true" /> : <ChevronDown size={12} aria-hidden="true" />}
                     </button>
 
-                    {/* + 按钮 + hover popover (新增候选) */}
+                    {/* + 按鈕 + hover popover (新增候選) */}
                     <div
                         onMouseEnter={openMenu}
                         onMouseLeave={scheduleCloseMenu}

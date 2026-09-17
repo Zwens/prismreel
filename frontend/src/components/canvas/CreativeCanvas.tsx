@@ -29,10 +29,10 @@ function Background({ isDark }: { isDark: boolean }) {
     );
 }
 
-// 同步检测 WebGL 是否可用，在首次渲染前判定。headless 浏览器或用户禁用
-// 硬件加速时返回 false，此时跳过 <Canvas> 挂载，避免 WebGL 创建失败抛错拖垮整页。
+// 同步檢測 WebGL 是否可用，在首次渲染前判定。headless 瀏覽器或用戶禁用
+// 硬件加速時返回 false，此時跳過 <Canvas> 掛載，避免 WebGL 創建失敗拋錯拖垮整頁。
 function detectWebGL(): boolean {
-    if (typeof document === "undefined") return true; // SSR：乐观，客户端再判
+    if (typeof document === "undefined") return true; // SSR：樂觀，客戶端再判
     try {
         const canvas = document.createElement("canvas");
         return !!(
@@ -45,8 +45,8 @@ function detectWebGL(): boolean {
     }
 }
 
-// 兜底：即使 WebGL 初始可用，运行时 context lost 也不让整页崩溃。
-// fallback 返回 null，外层 bg-background 仍保留静态主题底色。
+// 兜底：即使 WebGL 初始可用，運行時 context lost 也不讓整頁崩潰。
+// fallback 返回 null，外層 bg-background 仍保留靜態主題底色。
 class CanvasErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
     state = { failed: false };
     static getDerivedStateFromError() {
@@ -62,14 +62,14 @@ export default function CreativeCanvas() {
     const theme = useSettingsStore((s) => s.theme);
     const isDark = theme.endsWith("-dark");
     const isAtelier = theme.startsWith("atelier");
-    // 仅在客户端挂载后检测 WebGL：SSR 与首次渲染保持一致（都不挂 Canvas），
-    // 避免 hydration mismatch；useEffect 跑完才按需挂载 3D 背景。
+    // 僅在客戶端掛載後檢測 WebGL：SSR 與首次渲染保持一致（都不掛 Canvas），
+    // 避免 hydration mismatch；useEffect 跑完才按需掛載 3D 背景。
     const [canRender3D, setCanRender3D] = useState(false);
     useEffect(() => {
         setCanRender3D(detectWebGL());
     }, []);
 
-    // Atelier 主题不需要 3D 透视网格 —— 背景由 --bg-base 纯色 + 页面级 bloom/grain 承担氛围。
+    // Atelier 主題不需要 3D 透視網格 —— 背景由 --bg-base 純色 + 頁面級 bloom/grain 承擔氛圍。
     if (isAtelier) {
         return (
             <div className="absolute inset-0 z-0 w-full h-full overflow-hidden bg-background" />

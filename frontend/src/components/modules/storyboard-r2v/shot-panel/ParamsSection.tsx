@@ -457,7 +457,7 @@ export default function ParamsSection({
 
                 {/* Generate CTA removed in PR-3c — generation is now
                     triggered from ShotCard's inline generation row
-                    (Action Bar 下方全宽行 with count selector + 主按钮).
+                    (Action Bar 下方全寬行 with count selector + 主按鈕).
                     ParamsSection focuses purely on parameter config now;
                     no action button surface here. errorMessage above is
                     still useful when host validation fails (e.g., R2V
@@ -523,7 +523,7 @@ function DurationControl({
     value: number;
     onChange: (v: number) => void;
 }) {
-    // hook 必须在早返回之前调用
+    // hook 必須在早返回之前調用
     const t = useTranslations("storyboardR2V");
     if (cfg.type === "fixed") {
         return (

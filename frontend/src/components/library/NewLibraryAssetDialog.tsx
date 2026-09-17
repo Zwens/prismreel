@@ -10,19 +10,19 @@ import GridOverlayPicker, { type GridOverlaySize } from "@/components/shared/Gri
 
 type AssetTab = "characters" | "scenes" | "props";
 
-// 资产类型 → 后端单数 type（/library/assets 端点用）。
+// 資產類型 → 後端單數 type（/library/assets 端點用）。
 const SINGULAR: Record<AssetTab, string> = { characters: "character", scenes: "scene", props: "prop" };
 
 interface NewLibraryAssetDialogProps {
   onClose: () => void;
-  /** 创建成功后回调（父层刷新库以显示新资产）。 */
+  /** 創建成功後回調（父層刷新庫以顯示新資產）。 */
   onCreated: () => void;
 }
 
 /**
- * 资产库「新建全局资产」轻量弹窗（T6-entries）。
- * 选类型(角色/场景/道具) + 名称 + 描述 +（可选）图片（上传本地文件或填 URL）→ POST /library/assets。
- * 本地上传走 POST /library/assets/upload（multipart 字段 "file" → { image_url }），结果写入 imageUrl。
+ * 資產庫「新建全局資產」輕量彈窗（T6-entries）。
+ * 選類型(角色/場景/道具) + 名稱 + 描述 +（可選）圖片（上傳本地文件或填 URL）→ POST /library/assets。
+ * 本地上傳走 POST /library/assets/upload（multipart 字段 "file" → { image_url }），結果寫入 imageUrl。
  */
 export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibraryAssetDialogProps) {
   const t = useTranslations("library");
@@ -42,7 +42,7 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
   useEffect(() => {
     onCloseRef.current = onClose;
   });
-  // a11y：打开时聚焦名称、Escape 关闭、关闭后还原焦点。
+  // a11y：打開時聚焦名稱、Escape 關閉、關閉後還原焦點。
   useEffect(() => {
     const prevFocused = document.activeElement as HTMLElement | null;
     nameRef.current?.focus();
@@ -62,7 +62,7 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
     { id: "props", label: t("propLabel") },
   ];
 
-  // 上传本地图片 → 后端返回 image_url，写入 imageUrl 作为创建用图。
+  // 上傳本地圖片 → 後端返回 image_url，寫入 imageUrl 作為創建用圖。
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // reset so re-selecting the same file fires onChange again
@@ -110,7 +110,7 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      {/* 点外关闭遮罩 */}
+      {/* 點外關閉遮罩 */}
       <button
         type="button"
         aria-hidden="true"
@@ -143,7 +143,7 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
         </div>
 
         <form onSubmit={handleSubmit} className="px-5 py-4 flex flex-col gap-4">
-          {/* 类型选择 */}
+          {/* 類型選擇 */}
           <div>
             <span className="font-mono text-[0.625rem] font-semibold uppercase tracking-[0.1em] text-text-secondary">
               {t("assetTypeAria")}
@@ -174,7 +174,7 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
             </div>
           </div>
 
-          {/* 名称 */}
+          {/* 名稱 */}
           <div>
             <label
               htmlFor="lib-asset-name"
@@ -211,13 +211,13 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
             />
           </div>
 
-          {/* 图片（可选）— 上传本地图片，或填图片 URL（备选） */}
+          {/* 圖片（可選）— 上傳本地圖片，或填圖片 URL（備選） */}
           <div>
             <span className="font-mono text-[0.625rem] font-semibold uppercase tracking-[0.1em] text-text-secondary">
               {t("imageLabel")}
             </span>
 
-            {/* 上传本地图片 + 预览缩略图 */}
+            {/* 上傳本地圖片 + 預覽縮略圖 */}
             <div className="mt-2 flex items-center gap-3">
               {imageUrl ? (
                 <img
@@ -250,7 +250,7 @@ export default function NewLibraryAssetDialog({ onClose, onCreated }: NewLibrary
 
             <GridOverlayPicker value={gridSize} onChange={setGridSize} className="mt-3" />
 
-            {/* 备选：直接填图片 URL */}
+            {/* 備選：直接填圖片 URL */}
             <label
               htmlFor="lib-asset-image"
               className="block mt-3 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.1em] text-text-secondary"

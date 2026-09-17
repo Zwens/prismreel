@@ -1,16 +1,16 @@
 "use client";
 /**
- * BorderGlow — React Bits 同名组件的 TS 适配版（"JavaScript + CSS" 变体）。
+ * BorderGlow — React Bits 同名組件的 TS 適配版（"JavaScript + CSS" 變體）。
  *
- * 行为：hover 时根据 cursor 与卡片中心的角度 / 边距动态点亮 conic-gradient 的
- * 边光 + mesh-gradient 边框。设计意图是让较大尺寸的 hero card / panel 在被
- * 关注时获得"真材实料"的发光描边，而不是简单的 box-shadow。
+ * 行為：hover 時根據 cursor 與卡片中心的角度 / 邊距動態點亮 conic-gradient 的
+ * 邊光 + mesh-gradient 邊框。設計意圖是讓較大尺寸的 hero card / panel 在被
+ * 關注時獲得"真材實料"的發光描邊，而不是簡單的 box-shadow。
  *
- * 在 PrismReel 里的应用场景（截至 2026-05）：
- *   - PolishPanel 展开容器（首次结果完成时 sweep + hover 时 ambient glow）
+ * 在 PrismReel 裏的應用場景（截至 2026-05）：
+ *   - PolishPanel 展開容器（首次結果完成時 sweep + hover 時 ambient glow）
  *
- * 不要用在小尺寸按钮 / chrome 控件上 —— glow 半径默认 40px，按钮太小会让
- * halo 比内容还大，反而模糊。最小推荐宽度 ≥ 240px。
+ * 不要用在小尺寸按鈕 / chrome 控件上 —— glow 半徑默認 40px，按鈕太小會讓
+ * halo 比內容還大，反而模糊。最小推薦寬度 ≥ 240px。
  */
 import { useRef, useCallback, useEffect, type CSSProperties, type ReactNode } from "react";
 import "./BorderGlow.css";
@@ -19,18 +19,18 @@ interface BorderGlowProps {
     children: ReactNode;
     className?: string;
     edgeSensitivity?: number;
-    /** HSL "H S L"（例如 "262 80 70"），不带 %。 */
+    /** HSL "H S L"（例如 "262 80 70"），不帶 %。 */
     glowColor?: string;
     backgroundColor?: string;
     borderRadius?: number;
     glowRadius?: number;
     glowIntensity?: number;
     coneSpread?: number;
-    /** mount 时播放一次 sweep 动画（用作"AI 生成完成"瞬间的强调）。 */
+    /** mount 時播放一次 sweep 動畫（用作"AI 生成完成"瞬間的強調）。 */
     animated?: boolean;
-    /** 长度 3 的 hex 颜色数组，用于 mesh-gradient 边框色调。 */
+    /** 長度 3 的 hex 顏色數組，用於 mesh-gradient 邊框色調。 */
     colors?: [string, string, string];
-    /** 内层 fill 的不透明度（0-1）。0 关闭内层填充，仅保留边光。 */
+    /** 內層 fill 的不透明度（0-1）。0 關閉內層填充，僅保留邊光。 */
     fillOpacity?: number;
 }
 

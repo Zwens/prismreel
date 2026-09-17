@@ -12,14 +12,14 @@ import { coverGradient, GRAIN_URL } from "@/lib/atelierCover";
 
 type AssetTab = "characters" | "scenes" | "props";
 
-// 资产类型 → 后端单数 type（生成端点用）。
+// 資產類型 → 後端單數 type（生成端點用）。
 const SINGULAR_TYPE: Record<AssetTab, string> = {
   characters: "character",
   scenes: "scene",
   props: "prop",
 };
 
-// 「生成更多变体」一次追加的张数 + 任务轮询参数（~5 分钟上限）。
+// 「生成更多變體」一次追加的張數 + 任務輪詢參數（~5 分鐘上限）。
 const VARIANT_BATCH = 3;
 const POLL_INTERVAL_MS = 2000;
 const POLL_MAX_ATTEMPTS = 150;
@@ -28,18 +28,18 @@ interface AssetInspectorProps {
   asset: Character | Scene | Prop;
   type: AssetTab;
   sourceName: string;
-  /** 裸 series/project id（调生成/刷新 API 用）。 */
+  /** 裸 series/project id（調生成/刷新 API 用）。 */
   sourceId: string;
-  /** 资产归属：series/global 无生成端点 → 变体生成置灰。 */
+  /** 資產歸屬：series/global 無生成端點 → 變體生成置灰。 */
   sourceKind: "series" | "project" | "global";
   starred: boolean;
   onClose: () => void;
   onToggleStar: () => void;
-  /** 提升到全局成功后回调（父层刷新库以显示新入池资产）。可选。 */
+  /** 提升到全局成功後回調（父層刷新庫以顯示新入池資產）。可選。 */
   onPromoted?: () => void;
 }
 
-/** Character 走 characterImageAsset（reference_sheet→full_body，归一化成 ImageAsset 形状）；scene/prop 用 image_asset。 */
+/** Character 走 characterImageAsset（reference_sheet→full_body，歸一化成 ImageAsset 形狀）；scene/prop 用 image_asset。 */
 function primaryImageAsset(asset: Character | Scene | Prop, type: AssetTab): ImageAsset | undefined {
   if (type === "characters") return characterImageAsset(asset as Character);
   return (asset as Scene | Prop).image_asset;
@@ -62,14 +62,14 @@ const MIME_EXT: Record<string, string> = {
   "image/svg+xml": "svg",
 };
 
-/** 下载文件名扩展名：优先取 URL 路径后缀（剥掉 query/签名），否则回退到 blob content-type，默认 png。 */
+/** 下載文件名擴展名：優先取 URL 路徑後綴（剝掉 query/簽名），否則回退到 blob content-type，默認 png。 */
 function downloadExt(url: string, contentType?: string): string {
   try {
     const path = new URL(url, window.location.origin).pathname;
     const m = path.match(/\.([a-z0-9]+)$/i);
     if (m) return m[1].toLowerCase();
   } catch {
-    // URL 解析失败时退回 content-type / 默认
+    // URL 解析失敗時退回 content-type / 默認
   }
   const fromType = contentType?.split(";")[0].trim().toLowerCase();
   if (fromType && MIME_EXT[fromType]) return MIME_EXT[fromType];
@@ -77,11 +77,11 @@ function downloadExt(url: string, contentType?: string): string {
 }
 
 /**
- * 资产库右侧详情抽屉（Line B "Luminous Atelier"）。
- * 库专用，不复用共享 AssetCard。展示选中资产的 hero + 变体条 + 元数据 + prompt + 动作。
- * 元数据数据驱动（metaRows）：SEED/MODEL/SIZE 当前数据模型未存（变体仅
- * id/url/created_at/prompt_used），故读为 undefined → 不渲染；后端补字段后 UI 零改自动出现。
- * 动作区：「下载」实做；「生成更多变体」对 project 资产实做（series 置灰，无生成端点）。
+ * 資產庫右側詳情抽屜（Line B "Luminous Atelier"）。
+ * 庫專用，不復用共享 AssetCard。展示選中資產的 hero + 變體條 + 元數據 + prompt + 動作。
+ * 元數據數據驅動（metaRows）：SEED/MODEL/SIZE 當前數據模型未存（變體僅
+ * id/url/created_at/prompt_used），故讀為 undefined → 不渲染；後端補字段後 UI 零改自動出現。
+ * 動作區：「下載」實做；「生成更多變體」對 project 資產實做（series 置灰，無生成端點）。
  */
 export default function AssetInspector({
   asset,
@@ -100,7 +100,7 @@ export default function AssetInspector({
     scenes: t("sceneLabel"),
     props: t("propLabel"),
   };
-  // created_at 来自 time.time()（秒）；容错已是毫秒的情况。相对时间标签走 i18n。
+  // created_at 來自 time.time()（秒）；容錯已是毫秒的情況。相對時間標籤走 i18n。
   const timeAgo = (ts?: number): string => {
     if (!ts) return "—";
     const tsMs = ts > 1e12 ? ts : ts * 1000;
@@ -112,9 +112,9 @@ export default function AssetInspector({
   };
   const imageAsset = primaryImageAsset(asset, type);
   const baseVariants = imageAsset?.variants ?? [];
-  // 本地新生成的变体（来自「生成更多变体」）。父层 library 自己持有 `sources` 且只在整页
-  // reload 时刷新，所以新变体在此并入以即时反馈；按 id 与 prop 集去重，父层后续 reload
-  // （届时新变体会随 `baseVariants` 带回）也不会重复。
+  // 本地新生成的變體（來自「生成更多變體」）。父層 library 自己持有 `sources` 且只在整頁
+  // reload 時刷新，所以新變體在此併入以即時反饋；按 id 與 prop 集去重，父層後續 reload
+  // （屆時新變體會隨 `baseVariants` 帶回）也不會重複。
   const [extraVariants, setExtraVariants] = useState<ImageVariant[]>([]);
   const baseIds = new Set(baseVariants.map((v) => v.id));
   const variants = [...baseVariants, ...extraVariants.filter((v) => !baseIds.has(v.id))];
@@ -123,13 +123,13 @@ export default function AssetInspector({
   const [generating, setGenerating] = useState(false);
   const [promoting, setPromoting] = useState(false);
 
-  // 切换选中资产时重置本地高亮的变体 + 丢弃上一个资产本地追加的变体。
+  // 切換選中資產時重置本地高亮的變體 + 丟棄上一個資產本地追加的變體。
   useEffect(() => {
     setActiveVariantId(defaultId);
     setExtraVariants([]);
   }, [asset.id, defaultId]);
 
-  // 卸载/切换资产后避免异步轮询回写已失效的状态。
+  // 卸載/切換資產後避免異步輪詢回寫已失效的狀態。
   const aliveRef = useRef(true);
   const currentAssetIdRef = useRef(asset.id);
   useEffect(() => {
@@ -142,7 +142,7 @@ export default function AssetInspector({
     };
   }, []);
 
-  // a11y：抽屉打开时把焦点移入面板、Escape 关闭、关闭后还原焦点（非模态，不做 focus trap）。
+  // a11y：抽屜打開時把焦點移入面板、Escape 關閉、關閉後還原焦點（非模態，不做 focus trap）。
   const asideRef = useRef<HTMLElement>(null);
   const onCloseRef = useRef(onClose);
   useEffect(() => {
@@ -164,15 +164,15 @@ export default function AssetInspector({
   const activeVariant = variants.find((v) => v.id === activeVariantId) ?? variants[0];
   const rawHeroUrl = activeVariant?.url ?? fallbackUrl(asset, type);
   const heroUrl = rawHeroUrl ? mediaUrl(rawHeroUrl) : undefined;
-  // prop 素材若来自视频输出（如真人换装合成），无 image_url/variant 时退回 video_url，
-  // 与 AssetLibraryPage 卡片列表的 getVideoUrl 逻辑一致。
+  // prop 素材若來自視頻輸出（如真人換裝合成），無 image_url/variant 時退回 video_url，
+  // 與 AssetLibraryPage 卡片列表的 getVideoUrl 邏輯一致。
   const rawHeroVideoUrl = !heroUrl && type === "props" ? (asset as Prop).video_url : undefined;
   const heroVideoUrl = rawHeroVideoUrl ? mediaUrl(rawHeroVideoUrl) : undefined;
   const prompt = activeVariant?.prompt_used ?? "";
 
-  // 元数据行（数据驱动）：先放现有四项，再在字段存在时追加 SEED/MODEL/SIZE。
-  // 后端 TODO：当前 ImageVariant 仅 id/url/created_at/prompt_used，资产无 seed/model/size，
-  // 故 assetMeta.* 读为 undefined → 不 push → 不渲染。后端补字段后此处零改自动出现。
+  // 元數據行（數據驅動）：先放現有四項，再在字段存在時追加 SEED/MODEL/SIZE。
+  // 後端 TODO：當前 ImageVariant 僅 id/url/created_at/prompt_used，資產無 seed/model/size，
+  // 故 assetMeta.* 讀為 undefined → 不 push → 不渲染。後端補字段後此處零改自動出現。
   const assetMeta = asset as Partial<{ seed: number | string; model: string; size: string }>;
   const metaRows: { label: string; value: string }[] = [
     { label: t("metaType"), value: TYPE_LABEL[type] },
@@ -201,12 +201,12 @@ export default function AssetInspector({
       a.remove();
       URL.revokeObjectURL(objectUrl);
     } catch {
-      // 跨域(CORS)/网络失败：download 属性对跨域 URL 无效，退回到新标签打开。
+      // 跨域(CORS)/網絡失敗：download 屬性對跨域 URL 無效，退回到新標籤打開。
       window.open(heroUrl, "_blank", "noopener,noreferrer");
     }
   };
 
-  // 轮询生成任务直到完成（mirror ConsistencyVault 的 task 轮询）；失败/超时抛错。
+  // 輪詢生成任務直到完成（mirror ConsistencyVault 的 task 輪詢）；失敗/超時拋錯。
   const pollUntilDone = async (taskId: string): Promise<boolean> => {
     for (let i = 0; i < POLL_MAX_ATTEMPTS; i++) {
       await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
@@ -215,7 +215,7 @@ export default function AssetInspector({
       try {
         status = await api.getTaskStatus(taskId);
       } catch {
-        continue; // 瞬时网络错误：继续轮询
+        continue; // 瞬時網絡錯誤：繼續輪詢
       }
       if (status?.status === "completed") return true;
       if (status?.status === "failed") throw new Error(status.error || t("genFailed"));
@@ -223,12 +223,12 @@ export default function AssetInspector({
     throw new Error(t("genTimeout"));
   };
 
-  // 生成更多变体：仅 project 资产可用（series 无生成端点）。复用按项目 batch 生成管线，
-  // 完成后 re-fetch 该项目，把新变体并入本地展示并高亮最新一张。
+  // 生成更多變體：僅 project 資產可用（series 無生成端點）。複用按項目 batch 生成管線，
+  // 完成後 re-fetch 該項目，把新變體併入本地展示並高亮最新一張。
   const handleGenerateVariants = async () => {
     if (sourceKind !== "project" || generating) return;
     const assetId = asset.id;
-    // 父层传入的是列表 key（`project-<id>`）；生成/刷新 API 需要裸 project id。
+    // 父層傳入的是列表 key（`project-<id>`）；生成/刷新 API 需要裸 project id。
     const projectId = sourceId.replace(/^project-/, "");
     setGenerating(true);
     const tid = toast.progress(t("generatingVariants"), {
@@ -250,7 +250,7 @@ export default function AssetInspector({
       const taskId = (resp as { _task_id?: string } | undefined)?._task_id;
       if (taskId) {
         const done = await pollUntilDone(taskId);
-        if (!done) return; // 已卸载
+        if (!done) return; // 已卸載
       }
       if (!aliveRef.current || currentAssetIdRef.current !== assetId) return;
       const proj = await api.getProject(projectId);
@@ -276,11 +276,11 @@ export default function AssetInspector({
     }
   };
 
-  // 提升到全局：把 project/series 来源资产 deep-copy 进全局共享池（global 来源不显示该按钮）。
-  // 成功后 toast 并回调父层刷新（新入池资产即出现在「全局 / 共享」分组）。
+  // 提升到全局：把 project/series 來源資產 deep-copy 進全局共享池（global 來源不顯示該按鈕）。
+  // 成功後 toast 並回調父層刷新（新入池資產即出現在「全局 / 共享」分組）。
   const handlePromote = async () => {
     if (sourceKind === "global" || promoting) return;
-    // 父层传入的是列表 key（`project-<id>` / `series-<id>`）；promote API 需要裸 id。
+    // 父層傳入的是列表 key（`project-<id>` / `series-<id>`）；promote API 需要裸 id。
     const rawSourceId = sourceId.replace(/^(project|series)-/, "");
     setPromoting(true);
     try {
@@ -302,7 +302,7 @@ export default function AssetInspector({
       className="fixed inset-0 z-50 w-full md:static md:inset-auto md:z-auto md:w-[340px] flex-shrink-0 h-full flex flex-col overflow-y-auto bg-surface border-l border-glass-border shadow-2xl atelier-reveal focus:outline-none"
       aria-label={t("inspectorAria")}
     >
-      {/* Hero — 磨砂铺底 + object-contain：三视图/横竖混杂的资产完整展示不裁切（避免裁头）。 */}
+      {/* Hero — 磨砂鋪底 + object-contain：三視圖/橫豎混雜的資產完整展示不裁切（避免裁頭）。 */}
       <div className="relative aspect-[3/4] bg-surface-inset overflow-hidden flex-shrink-0">
         {heroUrl ? (
           <>
@@ -317,7 +317,7 @@ export default function AssetInspector({
         ) : heroVideoUrl ? (
           <video src={heroVideoUrl} muted loop playsInline autoPlay controls className="relative w-full h-full object-contain" />
         ) : (
-          // 无图像：确定性渐变封面 + 颗粒，替代发灰占位图标。
+          // 無圖像：確定性漸變封面 + 顆粒，替代發灰佔位圖標。
           <>
             <div className="absolute inset-0" style={{ background: coverGradient(asset.id) }} aria-hidden="true" />
             <div
@@ -432,9 +432,9 @@ export default function AssetInspector({
 
         {/* Actions */}
         {/*
-          生成更多变体：project 资产复用「按项目 batch 生成」管线，对当前 asset append 新变体
-          （不替换），完成后并入本地展示并高亮最新一张；series 资产无生成端点（生成需在具体
-          项目内进行），故置灰并提示在剧集内生成。「用于分镜」按钮已移除（占位、无落地路径）。
+          生成更多變體：project 資產複用「按項目 batch 生成」管線，對當前 asset append 新變體
+          （不替換），完成後併入本地展示並高亮最新一張；series 資產無生成端點（生成需在具體
+          項目內進行），故置灰並提示在劇集內生成。「用於分鏡」按鈕已移除（佔位、無落地路徑）。
         */}
         <div className="flex flex-col gap-2">
           {sourceKind === "project" ? (
@@ -461,7 +461,7 @@ export default function AssetInspector({
               </span>
             </button>
           )}
-          {/* 提升到全局：project/series 来源可用；global 来源隐藏（无需自我提升）。 */}
+          {/* 提升到全局：project/series 來源可用；global 來源隱藏（無需自我提升）。 */}
           {sourceKind !== "global" && (
             <button
               type="button"
@@ -473,7 +473,7 @@ export default function AssetInspector({
               {promoting ? t("promoting") : t("promoteToGlobal")}
             </button>
           )}
-          {/* 下载：v1 实做 */}
+          {/* 下載：v1 實做 */}
           <button
             type="button"
             onClick={handleDownload}

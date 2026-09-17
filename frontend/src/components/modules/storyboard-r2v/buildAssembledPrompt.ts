@@ -5,12 +5,12 @@ import type { ShotNode } from "./ShotCard";
  * (visual narrative) + structured fields (camera language metadata).
  *
  * Rules (grill-me 2026-05-28, corrected):
- * - duration → NOT in prompt (唯一的特殊字段，走 API `duration` 参数)
+ * - duration → NOT in prompt (唯一的特殊字段，走 API `duration` 參數)
  * - shot_size + camera_angle → appended to prompt tail
- * - camera_movement → appended to prompt tail (自然语言描述，含速度)
- * - transition_hint → appended to prompt tail (可选，多分镜视频内转场)
+ * - camera_movement → appended to prompt tail (自然語言描述，含速度)
+ * - transition_hint → appended to prompt tail (可選，多分鏡視頻內轉場)
  *
- * Final = textarea visual narrative + 运镜 + 景别/机位 + 转场
+ * Final = textarea visual narrative + 運鏡 + 景別/機位 + 轉場
  */
 export function buildAssembledPrompt(shot: ShotNode): string {
     let base = (shot.prompt || "").trim();

@@ -315,7 +315,7 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-bold text-foreground">{t("klingProvider")}</h3>
                   </div>
-                  {/* DashScope 代理通道已拔除，Kling 只剩直连；模式切换器随之移除。 */}
+                  {/* DashScope 代理通道已拔除，Kling 只剩直連；模式切換器隨之移除。 */}
                   <div className="bg-glass border border-glass-border rounded-lg p-4 space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">

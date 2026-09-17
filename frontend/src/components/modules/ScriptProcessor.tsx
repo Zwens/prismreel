@@ -205,7 +205,7 @@ export default function ScriptProcessor() {
 
     return (
         // R2V v2 Phase 3: Script step = main editor (left) + Previously on... (right).
-        // Entity extraction still runs via the trailing "提取实体" button —
+        // Entity extraction still runs via the trailing "提取實體" button —
         // parsed entities flow to series pools and surface in Cast step.
         <div className="flex h-full w-full overflow-hidden">
             {/* Left: main script editor */}
@@ -257,7 +257,7 @@ export default function ScriptProcessor() {
                             // Goes through /update_text instead of /reparse
                             // so we don't trigger a heavy LLM call just for
                             // typing — that's reserved for the explicit
-                            // "提取实体" CTA.
+                            // "提取實體" CTA.
                             if (!currentProject) return;
                             const stored = ((currentProject as any).original_text ?? currentProject.originalText) || "";
                             if (stored === script) return;

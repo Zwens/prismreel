@@ -21,13 +21,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         const html = document.documentElement;
-        // 移除全部 5 个预设 class + 旧版遗留的 dark/light，再加当前主题
+        // 移除全部 5 個預設 class + 舊版遺留的 dark/light，再加當前主題
         html.classList.remove(...THEME_PRESETS, 'dark', 'light');
         html.classList.add(theme);
     }, [theme]);
 
     useEffect(() => {
-        // animations=false → 挂 html.no-motion，CSS 据此降低/禁用过渡动画
+        // animations=false → 掛 html.no-motion，CSS 據此降低/禁用過渡動畫
         document.documentElement.classList.toggle('no-motion', !animations);
     }, [animations]);
 
@@ -38,7 +38,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return (
         <NextIntlClientProvider locale={locale} messages={messages} timeZone="Asia/Shanghai">
             {/* MotionConfig: respect OS prefers-reduced-motion ("user"); when the
-             *  in-app 动效 toggle is off, force-reduce Framer animations ("always"). */}
+             *  in-app 動效 toggle is off, force-reduce Framer animations ("always"). */}
             <MotionConfig reducedMotion={animations ? "user" : "always"}>
                 {/* LightboxProvider must wrap any subtree that uses PreviewImage /
                  *  PreviewVideo. Singleton portal — see Issue 14 design notes in

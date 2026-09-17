@@ -27,7 +27,7 @@ interface Props {
      *  task detection in the active session, just less precise across
      *  refreshes (timer resets). */
     createdAt?: number;
-    /** Status copy: "排队中" / "生成中" — fully formatted by parent. */
+    /** Status copy: "排隊中" / "生成中" — fully formatted by parent. */
     statusLabel: string;
     /** Soft threshold beyond which we reveal Cancel + Diagnose. Default 60s. */
     revealAfterMs?: number;

@@ -51,8 +51,8 @@ export default function PlaygroundPage() {
   const setPlaygroundStage = usePlaygroundStore((s) => s.setPlaygroundStage);
   const { generate } = useGenerationRunner();
 
-  // 三段式 UI 是 Playground 独有的：提交后要切到结果视图。AI 视频页没有
-  // stage 概念，所以这一步留在页面里，而不是塞进共用的 runner。
+  // 三段式 UI 是 Playground 獨有的：提交後要切到結果視圖。AI 視頻頁沒有
+  // stage 概念，所以這一步留在頁面裏，而不是塞進共用的 runner。
   const handleGenerate = () => {
     if (!prompt.trim()) return;
     generate();

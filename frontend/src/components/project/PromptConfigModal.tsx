@@ -137,9 +137,9 @@ export default function PromptConfigModal({ isOpen, onClose }: PromptConfigModal
                                     {t("promptEmptyHint")}
                                 </div>
 
-                                {/* Issue 13: polish 用的 LLM 模型选择。优先项目级 → 系列级 →
-                                    LLMAdapter 默认（qwen3.6-plus）。三个推荐选项都是
-                                    vision-capable，能让带首帧/参考图的润色更准确。 */}
+                                {/* Issue 13: polish 用的 LLM 模型選擇。優先項目級 → 系列級 →
+                                    LLMAdapter 默認（qwen3.6-plus）。三個推薦選項都是
+                                    vision-capable，能讓帶首幀/參考圖的潤色更準確。 */}
                                 <div className="space-y-2">
                                     <div>
                                         <h3 className="text-sm font-bold text-foreground">Polish 模型</h3>

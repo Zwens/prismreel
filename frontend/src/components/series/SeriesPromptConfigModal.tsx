@@ -134,9 +134,9 @@ export default function SeriesPromptConfigModal({ isOpen, onClose, seriesId, onS
                                     {t("seriesPromptEmptyHint")}
                                 </div>
 
-                                {/* Issue 13: polish 用的 LLM 模型。系列级覆盖 → 项目级覆盖
-                                    → 系统默认。三个推荐选项都是 vision-capable，能让带
-                                    首帧/参考图的润色更准确。 */}
+                                {/* Issue 13: polish 用的 LLM 模型。系列級覆蓋 → 項目級覆蓋
+                                    → 系統默認。三個推薦選項都是 vision-capable，能讓帶
+                                    首幀/參考圖的潤色更準確。 */}
                                 <div className="space-y-2">
                                     <div>
                                         <h3 className="text-sm font-bold text-foreground">{t("polishModelTitle")}</h3>

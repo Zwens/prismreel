@@ -1,7 +1,7 @@
 "use client";
 /**
  * TaskQueuePanel — slide-out side panel from the right edge that
- * lists every video task across the entire project (跨 shot 总览).
+ * lists every video task across the entire project (跨 shot 總覽).
  * Per grill Q10:
  *   - 360px wide, push main area (caller controls layout)
  *   - Tabs: Active | Done | Failed (default Active)
@@ -233,7 +233,7 @@ function TaskRow({
     const inputThumbUrl = task.image_url || undefined;
     const outputVideoUrl = task.video_url || undefined;
 
-    // Provider ID display: when provider_name=dashscope, label as "百炼"
+    // Provider ID display: when provider_name=dashscope, label as "百鍊"
     // (user-friendly Chinese name) since that's the console they'll paste into.
     const providerLabel =
         task.provider_name === "dashscope" ? t("providerDashscope")

@@ -137,9 +137,9 @@ interface ShotCardProps {
      *  top-right corner toggles this. */
     expanded: boolean;
     onToggleExpanded: () => void;
-    /** PR-3c · 闭环生成. Generation 移到 ShotCard 内的全宽行 (Action
-     *  Bar 之后, disclosure bar 之前), 含 count selector 同行. Host
-     *  传入 current count + handlers + canGenerate gate.
+    /** PR-3c · 閉環生成. Generation 移到 ShotCard 內的全寬行 (Action
+     *  Bar 之後, disclosure bar 之前), 含 count selector 同行. Host
+     *  傳入 current count + handlers + canGenerate gate.
      *  Spec: r2v-workflow-v3-unified.md §4.3.1 / Q12. */
     generateCount?: number;
     /** At-a-glance "model · duration" summary shown in the generation row,
@@ -257,7 +257,7 @@ export default function ShotCard({
     }, [shot.tabMode, shot.prompt, shot.t2iImageUrls, shot.t2iSelectedIndex, shot.t2iImageUrl, shot.imageUrl, characters, scenes, props])();
 
     // castAvatars — character avatar group for the "Cast:" row above
-    // the prompt textarea (L5 borrow from 火山剧创's 出镜角色). De-
+    // the prompt textarea (L5 borrow from 火山劇創's 出鏡角色). De-
     // duped by id. We accept either [character:name] or [characterN:
     // name] patterns since the asset chip bar emits both formats.
     const castAvatars = useCallback((): Array<{ id: string; name: string; avatarUrl?: string }> => {
@@ -441,7 +441,7 @@ export default function ShotCard({
     // Legacy renderGenerateButton was removed in the workbench
     // redesign (Sweep G, 2026-05-21): generation moved to the
     // ParamsSection's "Generate ×N" CTA inside the attached
-    // ShotPanel, and T2I首帧 generation lives in T2ISubsection's
+    // ShotPanel, and T2I首幀 generation lives in T2ISubsection's
     // "+gen" tile. Keeping it on the ShotCard duplicated the action
     // with a different label (i18n vs English) and a different
     // batch-size semantics (×1 vs ×N) — confusing and the source of
@@ -838,7 +838,7 @@ export default function ShotCard({
                             />
                         </div>
 
-                        {/* Dialogue text display (read-only — editing via 配音工作台 modal) */}
+                        {/* Dialogue text display (read-only — editing via 配音工作臺 modal) */}
                         {shot.dialogueStructured?.line && (
                             <div className="pl-3.5 border-l-2 border-accent/40">
                                 <span className="block font-mono text-[0.5625rem] uppercase tracking-[0.08em] text-text-muted">

@@ -1,9 +1,9 @@
 "use client";
 /**
- * PreviousEpisodeSummary — Script step right rail ("上回书说到 / Previously on...").
+ * PreviousEpisodeSummary — Script step right rail ("上回書說到 / Previously on...").
  *
  * Design v2 Phase 3 (docs/design/r2v-workflow-v2.md Q7-followup):
- *   · Dual title: 中文 "上回书说到" + 英文小标题 "Previously on..."
+ *   · Dual title: 中文 "上回書說到" + 英文小標題 "Previously on..."
  *   · AI summary is *on-demand only* — user clicks button to spend LLM
  *     quota. Avoid silent autoload that drains user's quota.
  *   · Raw snippet (last ~600 chars of prev episode) shown immediately,

@@ -11,7 +11,7 @@
  *   - Filter chips: All / ★ Starred only / 此模型 (current model)
  *   - Sort: by time desc (default) or by model
  *   - Multi-row wrap inside each batch (no horizontal scroll)
- *   - Per-row "复用此批参数" button on each collapsed batch header
+ *   - Per-row "複用此批參數" button on each collapsed batch header
  *
  * Batch detection: VideoTask doesn't have a batch_id field; we
  * approximate by clustering tasks whose created_at differs by ≤ a
@@ -341,7 +341,7 @@ function BatchBlock({
     // (body tier, the things that disambiguate this batch). Right =
     // status pips (only when nonzero). Params (negative, resolution,
     // ratio) demoted to title attribute so the row breathes — they
-    // matter on the rare 复用 click, not on every scan.
+    // matter on the rare 複用 click, not on every scan.
     return (
         <div className="rounded-[14px] border border-glass-border bg-black/15">
             <div className="flex items-center gap-2 px-2 py-2">

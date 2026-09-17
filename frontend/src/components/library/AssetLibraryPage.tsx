@@ -22,7 +22,7 @@ const SINGULAR: Record<AssetTab, string> = { characters: "character", scenes: "s
 
 interface AssetSource {
   id: string; // `series-X` / `project-X`（列表 key）
-  rawId: string; // 裸 series/project id（调 API 用）
+  rawId: string; // 裸 series/project id（調 API 用）
   name: string;
   kind: "series" | "project" | "global";
   characters: Character[];
@@ -30,14 +30,14 @@ interface AssetSource {
   props: Prop[];
 }
 
-/** 渲染条目：携带所属 source，使「按类型」视图也能按源显示/操作。 */
+/** 渲染條目：攜帶所屬 source，使「按類型」視圖也能按源顯示/操作。 */
 interface RenderItem {
   asset: Character | Scene | Prop;
   type: AssetTab;
   src: AssetSource;
 }
 
-/** 渲染分组：「按类型」按资产类型、「按项目」按源，统一结构（title + meta + items）。 */
+/** 渲染分組：「按類型」按資產類型、「按項目」按源，統一結構（title + meta + items）。 */
 interface RenderGroup {
   key: string;
   title: string;
@@ -45,9 +45,9 @@ interface RenderGroup {
   items: RenderItem[];
 }
 
-/** 取图：character 走 characterImageUrl（reference_sheet→full_body→legacy）；scene/prop 用 image_asset。
- *  后端存的是相对路径（"uploads/x.png" / "output/assets/character/x.png"），必须经 mediaUrl() 转成
- *  浏览器可加载的绝对 URL——否则 <img src> 会相对当前页面地址解析，直接 404。 */
+/** 取圖：character 走 characterImageUrl（reference_sheet→full_body→legacy）；scene/prop 用 image_asset。
+ *  後端存的是相對路徑（"uploads/x.png" / "output/assets/character/x.png"），必須經 mediaUrl() 轉成
+ *  瀏覽器可加載的絕對 URL——否則 <img src> 會相對當前頁面地址解析，直接 404。 */
 function getImageUrl(asset: Character | Scene | Prop, type: AssetTab): string | undefined {
   let raw: string | undefined;
   if (type === "characters") {
@@ -64,8 +64,8 @@ function getImageUrl(asset: Character | Scene | Prop, type: AssetTab): string | 
   return raw ? mediaUrl(raw) : undefined;
 }
 
-/** prop 素材若来自视频输出（如真人换装合成），image_url 为空、video_url 有值——
- *  卡片改用 <video> 呈现首帧，而非塞进 <img> 造成破图。仅 prop 需要（scene/character 目前无此来源）。 */
+/** prop 素材若來自視頻輸出（如真人換裝合成），image_url 為空、video_url 有值——
+ *  卡片改用 <video> 呈現首幀，而非塞進 <img> 造成破圖。僅 prop 需要（scene/character 目前無此來源）。 */
 function getVideoUrl(asset: Character | Scene | Prop, type: AssetTab): string | undefined {
   if (type !== "props") return undefined;
   const raw = (asset as Prop).video_url;
@@ -77,10 +77,10 @@ function variantCount(asset: Character | Scene | Prop, type: AssetTab): number {
   return (asset as Scene | Prop).image_asset?.variants?.length ?? 0;
 }
 
-/** 「最近」排序用：派生资产的最新图片时间戳（秒，time.time）。
- *  character 取 full_body/three_view/headshot updated_at + reference_sheet 变体 created_at 的最大值；
- *  scene/prop 取 image_asset 的 created_at/image_updated_at + 变体 created_at 的最大值。
- *  全无时间戳 → 0（降序时排最后）。纯前端派生。 */
+/** 「最近」排序用：派生資產的最新圖片時間戳（秒，time.time）。
+ *  character 取 full_body/three_view/headshot updated_at + reference_sheet 變體 created_at 的最大值；
+ *  scene/prop 取 image_asset 的 created_at/image_updated_at + 變體 created_at 的最大值。
+ *  全無時間戳 → 0（降序時排最後）。純前端派生。 */
 function recencyOf(asset: Character | Scene | Prop, type: AssetTab): number {
   const ts: number[] = [];
   if (type === "characters") {
@@ -91,8 +91,8 @@ function recencyOf(asset: Character | Scene | Prop, type: AssetTab): number {
     for (const v of c.reference_sheet?.image_variants ?? []) if (v.created_at) ts.push(v.created_at);
   } else {
     const a = asset as Scene | Prop;
-    // ImageAsset 的 TS 类型未声明 created_at/image_updated_at，但后端确实下发（time.time 秒）；
-    // 防御性读取后端字段，并以变体 created_at 兜底。
+    // ImageAsset 的 TS 類型未聲明 created_at/image_updated_at，但後端確實下發（time.time 秒）；
+    // 防禦性讀取後端字段，並以變體 created_at 兜底。
     const ia = a.image_asset as (ImageAsset & { created_at?: number; image_updated_at?: number }) | undefined;
     if (ia?.created_at) ts.push(ia.created_at);
     if (ia?.image_updated_at) ts.push(ia.image_updated_at);
@@ -158,8 +158,8 @@ export default function AssetLibraryPage() {
         }
       }
 
-      // 全局/共享池作为一个 kind:"global" 源（空池则不加）。名称在加载时取 i18n，
-      // 与 series/project 的 data 名同样存进 source.name。
+      // 全局/共享池作為一個 kind:"global" 源（空池則不加）。名稱在加載時取 i18n，
+      // 與 series/project 的 data 名同樣存進 source.name。
       const g = (globalPool || {}) as { characters?: Character[]; scenes?: Scene[]; props?: Prop[] };
       const gChars = g.characters ?? [];
       const gScenes = g.scenes ?? [];
@@ -185,7 +185,7 @@ export default function AssetLibraryPage() {
     }
   };
 
-  // 全局计数（facet 总览；不受搜索/星标过滤影响，与分组标题里的计数互补）。
+  // 全局計數（facet 總覽；不受搜索/星標過濾影響，與分組標題裏的計數互補）。
   const counts = useMemo(() => {
     let ch = 0,
       sc = 0,
@@ -216,7 +216,7 @@ export default function AssetLibraryPage() {
     props: t("propLabel"),
   };
 
-  // 排序选项（usage 禁用：需后端使用频次统计）+ 触发按钮当前态文案。
+  // 排序選項（usage 禁用：需後端使用頻次統計）+ 觸發按鈕當前態文案。
   const sortOptions: { id: SortMode; label: string; disabled?: boolean }[] = [
     { id: "default", label: t("sortDefault") },
     { id: "name", label: t("sortName") },
@@ -230,11 +230,11 @@ export default function AssetLibraryPage() {
     usage: t("sortUsage"),
   };
 
-  // 渲染模型：两种轴。
-  //  - "type"（默认）：按资产类型分 3 组（角色/场景/道具），每组含所有 source 的该类型资产，
-  //    卡片副标题显示所属 source 名。
-  //  - "source"：按 source 分组（系列/项目/全局），保持原行为。
-  // 两者都受 activeType pill + 搜索 + 星标过滤，并按 sortMode 排序。
+  // 渲染模型：兩種軸。
+  //  - "type"（默認）：按資產類型分 3 組（角色/場景/道具），每組含所有 source 的該類型資產，
+  //    卡片副標題顯示所屬 source 名。
+  //  - "source"：按 source 分組（系列/項目/全局），保持原行為。
+  // 兩者都受 activeType pill + 搜索 + 星標過濾，並按 sortMode 排序。
   const groups = useMemo<RenderGroup[]>(() => {
     const scopedTypes: AssetTab[] = activeType === "all" ? ["characters", "scenes", "props"] : [activeType];
     const q = searchQuery.trim().toLowerCase();
@@ -244,7 +244,7 @@ export default function AssetLibraryPage() {
     const sortItems = (items: RenderItem[]) => {
       if (sortMode === "name") items.sort((x, y) => x.asset.name.localeCompare(y.asset.name, "zh"));
       else if (sortMode === "recent") items.sort((x, y) => recencyOf(y.asset, y.type) - recencyOf(x.asset, x.type));
-      // "default" / "usage"（禁用）：保持插入顺序。
+      // "default" / "usage"（禁用）：保持插入順序。
       return items;
     };
     const typeLabel = (ty: AssetTab) =>
@@ -277,7 +277,7 @@ export default function AssetLibraryPage() {
 
   const visibleCount = groups.reduce((acc, g) => acc + g.items.length, 0);
 
-  // 选中的资产被筛掉后自动关 inspector（避免残留指向已隐藏资产）。
+  // 選中的資產被篩掉後自動關 inspector（避免殘留指向已隱藏資產）。
   useEffect(() => {
     if (!selected) return;
     const stillVisible = groups.some((grp) =>
@@ -299,18 +299,18 @@ export default function AssetLibraryPage() {
           ? s
           : { ...s, [type]: (s[type] as (Character | Scene | Prop)[]).map((a) => (a.id === assetId ? { ...a, starred: val } : a)) }
       );
-    setSources(setStarredTo(!prevStarred)); // 乐观更新
+    setSources(setStarredTo(!prevStarred)); // 樂觀更新
     try {
       if (src.kind === "series") await api.toggleSeriesAssetStarred(src.rawId, assetId, SINGULAR[type]);
       else if (src.kind === "global") await api.updateLibraryAsset(SINGULAR[type], assetId, { starred: !prevStarred });
       else await api.toggleAssetStarred(src.rawId, assetId, SINGULAR[type]);
     } catch (e) {
       console.error("toggle star failed", e);
-      setSources(setStarredTo(prevStarred)); // 失败:精确还原到原值（不靠再翻一次，避免并发下双翻 desync）
+      setSources(setStarredTo(prevStarred)); // 失敗:精確還原到原值（不靠再翻一次，避免併發下雙翻 desync）
     }
   };
 
-  // 选中资产的实时引用（以 sources 为单一数据源，保证星标等变更同步到 inspector）。
+  // 選中資產的實時引用（以 sources 為單一數據源，保證星標等變更同步到 inspector）。
   const selectedSource = selected ? sources.find((s) => s.id === selected.sourceId) : undefined;
   const selectedAsset =
     selected && selectedSource
@@ -344,9 +344,9 @@ export default function AssetLibraryPage() {
         </div>
       </header>
 
-      {/* Toolbar: 视图切换 + 类型 pills（带计数）+ ★ + 搜索 + 排序 */}
+      {/* Toolbar: 視圖切換 + 類型 pills（帶計數）+ ★ + 搜索 + 排序 */}
       <div className="px-4 md:px-7 pb-2 flex flex-wrap items-center gap-3">
-        {/* 视图切换：按类型 ↔ 按项目 */}
+        {/* 視圖切換：按類型 ↔ 按項目 */}
         <div
           className="inline-flex p-[3px] rounded-full bg-surface-inset atelier-pill-tabs"
           role="group"
@@ -394,7 +394,7 @@ export default function AssetLibraryPage() {
           })}
         </div>
 
-        {/* ★ 加星过滤 */}
+        {/* ★ 加星過濾 */}
         <button
           type="button"
           aria-pressed={starredOnly}
@@ -422,7 +422,7 @@ export default function AssetLibraryPage() {
           />
         </div>
 
-        {/* 排序下拉：默认 / 名称 / 最近（真实）/ 使用频次（禁用，需后端） */}
+        {/* 排序下拉：默認 / 名稱 / 最近（真實）/ 使用頻次（禁用，需後端） */}
         <div className="relative">
           <button
             type="button"
@@ -438,7 +438,7 @@ export default function AssetLibraryPage() {
           </button>
           {sortOpen && (
             <>
-              {/* 点外关闭遮罩 */}
+              {/* 點外關閉遮罩 */}
               <button
                 type="button"
                 aria-hidden="true"
@@ -492,7 +492,7 @@ export default function AssetLibraryPage() {
         </div>
       </div>
 
-      {/* Body: 网格（按系列分组）+ 右侧 inspector */}
+      {/* Body: 網格（按系列分組）+ 右側 inspector */}
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <div className="flex-1 overflow-y-auto px-7 pb-10 pt-3">
           {loading ? (
@@ -530,14 +530,14 @@ export default function AssetLibraryPage() {
             <div className="space-y-6">
               {groups.map((grp) => (
                 <div key={grp.key}>
-                  {/* 分组标题 + 尾线 + 计数 */}
+                  {/* 分組標題 + 尾線 + 計數 */}
                   <div className="flex items-baseline gap-3 mb-4">
                     <span className="text-[1.5rem] font-display atelier-display font-semibold text-foreground tracking-tight">{grp.title}</span>
                     <span className="font-mono text-[0.625rem] text-text-muted tracking-wide uppercase">{grp.meta}</span>
                     <span className="atelier-group-line flex-1 h-px bg-border-subtle" />
                   </div>
 
-                  {/* 卡片网格（库专用富卡片） */}
+                  {/* 卡片網格（庫專用富卡片） */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {grp.items.map(({ asset, type, src }, i) => {
                       const url = getImageUrl(asset, type);
@@ -553,7 +553,7 @@ export default function AssetLibraryPage() {
                           tabIndex={0}
                           onClick={() => setSelected({ sourceId: src.id, assetId: asset.id, type })}
                           onKeyDown={(e) => {
-                            // 仅当卡片自身获得焦点时才响应；避免嵌套的 star <button> 在 Enter/Space 时双触发
+                            // 僅當卡片自身獲得焦點時才響應；避免嵌套的 star <button> 在 Enter/Space 時雙觸發
                             if (e.target !== e.currentTarget) return;
                             if (e.key === "Enter" || e.key === " ") {
                               e.preventDefault();
@@ -569,7 +569,7 @@ export default function AssetLibraryPage() {
                           <div className={`${isChar ? "aspect-[4/3]" : "aspect-square"} bg-surface-inset overflow-hidden relative`}>
                             {url ? (
                               isChar ? (
-                                // 角色卡横竖混杂 → 磨砂铺底（模糊同图填满留白）+ object-contain 完整显示不裁切
+                                // 角色卡橫豎混雜 → 磨砂鋪底（模糊同圖填滿留白）+ object-contain 完整顯示不裁切
                                 <>
                                   <img
                                     src={url}
@@ -596,7 +596,7 @@ export default function AssetLibraryPage() {
                                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
                               />
                             ) : (
-                              // 无图：atelier 文字/渐变封面（取代发灰占位图标）— 确定性渐变 + 颗粒 + 首字母
+                              // 無圖：atelier 文字/漸變封面（取代發灰佔位圖標）— 確定性漸變 + 顆粒 + 首字母
                               <div
                                 className="absolute inset-0 grid place-items-center overflow-hidden"
                                 style={{ background: coverGradient(asset.id || asset.name) }}
@@ -637,7 +637,7 @@ export default function AssetLibraryPage() {
                                 </span>
                               )}
                             </div>
-                            {/* kind chip（仅「按项目」视图 + 「全部」类型下显示，告知卡片类型） */}
+                            {/* kind chip（僅「按項目」視圖 + 「全部」類型下顯示，告知卡片類型） */}
                             {viewAxis === "source" && activeType === "all" && (
                               <span className="absolute bottom-2 left-2 px-2 py-[3px] rounded-full font-mono text-[0.53125rem] font-semibold uppercase tracking-[0.06em] text-white bg-black/55 backdrop-blur-md">
                                 {TYPE_LABEL[type]}
@@ -662,7 +662,7 @@ export default function AssetLibraryPage() {
           )}
         </div>
 
-        {/* 右侧 inspector（选中才出现） */}
+        {/* 右側 inspector（選中才出現） */}
         {selected && selectedAsset && selectedSource && (
           <AssetInspector
             asset={selectedAsset}
@@ -678,7 +678,7 @@ export default function AssetLibraryPage() {
         )}
       </div>
 
-      {/* 新建全局资产弹窗（T6-entries） */}
+      {/* 新建全局資產彈窗（T6-entries） */}
       {newAssetOpen && (
         <NewLibraryAssetDialog onClose={() => setNewAssetOpen(false)} onCreated={loadAssets} />
       )}

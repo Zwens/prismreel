@@ -70,7 +70,7 @@ const MODE_CONFIG: Partial<Record<PlaygroundMode, ModeConfig>> = {
 // Shared style tokens (Line B — semantic tokens only, theme-safe)
 // ---------------------------------------------------------------------------
 
-// Neutral glass action button (本地上传 / 替换文件 / 从资产库选取). Replaces the
+// Neutral glass action button (本地上傳 / 替換文件 / 從資產庫選取). Replaces the
 // old `border-primary/30 text-primary` accent so the panel reads quiet in Line B.
 const ACTION_BTN_CLASS =
   'flex-1 px-3 py-1.5 rounded-full text-xs border border-border-subtle ' +

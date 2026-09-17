@@ -9,7 +9,7 @@
  *   - "Independent" toggle: each video plays on its own timeline
  *   - ESC closes
  *
- * The point of compare is精筛: spot the difference between two takes
+ * The point of compare is精篩: spot the difference between two takes
  * the user can't quite distinguish at thumbnail size. Sync playback
  * is the core value-add — letting them see "action vs camera vs
  * lighting" at identical frame numbers.

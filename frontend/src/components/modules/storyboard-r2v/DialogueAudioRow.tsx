@@ -503,7 +503,7 @@ function DialogueWorkbenchModal({
 
                                     {/* Action buttons — state-dependent */}
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        {/* 预听 — always visible */}
+                                        {/* 預聽 — always visible */}
                                         <button
                                             type="button"
                                             onClick={handlePreviewDub}
@@ -514,7 +514,7 @@ function DialogueWorkbenchModal({
                                             {previewing ? t("generatingPreview") : t("preview")}
                                         </button>
 
-                                        {/* 应用覆盖 — only when preview exists */}
+                                        {/* 應用覆蓋 — only when preview exists */}
                                         {previewVideoUrl && onApplyDub && (
                                             <button
                                                 type="button"
@@ -527,7 +527,7 @@ function DialogueWorkbenchModal({
                                             </button>
                                         )}
 
-                                        {/* 撤销覆盖 — only when dubbed exists and no preview */}
+                                        {/* 撤銷覆蓋 — only when dubbed exists and no preview */}
                                         {dubbedVideoUrl && !previewVideoUrl && onRevertDub && (
                                             <button
                                                 type="button"

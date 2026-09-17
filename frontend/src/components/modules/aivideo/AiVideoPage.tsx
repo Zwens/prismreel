@@ -25,7 +25,7 @@ import {
 // Scope
 //
 // Single-shot video generation, drawing on assets that already exist elsewhere
-// in the app. Deliberately narrower than the创作台: no image modes, and no r2v —
+// in the app. Deliberately narrower than the創作臺: no image modes, and no r2v —
 // reference-driven shots belong to a series' storyboard, not to a one-off.
 //
 // v2v covers editing and extension; which of the two a request means is decided
@@ -50,7 +50,7 @@ const SUPPORTS_TASK_TYPE = /^seedance-2\.5-/;
 const MODES_NEEDING_MEDIA: PlaygroundMode[] = ['i2v', 'v2v'];
 
 export default function AiVideoPage() {
-  // One store per mounted page, created once. Sharing the创作台's instance would
+  // One store per mounted page, created once. Sharing the創作臺's instance would
   // let the two pages overwrite each other's mode / prompt / input media.
   const storeRef = useRef<PlaygroundStoreApi | null>(null);
   if (storeRef.current === null) {
@@ -80,7 +80,7 @@ function AiVideoWorkspace() {
 
   const availableModels = useMemo(() => getModelsForMode(mode), [mode]);
 
-  // A mode with nothing behind it is a dead end, and the创作台 handles it badly:
+  // A mode with nothing behind it is a dead end, and the創作臺 handles it badly:
   // ModelSelector only auto-adopts when the list is non-empty, so the previous
   // mode's model id survives and gets submitted against a mode it cannot serve.
   // Here the mode is simply not submittable, and says why.

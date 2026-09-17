@@ -17,13 +17,13 @@ import clsx from "clsx";
 export interface StepPageHeaderProps {
     /** 1-based step number; rendered as the primary-colored eyebrow numeral. */
     stepNumber: number;
-    /** 已本地化的步骤名（如 "剧本" / "分镜"）。调用方传 t(...) 结果。 */
+    /** 已本地化的步驟名（如 "劇本" / "分鏡"）。調用方傳 t(...) 結果。 */
     sectionName: string;
     /** Localized title (Fraunces display). */
     title: string;
     /** Localized subtitle one-liner. */
     subtitle: string;
-    /** Info pills row, sits inline with the title (画风 / 模型 / 计数 …).
+    /** Info pills row, sits inline with the title (畫風 / 模型 / 計數 …).
      *  Each pill should use the shared capsule style; caller composes them. */
     pills?: ReactNode;
     /** Right-aligned actions (queue button, generate CTA, counters …). */
@@ -44,8 +44,8 @@ export default function StepPageHeader({
         <header className="shrink-0 border-b border-border-subtle px-7 pt-[22px] pb-4">
             <div className="flex items-start gap-5">
                 <div className="flex-1 min-w-0">
-                    {/* Eyebrow：英文走 mono uppercase + 宽 tracking；中文收紧字距
-                        并取消 uppercase —— 0.22em 字距会把中文拆散。 */}
+                    {/* Eyebrow：英文走 mono uppercase + 寬 tracking；中文收緊字距
+                        並取消 uppercase —— 0.22em 字距會把中文拆散。 */}
                     <div className={clsx(
                         "font-mono text-[0.59375rem] font-normal text-text-muted",
                         isCJK ? "tracking-[0.08em]" : "uppercase tracking-[0.22em]",

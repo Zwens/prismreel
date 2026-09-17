@@ -82,7 +82,7 @@ const normalizeEnvConfig = (existing: EnvConfig, data?: EnvConfigPayload): EnvCo
 const getValidationErrors = (env: EnvConfig): string[] => {
   const errors: string[] = [];
   if (!env.GEMINI_API_KEY?.trim()) errors.push("Gemini API Key");
-  // 视频生成全部走 BytePlus Ark 上的 Seedance，缺它出不了视频。
+  // 視頻生成全部走 BytePlus Ark 上的 Seedance，缺它出不了視頻。
   if (!env.ARK_API_KEY?.trim()) errors.push("Ark API Key");
   return errors;
 };
@@ -326,7 +326,7 @@ export default function SettingsPage() {
     }
   };
 
-  // Storage(OSS) 保存不应被 DashScope / 生成相关必填项挡住——它们与存储无关。
+  // Storage(OSS) 保存不應被 DashScope / 生成相關必填項擋住——它們與存儲無關。
   const handleSaveStorage = async () => {
     setSaving(true);
     try {
@@ -673,8 +673,8 @@ export default function SettingsPage() {
             />
           </FormRow>
 
-          {/* Kling / Vidu：DashScope 代理通道拔除后只剩直连，模式切换器随之移除。
-              未填凭证时目录的凭证就绪机制会把这两家的模型标为不可用。 */}
+          {/* Kling / Vidu：DashScope 代理通道拔除後只剩直連，模式切換器隨之移除。
+              未填憑證時目錄的憑證就緒機制會把這兩家的模型標為不可用。 */}
           <FormRow label={t("klingLabel")} hint={t("klingHint")}>
             <FieldLabel>KLING_ACCESS_KEY</FieldLabel>
             <KeyField value={config.KLING_ACCESS_KEY} onChange={(v) => handleChange("KLING_ACCESS_KEY", v)} placeholder={t("klingAccessKeyPlaceholder")} />
@@ -981,7 +981,7 @@ export default function SettingsPage() {
     about: t("eyebrowAbout"),
   };
 
-  // 横向 Tab 短标签（取代竖向 SettingsSidebar；与全局品牌侧栏轴向正交，不再撞脸）。
+  // 橫向 Tab 短標籤（取代豎向 SettingsSidebar；與全局品牌側欄軸向正交，不再撞臉）。
   const TABS: { id: SettingsCategory; label: string }[] = [
     { id: "general", label: t("tabGeneral") },
     { id: "models", label: t("tabModels") },
@@ -997,7 +997,7 @@ export default function SettingsPage() {
       <div className="atelier-page-bloom" aria-hidden="true" />
       <div className="atelier-page-grain" aria-hidden="true" />
 
-      {/* Head: eyebrow(当前分类) + 「设置」标题 + 横向 Tab —— 取代竖向子栏 */}
+      {/* Head: eyebrow(當前分類) + 「設置」標題 + 橫向 Tab —— 取代豎向子欄 */}
       <header className="flex-shrink-0 border-b border-glass-border px-4 md:px-7 pt-6 pb-4 relative z-10">
         <div className="w-full">
         <div className="font-mono text-[0.625rem] font-medium uppercase tracking-[0.2em] text-text-muted">

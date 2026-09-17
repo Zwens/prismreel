@@ -94,7 +94,7 @@ export default function StoryboardR2V() {
         // R2V preference order:
         //   1. localStorage (user's last explicit pick — survives reloads)
         //   2. project.model_settings.r2v_model (project-level default,
-        //      set in 生成设置 — Plan B "specialize" hierarchy)
+        //      set in 生成設置 — Plan B "specialize" hierarchy)
         //   3. derived from i2v family (initial coherence on first mount)
         //   4. catalog DEFAULT_R2V_MODEL_ID
         // Each candidate is validated against VIDEO_R2V_MODELS so a
@@ -365,20 +365,20 @@ export default function StoryboardR2V() {
     const props = currentProject?.props || [];
 
     // ────────────────────────────────────────────────────────────────────
-    // Shot mutations — Optimistic UI + 异步同步后端 + store 更新
-    //   Pattern: 立即改本地 state（无闪烁），后台 fire-and-forget call
-    //   到 backend，成功后 swap synthetic id with real id（addShot/duplicate）
-    //   并 updateProject(store) 让 currentProject.frames 保持权威。
-    //   失败仅 log warn，不回滚（避免 UI 闪烁；用户可重试）。
-    //   切 step tab → unmount 时 useEffect cleanup 已经 flush pending
-    //   debounce writes，所以打字到一半切走也不丢字。
+    // Shot mutations — Optimistic UI + 異步同步後端 + store 更新
+    //   Pattern: 立即改本地 state（無閃爍），後臺 fire-and-forget call
+    //   到 backend，成功後 swap synthetic id with real id（addShot/duplicate）
+    //   並 updateProject(store) 讓 currentProject.frames 保持權威。
+    //   失敗僅 log warn，不回滾（避免 UI 閃爍；用戶可重試）。
+    //   切 step tab → unmount 時 useEffect cleanup 已經 flush pending
+    //   debounce writes，所以打字到一半切走也不丟字。
     // ────────────────────────────────────────────────────────────────────
 
     // Add a new shot after the given index
     const addShot = useCallback(async (afterIndex: number) => {
         const synthId = `shot_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         // PR-3e · pick default tabMode from project preference (inherited from
-        // series). "i2v" (画面优先) → t2i_i2v; "r2v" (节奏优先, default) → direct_r2v.
+        // series). "i2v" (畫面優先) → t2i_i2v; "r2v" (節奏優先, default) → direct_r2v.
         const defaultMode = currentProject?.default_generation_mode === "i2v" ? "t2i_i2v" : "direct_r2v";
         const newShot: ShotNode = {
             id: synthId,
@@ -689,7 +689,7 @@ export default function StoryboardR2V() {
         }));
     }, [persistPrompt]);
 
-    /* 「一键补全素材」— write the [characterN:name] tags each shot's own asset
+    /* 「一鍵補全素材」— write the [characterN:name] tags each shot's own asset
      * links imply.
      *
      * R2V reads its reference images by parsing these tags, but nothing ever
@@ -902,7 +902,7 @@ export default function StoryboardR2V() {
             } else if (result?.image_url || result?.rendered_image_url) {
                 // Immediate result (synchronous render). Append to T2I
                 // history + auto-select so the new image becomes the
-                // active首帧 used by downstream I2V generation.
+                // active首幀 used by downstream I2V generation.
                 const imageUrl = result.image_url || result.rendered_image_url;
                 setShots(prev => prev.map((s, i) => {
                     if (i !== index) return s;
@@ -1088,7 +1088,7 @@ export default function StoryboardR2V() {
         // Pre-flight: R2V tab needs reference inputs. Without them
         // the backend rejects with 400 anyway, but historically the
         // task would queue, fail mid-generation, and the user'd see
-        // "排队中..." until the failure surfaced. Cheaper to validate
+        // "排隊中..." until the failure surfaced. Cheaper to validate
         // here and show inline error in the ParamsSection.
         if (tabMode === "direct_r2v") {
             const refs = parseAssetTags(shot.prompt);
@@ -1569,7 +1569,7 @@ export default function StoryboardR2V() {
     // the new default for siblings). videoConfig is mirrored to
     // localStorage as a recovery cache only — the authoritative model
     // selection lives in project.model_settings, written via the
-    // 生成设置 modal.
+    // 生成設置 modal.
     const handleShotParamsChange = useCallback((shot: ShotNode, next: ParamsState) => {
         if ((shotCounts[shot.id] ?? 1) !== next.count) {
             persistWorkbench(shot.id, { workbench_generate_count: next.count });
@@ -1737,7 +1737,7 @@ export default function StoryboardR2V() {
         }
     }, [currentProject]);
 
-    // 复用此批参数: copy a batch's model + neg_prompt into videoConfig,
+    // 複用此批參數: copy a batch's model + neg_prompt into videoConfig,
     // so the next Generate uses the same recipe. We don't change count
     // here — count remains the per-shot knob the user chose.
     const handleReuseBatchParams = useCallback((batch: BatchSummary) => {
@@ -1791,7 +1791,7 @@ export default function StoryboardR2V() {
         [shotCounts],
     );
 
-    /* ── 「一键生成全部」batch video run ──────────────────────────────
+    /* ── 「一鍵生成全部」batch video run ──────────────────────────────
      *
      * Submission is throttled against the page's EXISTING in-flight count
      * rather than a second polling loop: shots already report pending /
@@ -2088,8 +2088,8 @@ export default function StoryboardR2V() {
                             }
                             expanded={expandedShots.has(shot.id)}
                             onToggleExpanded={() => toggleShotExpanded(shot.id)}
-                            /* PR-3c · 闭环生成: ShotCard 内全宽生成行 + count selector.
-                               canGenerate: direct_r2v 需 prompt; t2i_i2v 还需 first frame. */
+                            /* PR-3c · 閉環生成: ShotCard 內全寬生成行 + count selector.
+                               canGenerate: direct_r2v 需 prompt; t2i_i2v 還需 first frame. */
                             generateCount={paramsState.count}
                             genSummary={`${
                                 shot.tabMode === "direct_r2v"
@@ -2215,14 +2215,14 @@ export default function StoryboardR2V() {
                                 </div>
                             );
                         })()}
-                        {/* Attached workbench: t2i_i2v 模式下渲染顺序为
+                        {/* Attached workbench: t2i_i2v 模式下渲染順序為
                             Step 1 (T2ISubsection) → Step 2 (ParamsSection)
-                            → CandidatesSection；direct_r2v 模式无 T2I 区，
+                            → CandidatesSection；direct_r2v 模式無 T2I 區，
                             ParamsSection → CandidatesSection。
                             Spec: docs/design/r2v-workflow-v3-unified.md §4.3.2
-                            (PR-3a · Option A 最小修复)
+                            (PR-3a · Option A 最小修復)
                             v1 不加 explicit section header / first-frame
-                            thumbnail in Step 2 — 看用户反馈再升级 v2. */}
+                            thumbnail in Step 2 — 看用戶反饋再升級 v2. */}
                         {expandedShots.has(shot.id) ? (
                         <div className="mx-5 mb-[18px] motion-safe:animate-[shotPanelIn_220ms_cubic-bezier(0.22,1,0.36,1)_both]">
                             {isI2vTab ? (
@@ -2254,7 +2254,7 @@ export default function StoryboardR2V() {
                                         }))}
                                         onGenerate={() => generateT2I(index)}
                                         onUpload={async (file, gridSize) => {
-                                            // Issue 10: upload an external image as a T2I首帧 candidate.
+                                            // Issue 10: upload an external image as a T2I首幀 candidate.
                                             // Backend appends + auto-selects; we mirror state from the
                                             // returned frame (single source of truth for the URL the
                                             // server actually persisted).
@@ -2325,7 +2325,7 @@ export default function StoryboardR2V() {
                                                 const status = err?.response?.status;
                                                 // Always surface the backend detail string so the
                                                 // user can self-diagnose ("frame not found", "OSS
-                                                // write denied", etc.) instead of "请重试".
+                                                // write denied", etc.) instead of "請重試".
                                                 const detail = err?.response?.data?.detail
                                                     || err?.message
                                                     || `HTTP ${status ?? "?"}`;
@@ -2340,7 +2340,7 @@ export default function StoryboardR2V() {
                                     />
                                 </div>
                             ) : null}
-                            {/* Step 2 · 生成视频 (ParamsSection) — always shown
+                            {/* Step 2 · 生成視頻 (ParamsSection) — always shown
                                 when shot expanded; renders below Step 1 in
                                 t2i_i2v mode, and is the only section above
                                 candidates in direct_r2v mode. */}

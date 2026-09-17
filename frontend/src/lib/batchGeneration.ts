@@ -1,5 +1,5 @@
 /**
- * Batch asset generation helpers for Cast Step 3「一键生成所有素材」.
+ * Batch asset generation helpers for Cast Step 3「一鍵生成所有素材」.
  *
  * The per-asset submit path (prompt template, style, poll) is unchanged —
  * this module only decides *which* assets go into the batch and *how many
