@@ -2,7 +2,14 @@
 
 > 進入本專案工作時 Read 載入。工作區共用規則見根目錄 CLAUDE.md。
 
-## 真人換裝舞蹈功能修復全紀錄（✅ 2026-09-16 已驗收完成，兩輪共8個commit）
+## Library道具分類破圖（✅ 2026-09-17 已驗收完成，含既有壞資料backfill）
+- [**✅ prop資產`image_url`誤存video路徑導致破圖，根因+新資料修復+既有壞資料backfill三階段全部完成**](feedback_library_asset_media_type_routing_and_backfill_2026-09-17.md) — 根因：`save_to_library()`未依`media_type`分流，一律寫入`image_url`；已修`service.py`/`pipeline.py`分流+前端`AssetLibraryPage.tsx`/`AssetInspector.tsx`補`<video>`fallback（commit`51341d6`，同commit修`feedback_library_video_asset_image_url_misroute_2026-09-17.md`）；唯一壞資料`prop_ac6600d4ef73`已手動backfill，**改`library_assets.json`後必須重啟prismreel-backend讓in-memory pipeline singleton重新讀檔**；live驗證DOM確認`<video>`正確渲染、`brokenImgCount:0`
+
+## 照片上傳網格疊加功能（✅ 2026-09-17 上傳端已完成部署驗證；backfill另開任務）
+- [**✅ 使用者上傳照片可選原圖/4×4/5×5永久疊加網格輔助AI辨識比例構圖，6個上傳端點+前端共用選擇器全部接好並live像素驗證通過**](feedback_grid_overlay_upload_feature_2026-09-17.md) — commit`d89c0f8`；`apply_grid_overlay`後端純函式+`GridOverlayPicker.tsx`前端共用元件；上傳端點盤點踩坑（函式名不能當真照片上傳判準）+混合accept類型陷阱+backfill複雜度超預期故意分離，詳見全文
+
+## 真人換裝舞蹈功能修復全紀錄（✅ 2026-09-17雙session獨立驗證通過；2026-09-16那輪8個commit已驗收完成）
+- [**✅ 2026-09-17：AI影片頁滾軸+真人換裝舞蹈三視圖勾選，兩個修復commit經雙session各自獨立驗證（VPS原始碼+容器版本+瀏覽器實測）皆確認正常**](feedback_asset_source_picker_exit_animation_blocks_clicks_2026-09-16.md) — 使用者曾回報「未發現問題」，已排除代碼/部署問題，懸案歸因使用者端瀏覽器快取，已請對方強制重新整理+附證據；見檔案末段「雙session獨立驗證通過」章節
 - ✅ 第一輪三個commit(54c35a3/57ba767/be41788)：素材庫破圖mediaUrl修復+Step1上傳/生成二選一+Step1/Step2「從素材庫選擇」按鈕。「從素材庫選擇」按鈕僅存在於「我已有三視圖」分頁、非「AI生成」分頁，屬既定設計非缺漏（見DanceSwapWizard.tsx）
 - [**✅ 問題3/5根因：AssetSourcePicker退場動畫卡住時overlay仍pointerEvents:auto持續攔截點擊**](feedback_asset_source_picker_exit_animation_blocks_clicks_2026-09-16.md) — commit`cdd4d77`；variants加`pointerEvents:'none'/'auto'`隨hidden/visible狀態立即切換，不等exit動畫跑完；live驗收用`document.elementFromPoint`命中真實checkbox+`.click()`觸發checked切換
 - [**✅ 問題2/4：Step3新增比例(9:16/16:9/1:1/3:4/4:3/adaptive)+秒數(4-30s)控制項**](feedback_asset_source_picker_exit_animation_blocks_clicks_2026-09-16.md) — commit`c6179ac`；依`docs/api-reference/byteplus-ark-seedance-seedream.md`第2.4節確認`task_type:'reference'`無ratio/duration約束才放開自訂，避開edit/extend強制adaptive/-1限制
@@ -18,19 +25,14 @@
 ## 影片下載功能
 - [**✅ 生成歷史列表頁下載按鈕fetch+blob阻塞主執行緒導致大影片下載卡死無提示（已修復並部署，2026-09-15）**](feedback_fetch_blob_download_blocks_main_thread_large_video_2026-09-15.md) — `ResultCard.tsx`改為與`DetailPanel.tsx`一致的原生`a href download`寫法；commit`7e8338e`已同步GitLab+GitHub並live驗證；排查時claude-in-chrome的javascript_tool內fetch回傳值與真實network log矛盾，以後者為準
 
+## Library素材庫 gotcha
+- [**✅ save_to_library()未依media_type分流，video輸出(dance換裝)硬塞image_url造成破圖，已修復部署+舊資料backfill（2026-09-17）**](feedback_library_video_asset_image_url_misroute_2026-09-17.md) — commit`51341d6`；Prop model原生已有video_url欄位但create_library_asset()從未填入；前端AssetLibraryPage/AssetInspector補<video>fallback；改library_assets.json這類pipeline singleton持久化檔須配docker restart才生效
+
 ## AI影片生成 API gotcha
-- [**✅ 官方角色庫縮圖：全部問題已結案，480/480筆live驗證通過（2026-09-15第五輪最終結案）**](feedback_official_character_thumbnail_root_cause_no_virtualization_permanent_fallback_2026-09-15.md) — ①前端`AssetPickerModal.tsx`一次性渲染480個img+onError永久不重試已改IntersectionObserver+重試2次根治 ②30筆縮圖第一次抓取搜尋框卡死全抓成同一張圖，改用React fiber `item.SID`比對`group_id`修正，commit`c5db137` ③殘留3對(6筆)雜湊重複經搜尋框單次查詢+SHA-256雜湊比對確認是ModelArk資料庫本身重複記錄，非抓取錯誤，無需修復 ④額外發現30筆live 404是CF edge cache卡舊快照（源站早已正常），CF Dashboard Purge Everything後480/480全數複驗200通過
-- [**🔴🔴 用ModelArk搜尋框抓取asset_id對應圖片前，必須驗證`fetch(url)`雜湊或完整src是否真變化，不能只看alt文字或單次截圖**](feedback_official_character_thumbnail_root_cause_no_virtualization_permanent_fallback_2026-09-15.md) — 搜尋框連續程式化輸入會卡死在第一次結果不刷新，`img.alt`殘留值會誤導判斷；改用React fiber讀`item.SID`比對`group_id`+滾動預設列表最可靠
-- [**✅ Seedance官方Digital Character Library兩個回報問題已修復（2026-09-15）**](feedback_official_character_library_thumbnail_and_count_fix_2026-09-15.md) — ①第1張破圖根因是CF edge cache卡住部署前的404 ②角色庫遠不止60筆，重新滾動抓取拿到510筆並上線；已live驗證
 - [**🔴 CF edge cache會卡住部署視窗內的404，源站已修好仍持續破圖**](feedback_cf_edge_cache_stale_404_during_deploy_window.md) — 判斷方法+CF Dashboard自訂清除SOP；排查「檔案明明存在卻404」優先比對此案例
-- [**🔴 排查前端fallback UI「大量顯示假人icon」時，先確認fallback是否保留原`<img>`標籤**](feedback_official_character_thumbnail_root_cause_no_virtualization_permanent_fallback_2026-09-15.md) — `querySelectorAll('img')`統計會漏掉已onError切換成SVG的卡片，改用`button[title]`比對`querySelector('img')`有無存在才準確
 - [**🔴 claude-in-chrome連續fetch+Blob下載2-3次後渲染器會凍結，需單張逐一執行**](feedback_browser_blob_download_freezes_renderer_after_few_calls_2026-09-15.md) — 根因未查證，僅找到迂迴解法；批量抓縮圖/附件時工具呼叫數與張數1:1，量大時先評估是否可行
 - [**Seedance官方Digital Character Library整合技術參考**](reference_seedance_real_person_face_restriction_and_asset_library.md) — 不需企業認證的官方數位角色庫，asset://<asset_id>直通image_url.url、真實API呼叫已驗證成功生成影片；企業認證+自有虛構角色路徑仍待公司驗證中，見全文「已確認可行路徑」章節
 - [**✅ Seedance多圖prompt引用語法：@Image1僅限Playground網頁UI，API呼叫需用`Image 1`格式（2026-09-14已修復並上線）**](reference_seedance_multi_image_prompt_reference_syntax.md) — 查證後發現後端無自動組裝邏輯，根因是前端PromptInput.tsx缺提示；已補UI提示三語言版本並驗證live bundle生效
-
-## 圖片抓取踩坑（i2v首末幀 / R2V多圖標籤）
-- [**✅ BytePlus/Ark首末幀本機檔案未接上provider_media半成品 + ShotCard.tsx三處精確比對重演assetTags.ts已修過的bug（已合併main並部署2026-09-11）**](feedback_byteplus_img_path_and_shotcard_exact_match_bugs_2026-09-11.md) — catalog已定義`byteplus_ark_image_url` mode但dispatch層從未實作；`resolveAssetByTagName`容錯函式只在一處被呼叫，其餘三處各自重寫精確比對
-- [**✅ 同分支首版遺漏R2V的ref_image_urls，本機上傳圖片直送Ark造成400（已補修復並部署2026-09-11）**](feedback_r2v_ref_image_urls_bypassed_resolver_2026-09-11.md) — 2026-09-11使用者實測R2V生成400才發現；同一`generate()`函式內多個分支吃本機路徑時，修一處要順手查其他分支是否也漏；VPS容器重啟後已用3次live驗證確認本機路徑正確轉OSS簽名URL且可公開存取
 
 ## 部署機制（🔴 最重要，動手前必讀）
 - [**✅ 2026-09-11起已改為 GitLab CI 自動部署：merge 到 main 才觸發**](feedback_gitlab_ci_auto_deploy_setup_2026-09-11.md) — 取代下方手動流程；VPS 上既有 shell-executor runner 直接 rsync+docker rebuild，push/merge 到非main分支不會動到 production
@@ -47,30 +49,12 @@
 - 本機開發目錄：`AI 短片系統 Prismreel/`（也是一個獨立 git repo，remote origin 指向 GitLab `gjseo.qit1.net`，非 VPS 真正吃的來源）
 - 桌面單機模式（`python main.py`）與 VPS 多用戶部署模式並存，改動時注意兩者行為差異
 
-## 用量追蹤功能踩坑（✅ pipeline.py+Playground流程皆已合併main並上線，2026-09-12確認）
-- [**🔴 用量追蹤只接了pipeline.py（漫畫生成），Playground完全沒有user_id/usage_events串接，發現時已誤記成「已完成並上線」**](feedback_usage_tracking_never_wired_into_playground_2026-09-11.md) — 2026-09-11使用者實測/usage頁面無數據才發現；根因鏈：`/generate`無auth依賴→`PlaygroundGeneration`無owner_id欄位→四個`_generate_video_*`丟棄model.generate()的usage回傳值→`usage_events`永遠0筆寫入；同一輪也補了生成前費用預估(Ark公式反推,誤差0.6%)+影片實際費用標記
-- [**🔴 新增帶預設值的可選參數（如 user_id: Optional[str]=None）threading 到多個既有呼叫點時，最終全分支審查不可省略**](feedback_additive_param_default_silently_undermines_new_feature_across_call_sites.md) — 2026-09-11；per-task review全過，但3處呼叫點忘傳user_id、1處死參數，只有最終跨任務整合審查才抓得到
-- [**✅ JWT_SECRET因import順序早於load_dotenv在乾淨環境會被快取成空值（已根治2026-09-11）+ usage_events表從未被自動建立（已補migration但呼叫點仍缺）**](feedback_jwt_secret_import_order_and_usage_events_table_missing.md) — 2026-09-11首次在乾淨worktree啟動時踩到；正式服務因系統環境變數兜底而未曾暴露；根治：`from . import auth, user_repo` 移到 `load_dotenv()` 之後
-- [**🔴 跨session交接檔稱「已完整實作+curl驗證通過」不等於已commit**](feedback_handoff_claims_implemented_but_uncommitted_2026-09-11.md) — 2026-09-11接手時發現13個檔案仍是unstaged，功能行為是真的做了但從未進版控；接手先查git status/log，不先信文字敘述
-- [**🔴 git merge commit存在於main歷史≠內容真的合併進main，需用`git merge-base --is-ancestor`+`git ls-tree`雙重驗證**](feedback_merge_commit_exists_but_content_not_ancestor_2026-09-11.md) — 2026-09-11 feature/usage-tracking的merge commit `8556704`在main歷史可見，但`git merge-base --is-ancestor`回NO、main檔案樹也確認缺usage_repo.py等檔案；只看`git log --graph`會被誤導
-- [**🔴 清理測試殘留禁止`rm -rf output/`，output/底下混雜版控素材(presets/bgm)與執行期產物，需精確指定路徑如`output/auth.db`**](feedback_rm_rf_output_deletes_tracked_assets_2026-09-11.md) — 2026-09-11測試usage_repo時誤刪`output/presets/bgm/*`八個版控音樂素材檔案，靠`git status`發現+`git restore`救回，未造成實際損失但已達建記憶門檻
-
-## i18n / 語言設定
-- [**✅ 主要語言預設改為繁體中文（2026-09-11）**](feedback_default_locale_switched_to_traditional_chinese_2026-09-11.md) — settingsStore預設值+i18n fallback+html lang屬性三處同步；順手修正isCJK判斷原本只認簡體zh、繁體會誤判非CJK排版的既有bug（改用`!== "en"`）
-
 ## ✅ 多租戶登入系統（2026-09-11 已合併main並上線）
 - [**登入系統實作進度交接（2026-09-08，歷史脈絡）**](project_auth_implementation_handoff_2026-09-08.md) — `feature/multi-tenant-auth`分支開發過程記錄；2026-09-11該分支+usage-tracking已一併merge進main並觸發CI自動部署，功能已live
 - [**登入系統spec交接（已過時，見上方進度交接）**](project_auth_handoff.md) — spec本身已審閱通過，此檔僅保留spec歷史脈絡
 
-## Playground 體驗直覺化改造（2026-09-10 完成）
-- [**✅ Playground UX改造已完成（2026-09-10）**](project_playground_ux_overhaul_2026-09-10.md) — 兩份plan-review清單皆已實作+瀏覽器驗收通過：卡片選模式+雙狀態全寬工作區、Ark/Seedance Key表單缺口；OSS雲端儲存開通仍擱置未購買
-- [**🔴 EnvConfigDialog.tsx 與 SettingsPage.tsx 是兩份平行環境設定表單，改欄位需兩處同步**](feedback_env_config_settings_duplicate_surfaces_must_sync.md) — 2026-09-10首次踩坑，交接記憶只判定其中一處缺欄位，另一處同樣缺但被漏查
-- [**✅ i2v 首末幀模式+提示詞無上限+Image N編號徽章已完成並部署（2026-09-10）**](project_i2v_first_last_frame_2026-09-10.md) — Ark first_frame/last_frame/reference_image role三者互斥已驗證；OSS權限問題已於2026-09-10解決（見下方r2v上傳修復條目）
-- [**✅ r2v上傳全鏈路修復：OSS未同步+bucket權限+nginx 413+縮圖UX（2026-09-10）**](project_r2v_upload_fix_2026-09-10.md) — 上傳從完全無反應到正常可用；根因OSS未配置→bucket權限→nginx body size限制三層依序排查；縮圖UI迭代4次定案96px+移除UUID檔名顯示
-- [**🔴 上傳檔名是後端UUID非原始檔名，模型辨識多圖靠陣列順序非文字標籤**](feedback_upload_filename_is_backend_uuid_not_original.md) — 2026-09-10；前端顯示優化解決不了UUID本身無意義的問題，需改後端保留原始檔名才有效
-
-## 多租戶登入系統操作
-- [**🔴 邀請碼兌換入口是獨立`/redeem?code=`頁面，非登入頁**](feedback_invite_redeem_ui_location_unverified_wrong_guidance.md) — 2026-09-10首次踩坑，未查前端就講錯操作位置，被使用者當場糾正
+## 歸檔
+- [**2026-09-10~09-15已完結舊條目**](archive/2026-09-completed-early.md) — 圖片抓取踩坑(i2v/R2V)、i18n語言設定、多租戶登入系統操作、Playground體驗直覺化改造、官方角色庫縮圖、用量追蹤功能，皆✅完結非常駐必讀
 
 ## 🔴🔴 Line B 視覺重構（HANDOFF.md）＝上游歷史，非使用者授權（2026-09-16 核實）
 - [**🔴🔴 HANDOFF.md「用戶已選定Line B」查證為誤判：Prismreel fork自alibaba/lumenx，該決策是上游作者歷史紀錄，使用者本人從未下達此需求**](project_prismreel_handoff_line_b_not_user_authorized.md) — git log作者比對揭穿；HANDOFF.md第6節下一步建議與待決策事項（資產庫二級篩選欄）一律不執行，已加註警示
@@ -80,3 +64,9 @@
 - [**✅ 「資料遺失」誤判已結案：查證時混淆ComicGen(漫畫生成)與Playground(影片生成)兩條獨立產線**](feedback_output_data_loss_was_misdiagnosis_two_pipelines_confused_2026-09-12.md) — 2026-09-11判定的VPS資料遺失，2026-09-12重查證實Playground資料從未丟失，只是查錯路徑；已推動導覽重新命名根治
 - [**✅ 工作區/資產庫/創作台重新命名為漫畫生成/素材庫/影片生成+新增獨立生成歷史分頁（feat/nav-rename-and-history-tab分支）**](feedback_output_data_loss_was_misdiagnosis_two_pipelines_confused_2026-09-12.md) — 生成歷史分頁直接重用PlaygroundPage的ResultGallery，跳過select/compose階段
 - [**🔴 動工前未確認本機分支落後遠端main 67個commit，對著已被取代的舊版api.ts重複寫用量追蹤函式**](feedback_local_branch_67_commits_behind_before_editing_2026-09-12.md) — 修多人協作repo既有檔案前先`git fetch && git log HEAD..origin/main`核對落差
+- [**🔴 「AI影片頁面」對應AiVideoPage.tsx(#/ai-video)，非PlaygroundPage.tsx(#/playground創作台)，兩者外觀高度相似**](feedback_ai_video_page_vs_playground_page_route_confusion_2026-09-17.md) — 2026-09-17首次改錯檔案push+CI後才發現；動手前先grep page.tsx確認路由對應元件
+
+## 舞蹈換裝上傳驗證+存檔回饋修復（2026-09-17，commit已push，瀏覽器live驗證未完成）
+- [**⚠️ DanceSwapWizard.tsx兩個UX缺口已修：圖片上傳收斂jpg/jpeg/png+副檔名不符跳toast擋下；SaveToLibrary原本fire-and-forget無回饋，改saving/saved/error三態+toast成功失敗提示**](feedback_dance_swap_upload_ext_validation_and_save_toast_2026-09-17.md) — commit`a77a3da`已push GitLab觸發CI；tsc/eslint/JSON語法皆過，但本機瀏覽器UI實測因claude-in-chrome渲染器連續逾時（screenshot/read_page皆無回應）未完成，**下次驗收時務必在live站台實際操作一次選錯格式檔案+存檔按鈕，不能只信這次的靜態檢查**
+- [**🔴🔴 待辦：VPS `.env`用的Gemini API Key已明文寫入`feedback_env_openai_key_field_actually_holds_gemini_key_2026-09-16.md`並進git歷史push到GitLab，需使用者親自到Google Cloud Console revoke+換新**](feedback_env_openai_key_field_actually_holds_gemini_key_2026-09-16.md) — 2026-09-17發現（GitHub push protection攔下才揭露）；已與使用者確認不做`git filter-repo`重寫歷史（詳見[[feedback_memory_md_files_are_git_tracked_redact_keys_2026-09-17]]）；使用者revoke+換新key後，下一步：更新VPS `.env`的`GEMINI_API_KEY`+`docker compose restart`+改該memory檔案為遮蔽格式+live驗證圖像生成/TTS仍正常
+- [**🔴 本機同時啟動前後端才能開發除錯：前端真實port是3008非3000，後端`npm run dev:backend`(uvicorn 17177)沒開會被「環境配置」強制彈窗鎖死無法關閉**](feedback_dance_swap_upload_ext_validation_and_save_toast_2026-09-17.md) — 2026-09-17首次踩坑；uvicorn`--reload`監督行程被強殺後可能留下`Get-Process`/`tasklist`都查不到PID但socket仍真實回應(200)的孤兒行程，多次嘗試清理無效時不必死磕，純本機開發用途可留待重開機釋放
