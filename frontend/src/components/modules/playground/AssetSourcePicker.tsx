@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Image as ImageIcon, Film, Loader2, Layers, LayoutGrid, Clapperboard, History, UserRound } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -385,7 +386,7 @@ export default function AssetSourcePicker({
     official: t('tabOfficial'),
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -603,6 +604,7 @@ export default function AssetSourcePicker({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

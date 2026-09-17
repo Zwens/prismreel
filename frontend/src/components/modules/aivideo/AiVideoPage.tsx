@@ -257,7 +257,7 @@ function AiVideoWorkspace() {
         </div>
 
         {/* ═══ RESULTS ═══ */}
-        <div className="min-w-0 min-h-0 flex-1 overflow-hidden">
+        <div className="flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden">
           <ResultGallery />
         </div>
       </div>
