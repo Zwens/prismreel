@@ -5,8 +5,10 @@
 ## Library道具分類破圖（✅ 2026-09-17 已驗收完成，含既有壞資料backfill）
 - [**✅ prop資產`image_url`誤存video路徑導致破圖，根因+新資料修復+既有壞資料backfill三階段全部完成**](feedback_library_asset_media_type_routing_and_backfill_2026-09-17.md) — 根因：`save_to_library()`未依`media_type`分流，一律寫入`image_url`；已修`service.py`/`pipeline.py`分流+前端`AssetLibraryPage.tsx`/`AssetInspector.tsx`補`<video>`fallback（commit`51341d6`，同commit修`feedback_library_video_asset_image_url_misroute_2026-09-17.md`）；唯一壞資料`prop_ac6600d4ef73`已手動backfill，**改`library_assets.json`後必須重啟prismreel-backend讓in-memory pipeline singleton重新讀檔**；live驗證DOM確認`<video>`正確渲染、`brokenImgCount:0`
 
-## 照片上傳網格疊加功能（✅ 2026-09-17 上傳端已完成部署驗證；backfill另開任務）
-- [**✅ 使用者上傳照片可選原圖/4×4/5×5永久疊加網格輔助AI辨識比例構圖，6個上傳端點+前端共用選擇器全部接好並live像素驗證通過**](feedback_grid_overlay_upload_feature_2026-09-17.md) — commit`d89c0f8`；`apply_grid_overlay`後端純函式+`GridOverlayPicker.tsx`前端共用元件；上傳端點盤點踩坑（函式名不能當真照片上傳判準）+混合accept類型陷阱+backfill複雜度超預期故意分離，詳見全文
+## 照片上傳網格疊加功能（✅ 2026-09-17 上傳端+AI生成+DanceSwapWizard三缺陷全部修復完成部署驗證）
+- [**✅ 使用者上傳照片可選原圖/4×4/5×5永久疊加網格輔助AI辨識比例構圖，6個上傳端點+前端共用選擇器全部接好並live像素驗證通過**](feedback_grid_overlay_upload_feature_2026-09-17.md) — commit`d89c0f8`；`apply_grid_overlay`後端純函式+`GridOverlayPicker.tsx`前端共用元件；上傳端點盤點踩坑（函式名不能當真照片上傳判準）+混合accept類型陷阱，詳見全文；**⚠️注意：該條「已完成部署驗證」結論僅涵蓋上傳路徑，AI生成/DanceSwapWizard當時未涵蓋，見下條**
+- [**✅ 三個功能性缺陷修復：AI生成/素材庫選擇不套網格、prompt未注入辨識引導文字、DanceSwapWizard排除網格checkbox缺失**](feedback_grid_overlay_three_defects_ai_gen_dance_negative_prompt_2026-09-17.md) — commit`20f50b5`；新增後端`POST /playground/apply-grid`+`GRID_OVERLAY_GUIDANCE_PROMPT`正向prompt常數+DanceSwapWizard本地state版排除checkbox；用真實AI生成live驗證通過，含Monitor輪詢判定「檔案存在」誤判為「本次生成完成」的假陰性教訓
+- [**✅ 既有素材庫照片backfill補套用5×5網格已完成（跨session交接）**](feedback_grid_overlay_backfill_existing_library_photos_2026-09-17.md) — 理論資料模型三代legacy欄位並存，實測production資料只有2張圖需處理（其餘全空值）；backfill前務必先唯讀盤點實際資料量再估工作量，不要只憑model定義推算
 
 ## 真人換裝舞蹈功能修復全紀錄（✅ 2026-09-17雙session獨立驗證通過；2026-09-16那輪8個commit已驗收完成）
 - [**✅ 2026-09-17：AI影片頁滾軸+真人換裝舞蹈三視圖勾選，兩個修復commit經雙session各自獨立驗證（VPS原始碼+容器版本+瀏覽器實測）皆確認正常**](feedback_asset_source_picker_exit_animation_blocks_clicks_2026-09-16.md) — 使用者曾回報「未發現問題」，已排除代碼/部署問題，懸案歸因使用者端瀏覽器快取，已請對方強制重新整理+附證據；見檔案末段「雙session獨立驗證通過」章節
@@ -66,7 +68,12 @@
 - [**🔴 動工前未確認本機分支落後遠端main 67個commit，對著已被取代的舊版api.ts重複寫用量追蹤函式**](feedback_local_branch_67_commits_behind_before_editing_2026-09-12.md) — 修多人協作repo既有檔案前先`git fetch && git log HEAD..origin/main`核對落差
 - [**🔴 「AI影片頁面」對應AiVideoPage.tsx(#/ai-video)，非PlaygroundPage.tsx(#/playground創作台)，兩者外觀高度相似**](feedback_ai_video_page_vs_playground_page_route_confusion_2026-09-17.md) — 2026-09-17首次改錯檔案push+CI後才發現；動手前先grep page.tsx確認路由對應元件
 
-## 舞蹈換裝上傳驗證+存檔回饋修復（2026-09-17，commit已push，瀏覽器live驗證未完成）
-- [**⚠️ DanceSwapWizard.tsx兩個UX缺口已修：圖片上傳收斂jpg/jpeg/png+副檔名不符跳toast擋下；SaveToLibrary原本fire-and-forget無回饋，改saving/saved/error三態+toast成功失敗提示**](feedback_dance_swap_upload_ext_validation_and_save_toast_2026-09-17.md) — commit`a77a3da`已push GitLab觸發CI；tsc/eslint/JSON語法皆過，但本機瀏覽器UI實測因claude-in-chrome渲染器連續逾時（screenshot/read_page皆無回應）未完成，**下次驗收時務必在live站台實際操作一次選錯格式檔案+存檔按鈕，不能只信這次的靜態檢查**
-- [**🔴🔴 待辦：VPS `.env`用的Gemini API Key已明文寫入`feedback_env_openai_key_field_actually_holds_gemini_key_2026-09-16.md`並進git歷史push到GitLab，需使用者親自到Google Cloud Console revoke+換新**](feedback_env_openai_key_field_actually_holds_gemini_key_2026-09-16.md) — 2026-09-17發現（GitHub push protection攔下才揭露）；已與使用者確認不做`git filter-repo`重寫歷史（詳見[[feedback_memory_md_files_are_git_tracked_redact_keys_2026-09-17]]）；使用者revoke+換新key後，下一步：更新VPS `.env`的`GEMINI_API_KEY`+`docker compose restart`+改該memory檔案為遮蔽格式+live驗證圖像生成/TTS仍正常
+## 🔴 2026-09-17多session並行協作交接（新session開場必讀）
+- [**🔴🔴 當日四個peer session分工狀態總覽：claude-wmzic-5f正在修網格疊加三缺陷（本session接手時仍busy，動手前務必ListAgents+git status雙重確認排除其未提交檔案）**](project_multi_session_handoff_2026-09-17.md) — 簡體字清理待辦已由本session完成（見上方commit`2b11692`）；5f的網格疊加修復狀態需新session自行重新查證，不沿用本記錄的「進行中」snapshot
+
+## 舞蹈換裝上傳驗證+存檔回饋修復（✅ 2026-09-17 跨session補做live驗收完成）
+- [**✅ DanceSwapWizard.tsx兩個UX缺口已修並live驗證：圖片上傳收斂jpg/jpeg/png+副檔名不符跳toast擋下（已實測.gif被擋且跳繁中toast）；SaveToLibrary原本fire-and-forget無回饋，改saving/saved/error三態+toast成功失敗提示（同commit部署已確認生效，轉場動畫本身未逐一實測）**](feedback_dance_swap_upload_ext_validation_and_save_toast_2026-09-17.md) — commit`a77a3da`
+- [**✅ DanceSwapWizard網格疊加按鈕簡體字已確認並非快取問題，是commit`a0e3c2e`只commit沒push所致，已補推並live驗證繁體生效**](feedback_simplified_chinese_ui_cleanup_and_unpushed_commit_2026-09-17.md) — 詳見全文「commit了沒push」排查方法論
+- [**✅ 程式碼註解簡體字清理（59交接待辦）已完成：前端src全部53個乾淨檔案（排除當時5f正在改的4個網格疊加相關檔案）opencc轉換+typecheck/lint交叉驗證無新增錯誤**](feedback_opencc_s2t_leaves_variant_character_爲_2026-09-17.md) — commit`2b11692`已push；opencc s2t會殘留「爲」異體字需額外正規化為「為」，詳見全文
+- [**✅ VPS `.env`洩漏的Gemini API Key事件已收尾：換新key+重啟+應用層真實LLM呼叫驗證通過**](feedback_env_openai_key_field_actually_holds_gemini_key_2026-09-16.md) — 2026-09-17；使用者Google帳號權限只能刪除不能單純revoke，且顧慮刪除會讓Console用量儀表板依key切分的歷史統計失真，故未強制刪除舊key，改採新key頂替；全程SSH `sed -i`原地替換.env，未落地明文到任何本機檔案/memory；`docker compose restart backend`+容器內`LLMAdapter().chat()`真實呼叫拿到`OK`確認生效
 - [**🔴 本機同時啟動前後端才能開發除錯：前端真實port是3008非3000，後端`npm run dev:backend`(uvicorn 17177)沒開會被「環境配置」強制彈窗鎖死無法關閉**](feedback_dance_swap_upload_ext_validation_and_save_toast_2026-09-17.md) — 2026-09-17首次踩坑；uvicorn`--reload`監督行程被強殺後可能留下`Get-Process`/`tasklist`都查不到PID但socket仍真實回應(200)的孤兒行程，多次嘗試清理無效時不必死磕，純本機開發用途可留待重開機釋放
