@@ -60,6 +60,13 @@ ARK_MODEL_IDS = {
     "seedance-2.5-i2v": "dreamina-seedance-2-5-260628",
     "seedance-2.5-r2v": "dreamina-seedance-2-5-260628",
     "seedance-2.5-v2v": "dreamina-seedance-2-5-260628",
+    # 2.0's /models listing declares VideoEditing/VideoExtension task_type
+    # support, but omni_reference_task_type is documented as 2.5-only and
+    # untested on 2.0 — see docs/api-reference/byteplus-ark-seedance-seedream.md
+    # §五.2. Wired here so it can be selected and measured directly; deliberately
+    # excluded from ARK_OMNI_TASK_TYPE_MODELS below so no task_type field is
+    # sent (2.0 rejects it), leaving the vendor's own "auto" to decide.
+    "seedance-2.0-v2v": "dreamina-seedance-2-0-260128",
 }
 
 # Editing and extension are sub-types of one omni-reference task, not separate

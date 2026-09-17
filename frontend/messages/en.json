@@ -2216,6 +2216,8 @@
         "noSheet": "No sheet from step 1 yet — composing without a reference image. The original person is kept and only the outfit and scene change.",
         "scene": "Scene",
         "scenePlaceholder": "e.g. a bright empty dance studio with a wooden floor",
+        "model": "Compose model",
+        "modelUntestedHint": "2.0 hasn't been verified to actually follow the reference clip's motion — the vendor's model listing claims support but the official docs only cover 2.5. Test and judge the result yourself.",
         "resolution": "Resolution",
         "aspectRatio": "Aspect ratio",
         "aspectRatioAdaptive": "Follow motion clip",

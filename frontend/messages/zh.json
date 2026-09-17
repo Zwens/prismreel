@@ -2216,6 +2216,8 @@
         "noSheet": "第 1 步还没有三视图，将不带参考图合成——人物保持原视频里的样子，只按描述换装换景。",
         "scene": "场景描述",
         "scenePlaceholder": "例如：明亮的空舞蹈室，木地板",
+        "model": "合成模型",
+        "modelUntestedHint": "2.0 尚未验证是否真的能用参考影片驱动动作——厂商后台虽列出支持，但官方文档只列 2.5，实际效果请自行测试判断。",
         "resolution": "分辨率",
         "aspectRatio": "视频比例",
         "aspectRatioAdaptive": "跟随动作视频",

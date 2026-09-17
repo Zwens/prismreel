@@ -28,8 +28,19 @@ const DEPTH_POLL_MS = 1000;
 
 /** Gemini image model used for the character sheet. */
 const SHEET_MODEL = 'gemini-3-pro-image';
-/** The only model that takes reference images and a reference video together. */
-const COMPOSE_MODEL = 'seedance-2.5-v2v';
+/** Models that take reference images and a reference video together.
+ *
+ * 2.5 is the documented, tested path: Ark's omni_reference_task_type param is
+ * confirmed 2.5-only, so compose sends task_type='reference' and gets a
+ * validated response. 2.0's /models listing also declares VideoEditing
+ * support, but that param is rejected outright on 2.0 (see byteplus.py
+ * ARK_OMNI_TASK_TYPE_MODELS) — selecting it here sends no task_type at all
+ * and leaves the vendor's own "auto" detection to decide, untested until
+ * measured against a real clip.
+ */
+export const COMPOSE_MODEL_OPTIONS = ['seedance-2.5-v2v', 'seedance-2.0-v2v'] as const;
+export type ComposeModel = (typeof COMPOSE_MODEL_OPTIONS)[number];
+const DEFAULT_COMPOSE_MODEL: ComposeModel = 'seedance-2.5-v2v';
 
 export type StepState = 'idle' | 'running' | 'done' | 'error';
 
@@ -80,6 +91,7 @@ export interface DanceSwapState {
   targetFps: number | null;
 
   // step 3 — compose
+  composeModel: ComposeModel;
   scene: string;
   composePrompt: string;
   composePromptDirty: boolean;
@@ -117,6 +129,7 @@ const INITIAL: DanceSwapState = {
   maxSeconds: null,
   targetFps: null,
 
+  composeModel: DEFAULT_COMPOSE_MODEL,
   scene: '',
   composePrompt: '',
   composePromptDirty: false,
@@ -439,10 +452,13 @@ export function useDanceSwap() {
 
       const gen = await runGeneration({
         mode: 'v2v',
-        model_id: COMPOSE_MODEL,
+        model_id: state.composeModel,
         prompt: finalPrompt,
         input_media: media,
         parameters: {
+          // Only 2.5 accepts this field (see COMPOSE_MODEL_OPTIONS comment);
+          // the backend drops it for any other wire model, so it's safe to
+          // always send here rather than branch on composeModel.
           task_type: 'reference',
           resolution: state.resolution,
           aspect_ratio: state.aspectRatio,
@@ -456,7 +472,7 @@ export function useDanceSwap() {
     }
   }, [
     state.depthJob, state.danceVideoPath, state.resolution, state.aspectRatio, state.duration,
-    sheetInComposition, state.sheet, finalPrompt, patch, runGeneration,
+    sheetInComposition, state.sheet, state.composeModel, finalPrompt, patch, runGeneration,
   ]);
 
   // -- library ----------------------------------------------------------
