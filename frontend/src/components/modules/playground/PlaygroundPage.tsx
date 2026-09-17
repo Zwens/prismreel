@@ -287,7 +287,7 @@ export default function PlaygroundPage() {
           </aside>
 
           {/* ─── RIGHT: RESULT GALLERY ─── */}
-          <main className="flex flex-1 flex-col overflow-hidden min-w-0">
+          <main className="flex flex-1 flex-col overflow-hidden min-w-0 min-h-0">
             <ResultGallery />
           </main>
         </div>
