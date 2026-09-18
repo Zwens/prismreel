@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Upload, Image as ImageIcon, User, Layout, Eye } from "lucide-react";
-import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice } from "@/components/shared/GridOverlayPicker";
+import { gridChoiceToParams } from "@/components/shared/GridOverlayPicker";
 
 interface UploadAssetModalProps {
     isOpen: boolean;
@@ -37,7 +37,6 @@ export default function UploadAssetModal({
     const [description, setDescription] = useState(defaultDescription);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const uploadTypes = assetType === "character" ? [
@@ -91,7 +90,7 @@ export default function UploadAssetModal({
         try {
             // Use api.uploadAsset which uses the correct backend API URL
             const { api } = await import("@/lib/api");
-            const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+            const { size: gridSize, color: gridColor } = gridChoiceToParams('none');
             const updatedScript = await api.uploadAsset(
                 scriptId,
                 assetType,
@@ -116,7 +115,6 @@ export default function UploadAssetModal({
         setPreviewUrl(null);
         setError(null);
         setDescription(defaultDescription);
-        setGridChoice('none');
         onClose();
     };
 
@@ -225,7 +223,6 @@ export default function UploadAssetModal({
                                 </>
                             )}
                         </div>
-                        <GridOverlayPicker value={gridChoice} onChange={setGridChoice} className="mt-3" />
                     </div>
 
                     {/* Description Editor */}

@@ -27,7 +27,7 @@ import PromptBuilder, { PromptSegment, PromptBuilderRef } from "./PromptBuilder"
 import ShotPresetPicker from "./ShotPresetPicker";
 import { ACTION_GROUPS, CAMERA_GROUPS } from "./shotPresets";
 import type { VideoParams } from "@/store/projectStore";
-import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice } from "@/components/shared/GridOverlayPicker";
+import { gridChoiceToParams } from "@/components/shared/GridOverlayPicker";
 
 interface VideoCreatorProps {
     onTaskCreated: (project: any) => void;
@@ -82,7 +82,6 @@ export default function VideoCreator({ onTaskCreated, remixData, onRemixClear, p
     };
 
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
-    const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
     const [selectedReferenceVideos, setSelectedReferenceVideos] = useState<string[]>([]); // New state for R2V
     const [uploadingPaths, setUploadingPaths] = useState<Record<string, string>>({}); // Map blobUrl -> serverUrl
     const [activeTab, setActiveTab] = useState<"storyboard" | "upload">("storyboard");
@@ -221,7 +220,7 @@ export default function VideoCreator({ onTaskCreated, remixData, onRemixClear, p
 
             // Background Upload
             try {
-                const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+                const { size: gridSize, color: gridColor } = gridChoiceToParams('none');
                 const res = await api.uploadFile(file, gridSize, gridColor);
                 setUploadingPaths(prev => ({ ...prev, [blobUrl]: res.url }));
             } catch (error) {
@@ -867,8 +866,6 @@ export default function VideoCreator({ onTaskCreated, remixData, onRemixClear, p
                                                 </div>
                                             </div>
                                         )}
-
-                                        <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />
                                     </div>
                                 )}
                             </div>

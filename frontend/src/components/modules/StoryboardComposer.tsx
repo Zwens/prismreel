@@ -14,7 +14,7 @@ import { getAssetUrlWithTimestamp, extractErrorDetail } from "@/lib/utils";
 import { selectedVariantUrl } from "@/lib/characterImage";
 import StepHeader from "@/components/shared/StepHeader";
 import WorkflowActionButton from "@/components/shared/WorkflowActionButton";
-import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice } from "@/components/shared/GridOverlayPicker";
+import { gridChoiceToParams } from "@/components/shared/GridOverlayPicker";
 
 import StoryboardFrameEditor from "./StoryboardFrameEditor";
 
@@ -43,7 +43,6 @@ export default function StoryboardComposer() {
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploadTargetFrameId, setUploadTargetFrameId] = useState<string | null>(null);
-    const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
 
 
 
@@ -210,7 +209,7 @@ export default function StoryboardComposer() {
         if (!file || !uploadTargetFrameId || !currentProject) return;
 
         try {
-            const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+            const { size: gridSize, color: gridColor } = gridChoiceToParams('none');
             const updatedProject = await api.uploadFrameImage(currentProject.id, uploadTargetFrameId, file, gridSize, gridColor);
             updateProject(currentProject.id, updatedProject);
         } catch (error: any) {
@@ -371,11 +370,6 @@ export default function StoryboardComposer() {
             {/* Frame List — full width */}
             <div className="flex-1 overflow-y-auto p-8">
                 <div className="max-w-4xl mx-auto space-y-6">
-                        {/* Grid overlay preference for frame image uploads below */}
-                        <div className="flex justify-center">
-                            <GridOverlayPicker value={gridChoice} onChange={setGridChoice} className="max-w-md" />
-                        </div>
-
                         {/* Add Frame Button (Top) */}
                         <div className="flex justify-center">
                             <button

@@ -8,7 +8,7 @@ import { mediaUrl } from '@/lib/mediaPath';
 import { usePlaygroundStore, type PlaygroundMode } from './usePlaygroundStore';
 import AssetSourcePicker from './AssetSourcePicker';
 import { isOfficialCharacterRef, getOfficialCharacterDisplay } from '@/lib/officialCharacterCache';
-import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice } from '@/components/shared/GridOverlayPicker';
+import { gridChoiceToParams } from '@/components/shared/GridOverlayPicker';
 
 // ---------------------------------------------------------------------------
 // Mode config
@@ -199,7 +199,6 @@ function FirstLastFrameInput() {
   const t = useTranslations('playground');
 
   const [showAssetPicker, setShowAssetPicker] = useState<'first' | 'last' | null>(null);
-  const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
   const firstFrameInputRef = useRef<HTMLInputElement>(null);
   const lastFrameInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState<'first' | 'last' | null>(null);
@@ -211,7 +210,7 @@ function FirstLastFrameInput() {
   const uploadTo = async (slot: 'first' | 'last', file: File) => {
     setUploading(slot);
     try {
-      const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+      const { size: gridSize, color: gridColor } = gridChoiceToParams('none');
       const result = await playgroundApi.uploadMedia(file, gridSize, gridColor);
       const uploadedIsGrid = gridSize > 0;
       if (slot === 'first') {
@@ -314,7 +313,6 @@ function FirstLastFrameInput() {
 
   return (
     <div className="space-y-4">
-      <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />
       {renderSlot('first', firstFrame, firstFrameInputRef, t('media.firstFrame'), t('compose.mediaFirstFrame'), removeFirstFrame)}
       {renderSlot('last', lastFrame, lastFrameInputRef, t('media.lastFrame'), t('media.lastFrameOptional'), removeLastFrame, !firstFrame)}
     </div>
@@ -334,7 +332,6 @@ export default function MediaInput() {
   const t = useTranslations('playground');
 
   const [showAssetPicker, setShowAssetPicker] = useState(false);
-  const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -365,7 +362,6 @@ export default function MediaInput() {
 
   const hasMedia = inputMedia.length > 0;
   const canAddMore = config.multiple && inputMedia.length < config.maxFiles;
-  const acceptsImages = config.accept.includes('image');
 
   // -------------------------------------------------------------------------
   // Upload handler
@@ -381,7 +377,7 @@ export default function MediaInput() {
 
     setUploading(true);
     try {
-      const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+      const { size: gridSize, color: gridColor } = gridChoiceToParams('none');
       const isImageUpload = toUpload.map((file) => file.type.startsWith('image/'));
       const results = await Promise.all(
         // Grid overlay only makes sense on still images — the Seedance r2v
@@ -494,7 +490,6 @@ export default function MediaInput() {
   if (!hasMedia) {
     return (
       <div className="space-y-2">
-        {acceptsImages && <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />}
         <div
           onClick={handleClick}
           onDragOver={handleDragOver}
@@ -662,8 +657,6 @@ export default function MediaInput() {
           {t('media.pickFromLibrary')}
         </button>
       </div>
-
-      {acceptsImages && <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />}
 
       {fileInput}
 

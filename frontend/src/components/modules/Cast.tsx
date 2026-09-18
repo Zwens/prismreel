@@ -23,7 +23,7 @@ import { Users, MapPin, Box, AlertTriangle, Sparkles, Plus, Upload, X, Loader2, 
 import { useTranslations } from "next-intl";
 import { useProjectStore } from "@/store/projectStore";
 import { api } from "@/lib/api";
-import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice } from "@/components/shared/GridOverlayPicker";
+import { gridChoiceToParams } from "@/components/shared/GridOverlayPicker";
 import { toast } from "@/store/toastStore";
 import { getAssetUrl } from "@/lib/utils";
 import { useLightbox } from "@/components/shared/preview/LightboxProvider";
@@ -456,14 +456,13 @@ function AddCastPlaceholderModal({
     const [voiceId, setVoiceId] = useState("");  // P2-c — character voice binding
     const [uploading, setUploading] = useState(false);
     const [imageUrl, setImageUrl] = useState<string>("");
-    const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Reset state when modal closes / kind changes
     const reset = () => {
         setName(""); setPersona(""); setDescription(""); setVoiceId("");
-        setImageUrl(""); setGridChoice('none'); setError(null); setTab("ai");
+        setImageUrl(""); setError(null); setTab("ai");
     };
 
     if (!kind) return null;
@@ -476,7 +475,7 @@ function AddCastPlaceholderModal({
         setUploading(true);
         setError(null);
         try {
-            const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+            const { size: gridSize, color: gridColor } = gridChoiceToParams('none');
             const result = await api.uploadFile(file, gridSize, gridColor);
             setImageUrl(result.url || "");
         } catch (err: any) {
@@ -620,7 +619,6 @@ function AddCastPlaceholderModal({
                     {tab === "upload" && (
                         <div>
                             <label className="block text-xs font-medium text-text-secondary mb-1.5">{t("fieldImageUpload")}</label>
-                            <GridOverlayPicker value={gridChoice} onChange={setGridChoice} className="mb-2" />
                             {imageUrl ? (
                                 <div className="relative">
                                     <PreviewImage src={imageUrl} className="w-full aspect-video rounded-lg" />

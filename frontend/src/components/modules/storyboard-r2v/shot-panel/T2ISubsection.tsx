@@ -21,7 +21,7 @@ import clsx from "clsx";
 import { useTranslations } from "next-intl";
 import { PendingTaskAffordance } from "@/components/shared/PendingTaskAffordance";
 import PreviewImage from "@/components/shared/preview/PreviewImage";
-import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice, type GridOverlayColor, type GridOverlaySize } from "@/components/shared/GridOverlayPicker";
+import { gridChoiceToParams, type GridOverlayColor, type GridOverlaySize } from "@/components/shared/GridOverlayPicker";
 import { debugLog } from "@/lib/debugLog";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
@@ -157,7 +157,6 @@ function Hero({
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState<T2IUploadError | null>(null);
     const [dragHot, setDragHot] = useState(false);
-    const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     const handleFile = async (file: File) => {
@@ -172,7 +171,7 @@ function Hero({
         }
         setUploading(true);
         try {
-            const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+            const { size: gridSize, color: gridColor } = gridChoiceToParams('none');
             const result = await onUpload(file, gridSize, gridColor);
             if (result) setUploadError(result);
         } catch (e) {
@@ -287,8 +286,6 @@ function Hero({
                         />
                     </div>
 
-                    <GridOverlayPicker value={gridChoice} onChange={setGridChoice} className="pt-1" />
-
                     {uploadError ? (
                         <p
                             role="alert"
@@ -350,7 +347,6 @@ function Compact({
     const [menuOpen, setMenuOpen] = useState(false);
     const [uploadError, setUploadError] = useState<T2IUploadError | null>(null);
     const [uploading, setUploading] = useState(false);
-    const [gridChoice, setGridChoice] = useState<GridOverlayChoice>('none');
     const inputRef = useRef<HTMLInputElement | null>(null);
     const closeTimer = useRef<number | null>(null);
 
@@ -394,7 +390,7 @@ function Compact({
         }
         setUploading(true);
         try {
-            const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+            const { size: gridSize, color: gridColor } = gridChoiceToParams('none');
             const result = await onUpload(file, gridSize, gridColor);
             if (result) setUploadError(result);
         } catch (e) {
@@ -584,8 +580,6 @@ function Compact({
                     inFlightStatus={inFlightStatus}
                 />
             ) : null}
-
-            <GridOverlayPicker value={gridChoice} onChange={setGridChoice} className="mt-1.5" />
 
             {uploadError ? (
                 <p
