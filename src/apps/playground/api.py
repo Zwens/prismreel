@@ -10,7 +10,9 @@ from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File
 
+from .concat_service import VIDEO_OUTPUT_DIR, ConcatError, concat_videos
 from .models import (
+    ConcatRequest,
     CreateTemplateRequest,
     DepthVideoRequest,
     EstimateCostRequest,
@@ -29,6 +31,7 @@ from ...utils import get_logger
 from ...utils.media_refs import resolve_local_media_path, to_posix_media_path
 from ...utils.upload_guard import save_video_upload, validate_image_upload
 from ...utils.grid_overlay import apply_grid_overlay
+from ...utils.system_check import get_ffmpeg_path
 
 logger = get_logger(__name__)
 
@@ -255,9 +258,36 @@ def apply_grid_to_media(path: str, grid_size: int = 0, grid_color: str = "black"
     return {"path": to_posix_media_path(path), "has_grid_overlay": grid_size > 0}
 
 
+def concat_media(request: ConcatRequest, _user=Depends(auth.require_login)):
+    """Concatenate a list of playground-generated video clips, in order,
+    into one file. Used by the video-workflow feature to combine shots."""
+    if not request.video_paths:
+        raise HTTPException(status_code=400, detail="video_paths must not be empty")
+
+    resolved: List[str] = []
+    for p in request.video_paths:
+        abs_path = resolve_local_media_path(p)
+        if abs_path is None or not os.path.isfile(abs_path):
+            raise HTTPException(status_code=400, detail=f"Invalid or missing video path: {p}")
+        resolved.append(abs_path)
+
+    ffmpeg_path = get_ffmpeg_path()
+    if not ffmpeg_path:
+        raise HTTPException(status_code=500, detail="ffmpeg is not available on this server")
+
+    try:
+        output_path = concat_videos(resolved, ffmpeg_path=ffmpeg_path, output_dir=VIDEO_OUTPUT_DIR)
+    except ConcatError as e:
+        logger.error(f"[CONCAT] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return {"path": to_posix_media_path(output_path)}
+
+
 router.add_api_route("/upload", upload_media, methods=["POST"])
 router.add_api_route("/upload-video", upload_video, methods=["POST"])
 router.add_api_route("/apply-grid", apply_grid_to_media, methods=["POST"])
+router.add_api_route("/concat", concat_media, methods=["POST"])
 
 # ---------------------------------------------------------------------------
 # Depth preprocessing (local GPU) — step 2 of the dance-swap flow
