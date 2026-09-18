@@ -1984,6 +1984,8 @@
       "addShot": "Add shot",
       "insertShotHere": "Insert shot here",
       "removeShot": "Remove shot",
+      "moveShotUp": "Move shot up",
+      "moveShotDown": "Move shot down",
       "generateShot": "Generate this shot",
       "generateAll": "Generate all",
       "combineButton": "Combine into final video",
@@ -1996,7 +1998,8 @@
       "statusProcessing": "Generating…",
       "statusCompleted": "Completed",
       "statusFailed": "Failed",
-      "maxShotsReached": "Maximum of {max} shots reached"
+      "maxShotsReached": "Maximum of {max} shots reached",
+      "replaceImagesWithVideoConfirm": "This shot already has images attached. Picking a video will replace them. Continue?"
     },
     "imageGen": {
       "gridBurn": {

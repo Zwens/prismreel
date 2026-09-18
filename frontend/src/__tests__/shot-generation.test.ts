@@ -17,6 +17,12 @@ vi.mock('@/lib/api', () => ({
   },
 }));
 
+const getModelsForMode = vi.fn();
+
+vi.mock('@/components/modules/playground/playgroundModels', () => ({
+  getModelsForMode: (...args: unknown[]) => getModelsForMode(...args),
+}));
+
 import { useShotSequenceStore } from '@/components/modules/videoworkflow/useShotSequenceStore';
 import { useShotGeneration } from '@/components/modules/videoworkflow/useShotGeneration';
 
@@ -42,6 +48,7 @@ describe('useShotGeneration.generateShot', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useShotSequenceStore.getState().reset();
+    getModelsForMode.mockReturnValue([{ id: 'seedance-1-pro' }, { id: 'seedance-1-lite' }]);
   });
 
   it('is a no-op on an empty prompt', async () => {
@@ -76,9 +83,30 @@ describe('useShotGeneration.generateShot', () => {
     const finalShot = useShotSequenceStore.getState().shots.find((s) => s.id === shot.id)!;
     expect(finalShot.status).toBe('completed');
     expect(finalShot.outputPath).toBe('playground/videos/out.mp4');
+    expect(getModelsForMode).toHaveBeenCalledWith('i2v');
     expect(generate).toHaveBeenCalledWith(
-      expect.objectContaining({ mode: 'i2v', prompt: 'a cat walking', input_media: ['a.png'] }),
+      expect.objectContaining({
+        mode: 'i2v',
+        model_id: 'seedance-1-pro',
+        prompt: 'a cat walking',
+        input_media: ['a.png'],
+      }),
     );
+  });
+
+  it('fails the shot immediately without calling generate when no model is available for the inferred mode', async () => {
+    getModelsForMode.mockReturnValue([]);
+    const shot = useShotSequenceStore.getState().shots[0];
+    useShotSequenceStore.getState().updateShotPrompt(shot.id, 'a cat walking');
+
+    const { generateShot } = useShotGeneration();
+    const updatedShot = useShotSequenceStore.getState().shots.find((s) => s.id === shot.id)!;
+    await generateShot(updatedShot);
+
+    expect(generate).not.toHaveBeenCalled();
+    const finalShot = useShotSequenceStore.getState().shots.find((s) => s.id === shot.id)!;
+    expect(finalShot.status).toBe('failed');
+    expect(finalShot.error).toBe('No model available for this mode');
   });
 
   it('marks the shot completed immediately when generate() resolves already-terminal', async () => {

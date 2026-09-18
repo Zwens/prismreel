@@ -14,13 +14,12 @@ import os
 import subprocess
 import uuid
 
+from .service import VIDEO_OUTPUT_DIR
 from ...utils import get_logger
 
 logger = get_logger(__name__)
 
 _TIMEOUT_S = 600
-
-VIDEO_OUTPUT_DIR = os.path.join("output", "playground", "videos")
 
 
 class ConcatError(Exception):

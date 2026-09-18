@@ -1984,6 +1984,8 @@
       "addShot": "新增镜头",
       "insertShotHere": "在此插入镜头",
       "removeShot": "删除镜头",
+      "moveShotUp": "上移镜头",
+      "moveShotDown": "下移镜头",
       "generateShot": "生成此镜头",
       "generateAll": "全部生成",
       "combineButton": "合成完整影片",
@@ -1996,7 +1998,8 @@
       "statusProcessing": "生成中…",
       "statusCompleted": "已完成",
       "statusFailed": "生成失败",
-      "maxShotsReached": "已达镜头数量上限（{max}）"
+      "maxShotsReached": "已达镜头数量上限（{max}）",
+      "replaceImagesWithVideoConfirm": "此镜头已添加图片，选择视频将取代这些图片。是否继续？"
     },
     "imageGen": {
       "gridBurn": {

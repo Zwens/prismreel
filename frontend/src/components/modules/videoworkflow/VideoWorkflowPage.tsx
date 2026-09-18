@@ -14,6 +14,7 @@ export default function VideoWorkflowPage() {
   const shots = useShotSequenceStore((s) => s.shots);
   const addShot = useShotSequenceStore((s) => s.addShot);
   const removeShot = useShotSequenceStore((s) => s.removeShot);
+  const moveShot = useShotSequenceStore((s) => s.moveShot);
   const { generateShot } = useShotGeneration();
 
   const [combining, setCombining] = useState(false);
@@ -32,7 +33,12 @@ export default function VideoWorkflowPage() {
     setCombining(true);
     setCombineError(null);
     try {
-      const outputPaths = shots.map((s) => s.outputPath!).filter(Boolean);
+      const currentShots = useShotSequenceStore.getState().shots;
+      if (currentShots.length === 0 || !currentShots.every((s) => s.status === 'completed')) {
+        setCombineError(t('combineRequiresAllCompleted'));
+        return;
+      }
+      const outputPaths = currentShots.map((s) => s.outputPath!).filter(Boolean);
       const result = await playgroundApi.concat(outputPaths);
       setFinalVideoPath(result.path);
     } catch (err) {
@@ -53,7 +59,16 @@ export default function VideoWorkflowPage() {
 
       <div className="flex flex-col gap-4 max-w-3xl">
         {shots.map((shot, index) => (
-          <ShotCard key={shot.id} shot={shot} index={index} onRemove={() => removeShot(shot.id)} />
+          <ShotCard
+            key={shot.id}
+            shot={shot}
+            index={index}
+            onRemove={() => removeShot(shot.id)}
+            onMoveUp={() => moveShot(shot.id, index - 1)}
+            onMoveDown={() => moveShot(shot.id, index + 1)}
+            canMoveUp={index > 0}
+            canMoveDown={index < shots.length - 1}
+          />
         ))}
 
         <button

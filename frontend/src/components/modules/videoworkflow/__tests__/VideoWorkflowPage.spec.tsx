@@ -52,6 +52,7 @@ import { useShotSequenceStore, MAX_SHOTS } from '../useShotSequenceStore';
 
 describe('VideoWorkflowPage', () => {
     beforeEach(() => {
+        vi.clearAllMocks();
         useShotSequenceStore.getState().reset();
     });
 
@@ -93,6 +94,74 @@ describe('VideoWorkflowPage', () => {
         await waitFor(() =>
             expect(playgroundApi.concat).toHaveBeenCalledWith(['playground/videos/a.mp4', 'playground/videos/b.mp4']),
         );
+    });
+
+    it('generates two shots through the real useShotGeneration flow, then combines with their real output paths in order', async () => {
+        (playgroundApi.generate as any).mockImplementation((req: any) =>
+            Promise.resolve({
+                id: req.prompt === 'first shot' ? 'gen-first' : 'gen-second',
+                status: 'completed',
+                outputs: [
+                    {
+                        id: 'out-1',
+                        media_path: req.prompt === 'first shot' ? 'playground/videos/first.mp4' : 'playground/videos/second.mp4',
+                        media_type: 'video',
+                        saved_to_library: false,
+                    },
+                ],
+            }),
+        );
+        (playgroundApi.concat as any).mockResolvedValue({ path: 'playground/videos/workflow_final.mp4' });
+
+        renderWithIntl(<VideoWorkflowPage />);
+
+        const [firstId] = useShotSequenceStore.getState().shots.map((s) => s.id);
+        useShotSequenceStore.getState().updateShotPrompt(firstId, 'first shot');
+        useShotSequenceStore.getState().addShot();
+        const [, secondId] = useShotSequenceStore.getState().shots.map((s) => s.id);
+        useShotSequenceStore.getState().updateShotPrompt(secondId, 'second shot');
+
+        // Wait for VideoWorkflowPage's subscription to re-render with both
+        // prompts committed before clicking — otherwise the click can land on
+        // a render whose handleGenerateAll closure still holds the pre-update
+        // single-idle-shot snapshot.
+        await waitFor(() => expect(screen.getAllByRole('textbox')).toHaveLength(2));
+
+        const generateAllButton = screen.getByRole('button', { name: '全部生成' });
+        fireEvent.click(generateAllButton);
+
+        await waitFor(() => {
+            const shots = useShotSequenceStore.getState().shots;
+            expect(shots.every((s) => s.status === 'completed')).toBe(true);
+        });
+
+        const shots = useShotSequenceStore.getState().shots;
+        expect(shots[0].outputPath).toBe('playground/videos/first.mp4');
+        expect(shots[1].outputPath).toBe('playground/videos/second.mp4');
+
+        const combineButton = screen.getByRole('button', { name: '合成完整影片' });
+        await waitFor(() => expect(combineButton).not.toBeDisabled());
+        fireEvent.click(combineButton);
+
+        await waitFor(() =>
+            expect(playgroundApi.concat).toHaveBeenCalledWith(['playground/videos/first.mp4', 'playground/videos/second.mp4']),
+        );
+    });
+
+    it('reorders shots via the move up/down buttons', async () => {
+        renderWithIntl(<VideoWorkflowPage />);
+        const [firstId] = useShotSequenceStore.getState().shots.map((s) => s.id);
+        useShotSequenceStore.getState().addShot();
+        const [, secondId] = useShotSequenceStore.getState().shots.map((s) => s.id);
+
+        await waitFor(() => expect(screen.getAllByRole('button', { name: '下移镜头' })).toHaveLength(2));
+        const moveDownButtons = screen.getAllByRole('button', { name: '下移镜头' });
+        fireEvent.click(moveDownButtons[0]);
+
+        await waitFor(() => {
+            const idsAfter = useShotSequenceStore.getState().shots.map((s) => s.id);
+            expect(idsAfter).toEqual([secondId, firstId]);
+        });
     });
 
     it('does not re-generate a shot that is already queued/processing when Generate all is clicked twice', async () => {

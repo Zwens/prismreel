@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ImagePlus, Film, X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ImagePlus, Film, X, Loader2, CheckCircle2, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import { mediaUrl } from '@/lib/mediaPath';
 import AssetSourcePicker from '../playground/AssetSourcePicker';
 import { useShotSequenceStore, type Shot } from './useShotSequenceStore';
@@ -23,10 +23,18 @@ export default function ShotCard({
   shot,
   index,
   onRemove,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp = false,
+  canMoveDown = false,
 }: {
   shot: Shot;
   index: number;
   onRemove: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }) {
   const t = useTranslations('playground.videoWorkflow');
   const updateShotPrompt = useShotSequenceStore((s) => s.updateShotPrompt);
@@ -40,6 +48,13 @@ export default function ShotCard({
   const handleAssetSelect = (path: string) => {
     const asVideo = isVideoPath(path);
     if (asVideo) {
+      if (shot.media.length > 0 && shot.mediaType === 'image') {
+        const confirmed = window.confirm(t('replaceImagesWithVideoConfirm'));
+        if (!confirmed) {
+          setShowPicker(false);
+          return;
+        }
+      }
       setShotMedia(shot.id, [path], 'video');
     } else {
       const nextMedia = shot.mediaType === 'image' ? [...shot.media, path] : [path];
@@ -66,9 +81,29 @@ export default function ShotCard({
         <span className="font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-text-secondary">
           {t('shotLabel', { index: index + 1 })}
         </span>
-        <button type="button" aria-label={t('removeShot')} onClick={onRemove} className="text-text-muted hover:text-foreground">
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-label={t('moveShotUp')}
+            onClick={onMoveUp}
+            disabled={!canMoveUp}
+            className="text-text-muted hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronUp className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            aria-label={t('moveShotDown')}
+            onClick={onMoveDown}
+            disabled={!canMoveDown}
+            className="text-text-muted hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </button>
+          <button type="button" aria-label={t('removeShot')} onClick={onRemove} className="text-text-muted hover:text-foreground">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <textarea
@@ -83,7 +118,7 @@ export default function ShotCard({
         {shot.media.map((path, i) => (
           <div key={path + i} className="group relative w-20 h-20 rounded-[12px] overflow-hidden bg-elevated border border-border-subtle">
             {isVideoPath(path) ? (
-              <video src={resolveMediaSrc(path)} className="w-full h-full object-cover" muted />
+              <video src={resolveMediaSrc(path)} className="w-full h-full object-cover" muted preload="metadata" />
             ) : (
               <img src={resolveMediaSrc(path)} alt="" className="w-full h-full object-cover" />
             )}

@@ -2,6 +2,7 @@
 
 import { playgroundApi } from '@/lib/api';
 import { useShotSequenceStore, inferShotMode, type Shot } from './useShotSequenceStore';
+import { getModelsForMode } from '../playground/playgroundModels';
 
 // ---------------------------------------------------------------------------
 // Drives ONE shot from "generate pressed" to a terminal status.
@@ -64,12 +65,17 @@ export function useShotGeneration(options: UseShotGenerationOptions = {}): ShotG
 
     setShotStatus(shot.id, 'queued');
     const mode = inferShotMode(shot);
+    const modelId = getModelsForMode(mode)[0]?.id;
+    if (!modelId) {
+      setShotStatus(shot.id, 'failed', { error: 'No model available for this mode' });
+      return;
+    }
 
     let generationId: string;
     try {
       const resp = await playgroundApi.generate({
         mode,
-        model_id: '',
+        model_id: modelId,
         prompt: shot.prompt.trim(),
         input_media: shot.media.length > 0 ? shot.media : undefined,
       });
