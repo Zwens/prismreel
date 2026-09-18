@@ -1,14 +1,12 @@
 'use client';
 
-import { useRef, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { ImagePlus, Film, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { playgroundApi } from '@/lib/api';
 import { mediaUrl } from '@/lib/mediaPath';
 import { usePlaygroundStore, type PlaygroundMode } from './usePlaygroundStore';
 import AssetSourcePicker from './AssetSourcePicker';
 import { isOfficialCharacterRef, getOfficialCharacterDisplay } from '@/lib/officialCharacterCache';
-import GridOverlayPicker from '@/components/shared/GridOverlayPicker';
 
 // ---------------------------------------------------------------------------
 // Mode config
@@ -198,51 +196,17 @@ function FirstLastFrameInput() {
   const setInputMedia = usePlaygroundStore((s) => s.setInputMedia);
   const t = useTranslations('playground');
 
-  const gridChoice = usePlaygroundStore((s) => s.pendingGridChoice);
-  const setGridChoice = usePlaygroundStore((s) => s.setPendingGridChoice);
-
-  const firstFrameInputRef = useRef<HTMLInputElement>(null);
-  const lastFrameInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState<'first' | 'last' | null>(null);
   const [showAssetPicker, setShowAssetPicker] = useState<'first' | 'last' | null>(null);
 
   const firstFrame = inputMedia[0];
   const lastFrame = inputMedia[1];
   const firstFrameGrid = inputMediaHasGridOverlay[0] ?? false;
-  const lastFrameGrid = inputMediaHasGridOverlay[1] ?? false;
-
-  // Grid choice is applied at generate time, not here — upload the original
-  // image so the user can pick images first and decide on a grid style after.
-  const uploadTo = async (slot: 'first' | 'last', file: File) => {
-    setUploading(slot);
-    try {
-      const result = await playgroundApi.uploadMedia(file, 0);
-      if (slot === 'first') {
-        setInputMedia(
-          [result.path, ...(lastFrame ? [lastFrame] : [])],
-          [false, ...(lastFrame ? [lastFrameGrid] : [])],
-        );
-      } else if (firstFrame) {
-        setInputMedia([firstFrame, result.path], [firstFrameGrid, false]);
-      }
-    } catch (err) {
-      console.error('[FirstLastFrameInput] upload failed:', err);
-    } finally {
-      setUploading(null);
-    }
-  };
-
-  const handleFileChange = (slot: 'first' | 'last') => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) uploadTo(slot, file);
-    e.target.value = '';
-  };
 
   const handleAssetSelect = (slot: 'first' | 'last') => (path: string, hasGridOverlay?: boolean) => {
     if (slot === 'first') {
       setInputMedia(
         [path, ...(lastFrame ? [lastFrame] : [])],
-        [!!hasGridOverlay, ...(lastFrame ? [lastFrameGrid] : [])],
+        [!!hasGridOverlay, ...(lastFrame ? [inputMediaHasGridOverlay[1] ?? false] : [])],
       );
     } else if (firstFrame) {
       setInputMedia([firstFrame, path], [firstFrameGrid, !!hasGridOverlay]);
@@ -256,7 +220,6 @@ function FirstLastFrameInput() {
   const renderSlot = (
     slot: 'first' | 'last',
     path: string | undefined,
-    ref: React.RefObject<HTMLInputElement>,
     badge: string,
     label: string,
     onRemove: () => void,
@@ -268,7 +231,7 @@ function FirstLastFrameInput() {
         <SingleRefPreview path={path} onRemove={onRemove} badge={badge} />
       ) : (
         <div
-          onClick={() => !disabled && ref.current?.click()}
+          onClick={() => !disabled && setShowAssetPicker(slot)}
           className={`border border-dashed rounded-[14px] p-4 bg-input-bg flex flex-col items-center gap-2 text-center transition-colors ${
             disabled
               ? 'cursor-not-allowed opacity-40 border-border-subtle'
@@ -276,20 +239,10 @@ function FirstLastFrameInput() {
           }`}
         >
           <ImagePlus className="w-6 h-6 text-text-muted" />
-          <span className="text-xs text-text-secondary">
-            {uploading === slot ? t('media.uploading') : t('media.dragOrClick')}
-          </span>
+          <span className="text-xs text-text-secondary">{t('media.dragOrClick')}</span>
         </div>
       )}
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => ref.current?.click()}
-          disabled={uploading === slot || disabled}
-          className={ACTION_BTN_CLASS}
-        >
-          {uploading === slot ? t('media.uploading') : path ? t('media.replaceFile') : t('media.localUpload')}
-        </button>
         <button
           type="button"
           onClick={() => setShowAssetPicker(slot)}
@@ -299,13 +252,6 @@ function FirstLastFrameInput() {
           {t('media.pickFromLibrary')}
         </button>
       </div>
-      <input
-        ref={ref}
-        type="file"
-        accept="image/*"
-        onChange={handleFileChange(slot)}
-        className="hidden"
-      />
       <AssetSourcePicker
         isOpen={showAssetPicker === slot}
         onClose={() => setShowAssetPicker(null)}
@@ -317,9 +263,8 @@ function FirstLastFrameInput() {
 
   return (
     <div className="space-y-4">
-      {renderSlot('first', firstFrame, firstFrameInputRef, t('media.firstFrame'), t('compose.mediaFirstFrame'), removeFirstFrame)}
-      {renderSlot('last', lastFrame, lastFrameInputRef, t('media.lastFrame'), t('media.lastFrameOptional'), removeLastFrame, !firstFrame)}
-      {firstFrame && <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />}
+      {renderSlot('first', firstFrame, t('media.firstFrame'), t('compose.mediaFirstFrame'), removeFirstFrame)}
+      {renderSlot('last', lastFrame, t('media.lastFrame'), t('media.lastFrameOptional'), removeLastFrame, !firstFrame)}
     </div>
   );
 }
@@ -336,12 +281,6 @@ export default function MediaInput() {
   const setInputMedia = usePlaygroundStore((s) => s.setInputMedia);
   const t = useTranslations('playground');
 
-  const gridChoice = usePlaygroundStore((s) => s.pendingGridChoice);
-  const setGridChoice = usePlaygroundStore((s) => s.setPendingGridChoice);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
   const [showAssetPicker, setShowAssetPicker] = useState(false);
 
   // i2v has fixed first-frame/last-frame slots (Ark role semantics), not an
@@ -372,87 +311,13 @@ export default function MediaInput() {
   const canAddMore = config.multiple && inputMedia.length < config.maxFiles;
 
   // -------------------------------------------------------------------------
-  // Upload handler
-  // -------------------------------------------------------------------------
-
-  const handleFiles = async (files: FileList | File[]) => {
-    const fileArray = Array.from(files);
-    if (fileArray.length === 0) return;
-
-    // Respect max file limit
-    const available = config.maxFiles - inputMedia.length;
-    const toUpload = fileArray.slice(0, available);
-
-    setUploading(true);
-    try {
-      // Upload the original file — grid overlay is applied at generate time,
-      // not here, so picking images and choosing a grid style are independent.
-      const results = await Promise.all(
-        toUpload.map((file) => playgroundApi.uploadMedia(file, 0))
-      );
-      const newPaths = results.map((r) => r.path);
-      const newFlags = newPaths.map(() => false);
-
-      if (config.multiple) {
-        setInputMedia([...inputMedia, ...newPaths], [...inputMediaHasGridOverlay, ...newFlags]);
-      } else {
-        setInputMedia(newPaths, newFlags);
-      }
-    } catch (err) {
-      console.error('[MediaInput] upload failed:', err);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  // -------------------------------------------------------------------------
   // Event handlers
   // -------------------------------------------------------------------------
-
-  const handleClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      handleFiles(e.target.files);
-    }
-    // Reset so re-selecting the same file works
-    e.target.value = '';
-  };
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOver(false);
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setDragOver(false);
-      if (e.dataTransfer.files) {
-        handleFiles(e.dataTransfer.files);
-      }
-    },
-    [inputMedia, config]
-  );
 
   const handleRemove = (index: number) => {
     const updated = inputMedia.filter((_, i) => i !== index);
     const updatedFlags = inputMediaHasGridOverlay.filter((_, i) => i !== index);
     setInputMedia(updated, updatedFlags);
-  };
-
-  const handleReplace = () => {
-    fileInputRef.current?.click();
   };
 
   const handleAssetSelect = (path: string, hasGridOverlay?: boolean) => {
@@ -468,48 +333,22 @@ export default function MediaInput() {
         : 'image';
 
   // -------------------------------------------------------------------------
-  // Render: hidden file input
-  // -------------------------------------------------------------------------
-
-  const fileInput = (
-    <input
-      ref={fileInputRef}
-      type="file"
-      accept={config.accept}
-      multiple={config.multiple}
-      onChange={handleFileChange}
-      className="hidden"
-    />
-  );
-
-  // -------------------------------------------------------------------------
   // Render: empty state — Line B reference slot (recessed drop target)
   //
   // The section label is provided by the parent SectionCard (PlaygroundPage),
   // so this component renders only the slot + actions to avoid a double header.
   // -------------------------------------------------------------------------
 
-  const acceptsImages = config.accept.includes('image');
-
   if (!hasMedia) {
     return (
       <div className="space-y-2">
         <div
-          onClick={handleClick}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          className={`
+          onClick={() => setShowAssetPicker(true)}
+          className="
             border border-dashed rounded-[14px] p-6 bg-input-bg
             flex flex-col items-center gap-3 text-center cursor-pointer
-            transition-colors
-            ${
-              dragOver
-                ? 'border-primary/60 bg-primary/8 shadow-[var(--glow-primary)]'
-                : 'border-border-subtle hover:border-foreground/30 hover:bg-hover-bg'
-            }
-            ${uploading ? 'pointer-events-none opacity-60' : ''}
-          `}
+            transition-colors border-border-subtle hover:border-foreground/30 hover:bg-hover-bg
+          "
         >
           {config.icon === 'video' ? (
             <Film className="w-8 h-8 text-text-muted" />
@@ -517,33 +356,10 @@ export default function MediaInput() {
             <ImagePlus className="w-8 h-8 text-text-muted" />
           )}
 
-          <span className="text-xs text-text-secondary">
-            {uploading ? t('media.uploading') : t('media.dragOrClick')}
-          </span>
+          <span className="text-xs text-text-secondary">{t('media.pickFromLibrary')}</span>
 
           <span className="text-[0.6875rem] text-text-muted">{t(`media.hints.${config.hintKey}`)}</span>
         </div>
-
-        {/* Action buttons */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleClick}
-            disabled={uploading}
-            className={ACTION_BTN_CLASS}
-          >
-            {t('media.localUpload')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowAssetPicker(true)}
-            className={ACTION_BTN_CLASS}
-          >
-            {t('media.pickFromLibrary')}
-          </button>
-        </div>
-
-        {fileInput}
 
         <AssetSourcePicker
           isOpen={showAssetPicker}
@@ -615,8 +431,7 @@ export default function MediaInput() {
             {canAddMore && (
               <button
                 type="button"
-                onClick={handleClick}
-                disabled={uploading}
+                onClick={() => setShowAssetPicker(true)}
                 className="
                   w-24 h-24 rounded-[14px] bg-input-bg
                   border border-dashed border-border-subtle
@@ -647,24 +462,12 @@ export default function MediaInput() {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={handleReplace}
-          disabled={uploading}
-          className={ACTION_BTN_CLASS}
-        >
-          {uploading ? t('media.uploading') : t('media.replaceFile')}
-        </button>
-        <button
-          type="button"
           onClick={() => setShowAssetPicker(true)}
           className={ACTION_BTN_CLASS}
         >
-          {t('media.pickFromLibrary')}
+          {t('media.replaceFile')}
         </button>
       </div>
-
-      {acceptsImages && <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />}
-
-      {fileInput}
 
       <AssetSourcePicker
         isOpen={showAssetPicker}

@@ -3,8 +3,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { usePlaygroundStore, usePlaygroundStoreApi, GRID_OVERLAY_NEGATIVE_PROMPT, GRID_OVERLAY_GUIDANCE_PROMPT, type PlaygroundMode, type PlaygroundGeneration, type QueuedRequest } from './usePlaygroundStore';
 import { playgroundApi, type PlaygroundGenerationResponse } from '@/lib/api';
-import { gridChoiceToParams } from '@/components/shared/GridOverlayPicker';
-import { isOfficialCharacterRef } from '@/lib/officialCharacterCache';
 
 // ---------------------------------------------------------------------------
 // Shared generation runner
@@ -54,9 +52,7 @@ export function toGeneration(resp: PlaygroundGenerationResponse): PlaygroundGene
 }
 
 export interface GenerationRunner {
-  /** Enqueue the store's current compose state. No-op on an empty prompt.
-   *  Async: burns any pending grid-overlay choice into unburned input media
-   *  before building the request. */
+  /** Enqueue the store's current compose state. No-op on an empty prompt. */
   generate: () => Promise<void>;
 }
 
@@ -68,8 +64,6 @@ export function useGenerationRunner(): GenerationRunner {
   const appendGridOverlayNegative = usePlaygroundStore((s) => s.appendGridOverlayNegative);
   const inputMediaHasGridOverlay = usePlaygroundStore((s) => s.inputMediaHasGridOverlay);
   const inputMedia = usePlaygroundStore((s) => s.inputMedia);
-  const pendingGridChoice = usePlaygroundStore((s) => s.pendingGridChoice);
-  const setInputMedia = usePlaygroundStore((s) => s.setInputMedia);
   const parameters = usePlaygroundStore((s) => s.parameters);
   const batchSize = usePlaygroundStore((s) => s.batchSize);
   const history = usePlaygroundStore((s) => s.history);
@@ -159,39 +153,13 @@ export function useGenerationRunner(): GenerationRunner {
 
   // ─── Generate handler — enqueue a request; the dispatcher runs it ──────────
 
-  // Grid choice is picked independently of image selection (store's
-  // pendingGridChoice), so the burn-in happens here, right before the request
-  // is built — the last moment the choice can still be considered final.
-  // Local uploads only: asset-library picks may point at OSS-backed paths
-  // with no local file to burn into, and already carry their own
-  // has_grid_overlay flag from the library, so they're left untouched.
-  const burnPendingGridOverlay = useCallback(async () => {
-    if (pendingGridChoice === 'none') return { media: inputMedia, flags: inputMediaHasGridOverlay };
-    const { size: gridSize, color: gridColor } = gridChoiceToParams(pendingGridChoice);
-    const flags = [...inputMediaHasGridOverlay];
-    const media = [...inputMedia];
-    for (let i = 0; i < media.length; i++) {
-      const path = media[i];
-      if (flags[i] || isOfficialCharacterRef(path) || /^(https?:|blob:|data:)/i.test(path)) continue;
-      try {
-        const result = await playgroundApi.applyGridToMedia(path, gridSize, gridColor);
-        media[i] = result.path;
-        flags[i] = result.has_grid_overlay;
-      } catch (err) {
-        console.error('[Playground] Failed to apply grid overlay to', path, err);
-      }
-    }
-    if (media.some((p, i) => p !== inputMedia[i]) || flags.some((f, i) => f !== inputMediaHasGridOverlay[i])) {
-      setInputMedia(media, flags);
-    }
-    return { media, flags };
-  }, [pendingGridChoice, inputMedia, inputMediaHasGridOverlay, setInputMedia]);
-
+  // Grid overlays are now burned in at upload/asset-pick time (library or
+  // MediaInput's "pick from library" flow) — inputMediaHasGridOverlay already
+  // reflects each reference's true state by the time generate is pressed.
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) return;
-    const { media: finalInputMedia, flags: finalHasGridOverlay } = await burnPendingGridOverlay();
     // Auto-detect i2i: t2i + reference images -> i2i
-    const effectiveMode = (mode === 't2i' && finalInputMedia.length > 0) ? 'i2i' : mode;
+    const effectiveMode = (mode === 't2i' && inputMedia.length > 0) ? 'i2i' : mode;
     // Grid overlay lines are baked into the pixels — leaving them out of the
     // negative prompt lets the model reproduce them in the output.
     const effectiveNegativePrompt = appendGridOverlayNegative
@@ -199,7 +167,7 @@ export function useGenerationRunner(): GenerationRunner {
       : negativePrompt;
     // Tell the model the grid is a proportion guide, not part of the subject,
     // whenever any current reference actually carries one.
-    const effectivePrompt = finalHasGridOverlay.some(Boolean)
+    const effectivePrompt = inputMediaHasGridOverlay.some(Boolean)
       ? `${GRID_OVERLAY_GUIDANCE_PROMPT} ${prompt.trim()}`
       : prompt.trim();
     enqueueRequest({
@@ -207,11 +175,11 @@ export function useGenerationRunner(): GenerationRunner {
       modelId,
       prompt: effectivePrompt,
       negativePrompt: effectiveNegativePrompt || undefined,
-      inputMedia: finalInputMedia,
+      inputMedia,
       parameters,
       batchSize,
     });
-  }, [mode, modelId, prompt, negativePrompt, appendGridOverlayNegative, burnPendingGridOverlay, parameters, batchSize, enqueueRequest]);
+  }, [mode, modelId, prompt, negativePrompt, appendGridOverlayNegative, inputMedia, inputMediaHasGridOverlay, parameters, batchSize, enqueueRequest]);
 
   // ─── Queue dispatcher — POST a queued request, then poll for status ────────
 
