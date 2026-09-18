@@ -1818,6 +1818,9 @@ export const playgroundApi = {
     }).then(r => r.data);
   },
 
+  concat: (videoPaths: string[]) =>
+    axios.post<{ path: string }>(API_URL + "/playground/concat", { video_paths: videoPaths }).then(r => r.data),
+
   // Burn a grid into an existing local media file in place (e.g. a fresh
   // AI generation the user asked to have a grid overlay applied to).
   applyGridToMedia: (path: string, gridSize: GridOverlaySize, gridColor: GridOverlayColor = "black") =>
