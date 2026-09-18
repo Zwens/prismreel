@@ -5,13 +5,19 @@
 ## Library道具分類破圖（✅ 2026-09-17 已驗收完成，含既有壞資料backfill）
 - [**✅ prop資產`image_url`誤存video路徑導致破圖，根因+新資料修復+既有壞資料backfill三階段全部完成**](feedback_library_asset_media_type_routing_and_backfill_2026-09-17.md) — 根因：`save_to_library()`未依`media_type`分流，一律寫入`image_url`；已修`service.py`/`pipeline.py`分流+前端`AssetLibraryPage.tsx`/`AssetInspector.tsx`補`<video>`fallback（commit`51341d6`，同commit修`feedback_library_video_asset_image_url_misroute_2026-09-17.md`）；唯一壞資料`prop_ac6600d4ef73`已手動backfill，**改`library_assets.json`後必須重啟prismreel-backend讓in-memory pipeline singleton重新讀檔**；live驗證DOM確認`<video>`正確渲染、`brokenImgCount:0`
 
-## 照片上傳網格疊加功能（✅ 2026-09-17 上傳端+AI生成+DanceSwapWizard三缺陷全部修復完成部署驗證）
+## 照片上傳網格疊加功能（⚠️ 多輪修復，VideoCreator.tsx燒圖時機仍未修，見2026-09-18條）
 - [**✅ 使用者上傳照片可選原圖/4×4/5×5永久疊加網格輔助AI辨識比例構圖，6個上傳端點+前端共用選擇器全部接好並live像素驗證通過**](feedback_grid_overlay_upload_feature_2026-09-17.md) — commit`d89c0f8`；`apply_grid_overlay`後端純函式+`GridOverlayPicker.tsx`前端共用元件；上傳端點盤點踩坑（函式名不能當真照片上傳判準）+混合accept類型陷阱，詳見全文；**⚠️注意：該條「已完成部署驗證」結論僅涵蓋上傳路徑，AI生成/DanceSwapWizard當時未涵蓋，見下條**
 - [**✅ 三個功能性缺陷修復：AI生成/素材庫選擇不套網格、prompt未注入辨識引導文字、DanceSwapWizard排除網格checkbox缺失**](feedback_grid_overlay_three_defects_ai_gen_dance_negative_prompt_2026-09-17.md) — commit`20f50b5`；新增後端`POST /playground/apply-grid`+`GRID_OVERLAY_GUIDANCE_PROMPT`正向prompt常數+DanceSwapWizard本地state版排除checkbox；用真實AI生成live驗證通過，含Monitor輪詢判定「檔案存在」誤判為「本次生成完成」的假陰性教訓
 - [**✅ 既有素材庫照片backfill補套用5×5網格已完成（跨session交接）**](feedback_grid_overlay_backfill_existing_library_photos_2026-09-17.md) — 理論資料模型三代legacy欄位並存，實測production資料只有2張圖需處理（其餘全空值）；backfill前務必先唯讀盤點實際資料量再估工作量，不要只憑model定義推算
+- [**✅ 第四輪根因修復：燒圖時機從「選圖當下」延後到「送出生成當下」，MediaInput.tsx路徑已修並真實付費API驗證通過**](feedback_grid_overlay_burn_timing_deferred_to_generate_2026-09-18.md) — commit`5835289`；先前三輪都在修「有沒有燒/prompt有沒有注入」，這輪才發現選圖當下就燒圖導致UI改網格選項不生效這個更底層問題；**⚠️VideoCreator.tsx（漫畫生成Motion步驟，非AI影片頁）同樣問題仍未修，因走OSS上傳架構改法不同**
+
+## 網格疊加架構收斂（✅ 2026-09-18，撤銷同日稍早的延遲燒入設計）
+- [**🔴🔴 MediaInput.tsx改回「只能從資產庫選圖」單一入口，撤銷同日稍早`5835289`的延遲燒入設計；動手前未查git log差點推翻自己剛做的修復**](feedback_grid_overlay_library_only_reverses_defer_burn_2026-09-18.md) — commit`f654d25`；教訓：改任何機制前先查`git log`看最近改動理由，尤其使用者新回報「聽起來像在反駁」某個剛做的設計時；原計畫誤判8個檔案同產線，實際只有`MediaInput.tsx`需要改，ComicGen產線4個檔案+`DanceSwapWizard.tsx`查證後排除
 
 ## 真人換裝舞蹈功能修復全紀錄（✅ 2026-09-17雙session獨立驗證通過；2026-09-16那輪8個commit已驗收完成）
+- [**✅ 三視圖生成人物/服裝角色混淆修復（已部署）+ compose步驟新增Seedance 2.0/2.5模型選擇（已部署，2.0效果未驗證待使用者實測）**](feedback_dance_swap_multi_ref_image_role_confusion_and_model_choice_2026-09-17.md) — commit`012572c`+`4372925`；根因是系統代寫prompt送多張參考圖卻沒指名角色，模型自行選錯主體且正常計費不報錯，難以被動察覺；2.0 v2v是否真能用參考影片驅動動作從未實測，廠商後台聲稱支援但官方文件與程式碼註解證實2.0會拒絕task_type欄位
 - [**✅ 2026-09-17：AI影片頁滾軸+真人換裝舞蹈三視圖勾選，兩個修復commit經雙session各自獨立驗證（VPS原始碼+容器版本+瀏覽器實測）皆確認正常**](feedback_asset_source_picker_exit_animation_blocks_clicks_2026-09-16.md) — 使用者曾回報「未發現問題」，已排除代碼/部署問題，懸案歸因使用者端瀏覽器快取，已請對方強制重新整理+附證據；見檔案末段「雙session獨立驗證通過」章節
+- [**✅ 2026-09-17：pickSheet素材庫選圖未燒網格+Seedance/Ark不支援negative_prompt導致排除checkbox形同虛設，兩缺口皆修復**](feedback_dance_swap_pickSheet_and_seedance_negative_prompt_gap_2026-09-17.md) — commit`65d4f3a`+`a76fa95`；更正`feedback_grid_overlay_three_defects_ai_gen_dance_negative_prompt_2026-09-17.md`的「已修復」結論；教訓：UI狀態存在≠下游API真的接收該值，跨模型家族prompt功能每條路徑要重新確認該模型實際支援的欄位
 - ✅ 第一輪三個commit(54c35a3/57ba767/be41788)：素材庫破圖mediaUrl修復+Step1上傳/生成二選一+Step1/Step2「從素材庫選擇」按鈕。「從素材庫選擇」按鈕僅存在於「我已有三視圖」分頁、非「AI生成」分頁，屬既定設計非缺漏（見DanceSwapWizard.tsx）
 - [**✅ 問題3/5根因：AssetSourcePicker退場動畫卡住時overlay仍pointerEvents:auto持續攔截點擊**](feedback_asset_source_picker_exit_animation_blocks_clicks_2026-09-16.md) — commit`cdd4d77`；variants加`pointerEvents:'none'/'auto'`隨hidden/visible狀態立即切換，不等exit動畫跑完；live驗收用`document.elementFromPoint`命中真實checkbox+`.click()`觸發checked切換
 - [**✅ 問題2/4：Step3新增比例(9:16/16:9/1:1/3:4/4:3/adaptive)+秒數(4-30s)控制項**](feedback_asset_source_picker_exit_animation_blocks_clicks_2026-09-16.md) — commit`c6179ac`；依`docs/api-reference/byteplus-ark-seedance-seedream.md`第2.4節確認`task_type:'reference'`無ratio/duration約束才放開自訂，避開edit/extend強制adaptive/-1限制
