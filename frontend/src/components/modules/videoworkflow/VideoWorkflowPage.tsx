@@ -22,9 +22,10 @@ export default function VideoWorkflowPage() {
 
   const allCompleted = shots.length > 0 && shots.every((s) => s.status === 'completed');
   const atMax = shots.length >= MAX_SHOTS;
+  const anyInFlight = shots.some((s) => s.status === 'queued' || s.status === 'processing');
 
   const handleGenerateAll = () => {
-    shots.filter((s) => s.status !== 'completed').forEach((s) => generateShot(s));
+    shots.filter((s) => s.status === 'idle' || s.status === 'failed').forEach((s) => generateShot(s));
   };
 
   const handleCombine = async () => {
@@ -70,7 +71,8 @@ export default function VideoWorkflowPage() {
         <button
           type="button"
           onClick={handleGenerateAll}
-          className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold bg-elevated text-foreground hover:bg-hover-bg"
+          disabled={anyInFlight}
+          className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold bg-elevated text-foreground hover:bg-hover-bg disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Sparkles className="w-4 h-4" />
           {t('generateAll')}

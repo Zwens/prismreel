@@ -94,4 +94,22 @@ describe('VideoWorkflowPage', () => {
             expect(playgroundApi.concat).toHaveBeenCalledWith(['playground/videos/a.mp4', 'playground/videos/b.mp4']),
         );
     });
+
+    it('does not re-generate a shot that is already queued/processing when Generate all is clicked twice', async () => {
+        (playgroundApi.generate as any).mockResolvedValue({ id: 'g1', status: 'processing', outputs: [] });
+        useShotSequenceStore.getState().updateShotPrompt(
+            useShotSequenceStore.getState().shots[0].id,
+            'a robot dancing',
+        );
+
+        renderWithIntl(<VideoWorkflowPage />);
+        const generateAllButton = screen.getByRole('button', { name: '全部生成' });
+
+        fireEvent.click(generateAllButton);
+        await waitFor(() => expect(playgroundApi.generate).toHaveBeenCalledTimes(1));
+
+        fireEvent.click(generateAllButton);
+        // Flush any microtasks the second click's generateShot calls might have queued.
+        await waitFor(() => expect(playgroundApi.generate).toHaveBeenCalledTimes(1));
+    });
 });
