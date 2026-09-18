@@ -20,9 +20,9 @@ interface GlobalSidebarProps {
 // "aivideo" quick-start page — both folded into videogen's mode tabs (2026-09-18).
 export const GLOBAL_NAV_ITEMS: { id: GlobalTab; icon: typeof LayoutGrid; hash: string }[] = [
   { id: "workspace", icon: LayoutGrid, hash: "#/" },
-  { id: "library", icon: Layers, hash: "#/library" },
   { id: "videogen", icon: Clapperboard, hash: "#/video-gen" },
   { id: "imagegen", icon: ImagePlus, hash: "#/image-gen" },
+  { id: "library", icon: Layers, hash: "#/library" },
   { id: "history", icon: Clock, hash: "#/history" },
   { id: "settings", icon: Settings, hash: "#/settings" },
 ];

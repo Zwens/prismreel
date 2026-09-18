@@ -211,7 +211,7 @@
     "toastGenStart": "正在為{kind}生成形象...",
     "toastGenStartBody": "AI 影像生成通常需要 15-45 秒，期間可繼續工作。",
     "toastGenDone": "✨ {kind}形象已生成",
-    "toastGenDoneBody": "候選圖已加入素材庫，當前共 {count} 張。",
+    "toastGenDoneBody": "候選圖已加入資產庫，當前共 {count} 張。",
     "toastGenErr": "生成失敗",
     "toastGenErrUnknown": "未知錯誤",
     "toastSelected": "✓ 參考圖已切換",
@@ -422,7 +422,7 @@
   },
   "nav": {
     "workspace": "漫畫生成",
-    "library": "素材庫",
+    "library": "資產庫",
     "videogen": "影片生成",
     "imagegen": "圖片生成",
     "history": "生成歷史",
@@ -1135,7 +1135,7 @@
     "saving": "儲存中..."
   },
   "library": {
-    "title": "素材庫",
+    "title": "資產庫",
     "characterLabel": "角色",
     "sceneLabel": "場景",
     "propLabel": "道具",
@@ -1977,12 +1977,12 @@
     "imageGen": {
       "gridBurn": {
         "title": "燒入網格",
-        "description": "上傳照片或從素材庫選圖，燒入網格輔助 AI 辨識比例構圖，並存成新的素材庫項目。",
+        "description": "上傳照片或從資產庫選圖，燒入網格輔助 AI 辨識比例構圖，並存成新的資產庫項目。",
         "uploadButton": "上傳本地圖片",
         "uploading": "上傳中…",
         "uploadSuccess": "圖片已上傳",
         "uploadFailed": "圖片上傳失敗",
-        "pickFromLibraryButton": "從素材庫選擇",
+        "pickFromLibraryButton": "從資產庫選擇",
         "alreadyGridded": "此圖已有網格疊加",
         "saveAsLabel": "存為",
         "typeCharacter": "角色",
@@ -1990,16 +1990,16 @@
         "typeProp": "道具",
         "namePlaceholder": "為新資產命名",
         "nameRequired": "請輸入名稱",
-        "saveButton": "燒入並存至素材庫",
+        "saveButton": "燒入並存至資產庫",
         "saveAgain": "再存一次",
         "saving": "處理中…",
-        "saveSuccess": "已存至素材庫",
+        "saveSuccess": "已存至資產庫",
         "saveFailed": "儲存失敗，請重試"
       }
     },
     "videoGen": {
       "hint": {
-        "useGrid": "真人圖片請使用網格圖，或至「圖片生成 › 燒入網格」進行再製後再從素材庫選用"
+        "useGrid": "真人圖片請使用網格圖，或至「圖片生成 › 燒入網格」進行再製後再從資產庫選用"
       }
     },
     "results": {
@@ -2108,7 +2108,7 @@
     "assetSourcePicker": {
       "title": "選擇素材",
       "close": "關閉",
-      "tabLibrary": "素材庫",
+      "tabLibrary": "資產庫",
       "tabSeries": "系列",
       "tabProject": "專案",
       "tabHistory": "生成歷史",
@@ -2164,7 +2164,7 @@
       "cardTitle": "真人換裝舞蹈",
       "cardDescription": "三步走：換裝三視圖 → 黑白深度動作 → 合成成片",
       "regenerate": "重新生成",
-      "pickFromLibrary": "從素材庫選擇",
+      "pickFromLibrary": "從資產庫選擇",
       "saveSuccess": "已存為角色",
       "saveFailed": "儲存失敗，請重試",
       "invalidImageFormat": "檔案格式不支援，請上傳 jpg、jpeg 或 png 格式的圖片",
@@ -2240,7 +2240,7 @@
         "finalPromptLabel": "實際送出的完整提示詞（含自動附加的網格說明）",
         "run": "合成",
         "running": "合成中…",
-        "saveToLibrary": "存入素材庫"
+        "saveToLibrary": "存入資產庫"
       }
     }
   },
