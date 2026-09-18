@@ -129,7 +129,7 @@ export function VideoGenWorkspace() {
                     : 'text-text-muted hover:bg-hover-bg hover:text-foreground',
                 ].join(' ')}
               >
-                {tabKey === 'dance' ? t('dance.cardTitle') : t(`mode.${tabKey}`)}
+                {t(`videoTab.${tabKey}`)}
               </button>
             );
           })}

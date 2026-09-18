@@ -1967,6 +1967,13 @@
         "description": "Upload a source video and describe how to transform it."
       }
     },
+    "videoTab": {
+      "t2v": "Text to Video",
+      "i2v": "First & Last Frame",
+      "r2v": "Multi-Reference",
+      "v2v": "Edit Video",
+      "dance": "Motion Capture"
+    },
     "imageGen": {
       "gridBurn": {
         "title": "Burn Grid Overlay",
