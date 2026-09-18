@@ -425,6 +425,7 @@
     "library": "素材库",
     "videogen": "视频生成",
     "imagegen": "图片生成",
+    "videoworkflow": "多镜头工作流",
     "history": "生成历史",
     "settings": "设置",
     "logout": "登出",
@@ -1973,6 +1974,29 @@
       "r2v": "多图生成",
       "v2v": "编辑视频",
       "dance": "动态捕捉生成"
+    },
+    "videoWorkflow": {
+      "pageTitle": "多镜头工作流",
+      "pageSubtitle": "组合多个镜头，一次生成完整影片",
+      "shotLabel": "镜头 {index}",
+      "promptPlaceholder": "描述这个镜头的画面，输入 @ 可插入素材库图片",
+      "pickFromLibrary": "从素材库选取",
+      "addShot": "新增镜头",
+      "insertShotHere": "在此插入镜头",
+      "removeShot": "删除镜头",
+      "generateShot": "生成此镜头",
+      "generateAll": "全部生成",
+      "combineButton": "合成完整影片",
+      "combining": "合成中…",
+      "combineSuccess": "合成完成",
+      "combineFailed": "合成失败",
+      "combineRequiresAllCompleted": "所有镜头都完成生成后才能合成",
+      "statusIdle": "尚未生成",
+      "statusQueued": "已加入队列",
+      "statusProcessing": "生成中…",
+      "statusCompleted": "已完成",
+      "statusFailed": "生成失败",
+      "maxShotsReached": "已达镜头数量上限（{max}）"
     },
     "imageGen": {
       "gridBurn": {
