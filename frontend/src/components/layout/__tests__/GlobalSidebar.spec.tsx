@@ -53,33 +53,34 @@ describe('GlobalSidebar', () => {
         // Derived from the shared model rather than a hard-coded list. 渲染侧
         // 已改用 filter(id !== 'settings') 而不是 slice(0, N)，所以新增条目
         // 不再需要同步改渲染代码——只有下面这条计数断言要跟着走。
-        for (const label of ["漫画生成", "素材库", "AI 视频", "视频生成", "生成历史", "设置"]) {
+        for (const label of ["漫画生成", "素材库", "视频生成", "图片生成", "生成历史", "设置"]) {
             expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
         }
         expect(GLOBAL_NAV_ITEMS).toHaveLength(6);
     });
 
-    it('gives the AI video entry its own route', () => {
-        expect(GLOBAL_NAV_ITEMS.find((i) => i.id === 'aivideo')?.hash).toBe('#/ai-video');
+    it('gives the video and image generation entries their own routes', () => {
+        expect(GLOBAL_NAV_ITEMS.find((i) => i.id === 'videogen')?.hash).toBe('#/video-gen');
+        expect(GLOBAL_NAV_ITEMS.find((i) => i.id === 'imagegen')?.hash).toBe('#/image-gen');
     });
 
-    it('navigates and reports the tab when the AI video entry is clicked', () => {
+    it('navigates and reports the tab when the video generation entry is clicked', () => {
         const onTabChange = vi.fn();
         renderWithIntl(<GlobalSidebar activeTab="workspace" onTabChange={onTabChange} />);
 
-        fireEvent.click(screen.getByRole('button', { name: 'AI 视频' }));
+        fireEvent.click(screen.getByRole('button', { name: '视频生成' }));
 
-        expect(onTabChange).toHaveBeenCalledWith('aivideo');
-        expect(window.location.hash).toBe('#/ai-video');
+        expect(onTabChange).toHaveBeenCalledWith('videogen');
+        expect(window.location.hash).toBe('#/video-gen');
     });
 
     it('marks the active tab for screen readers', () => {
-        renderWithIntl(<GlobalSidebar activeTab="aivideo" onTabChange={() => {}} />);
+        renderWithIntl(<GlobalSidebar activeTab="videogen" onTabChange={() => {}} />);
 
-        expect(screen.getByRole('button', { name: 'AI 视频' })).toHaveAttribute(
+        expect(screen.getByRole('button', { name: '视频生成' })).toHaveAttribute(
             'aria-current',
             'page',
         );
-        expect(screen.getByRole('button', { name: "视频生成" })).not.toHaveAttribute('aria-current');
+        expect(screen.getByRole('button', { name: "图片生成" })).not.toHaveAttribute('aria-current');
     });
 });

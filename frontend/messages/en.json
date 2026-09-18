@@ -423,37 +423,13 @@
   "nav": {
     "workspace": "Comic Generator",
     "library": "Asset Library",
-    "playground": "Video Generator",
+    "videogen": "Video Generator",
+    "imagegen": "Image Generator",
     "history": "Generation History",
     "settings": "Settings",
     "logout": "Log out",
     "workspaceAria": "PrismReel Studio · Comic Generator",
-    "mainNavAria": "Main navigation",
-    "aivideo": "AI Video"
-  },
-  "aivideo": {
-    "eyebrow": "Single shot",
-    "title": "AI Video",
-    "subtitle": "Generate one video, straight from the assets you already have",
-    "groupVideo": "Video modes",
-    "mode": {
-      "t2v": "Text to video",
-      "i2v": "Image to video",
-      "v2v": "Video edit"
-    },
-    "noModels": "No model available for this mode",
-    "noModelsHint": "The catalog has no usable model for this mode — pick another one",
-    "generate": "Generate",
-    "generateBatch": "Generate {count}",
-    "resultsCount": "{count} results",
-    "taskType": {
-      "label": "Task type",
-      "auto": "Auto",
-      "edit": "Edit",
-      "extend": "Extend",
-      "hint": "Editing keeps the source ratio and length, so both are locked",
-      "unsupported": "This model cannot be told explicitly; it will decide on its own"
-    }
+    "mainNavAria": "Main navigation"
   },
   "workspace": {
     "title": "My Workspace",
@@ -1989,6 +1965,34 @@
       "v2v": {
         "title": "Edit a video",
         "description": "Upload a source video and describe how to transform it."
+      }
+    },
+    "imageGen": {
+      "gridBurn": {
+        "title": "Burn Grid Overlay",
+        "description": "Upload a photo or pick one from the library, burn in a grid overlay to help the AI read proportions and framing, then save it as a new library asset.",
+        "uploadButton": "Upload local image",
+        "uploading": "Uploading…",
+        "uploadSuccess": "Image uploaded",
+        "uploadFailed": "Image upload failed",
+        "pickFromLibraryButton": "Pick from library",
+        "alreadyGridded": "This image already has a grid overlay",
+        "saveAsLabel": "Save as",
+        "typeCharacter": "Character",
+        "typeScene": "Scene",
+        "typeProp": "Prop",
+        "namePlaceholder": "Name the new asset",
+        "nameRequired": "Please enter a name",
+        "saveButton": "Burn and save to library",
+        "saveAgain": "Save again",
+        "saving": "Processing…",
+        "saveSuccess": "Saved to library",
+        "saveFailed": "Save failed, please retry"
+      }
+    },
+    "videoGen": {
+      "hint": {
+        "useGrid": "For real-person photos, use a grid-overlay image, or go to Image Generation › Burn Grid Overlay to reprocess one and pick it from the library"
       }
     },
     "results": {

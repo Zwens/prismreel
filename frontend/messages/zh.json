@@ -423,37 +423,13 @@
   "nav": {
     "workspace": "漫画生成",
     "library": "素材库",
-    "playground": "视频生成",
+    "videogen": "视频生成",
+    "imagegen": "图片生成",
     "history": "生成历史",
     "settings": "设置",
     "logout": "登出",
     "workspaceAria": "PrismReel Studio · 漫画生成",
-    "mainNavAria": "主导航",
-    "aivideo": "AI 视频"
-  },
-  "aivideo": {
-    "eyebrow": "单条生成",
-    "title": "AI 视频",
-    "subtitle": "直接取用系统里已有的素材，生成单条视频",
-    "groupVideo": "视频模式",
-    "mode": {
-      "t2v": "文生视频",
-      "i2v": "图生视频",
-      "v2v": "视频编辑"
-    },
-    "noModels": "该模式暂无可用模型",
-    "noModelsHint": "模型目录里没有支持该模式的可用模型，请改选其他模式",
-    "generate": "生成",
-    "generateBatch": "生成 {count} 条",
-    "resultsCount": "{count} 条结果",
-    "taskType": {
-      "label": "任务类型",
-      "auto": "自动判定",
-      "edit": "编辑",
-      "extend": "续写",
-      "hint": "编辑会保持原视频的画幅与时长，这两项已自动锁定",
-      "unsupported": "当前模型不支持显式指定，将由模型自动判定"
-    }
+    "mainNavAria": "主导航"
   },
   "workspace": {
     "title": "我的工作区",
@@ -1989,6 +1965,34 @@
       "v2v": {
         "title": "编辑视频",
         "description": "上传一段源视频，描述你想怎么转换它。"
+      }
+    },
+    "imageGen": {
+      "gridBurn": {
+        "title": "烧入网格",
+        "description": "上传照片或从素材库选图，烧入网格辅助 AI 识别比例构图，并存成新的素材库项目。",
+        "uploadButton": "上传本地图片",
+        "uploading": "上传中…",
+        "uploadSuccess": "图片已上传",
+        "uploadFailed": "图片上传失败",
+        "pickFromLibraryButton": "从素材库选择",
+        "alreadyGridded": "此图已有网格叠加",
+        "saveAsLabel": "存为",
+        "typeCharacter": "角色",
+        "typeScene": "场景",
+        "typeProp": "道具",
+        "namePlaceholder": "为新资产命名",
+        "nameRequired": "请输入名称",
+        "saveButton": "烧入并存至素材库",
+        "saveAgain": "再存一次",
+        "saving": "处理中…",
+        "saveSuccess": "已存至素材库",
+        "saveFailed": "储存失败，请重试"
+      }
+    },
+    "videoGen": {
+      "hint": {
+        "useGrid": "真人图片请使用网格图，或至「图片生成 › 烧入网格」进行再制后再从素材库选用"
       }
     },
     "results": {

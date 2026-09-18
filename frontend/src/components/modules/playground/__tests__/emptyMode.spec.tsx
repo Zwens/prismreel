@@ -95,10 +95,36 @@ vi.mock('@/lib/api', () => ({
 }));
 
 import ModelSelector from '../ModelSelector';
-import PlaygroundPage from '../PlaygroundPage';
-import { playgroundStore } from '../usePlaygroundStore';
+import { VideoGenWorkspace } from '../VideoGenPage';
+import {
+    playgroundStore,
+    createPlaygroundStore,
+    PlaygroundStoreProvider,
+    type PlaygroundState,
+    type PlaygroundStoreApi,
+} from '../usePlaygroundStore';
 
 const store = () => playgroundStore.getState();
+
+// VideoGenPage owns its own store instance rather than the module-level
+// singleton (2026-09-18 nav reorg). Build that instance here and feed it to
+// the exported workspace component directly, same pattern as storeWiring.surfaces.
+function renderVideoGen(initial: Partial<PlaygroundState> = {}) {
+    const videoStore: PlaygroundStoreApi = createPlaygroundStore();
+    videoStore.setState({
+        playgroundStage: 'compose',
+        mode: 't2v', modelId: '', prompt: '', negativePrompt: '', inputMedia: [],
+        parameters: {}, batchSize: 1, history: [], templates: [], queue: [],
+        activeGenerationIds: [], maxConcurrent: 3, modelPreferences: {},
+        ...initial,
+    });
+    renderWithIntl(
+        <PlaygroundStoreProvider store={videoStore}>
+            <VideoGenWorkspace />
+        </PlaygroundStoreProvider>,
+    );
+    return () => videoStore.getState();
+}
 
 beforeEach(() => {
     vi.clearAllMocks();
@@ -137,10 +163,9 @@ describe('ModelSelector — a mode with nothing to offer', () => {
     });
 });
 
-describe('PlaygroundPage — a mode with nothing to offer', () => {
+describe('VideoGenPage — a mode with nothing to offer', () => {
     it('still generates while the mode has a model', async () => {
-        playgroundStore.setState({ prompt: '海面上的暴风雨' });
-        renderWithIntl(<PlaygroundPage />);
+        renderVideoGen({ prompt: '海面上的暴风雨' });
 
         fireEvent.click(screen.getByRole('button', { name: '生成' }));
 
@@ -148,16 +173,14 @@ describe('PlaygroundPage — a mode with nothing to offer', () => {
     });
 
     it('refuses to generate for a mode no model can serve', async () => {
-        playgroundStore.setState({ prompt: '海面上的暴风雨', mode: 'i2v' });
-        renderWithIntl(<PlaygroundPage />);
+        const getState = renderVideoGen({ prompt: '海面上的暴风雨', mode: 'i2v' });
 
-        await waitFor(() => expect(store().modelId).toBe(''));
+        await waitFor(() => expect(getState().modelId).toBe(''));
         expect(screen.getByRole('button', { name: '生成' })).toBeDisabled();
     });
 
     it('says why instead of leaving the button dead', () => {
-        playgroundStore.setState({ prompt: '海面上的暴风雨', mode: 'i2v' });
-        renderWithIntl(<PlaygroundPage />);
+        renderVideoGen({ prompt: '海面上的暴风雨', mode: 'i2v' });
 
         expect(screen.getByText('当前模式无可用模型')).toBeInTheDocument();
     });

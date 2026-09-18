@@ -1,26 +1,28 @@
 "use client";
 
-import { LayoutGrid, Layers, Clapperboard, Wand2, Clock, Settings, LogOut, Gauge } from "lucide-react";
+import { LayoutGrid, Layers, Clapperboard, ImagePlus, Clock, Settings, LogOut, Gauge } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import PrismReelBranding from "./PrismReelBranding";
 import { logout } from "@/lib/api";
 
-export type GlobalTab = "workspace" | "library" | "aivideo" | "playground" | "history" | "settings";
+export type GlobalTab = "workspace" | "library" | "videogen" | "imagegen" | "history" | "settings";
 
 interface GlobalSidebarProps {
   activeTab: GlobalTab;
   onTabChange: (tab: GlobalTab) => void;
 }
 
-// Shared global nav model (workspace/library/playground/history + settings). Reused by
-// the desktop GlobalSidebar (below) and the mobile BottomTabBar (md:hidden).
+// Shared global nav model (workspace/library/videogen/imagegen/history + settings).
+// Reused by the desktop GlobalSidebar (below) and the mobile BottomTabBar (md:hidden).
+// videogen/imagegen replace the former single "playground" entry + the standalone
+// "aivideo" quick-start page — both folded into videogen's mode tabs (2026-09-18).
 export const GLOBAL_NAV_ITEMS: { id: GlobalTab; icon: typeof LayoutGrid; hash: string }[] = [
   { id: "workspace", icon: LayoutGrid, hash: "#/" },
   { id: "library", icon: Layers, hash: "#/library" },
-  { id: "aivideo", icon: Clapperboard, hash: "#/ai-video" },
-  { id: "playground", icon: Wand2, hash: "#/playground" },
+  { id: "videogen", icon: Clapperboard, hash: "#/video-gen" },
+  { id: "imagegen", icon: ImagePlus, hash: "#/image-gen" },
   { id: "history", icon: Clock, hash: "#/history" },
   { id: "settings", icon: Settings, hash: "#/settings" },
 ];

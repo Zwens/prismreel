@@ -82,10 +82,49 @@ vi.mock('@/lib/api', () => ({
 import ResultGallery from '../ResultGallery';
 import DetailPanel from '../DetailPanel';
 import PromptTemplateModal from '../PromptTemplateModal';
-import PlaygroundPage from '../PlaygroundPage';
-import { playgroundStore, type PlaygroundGeneration } from '../usePlaygroundStore';
+import { ImageGenWorkspace } from '../ImageGenPage';
+import {
+    playgroundStore,
+    createPlaygroundStore,
+    PlaygroundStoreProvider,
+    type PlaygroundGeneration,
+    type PlaygroundState,
+    type PlaygroundStoreApi,
+} from '../usePlaygroundStore';
 
 const store = () => playgroundStore.getState();
+
+// ImageGenPage owns its own store instance rather than the module-level
+// singleton (2026-09-18 nav reorg — image and video generation must not
+// overwrite each other's mode/prompt/inputMedia). Tests below construct that
+// instance themselves and feed it to the exported workspace component so they
+// can still arrange state directly instead of driving every case through UI.
+function renderImageGen(initial: Partial<PlaygroundState> = {}) {
+    const imageStore: PlaygroundStoreApi = createPlaygroundStore();
+    imageStore.setState({
+        playgroundStage: 'compose',
+        mode: 't2i',
+        modelId: 'gemini-3.1-flash-image',
+        prompt: '',
+        negativePrompt: '',
+        inputMedia: [],
+        parameters: {},
+        batchSize: 1,
+        history: [],
+        templates: [],
+        queue: [],
+        activeGenerationIds: [],
+        maxConcurrent: 3,
+        modelPreferences: {},
+        ...initial,
+    });
+    renderWithIntl(
+        <PlaygroundStoreProvider store={imageStore}>
+            <ImageGenWorkspace />
+        </PlaygroundStoreProvider>,
+    );
+    return () => imageStore.getState();
+}
 
 function generation(overrides: Partial<PlaygroundGeneration> = {}): PlaygroundGeneration {
     return {
@@ -281,20 +320,19 @@ describe('PromptTemplateModal ↔ store', () => {
     });
 });
 
-describe('PlaygroundPage ↔ store', () => {
+describe('ImageGenPage ↔ store', () => {
     // The generate button does not POST directly — it enqueues, and a pump
     // dispatches under the concurrency limit. Both halves live in the store.
     it('enqueues the compose state rather than posting straight away', async () => {
-        playgroundStore.setState({
+        const getState = renderImageGen({
             prompt: '雨夜的天台',
             maxConcurrent: 0, // hold the pump so the request stays observable in the queue
         });
-        renderWithIntl(<PlaygroundPage />);
 
         fireEvent.click(screen.getByRole('button', { name: '生成' }));
 
-        await waitFor(() => expect(store().queue).toHaveLength(1));
-        expect(store().queue[0]).toMatchObject({
+        await waitFor(() => expect(getState().queue).toHaveLength(1));
+        expect(getState().queue[0]).toMatchObject({
             prompt: '雨夜的天台',
             mode: 't2i',
             status: 'pending',
@@ -303,25 +341,23 @@ describe('PlaygroundPage ↔ store', () => {
     });
 
     it('auto-detects i2i from the store when t2i already has reference media', async () => {
-        playgroundStore.setState({
+        const getState = renderImageGen({
             prompt: '换成黄昏',
             mode: 't2i',
             inputMedia: ['output/library/linwan.png'],
             maxConcurrent: 0,
         });
-        renderWithIntl(<PlaygroundPage />);
 
         fireEvent.click(screen.getByRole('button', { name: '生成' }));
 
-        await waitFor(() => expect(store().queue).toHaveLength(1));
-        expect(store().queue[0].mode).toBe('i2i');
+        await waitFor(() => expect(getState().queue).toHaveLength(1));
+        expect(getState().queue[0].mode).toBe('i2i');
     });
 
-    // Guards the pump's playgroundStore.getState() at PlaygroundPage.tsx:204 —
-    // the second call site a context provider cannot reach.
+    // Guards the pump's store.getState() read inside ImageGenWorkspace's compose
+    // stage — the second call site a context provider cannot reach.
     it('pumps a queued request out to the API and drains the queue', async () => {
-        playgroundStore.setState({ prompt: '雨夜的天台', maxConcurrent: 2 });
-        renderWithIntl(<PlaygroundPage />);
+        const getState = renderImageGen({ prompt: '雨夜的天台', maxConcurrent: 2 });
 
         fireEvent.click(screen.getByRole('button', { name: '生成' }));
 
@@ -329,31 +365,30 @@ describe('PlaygroundPage ↔ store', () => {
         expect(mockGenerate).toHaveBeenCalledWith(
             expect.objectContaining({ prompt: '雨夜的天台', mode: 't2i' }),
         );
-        await waitFor(() => expect(store().queue).toHaveLength(0));
+        await waitFor(() => expect(getState().queue).toHaveLength(0));
     });
 
     // The pump reads queue / maxConcurrent / activeGenerationIds off the store to
     // decide how many slots are free; break that read and it dispatches anyway.
     it('holds a request back when the store says every slot is busy', async () => {
-        playgroundStore.setState({
+        const getState = renderImageGen({
             prompt: '雨夜的天台',
             maxConcurrent: 1,
             activeGenerationIds: ['already-running'],
         });
-        renderWithIntl(<PlaygroundPage />);
 
         fireEvent.click(screen.getByRole('button', { name: '生成' }));
 
-        await waitFor(() => expect(store().queue).toHaveLength(1));
-        expect(store().queue[0].status).toBe('pending');
+        await waitFor(() => expect(getState().queue).toHaveLength(1));
+        expect(getState().queue[0].status).toBe('pending');
         expect(mockGenerate).not.toHaveBeenCalled();
     });
 
     it('refuses to enqueue when the store holds no prompt', () => {
-        renderWithIntl(<PlaygroundPage />);
+        const getState = renderImageGen();
 
         fireEvent.click(screen.getByRole('button', { name: '生成' }));
 
-        expect(store().queue).toHaveLength(0);
+        expect(getState().queue).toHaveLength(0);
     });
 });

@@ -25,8 +25,8 @@ const SeriesDetailPage = dynamic(() => import("@/components/series/SeriesDetailP
 const ImportFileDialog = dynamic(() => import("@/components/series/ImportFileDialog"), { ssr: false });
 const SettingsPage = dynamic(() => import("@/components/settings/SettingsPage"), { ssr: false });
 const AssetLibraryPage = dynamic(() => import("@/components/library/AssetLibraryPage"), { ssr: false });
-const PlaygroundPage = dynamic(() => import("@/components/modules/playground/PlaygroundPage"), { ssr: false });
-const AiVideoPage = dynamic(() => import("@/components/modules/aivideo/AiVideoPage"), { ssr: false });
+const VideoGenPage = dynamic(() => import("@/components/modules/playground/VideoGenPage"), { ssr: false });
+const ImageGenPage = dynamic(() => import("@/components/modules/playground/ImageGenPage"), { ssr: false });
 const PlaygroundHistoryPage = dynamic(() => import("@/components/modules/playground/PlaygroundHistoryPage"), { ssr: false });
 
 // ── Create Series Dialog ──
@@ -462,7 +462,7 @@ export default function Home() {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
-  const [currentView, setCurrentView] = useState<'home' | 'project' | 'series' | 'series-episode' | 'library' | 'settings' | 'aivideo' | 'playground' | 'history'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'project' | 'series' | 'series-episode' | 'library' | 'settings' | 'videogen' | 'imagegen' | 'history'>('home');
   const [activeTab, setActiveTab] = useState<GlobalTab>("workspace");
   const [wsSearch, setWsSearch] = useState("");
   const online = useOnline();
@@ -605,17 +605,27 @@ export default function Home() {
         setEpisodeId(null);
         return;
       }
-      if (hash === '#/ai-video') {
-        setCurrentView('aivideo');
-        setActiveTab('aivideo');
+      if (hash === '#/video-gen') {
+        setCurrentView('videogen');
+        setActiveTab('videogen');
         setProjectId(null);
         setSeriesId(null);
         setEpisodeId(null);
         return;
       }
-      if (hash === '#/playground') {
-        setCurrentView('playground');
-        setActiveTab('playground');
+      if (hash === '#/image-gen') {
+        setCurrentView('imagegen');
+        setActiveTab('imagegen');
+        setProjectId(null);
+        setSeriesId(null);
+        setEpisodeId(null);
+        return;
+      }
+      // Legacy links to the old single playground entry now land on video gen —
+      // it kept the mode-tab layout closest to the former select-stage flow.
+      if (hash === '#/playground' || hash === '#/ai-video') {
+        setCurrentView('videogen');
+        setActiveTab('videogen');
         setProjectId(null);
         setSeriesId(null);
         setEpisodeId(null);
@@ -680,11 +690,11 @@ export default function Home() {
     if (currentView === 'settings') {
       return <SettingsPage />;
     }
-    if (currentView === 'aivideo') {
-      return <AiVideoPage />;
+    if (currentView === 'videogen') {
+      return <VideoGenPage />;
     }
-    if (currentView === 'playground') {
-      return <PlaygroundPage />;
+    if (currentView === 'imagegen') {
+      return <ImageGenPage />;
     }
     if (currentView === 'history') {
       return <PlaygroundHistoryPage />;
@@ -789,7 +799,7 @@ export default function Home() {
                   </button>
                   <div className="border-t border-glass-border" />
                   <button
-                    onClick={() => { window.location.hash = '#/playground'; setShowCreateDropdown(false); }}
+                    onClick={() => { window.location.hash = '#/video-gen'; setShowCreateDropdown(false); }}
                     className="w-full px-4 py-2.5 text-sm text-left text-foreground hover:bg-hover-bg transition-colors flex items-center gap-2"
                   >
                     <Sparkles size={16} className="text-accent" />

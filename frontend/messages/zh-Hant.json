@@ -423,37 +423,13 @@
   "nav": {
     "workspace": "漫畫生成",
     "library": "素材庫",
-    "playground": "影片生成",
+    "videogen": "影片生成",
+    "imagegen": "圖片生成",
     "history": "生成歷史",
     "settings": "設定",
     "logout": "登出",
     "workspaceAria": "PrismReel Studio · 漫畫生成",
-    "mainNavAria": "主導航",
-    "aivideo": "AI 影片"
-  },
-  "aivideo": {
-    "eyebrow": "單條生成",
-    "title": "AI 影片",
-    "subtitle": "直接取用系統裡已有的素材，生成單條影片",
-    "groupVideo": "影片模式",
-    "mode": {
-      "t2v": "文生影片",
-      "i2v": "圖生影片",
-      "v2v": "影片編輯"
-    },
-    "noModels": "該模式暫無可用模型",
-    "noModelsHint": "模型目錄裡沒有支援該模式的可用模型，請改選其他模式",
-    "generate": "生成",
-    "generateBatch": "生成 {count} 條",
-    "resultsCount": "{count} 條結果",
-    "taskType": {
-      "label": "任務類型",
-      "auto": "自動判定",
-      "edit": "編輯",
-      "extend": "續寫",
-      "hint": "編輯會保持原影片的畫幅與時長，這兩項已自動鎖定",
-      "unsupported": "當前模型不支援顯式指定，將由模型自動判定"
-    }
+    "mainNavAria": "主導航"
   },
   "workspace": {
     "title": "我的工作區",
@@ -1989,6 +1965,34 @@
       "v2v": {
         "title": "編輯影片",
         "description": "上傳一段源影片，描述你想怎麼轉換它。"
+      }
+    },
+    "imageGen": {
+      "gridBurn": {
+        "title": "燒入網格",
+        "description": "上傳照片或從素材庫選圖，燒入網格輔助 AI 辨識比例構圖，並存成新的素材庫項目。",
+        "uploadButton": "上傳本地圖片",
+        "uploading": "上傳中…",
+        "uploadSuccess": "圖片已上傳",
+        "uploadFailed": "圖片上傳失敗",
+        "pickFromLibraryButton": "從素材庫選擇",
+        "alreadyGridded": "此圖已有網格疊加",
+        "saveAsLabel": "存為",
+        "typeCharacter": "角色",
+        "typeScene": "場景",
+        "typeProp": "道具",
+        "namePlaceholder": "為新資產命名",
+        "nameRequired": "請輸入名稱",
+        "saveButton": "燒入並存至素材庫",
+        "saveAgain": "再存一次",
+        "saving": "處理中…",
+        "saveSuccess": "已存至素材庫",
+        "saveFailed": "儲存失敗，請重試"
+      }
+    },
+    "videoGen": {
+      "hint": {
+        "useGrid": "真人圖片請使用網格圖，或至「圖片生成 › 燒入網格」進行再製後再從素材庫選用"
       }
     },
     "results": {
