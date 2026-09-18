@@ -21,6 +21,7 @@ import {
     PinOff,
     Play,
     Star,
+    Upload,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import AssetChipBar from "./AssetChipBar";
@@ -34,6 +35,8 @@ import PreviewImage from "@/components/shared/preview/PreviewImage";
 import PreviewVideo from "@/components/shared/preview/PreviewVideo";
 import { useProjectStore } from "@/store/projectStore";
 import { selectedVariantUrl } from "@/lib/characterImage";
+import { api, crudApi } from "@/lib/api";
+import { debugLog } from "@/lib/debugLog";
 
 export interface ShotNode {
     id: string;
@@ -106,6 +109,9 @@ export interface ShotNode {
 
 /** Cap on T2I image history per shot. Older drops off FIFO when adding. */
 export const T2I_HISTORY_LIMIT = 10;
+
+const REFERENCE_UPLOAD_MAX_BYTES = 8 * 1024 * 1024;
+const REFERENCE_UPLOAD_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 interface ShotCardProps {
     shot: ShotNode;
@@ -200,6 +206,10 @@ export default function ShotCard({
     // currentProjectId — needed by PolishPanel to look up the
     // project's PromptConfig override server-side.
     const currentProjectId = useProjectStore((state) => state.currentProject?.id);
+    const updateProject = useProjectStore((state) => state.updateProject);
+    const [refUploading, setRefUploading] = useState(false);
+    const [refUploadError, setRefUploadError] = useState<string | null>(null);
+    const refFileInputRef = useRef<HTMLInputElement>(null);
     // r2vSlots — when R2V tab is active, derive slot context from
     // @character references in the prompt so the polish system
     // prompt knows what character1/character2 ID maps to. Dedup by
@@ -558,6 +568,51 @@ export default function ShotCard({
         }
     };
 
+    /* Local-upload path for R2V reference images. There is no "loose file"
+     * reference slot in this data model — every reference is an asset
+     * (character/scene/prop) the prompt tags by name (see module docblock
+     * on parseAssetTags in StoryboardR2V.tsx). So a local upload creates a
+     * throwaway prop behind the scenes: POST /props (name only) → POST
+     * /assets/prop/{id}/upload (routes the file through OSS, same as the
+     * Cast upload flow) → refresh the project so `props` picks up the new
+     * asset → insert its [characterN:name] tag exactly like a chip click.
+     * Using prop (not character) keeps the model minimal — no voice
+     * binding, no full_body/head_shot/three_views split to worry about. */
+    const handleUploadReferenceFile = async (file: File) => {
+        setRefUploadError(null);
+        if (!REFERENCE_UPLOAD_ALLOWED_TYPES.includes(file.type)) {
+            setRefUploadError(t("uploadReferenceInvalidType"));
+            return;
+        }
+        if (file.size > REFERENCE_UPLOAD_MAX_BYTES) {
+            setRefUploadError(t("uploadReferenceTooLarge"));
+            return;
+        }
+        if (!currentProjectId) return;
+
+        setRefUploading(true);
+        try {
+            const baseName = file.name.replace(/\.[^.]+$/, "") || "上傳素材";
+            const propName = `${baseName}_${Date.now().toString(36)}`;
+
+            const created = await crudApi.createProp(currentProjectId, { name: propName });
+            const newProp = (created.props || []).find((p: any) => p.name === propName);
+            if (!newProp) throw new Error("prop not found after create");
+
+            await api.uploadAsset(currentProjectId, "prop", newProp.id, file, "image");
+
+            const fresh = await api.getProject(currentProjectId);
+            updateProject(currentProjectId, fresh);
+
+            handleInsertAssetFromChip("prop", propName);
+        } catch (e) {
+            debugLog.error("Studio", "Reference upload failed", e);
+            setRefUploadError(t("uploadReferenceFailed"));
+        } finally {
+            setRefUploading(false);
+        }
+    };
+
     const isActiveT2I = shot.tabMode === "t2i_i2v";
 
     return (
@@ -892,14 +947,46 @@ export default function ShotCard({
                             </div>
                         )}
 
-                        {/* Asset Chip Bar */}
-                        <AssetChipBar
-                            characters={characters}
-                            scenes={scenes}
-                            props={props}
-                            onInsertAsset={handleInsertAssetFromChip}
-                            referencedNames={referencedAssetNames}
-                        />
+                        {/* Asset Chip Bar + local upload */}
+                        <div className="flex flex-wrap items-center gap-2 py-1">
+                            <AssetChipBar
+                                characters={characters}
+                                scenes={scenes}
+                                props={props}
+                                onInsertAsset={handleInsertAssetFromChip}
+                                referencedNames={referencedAssetNames}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => refFileInputRef.current?.click()}
+                                disabled={refUploading}
+                                title={t("uploadReference")}
+                                className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-glass-border bg-surface-inset px-3 py-1 text-[13px] text-text-secondary transition-colors duration-fast ease-out-quart hover:border-primary/45 hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {refUploading ? (
+                                    <Loader2 size={11} className="animate-spin" aria-hidden="true" />
+                                ) : (
+                                    <Upload size={11} aria-hidden="true" />
+                                )}
+                                <span>{refUploading ? t("uploadReferenceUploading") : t("uploadReference")}</span>
+                            </button>
+                            <input
+                                ref={refFileInputRef}
+                                type="file"
+                                accept={REFERENCE_UPLOAD_ALLOWED_TYPES.join(",")}
+                                className="sr-only"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) void handleUploadReferenceFile(file);
+                                    e.target.value = "";
+                                }}
+                            />
+                        </div>
+                        {refUploadError ? (
+                            <p role="alert" className="pt-1 font-sans text-body-sm text-status-failed-fg">
+                                {refUploadError}
+                            </p>
+                        ) : null}
                     </div>
                 </div>
 
