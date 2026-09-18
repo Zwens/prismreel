@@ -1,5 +1,6 @@
 import { createContext, createElement, useContext, type ReactNode } from 'react';
 import { createStore, useStore, type StateCreator } from 'zustand';
+import type { GridOverlayChoice } from '@/components/shared/GridOverlayPicker';
 
 // ---------------------------------------------------------------------------
 // Featured (best-of-batch) persistence — client-side localStorage only.
@@ -170,6 +171,12 @@ export interface PlaygroundState {
    *  for library picks), left as-is otherwise. */
   appendGridOverlayNegative: boolean;
   setAppendGridOverlayNegative: (value: boolean) => void;
+  /** User's current grid-overlay choice for media not yet burned in. Applied
+   *  at generate time (not at upload time) so picking images and choosing a
+   *  grid style are independent steps — see GridOverlayChoice in
+   *  GridOverlayPicker.tsx. */
+  pendingGridChoice: GridOverlayChoice;
+  setPendingGridChoice: (choice: GridOverlayChoice) => void;
   parameters: Record<string, any>;
   batchSize: number;
 
@@ -278,6 +285,8 @@ const initPlaygroundState: StateCreator<PlaygroundState> = (set, get) => ({
   inputMediaHasGridOverlay: [],
   appendGridOverlayNegative: false,
   setAppendGridOverlayNegative: (value) => set({ appendGridOverlayNegative: value }),
+  pendingGridChoice: 'none',
+  setPendingGridChoice: (choice) => set({ pendingGridChoice: choice }),
   parameters: {},
   batchSize: DEFAULT_BATCH_SIZE,
 
