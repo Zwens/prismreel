@@ -26,6 +26,7 @@ const ImportFileDialog = dynamic(() => import("@/components/series/ImportFileDia
 const SettingsPage = dynamic(() => import("@/components/settings/SettingsPage"), { ssr: false });
 const AssetLibraryPage = dynamic(() => import("@/components/library/AssetLibraryPage"), { ssr: false });
 const VideoGenPage = dynamic(() => import("@/components/modules/playground/VideoGenPage"), { ssr: false });
+const VideoWorkflowPage = dynamic(() => import("@/components/modules/videoworkflow/VideoWorkflowPage"), { ssr: false });
 const ImageGenPage = dynamic(() => import("@/components/modules/playground/ImageGenPage"), { ssr: false });
 const PlaygroundHistoryPage = dynamic(() => import("@/components/modules/playground/PlaygroundHistoryPage"), { ssr: false });
 
@@ -462,7 +463,7 @@ export default function Home() {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
-  const [currentView, setCurrentView] = useState<'home' | 'project' | 'series' | 'series-episode' | 'library' | 'settings' | 'videogen' | 'imagegen' | 'history'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'project' | 'series' | 'series-episode' | 'library' | 'settings' | 'videogen' | 'videoworkflow' | 'imagegen' | 'history'>('home');
   const [activeTab, setActiveTab] = useState<GlobalTab>("workspace");
   const [wsSearch, setWsSearch] = useState("");
   const online = useOnline();
@@ -613,6 +614,14 @@ export default function Home() {
         setEpisodeId(null);
         return;
       }
+      if (hash === '#/video-workflow') {
+        setCurrentView('videoworkflow');
+        setActiveTab('videoworkflow');
+        setProjectId(null);
+        setSeriesId(null);
+        setEpisodeId(null);
+        return;
+      }
       if (hash === '#/image-gen') {
         setCurrentView('imagegen');
         setActiveTab('imagegen');
@@ -692,6 +701,9 @@ export default function Home() {
     }
     if (currentView === 'videogen') {
       return <VideoGenPage />;
+    }
+    if (currentView === 'videoworkflow') {
+      return <VideoWorkflowPage />;
     }
     if (currentView === 'imagegen') {
       return <ImageGenPage />;

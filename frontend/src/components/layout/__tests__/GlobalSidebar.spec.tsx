@@ -53,10 +53,10 @@ describe('GlobalSidebar', () => {
         // Derived from the shared model rather than a hard-coded list. 渲染侧
         // 已改用 filter(id !== 'settings') 而不是 slice(0, N)，所以新增条目
         // 不再需要同步改渲染代码——只有下面这条计数断言要跟着走。
-        for (const label of ["漫画生成", "素材库", "视频生成", "图片生成", "生成历史", "设置"]) {
+        for (const label of ["漫画生成", "素材库", "视频生成", "多镜头工作流", "图片生成", "生成历史", "设置"]) {
             expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
         }
-        expect(GLOBAL_NAV_ITEMS).toHaveLength(6);
+        expect(GLOBAL_NAV_ITEMS).toHaveLength(7);
     });
 
     it('gives the video and image generation entries their own routes', () => {
@@ -82,5 +82,15 @@ describe('GlobalSidebar', () => {
             'page',
         );
         expect(screen.getByRole('button', { name: "图片生成" })).not.toHaveAttribute('aria-current');
+    });
+
+    it('navigates to the video workflow hash when the video workflow nav item is clicked', () => {
+        const onTabChange = vi.fn();
+        renderWithIntl(<GlobalSidebar activeTab="workspace" onTabChange={onTabChange} />);
+
+        fireEvent.click(screen.getByRole('button', { name: '多镜头工作流' }));
+
+        expect(onTabChange).toHaveBeenCalledWith('videoworkflow');
+        expect(window.location.hash).toBe('#/video-workflow');
     });
 });
