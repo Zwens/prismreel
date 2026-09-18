@@ -14,7 +14,7 @@ comic_gen路由（`src/apps/comic_gen/api.py`）完全沒有「對已上傳OSS�
 
 **這代表comic_gen路由（`/library/assets/upload`等）下所有上傳入口，燒網格只能在上傳當下的同一次API呼叫內完成，事後（不論是獨立按鈕或後續步驟）一律無法對已上傳圖片補燒。** playground路由（`/playground/upload`、`/playground/apply-grid`）因為固定寫本機`output/playground/uploads/`，才有事後補燒的空間，見[[feedback_grid_overlay_burn_timing_deferred_to_generate_2026-09-18]]第16-18行的兩路徑架構差異對照。
 
-## 修法（改回，commit待補）
+## 修法（✅ commit`7599453`，pipeline #46011通過，live三種樣式(原圖/黑線/白線)+儲存全實測通過）
 `GridBurnCard.tsx`：`GridOverlayPicker`搬回上傳/資產庫選擇按鈕之前，`handleFileChange`用當下`gridChoice`轉成`gridSize`/`gridColor`直接帶入`api.uploadLibraryImage(file, gridSize, gridColor)`一次到位；移除「套用網格」按鈕與`handleApplyGrid`；`handleSave`不再嘗試對資產庫選圖路徑事後補燒（原本那段邏輯本身也會對OSS圖404，一併拔除）。
 代價：選完上傳/選圖後不能再改網格樣式；資產庫選圖若選到未燒網格的舊圖，此卡片無法補燒（需回上傳入口重傳一張）。
 
