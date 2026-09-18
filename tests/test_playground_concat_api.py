@@ -19,7 +19,7 @@ def _auth_headers(client):
     session mutates it without monkeypatch auto-revert), so
     auth.require_login hits its dev-mode bypass and returns the anonymous
     admin unconditionally — see
-    src/apps/comic_gen/test_auth.py::test_login_gate_disabled_when_jwt_secret_unset
+    src/apps/comic_gen/test_enforce_login_middleware.py::test_login_gate_disabled_when_jwt_secret_unset
     for the same convention against a different route."""
     return {}
 
