@@ -14,6 +14,9 @@
 ## 網格疊加架構收斂（✅ 2026-09-18，撤銷同日稍早的延遲燒入設計）
 - [**🔴🔴 MediaInput.tsx改回「只能從資產庫選圖」單一入口，撤銷同日稍早`5835289`的延遲燒入設計；動手前未查git log差點推翻自己剛做的修復**](feedback_grid_overlay_library_only_reverses_defer_burn_2026-09-18.md) — commit`f654d25`；教訓：改任何機制前先查`git log`看最近改動理由，尤其使用者新回報「聽起來像在反駁」某個剛做的設計時；原計畫誤判8個檔案同產線，實際只有`MediaInput.tsx`需要改，ComicGen產線4個檔案+`DanceSwapWizard.tsx`查證後排除
 
+## 導覽拆分：影片生成/圖片生成獨立入口（✅ 2026-09-18，三session協作完成）
+- [**✅ 左側導覽從6項改5項，`#/ai-video`廢棄併入「影片生成」5tab直開；「圖片生成」新增燒入網格卡片；VideoGenPage/ImageGenPage各自獨立store**](feedback_nav_reorg_video_image_gen_split_2026-09-18.md) — commit`9fa3884`，pipeline #45782通過，live驗證全通過；測試遷移教訓（storeWiring/emptyMode需改用Provider注入店例）+vitest雙config(`test`只跑node環境/`test:ui`才跑DOM測試)+多session協作檔案覆蓋教訓，詳見全文
+
 ## 真人換裝舞蹈功能修復全紀錄（✅ 2026-09-17雙session獨立驗證通過；2026-09-16那輪8個commit已驗收完成）
 - [**✅ 三視圖生成人物/服裝角色混淆修復（已部署）+ compose步驟新增Seedance 2.0/2.5模型選擇（已部署，2.0效果未驗證待使用者實測）**](feedback_dance_swap_multi_ref_image_role_confusion_and_model_choice_2026-09-17.md) — commit`012572c`+`4372925`；根因是系統代寫prompt送多張參考圖卻沒指名角色，模型自行選錯主體且正常計費不報錯，難以被動察覺；2.0 v2v是否真能用參考影片驅動動作從未實測，廠商後台聲稱支援但官方文件與程式碼註解證實2.0會拒絕task_type欄位
 - [**✅ 2026-09-17：AI影片頁滾軸+真人換裝舞蹈三視圖勾選，兩個修復commit經雙session各自獨立驗證（VPS原始碼+容器版本+瀏覽器實測）皆確認正常**](feedback_asset_source_picker_exit_animation_blocks_clicks_2026-09-16.md) — 使用者曾回報「未發現問題」，已排除代碼/部署問題，懸案歸因使用者端瀏覽器快取，已請對方強制重新整理+附證據；見檔案末段「雙session獨立驗證通過」章節
