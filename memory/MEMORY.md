@@ -2,17 +2,21 @@
 
 > 進入本專案工作時 Read 載入。工作區共用規則見根目錄 CLAUDE.md。
 
+## 🔄 多鏡頭工作流獨立稽核進行中（2026-09-18）
+- [**進度交接：核心結論已定，僅剩瀏覽器E2E被卡住**](project_video_workflow_independent_audit_handoff_2026-09-18.md) — `feature/video-workflow-multi-shot`分支；Critical bug/排序UI/37測試三項已✅通過；Task 10手動E2E卡在環境配置全域`.env`坑，使用者正嘗試登出/重登Windows帳號釋放殭屍process
+
 ## Library道具分類破圖（✅ 2026-09-17 已驗收完成，含既有壞資料backfill）
 - [**✅ prop資產`image_url`誤存video路徑導致破圖，根因+新資料修復+既有壞資料backfill三階段全部完成**](feedback_library_asset_media_type_routing_and_backfill_2026-09-17.md) — 根因：`save_to_library()`未依`media_type`分流，一律寫入`image_url`；已修`service.py`/`pipeline.py`分流+前端`AssetLibraryPage.tsx`/`AssetInspector.tsx`補`<video>`fallback（commit`51341d6`，同commit修`feedback_library_video_asset_image_url_misroute_2026-09-17.md`）；唯一壞資料`prop_ac6600d4ef73`已手動backfill，**改`library_assets.json`後必須重啟prismreel-backend讓in-memory pipeline singleton重新讀檔**；live驗證DOM確認`<video>`正確渲染、`brokenImgCount:0`
 
-## 照片上傳網格疊加功能（⚠️ 多輪修復，VideoCreator.tsx燒圖時機仍未修，見2026-09-18條）
-- [**✅ 使用者上傳照片可選原圖/4×4/5×5永久疊加網格輔助AI辨識比例構圖，6個上傳端點+前端共用選擇器全部接好並live像素驗證通過**](feedback_grid_overlay_upload_feature_2026-09-17.md) — commit`d89c0f8`；`apply_grid_overlay`後端純函式+`GridOverlayPicker.tsx`前端共用元件；上傳端點盤點踩坑（函式名不能當真照片上傳判準）+混合accept類型陷阱，詳見全文；**⚠️注意：該條「已完成部署驗證」結論僅涵蓋上傳路徑，AI生成/DanceSwapWizard當時未涵蓋，見下條**
-- [**✅ 三個功能性缺陷修復：AI生成/素材庫選擇不套網格、prompt未注入辨識引導文字、DanceSwapWizard排除網格checkbox缺失**](feedback_grid_overlay_three_defects_ai_gen_dance_negative_prompt_2026-09-17.md) — commit`20f50b5`；新增後端`POST /playground/apply-grid`+`GRID_OVERLAY_GUIDANCE_PROMPT`正向prompt常數+DanceSwapWizard本地state版排除checkbox；用真實AI生成live驗證通過，含Monitor輪詢判定「檔案存在」誤判為「本次生成完成」的假陰性教訓
-- [**✅ 既有素材庫照片backfill補套用5×5網格已完成（跨session交接）**](feedback_grid_overlay_backfill_existing_library_photos_2026-09-17.md) — 理論資料模型三代legacy欄位並存，實測production資料只有2張圖需處理（其餘全空值）；backfill前務必先唯讀盤點實際資料量再估工作量，不要只憑model定義推算
-- [**✅ 第四輪根因修復：燒圖時機從「選圖當下」延後到「送出生成當下」，MediaInput.tsx路徑已修並真實付費API驗證通過**](feedback_grid_overlay_burn_timing_deferred_to_generate_2026-09-18.md) — commit`5835289`；先前三輪都在修「有沒有燒/prompt有沒有注入」，這輪才發現選圖當下就燒圖導致UI改網格選項不生效這個更底層問題；**⚠️VideoCreator.tsx（漫畫生成Motion步驟，非AI影片頁）同樣問題仍未修，因走OSS上傳架構改法不同**
+## 照片上傳網格疊加功能（✅ 2026-09-18第五輪架構最終收斂；第一~四輪已搬archive）
+- [**✅ 最終架構：所有內嵌上傳入口(video-gen多圖生成/首尾幀/Cast/StoryboardComposer/VideoCreator/T2ISubsection/UploadAssetModal/NewLibraryAssetDialog)移除GridOverlayPicker並固定送原圖，網格燒錄統一收斂到「圖片生成›燒入網格」獨立卡片(GridBurnCard.tsx)，DanceSwapWizard維持原樣不動**](feedback_grid_overlay_removed_from_inline_entries_2026-09-18.md) — commit`e678bce`；🔴附帶教訓：使用者可見功能改動要同步bump`APP_VERSION`（三處硬編碼：GlobalSidebar/SettingsPage/UpdateChecker）並版控，勿只改功能程式碼；第一~四輪演進歷史（原圖/4×4/5×5可選、燒圖時機延後又撤銷等）已搬[archive](archive/2026-09-completed-early.md)
+- [**✅ GridBurnCard.tsx（唯一燒圖入口）改回「上傳前先選樣式、上傳當下一次性燒入」，撤銷「先傳原圖再獨立按鈕套用」方案**](feedback_grid_burn_card_oss_upload_apply_grid_404_2026-09-18.md) — 根因：走`/library/assets/upload`(comic_gen路由)，`OSS_ENABLE=true`回傳OSS URL，事後呼叫`/playground/apply-grid`對OSS URL必404（該端點只認本機`output/`路徑）；comic_gen路由整體沒有「對已上傳圖片事後燒網格」端點；🔴查既有memory時搜API路由字串比搜元件名更能命中同一條架構限制
 
-## 網格疊加架構收斂（✅ 2026-09-18，撤銷同日稍早的延遲燒入設計）
-- [**🔴🔴 MediaInput.tsx改回「只能從資產庫選圖」單一入口，撤銷同日稍早`5835289`的延遲燒入設計；動手前未查git log差點推翻自己剛做的修復**](feedback_grid_overlay_library_only_reverses_defer_burn_2026-09-18.md) — commit`f654d25`；教訓：改任何機制前先查`git log`看最近改動理由，尤其使用者新回報「聽起來像在反駁」某個剛做的設計時；原計畫誤判8個檔案同產線，實際只有`MediaInput.tsx`需要改，ComicGen產線4個檔案+`DanceSwapWizard.tsx`查證後排除
+## MediaInput.tsx本地上傳還原 + 環境配置誤操作事故（✅ 2026-09-18）
+- [**✅ f654d25誤把本地拖檔上傳整個拿掉，peer交接後核實範圍並還原；本地上傳與資產庫選取並存**](feedback_media_input_upload_removed_beyond_user_intent_2026-09-18.md) — 動手前查git log+plan文件發現交接轉述與原始commit意圖有落差，AskUserQuestion核實後確認使用者確實要加回本地上傳；typecheck+既有單元測試綠燈，瀏覽器視覺驗收因下一條事故中止；⚠️文中「網格燒入維持選圖當下立即燒」一句已被[[feedback_grid_overlay_removed_from_inline_entries_2026-09-18]]取代（燒入選項本身已從此入口移除，不再適用）
+- [**🔴🔴 「環境配置」彈窗POST的是全域`.env`非per-account，用假key跨過必填彈窗覆寫了使用者真實GEMINI_API_KEY且無git版控可復原**](feedback_env_config_dialog_writes_global_env_not_per_account_2026-09-18.md) — 任何「設定/配置」類UI表單，動手填測試值前必先查該端點實際寫入目的地（per-user還是共用檔案）；事故後已通知全部5個並行session
+- [**🔴🔴 同一個坑在獨立worktree場景重演：誤把「全域.env」當成worktree間process衝突排查30+分鐘**](feedback_env_config_global_env_gotcha_recurred_worktree_2026-09-18.md) — 2026-09-18 video-workflow稽核案；踩到卡點時務必先Grep專案memory再展開技術排查，不要把已知架構限制當新bug深挖
+- [**🔴🔴 使用者說「多圖生成/影生影沒有上傳」，未grep i18n key就假設是storyboard-r2v分鏡工作流改錯檔案push上線；真正目標是Playground的MediaInput.tsx；驗證過程意外揪出useCallback宣告在條件式early return之後的真實hooks-order bug（已修，commit`6bf9ad7`）**](feedback_ui_label_must_grep_i18n_before_assuming_target_file_2026-09-18.md) — 使用者引用具體UI文字/方括號標籤時先grep messages/*.json反查i18n key，不要憑術語聯想；多套並行系統共用同一技術詞彙（本案「R2V」）時尤其不可假設
 
 ## 導覽拆分：影片生成/圖片生成獨立入口（✅ 2026-09-18，三session協作完成）
 - [**✅ 左側導覽從6項改5項，`#/ai-video`廢棄併入「影片生成」5tab直開；「圖片生成」新增燒入網格卡片；VideoGenPage/ImageGenPage各自獨立store**](feedback_nav_reorg_video_image_gen_split_2026-09-18.md) — commit`9fa3884`，pipeline #45782通過，live驗證全通過；測試遷移教訓（storeWiring/emptyMode需改用Provider注入店例）+vitest雙config(`test`只跑node環境/`test:ui`才跑DOM測試)+多session協作檔案覆蓋教訓，詳見全文
@@ -32,9 +36,6 @@
 - [**✅ VPS憑證缺口已補齊：GEMINI_API_KEY寫入+OPENAI_API_KEY清空+LLM_PROVIDER改gemini，容器內真實LLM呼叫驗證成功（2026-09-16）**](feedback_env_openai_key_field_actually_holds_gemini_key_2026-09-16.md) — 過程中意外揪出更深層問題見下一條；圖像生成/TTS套件已補齊但未逐一實測
 - [**🔴 requirements-docker.txt漏同步openai/numpy/pillow/soundfile，容器LLMAdapter完全不能用（已修復，2026-09-16）**](feedback_requirements_docker_missing_ai_ml_deps_2026-09-16.md) — 容器用requirements-docker.txt非requirements.txt，上游遷移時新增依賴只進了後者；已補齊必要4項（排除torch等GPU-only桌面應用專屬套件），commit`5e6d8de`推送觸發CI build+驗證通過
 - [**🔴 CI用`rsync -a --delete`部署，VPS上手動建立的`.bak`備份檔會在下次CI部署時被清掉**](feedback_ci_rsync_delete_wipes_manual_backup_files_on_vps.md) — exclude清單只涵蓋`.env`/`output/`等固定路徑；改VPS檔案前備份不可靠，優先走本機git commit流程留痕
-
-## 影片下載功能
-- [**✅ 生成歷史列表頁下載按鈕fetch+blob阻塞主執行緒導致大影片下載卡死無提示（已修復並部署，2026-09-15）**](feedback_fetch_blob_download_blocks_main_thread_large_video_2026-09-15.md) — `ResultCard.tsx`改為與`DetailPanel.tsx`一致的原生`a href download`寫法；commit`7e8338e`已同步GitLab+GitHub並live驗證；排查時claude-in-chrome的javascript_tool內fetch回傳值與真實network log矛盾，以後者為準
 
 ## Library素材庫 gotcha
 - [**✅ save_to_library()未依media_type分流，video輸出(dance換裝)硬塞image_url造成破圖，已修復部署+舊資料backfill（2026-09-17）**](feedback_library_video_asset_image_url_misroute_2026-09-17.md) — commit`51341d6`；Prop model原生已有video_url欄位但create_library_asset()從未填入；前端AssetLibraryPage/AssetInspector補<video>fallback；改library_assets.json這類pipeline singleton持久化檔須配docker restart才生效
@@ -65,20 +66,14 @@
 - [**登入系統spec交接（已過時，見上方進度交接）**](project_auth_handoff.md) — spec本身已審閱通過，此檔僅保留spec歷史脈絡
 
 ## 歸檔
-- [**2026-09-10~09-15已完結舊條目**](archive/2026-09-completed-early.md) — 圖片抓取踩坑(i2v/R2V)、i18n語言設定、多租戶登入系統操作、Playground體驗直覺化改造、官方角色庫縮圖、用量追蹤功能，皆✅完結非常駐必讀
+- [**2026-09-10~09-17已完結舊條目**](archive/2026-09-completed-early.md) — 圖片抓取踩坑(i2v/R2V)、i18n語言設定、多租戶登入系統操作、Playground體驗直覺化改造、官方角色庫縮圖、用量追蹤功能、影片下載功能、導覽命名重構第一輪、多session交接過期快照，皆✅完結非常駐必讀
 
 ## 🔴🔴 Line B 視覺重構（HANDOFF.md）＝上游歷史，非使用者授權（2026-09-16 核實）
 - [**🔴🔴 HANDOFF.md「用戶已選定Line B」查證為誤判：Prismreel fork自alibaba/lumenx，該決策是上游作者歷史紀錄，使用者本人從未下達此需求**](project_prismreel_handoff_line_b_not_user_authorized.md) — git log作者比對揭穿；HANDOFF.md第6節下一步建議與待決策事項（資產庫二級篩選欄）一律不執行，已加註警示
 - [**（技術SOP仍有效，任務前提已修正）Modal對齊Line B時登入頁擋截圖的處理方式**](feedback_ui_change_visual_verify_blocked_by_login_pattern_reuse_accepted_2026-09-16.md) — commit `b1b8297`+`31b2c38`+`16e0d88`已上線屬既成事實非回滾範圍；截圖SOP本身可參考，但不代表該任務是已授權需求
 
-## 導覽命名重構（2026-09-12，解決ComicGen/Playground命名落差誤導）
-- [**✅ 「資料遺失」誤判已結案：查證時混淆ComicGen(漫畫生成)與Playground(影片生成)兩條獨立產線**](feedback_output_data_loss_was_misdiagnosis_two_pipelines_confused_2026-09-12.md) — 2026-09-11判定的VPS資料遺失，2026-09-12重查證實Playground資料從未丟失，只是查錯路徑；已推動導覽重新命名根治
-- [**✅ 工作區/資產庫/創作台重新命名為漫畫生成/素材庫/影片生成+新增獨立生成歷史分頁（feat/nav-rename-and-history-tab分支）**](feedback_output_data_loss_was_misdiagnosis_two_pipelines_confused_2026-09-12.md) — 生成歷史分頁直接重用PlaygroundPage的ResultGallery，跳過select/compose階段
-- [**🔴 動工前未確認本機分支落後遠端main 67個commit，對著已被取代的舊版api.ts重複寫用量追蹤函式**](feedback_local_branch_67_commits_behind_before_editing_2026-09-12.md) — 修多人協作repo既有檔案前先`git fetch && git log HEAD..origin/main`核對落差
+## 導覽命名重構延續（2026-09-17，第一輪已搬archive）
 - [**🔴 「AI影片頁面」對應AiVideoPage.tsx(#/ai-video)，非PlaygroundPage.tsx(#/playground創作台)，兩者外觀高度相似**](feedback_ai_video_page_vs_playground_page_route_confusion_2026-09-17.md) — 2026-09-17首次改錯檔案push+CI後才發現；動手前先grep page.tsx確認路由對應元件
-
-## 🔴 2026-09-17多session並行協作交接（新session開場必讀）
-- [**🔴🔴 當日四個peer session分工狀態總覽：claude-wmzic-5f正在修網格疊加三缺陷（本session接手時仍busy，動手前務必ListAgents+git status雙重確認排除其未提交檔案）**](project_multi_session_handoff_2026-09-17.md) — 簡體字清理待辦已由本session完成（見上方commit`2b11692`）；5f的網格疊加修復狀態需新session自行重新查證，不沿用本記錄的「進行中」snapshot
 
 ## 舞蹈換裝上傳驗證+存檔回饋修復（✅ 2026-09-17 跨session補做live驗收完成）
 - [**✅ DanceSwapWizard.tsx兩個UX缺口已修並live驗證：圖片上傳收斂jpg/jpeg/png+副檔名不符跳toast擋下（已實測.gif被擋且跳繁中toast）；SaveToLibrary原本fire-and-forget無回饋，改saving/saved/error三態+toast成功失敗提示（同commit部署已確認生效，轉場動畫本身未逐一實測）**](feedback_dance_swap_upload_ext_validation_and_save_toast_2026-09-17.md) — commit`a77a3da`

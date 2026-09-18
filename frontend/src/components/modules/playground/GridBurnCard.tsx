@@ -3,7 +3,7 @@
 import { useState, useRef, type ChangeEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Loader2, Upload, Image as ImageIcon, Library, Check } from "lucide-react";
-import { api, playgroundApi } from "@/lib/api";
+import { api } from "@/lib/api";
 import { getAssetUrl } from "@/lib/utils";
 import { toast } from "@/store/toastStore";
 import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice } from "@/components/shared/GridOverlayPicker";
@@ -30,9 +30,8 @@ export default function GridBurnCard({ onComplete }: GridBurnCardProps) {
   const [sourceAlreadyGridded, setSourceAlreadyGridded] = useState(false);
   const [assetType, setAssetType] = useState<LibraryAssetType>("props");
   const [name, setName] = useState("");
-  const [gridChoice, setGridChoice] = useState<GridOverlayChoice>("none");
+  const [gridChoice, setGridChoice] = useState<GridOverlayChoice>("black");
   const [uploading, setUploading] = useState(false);
-  const [applyingGrid, setApplyingGrid] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [savedOnce, setSavedOnce] = useState(false);
@@ -45,10 +44,10 @@ export default function GridBurnCard({ onComplete }: GridBurnCardProps) {
     if (!file) return;
     setUploading(true);
     try {
-      const { image_url, has_grid_overlay } = await api.uploadLibraryImage(file, 0, "black");
+      const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
+      const { image_url, has_grid_overlay } = await api.uploadLibraryImage(file, gridSize, gridColor);
       setSourcePath(image_url);
       setSourceAlreadyGridded(has_grid_overlay);
-      setGridChoice("none");
       setSavedOnce(false);
       toast.success(t("uploadSuccess"));
     } catch (err) {
@@ -59,34 +58,15 @@ export default function GridBurnCard({ onComplete }: GridBurnCardProps) {
     }
   };
 
-  const handleApplyGrid = async () => {
-    if (applyingGrid || uploading || saving || !sourcePath || sourceAlreadyGridded) return;
-    const { size: gridSize, color: gridColor } = gridChoiceToParams(gridChoice);
-    if (gridSize === 0) return;
-    setApplyingGrid(true);
-    try {
-      const { path, has_grid_overlay } = await playgroundApi.applyGridToMedia(sourcePath, gridSize, gridColor);
-      setSourcePath(path);
-      setSourceAlreadyGridded(has_grid_overlay);
-      setSavedOnce(false);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : t("saveFailed");
-      toast.error(t("saveFailed"), { body: msg });
-    } finally {
-      setApplyingGrid(false);
-    }
-  };
-
   const handleLibrarySelect = (path: string, hasGridOverlay?: boolean) => {
     setSourcePath(path);
     setSourceAlreadyGridded(!!hasGridOverlay);
-    setGridChoice("none");
     setSavedOnce(false);
     setPickerOpen(false);
   };
 
   const handleSave = async () => {
-    if (saving || uploading || applyingGrid || !sourcePath) return;
+    if (saving || uploading || !sourcePath) return;
     const trimmed = name.trim();
     if (!trimmed) {
       toast.error(t("nameRequired"));
@@ -125,6 +105,9 @@ export default function GridBurnCard({ onComplete }: GridBurnCardProps) {
         <div className="text-[0.75rem] text-text-muted mt-1">{t("description")}</div>
       </div>
 
+      {/* 上傳前先選網格樣式：本機上傳會用當下選定樣式一次性燒入，事後無法改套（OSS 圖片無法回頭補燒） */}
+      <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />
+
       {/* 來源圖片：本機上傳 或 從資產庫選 */}
       <div className="flex items-center gap-3">
         {sourcePath ? (
@@ -143,7 +126,7 @@ export default function GridBurnCard({ onComplete }: GridBurnCardProps) {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading || applyingGrid || saving}
+            disabled={uploading || saving}
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-inset border border-glass-border text-text-secondary text-[0.8125rem] font-medium hover:text-foreground transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
@@ -152,7 +135,7 @@ export default function GridBurnCard({ onComplete }: GridBurnCardProps) {
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
-            disabled={uploading || applyingGrid || saving}
+            disabled={uploading || saving}
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-inset border border-glass-border text-text-secondary text-[0.8125rem] font-medium hover:text-foreground transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Library size={14} />
@@ -161,25 +144,10 @@ export default function GridBurnCard({ onComplete }: GridBurnCardProps) {
         </div>
       </div>
 
-      {sourceAlreadyGridded && (
+      {sourcePath && (
         <div className="flex items-center gap-1.5 text-[0.75rem] text-primary">
           <Check size={13} />
-          {t("alreadyGridded")}
-        </div>
-      )}
-
-      {sourcePath && !sourceAlreadyGridded && (
-        <div className="flex flex-col gap-2">
-          <GridOverlayPicker value={gridChoice} onChange={setGridChoice} />
-          <button
-            type="button"
-            onClick={handleApplyGrid}
-            disabled={applyingGrid || uploading || saving || gridChoice === "none"}
-            className="inline-flex items-center justify-center gap-2 self-start px-3.5 py-2 rounded-lg bg-surface-inset border border-glass-border text-text-secondary text-[0.8125rem] font-medium hover:text-foreground transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {applyingGrid ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-            {applyingGrid ? t("applyingGrid") : t("applyGridButton")}
-          </button>
+          {sourceAlreadyGridded ? t("alreadyGridded") : t("sourceIsOriginal")}
         </div>
       )}
 
@@ -224,7 +192,7 @@ export default function GridBurnCard({ onComplete }: GridBurnCardProps) {
       <button
         type="button"
         onClick={handleSave}
-        disabled={saving || uploading || applyingGrid || !sourcePath}
+        disabled={saving || uploading || !sourcePath}
         className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-on-accent text-sm font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
