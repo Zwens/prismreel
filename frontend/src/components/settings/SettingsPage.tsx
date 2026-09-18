@@ -30,7 +30,7 @@ import {
   settingsInputClass,
 } from "./SettingsControls";
 
-const APP_VERSION = "v1.5.1";
+const APP_VERSION = "v1.5.2";
 
 type EnvConfig = EnvConfigPayload & {
   GEMINI_API_KEY: string;
