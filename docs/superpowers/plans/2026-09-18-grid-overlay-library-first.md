@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 移除 Playground 系列 8 個生成介面裡「本機上傳 + 延遲到生成時才燒網格」的重複邏輯，改成單一入口：資產庫頁面上傳並立即燒入網格，所有生成介面一律從資產庫選圖。
+**Goal（實際執行結果，範圍經 Task 0 查證後大幅收窄）：** 移除 `MediaInput.tsx`（Playground 主輸入元件）裡「本機上傳 + 延遲到生成時才燒網格」的邏輯，改成只能從資產庫選圖，選中當下即所見即所得。原計畫涵蓋的其餘 7 個檔案經查證後排除（詳見 Task 0/3 結論）。
 
-**Architecture:** `NewLibraryAssetDialog.tsx` 的「選檔案→立即呼叫 `api.uploadLibraryImage()` 燒網格→寫入資產庫」模式已經是正確模式，維持不動、僅強化為主要入口視覺。8 個生成介面各自的「本機上傳按鈕 + `GridOverlayPicker` + `gridChoice` state + submit 時燒入」邏輯全部刪除，只保留既有的「從資產庫選擇」（`AssetSourcePicker`）按鈕。`useGenerationRunner.ts` 的 `burnPendingGridOverlay` 與 `usePlaygroundStore.ts` 的 `pendingGridChoice` 整套延遲燒入狀態機隨之刪除。ComicGen 產線的 `UploadAssetModal.tsx`（`ConsistencyVault.tsx` 用）語意不同（劇本內建檔而非跨生成引用），不在本次範圍。
+**Architecture:** `NewLibraryAssetDialog.tsx` 的「選檔案→立即呼叫 `api.uploadLibraryImage()` 燒網格→寫入資產庫」模式本來就是正確模式，未改動。`MediaInput.tsx` 移除本機上傳按鈕/file input/`GridOverlayPicker`，只留「從資產庫選擇」（`AssetSourcePicker`）。`useGenerationRunner.ts` 的 `burnPendingGridOverlay` 與 `usePlaygroundStore.ts` 的 `pendingGridChoice` 延遲燒入狀態機隨之刪除（commit `f654d25`）。`DanceSwapWizard.tsx` 查證後發現本來就是正確的「選了就送出」/「明確按鈕觸發」模式，未改動。ComicGen 產線 4 個檔案（`Cast.tsx`/`StoryboardComposer.tsx`/`T2ISubsection.tsx`/`VideoCreator.tsx`）與 `UploadAssetModal.tsx` 語意不同（劇本內建檔而非跨生成引用），不在範圍內。
 
 **Tech Stack:** Next.js 14 App Router + TypeScript + Zustand（`usePlaygroundStore`）
 
@@ -123,46 +123,15 @@ git commit -m "refactor(playground): drop local upload and grid picker from Medi
 
 ---
 
-## Task 3: DanceSwapWizard.tsx 移除本機上傳與網格選擇器
+## Task 3: 已取消（2026-09-18 查證後撤銷）
 
-**Files:**
-- Modify: `components/modules/playground/dance/DanceSwapWizard.tsx`
-- Modify: `components/modules/playground/dance/useDanceSwap.ts`
+**查證結論**：`DanceSwapWizard.tsx` 兩個分頁都不是「延遲燒入、UI 無回饋」的問題模式，不需要改：
 
-**Interfaces:**
-- Consumes: 同 Task 2 的 `AssetSourcePicker`
-- Produces: DanceSwapWizard 三視圖/服裝參考輸入只能從資產庫選
+1. **`sheetSource === 'generate'`（AI生成三視圖）分頁**：`GridOverlayPicker`（339行）選中的 `gridSize`/`gridColor` 是在按下「生成三視圖」按鈕當下，直接當參數傳給 `actions.generateSheet(gridSize, gridColor)` → `uploadPortrait/uploadOutfitRef/generateSheet`（`useDanceSwap.ts:236-294`），立即送出、立即生效，沒有中間延遲 state。跟 `NewLibraryAssetDialog.tsx` 同一種「選了就送出」的正確模式。
 
-- [ ] **Step 1: 確認 DanceSwapWizard 目前是否已有 AssetSourcePicker 入口**
+2. **`sheetSource === 'upload'`（我已有三視圖）分頁**：`GridBurnBar` 是**明確的獨立按鈕**（`useDanceSwap.ts:296-302` 註解證實這是刻意設計：「grid burn-in here is a separate, explicit step the user triggers after seeing the sheet preview, not something silently baked in」），使用者點擊网格樣式按鈕就立即呼叫 `applyGridToSheet`，同樣沒有「選了沒反應」的問題。
 
-依 memory 記錄（`feedback_dance_swap_pickSheet_and_seedance_negative_prompt_gap_2026-09-17.md`），"我已有三視圖"分頁已有「從素材庫選擇」按鈕。確認 AI 生成分頁與本機上傳流程是否也要拔除（AI生成分頁本身不是「上傳」，不在本次刪除範圍，只刪本機上傳按鈕）。
-
-```bash
-grep -n "localUpload\|type=\"file\"\|ref.current?.click" components/modules/playground/dance/DanceSwapWizard.tsx
-```
-
-- [ ] **Step 2: 移除本機上傳按鈕與 `GridOverlayPicker`（`DanceSwapWizard.tsx:183-203, 249-250, 339`）**
-
-保留 AI 生成分頁邏輯不動，只刪「我已有三視圖」分頁裡的本機上傳與網格選擇器，改為引導使用者從資產庫選擇已燒網格的圖。
-
-- [ ] **Step 3: `useDanceSwap.ts` 移除本機燒入呼叫，改用選中資產的 `has_grid_overlay` 旗標**
-
-檢查 `useDanceSwap.ts:12` 附近的 `GridOverlaySize`/`GridOverlayColor` 使用點，若只服務於本機上傳燒入，隨 Step 2 一併移除。
-
-- [ ] **Step 4: typecheck + 手動 live 驗證**
-
-```bash
-cd frontend && npm run typecheck
-```
-
-Live 驗證：瀏覽器打開 `/playground` → 真人換裝舞蹈 → 確認三視圖分頁只剩「從資產庫選擇」，不再有本機上傳按鈕與網格選擇器
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add frontend/src/components/modules/playground/dance/DanceSwapWizard.tsx frontend/src/components/modules/playground/dance/useDanceSwap.ts
-git commit -m "refactor(dance-swap): drop local upload and grid picker, library-only reference images"
-```
+這也解釋了為何 Task 0 查證時 `DanceSwapWizard.tsx` 不 import `usePlaygroundStore` ——它從未使用過本次要拆除的 `pendingGridChoice` 延遲機制，是獨立於這個 bug 之外的正確實作。**不執行任何改動。**
 
 ---
 
@@ -181,7 +150,7 @@ Cast.tsx / StoryboardComposer.tsx / T2ISubsection.tsx / VideoCreator.tsx 經核�
 - Review: `lib/api.ts:1825`（`/playground/apply-grid` 端點若無呼叫者則確認是否還有其他用途，勿刪除後端路由——後端不在本次範圍）
 
 **Interfaces:**
-- Consumes: Task 2（MediaInput.tsx）+ Task 3（DanceSwapWizard.tsx）的改動結果（Task 4-7 已取消，不在依賴範圍）
+- Consumes: Task 1（store 拆除）+ Task 2（MediaInput.tsx）的改動結果（Task 3、Task 4-7 均已取消，不在依賴範圍；DanceSwapWizard.tsx 原本就是正確模式，未受影響）
 - Produces: 全專案 typecheck 綠燈、無死代碼引用
 
 - [ ] **Step 1: 全域 grep 確認沒有殘留引用**
@@ -231,7 +200,7 @@ sleep 60
 Live 驗證（瀏覽器實測，不可用 curl 代替，因為是 UI 互動變更）：
 1. 打開 `https://prismreel.soulo-ai.com/#/playground` → 確認 MediaInput 只剩「從資產庫選擇」
 2. 打開資產庫頁面 → 確認「新增資產」流程選檔案後立即燒網格（看得到燒網格後的縮圖）
-3. 打開真人換裝舞蹈 → 確認三視圖分頁只剩「從資產庫選擇」
+3. 打開真人換裝舞蹈 → 確認兩個分頁行為未變（AI生成分頁網格選擇仍在生成當下生效；上傳分頁 GridBurnBar 仍正常運作），本次未改動此檔案
 4. 打開任一 ComicGen 專案（Cast / StoryboardComposer / T2ISubsection 任一頁面）確認**本機上傳功能未受影響、仍正常**（本次未改動這幾個檔案，此步驟是回歸驗證，確認 Task 1 對 store 的改動沒有意外波及不相關產線）
 
 - [ ] **Step 6: 閘門6記憶更新**
