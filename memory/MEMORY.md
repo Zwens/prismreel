@@ -2,8 +2,11 @@
 
 > 進入本專案工作時 Read 載入。工作區共用規則見根目錄 CLAUDE.md。
 
-## 🔄 多鏡頭工作流獨立稽核進行中（2026-09-18）
-- [**進度交接：核心結論已定，僅剩瀏覽器E2E被卡住**](project_video_workflow_independent_audit_handoff_2026-09-18.md) — `feature/video-workflow-multi-shot`分支；Critical bug/排序UI/37測試三項已✅通過；Task 10手動E2E卡在環境配置全域`.env`坑，使用者正嘗試登出/重登Windows帳號釋放殭屍process
+## ✅ 多鏡頭工作流獨立稽核完成（2026-09-18~09-19）
+- [**Task 10手動瀏覽器E2E完成，稽核官綜合判斷分支達可merge標準**](project_video_workflow_e2e_task10_completed_2026-09-19.md) — `feature/video-workflow-multi-shot`分支HEAD`374a7b9`；t2v+r2v雙圖生成真實驗證通過；combine因本機缺FFmpeg跳過肉眼複驗，已交叉確認VPS production容器內建FFmpeg不受影響；是否merge回main待使用者裁決
+- [**交接記錄（歷史脈絡）：Critical bug/排序UI/37測試三項已通過**](project_video_workflow_independent_audit_handoff_2026-09-18.md) — 環境配置全域`.env`坑+登出重登Windows帳號釋放殭屍process的過程記錄
+- [**🔴 全新worktree/全新環境`output/auth.db`無表導致503**](feedback_worktree_auth_db_never_initialized_on_fresh_env_2026-09-19.md) — `api.py`從未呼叫`auth_db.init_schema()`，本機開發限定坑，VPS早已建表不受影響
+- [**🔴 本機Windows缺FFmpeg導致合成端點500**](feedback_local_windows_missing_ffmpeg_blocks_concat_2026-09-19.md) — VPS容器內建FFmpeg已確認不受影響，純本機依賴缺口
 
 ## Library道具分類破圖（✅ 2026-09-17 已驗收完成，含既有壞資料backfill）
 - [**✅ prop資產`image_url`誤存video路徑導致破圖，根因+新資料修復+既有壞資料backfill三階段全部完成**](feedback_library_asset_media_type_routing_and_backfill_2026-09-17.md) — 根因：`save_to_library()`未依`media_type`分流，一律寫入`image_url`；已修`service.py`/`pipeline.py`分流+前端`AssetLibraryPage.tsx`/`AssetInspector.tsx`補`<video>`fallback（commit`51341d6`，同commit修`feedback_library_video_asset_image_url_misroute_2026-09-17.md`）；唯一壞資料`prop_ac6600d4ef73`已手動backfill，**改`library_assets.json`後必須重啟prismreel-backend讓in-memory pipeline singleton重新讀檔**；live驗證DOM確認`<video>`正確渲染、`brokenImgCount:0`
@@ -47,8 +50,7 @@
 - [**✅ Seedance多圖prompt引用語法：@Image1僅限Playground網頁UI，API呼叫需用`Image 1`格式（2026-09-14已修復並上線）**](reference_seedance_multi_image_prompt_reference_syntax.md) — 查證後發現後端無自動組裝邏輯，根因是前端PromptInput.tsx缺提示；已補UI提示三語言版本並驗證live bundle生效
 
 ## 部署機制（🔴 最重要，動手前必讀）
-- [**✅ 2026-09-11起已改為 GitLab CI 自動部署：merge 到 main 才觸發**](feedback_gitlab_ci_auto_deploy_setup_2026-09-11.md) — 取代下方手動流程；VPS 上既有 shell-executor runner 直接 rsync+docker rebuild，push/merge 到非main分支不會動到 production
-- [**（已過時，僅供歷史對照）舊手動部署流程：git push GitLab 不會自動部署，VPS 是手動複製非 git clone**](feedback_git_push_does_not_deploy_manual_vps_sync_required.md) — 2026-09-08首次踩坑；2026-09-11起已被上方CI取代，除非CI故障需要手動兜底才照此流程操作
+- [**✅ 2026-09-11起已改為 GitLab CI 自動部署：merge 到 main 才觸發**](feedback_gitlab_ci_auto_deploy_setup_2026-09-11.md) — VPS 上既有 shell-executor runner 直接 rsync+docker rebuild，push/merge 到非main分支不會動到 production；舊手動部署流程已搬[archive](archive/2026-09-completed-early.md)
 - [**VPS lockfile 需在 node:20-alpine 容器內重新產生，本機 npm 版本不相容**](feedback_lockfile_must_regenerate_in_build_env_container.md) — 本機npm11 vs VPS build用npm10，package-lock.json 格式差異導致 npm ci 失敗
 - [**🔴 VPS `.env` 與本機 `.env` 不會自動同步，新增環境變數需手動補到VPS**](feedback_vps_env_not_synced_with_local_env.md) — 2026-09-10 OSS設定本機有VPS沒有，後端靜默停用上傳功能且無錯誤提示
 - [**🔴 nginx `client_max_body_size` 只設在location區塊不生效，需設在server層級**](feedback_nginx_client_max_body_size_location_level_ineffective.md) — 2026-09-10 2.8MB圖片一律413，實際套用的是http層級1MB預設值
@@ -62,8 +64,7 @@
 - 桌面單機模式（`python main.py`）與 VPS 多用戶部署模式並存，改動時注意兩者行為差異
 
 ## ✅ 多租戶登入系統（2026-09-11 已合併main並上線）
-- [**登入系統實作進度交接（2026-09-08，歷史脈絡）**](project_auth_implementation_handoff_2026-09-08.md) — `feature/multi-tenant-auth`分支開發過程記錄；2026-09-11該分支+usage-tracking已一併merge進main並觸發CI自動部署，功能已live
-- [**登入系統spec交接（已過時，見上方進度交接）**](project_auth_handoff.md) — spec本身已審閱通過，此檔僅保留spec歷史脈絡
+- [**登入系統實作進度交接（2026-09-08，歷史脈絡）**](project_auth_implementation_handoff_2026-09-08.md) — `feature/multi-tenant-auth`分支開發過程記錄；2026-09-11該分支+usage-tracking已一併merge進main並觸發CI自動部署，功能已live；spec歷史交接已搬[archive](archive/2026-09-completed-early.md)
 
 ## 歸檔
 - [**2026-09-10~09-17已完結舊條目**](archive/2026-09-completed-early.md) — 圖片抓取踩坑(i2v/R2V)、i18n語言設定、多租戶登入系統操作、Playground體驗直覺化改造、官方角色庫縮圖、用量追蹤功能、影片下載功能、導覽命名重構第一輪、多session交接過期快照，皆✅完結非常駐必讀

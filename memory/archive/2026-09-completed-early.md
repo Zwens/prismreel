@@ -12,6 +12,10 @@
 ## 多租戶登入系統操作
 - [**🔴 邀請碼兌換入口是獨立`/redeem?code=`頁面，非登入頁**](../feedback_invite_redeem_ui_location_unverified_wrong_guidance.md) — 2026-09-10首次踩坑，未查前端就講錯操作位置，被使用者當場糾正
 
+## 部署機制舊版（已被GitLab CI自動部署取代，2026-09-19瘦身搬移）
+- [**（已過時）舊手動部署流程：git push GitLab 不會自動部署，VPS 是手動複製非 git clone**](../feedback_git_push_does_not_deploy_manual_vps_sync_required.md) — 2026-09-08首次踩坑；2026-09-11起已被GitLab CI自動部署取代，除非CI故障需要手動兜底才照此流程操作
+- [**（已過時）登入系統spec交接**](../project_auth_handoff.md) — spec本身已審閱通過並實作上線（見`project_auth_implementation_handoff_2026-09-08.md`），此檔僅保留spec歷史脈絡
+
 ## 官方角色庫縮圖（✅ 2026-09-15第五輪最終結案，480/480筆live驗證通過）
 - [**✅ 全部問題已結案**](../feedback_official_character_thumbnail_root_cause_no_virtualization_permanent_fallback_2026-09-15.md) — ①前端`AssetPickerModal.tsx`一次性渲染480個img+onError永久不重試已改IntersectionObserver+重試2次根治 ②30筆縮圖第一次抓取搜尋框卡死全抓成同一張圖，改用React fiber `item.SID`比對`group_id`修正，commit`c5db137` ③殘留3對(6筆)雜湊重複確認是ModelArk資料庫本身重複記錄，非抓取錯誤 ④額外發現30筆live 404是CF edge cache卡舊快照，Purge Everything後480/480全數複驗200通過
 - [**🔴🔴 用ModelArk搜尋框抓取asset_id對應圖片前，必須驗證`fetch(url)`雜湊或完整src是否真變化，不能只看alt文字或單次截圖**](../feedback_official_character_thumbnail_root_cause_no_virtualization_permanent_fallback_2026-09-15.md) — 搜尋框連續程式化輸入會卡死在第一次結果不刷新，`img.alt`殘留值會誤導判斷；改用React fiber讀`item.SID`比對`group_id`+滾動預設列表最可靠
@@ -25,6 +29,24 @@
 - [**🔴 跨session交接檔稱「已完整實作+curl驗證通過」不等於已commit**](../feedback_handoff_claims_implemented_but_uncommitted_2026-09-11.md) — 接手時發現13個檔案仍是unstaged，功能行為是真的做了但從未進版控；接手先查git status/log，不先信文字敘述
 - [**🔴 git merge commit存在於main歷史≠內容真的合併進main，需用`git merge-base --is-ancestor`+`git ls-tree`雙重驗證**](../feedback_merge_commit_exists_but_content_not_ancestor_2026-09-11.md) — merge commit在main歷史可見，但`--is-ancestor`回NO、main檔案樹也確認缺檔；只看`git log --graph`會被誤導
 - [**🔴 清理測試殘留禁止`rm -rf output/`，output/底下混雜版控素材與執行期產物**](../feedback_rm_rf_output_deletes_tracked_assets_2026-09-11.md) — 誤刪`output/presets/bgm/*`八個版控音樂素材檔案，靠`git status`發現+`git restore`救回
+
+## 影片下載功能（✅ 2026-09-15完結，搬移於2026-09-18瘦身）
+- [**✅ 生成歷史列表頁下載按鈕fetch+blob阻塞主執行緒導致大影片下載卡死無提示（已修復並部署，2026-09-15）**](../feedback_fetch_blob_download_blocks_main_thread_large_video_2026-09-15.md) — `ResultCard.tsx`改為與`DetailPanel.tsx`一致的原生`a href download`寫法；commit`7e8338e`已同步GitLab+GitHub並live驗證；排查時claude-in-chrome的javascript_tool內fetch回傳值與真實network log矛盾，以後者為準
+
+## 導覽命名重構第一輪（✅ 2026-09-12完結，搬移於2026-09-18瘦身；後續路由混淆踩坑見主索引）
+- [**✅ 「資料遺失」誤判已結案：查證時混淆ComicGen(漫畫生成)與Playground(影片生成)兩條獨立產線**](../feedback_output_data_loss_was_misdiagnosis_two_pipelines_confused_2026-09-12.md) — 2026-09-11判定的VPS資料遺失，2026-09-12重查證實Playground資料從未丟失，只是查錯路徑；已推動導覽重新命名根治
+- [**✅ 工作區/資產庫/創作台重新命名為漫畫生成/素材庫/影片生成+新增獨立生成歷史分頁（feat/nav-rename-and-history-tab分支）**](../feedback_output_data_loss_was_misdiagnosis_two_pipelines_confused_2026-09-12.md) — 生成歷史分頁直接重用PlaygroundPage的ResultGallery，跳過select/compose階段
+- [**🔴 動工前未確認本機分支落後遠端main 67個commit，對著已被取代的舊版api.ts重複寫用量追蹤函式**](../feedback_local_branch_67_commits_behind_before_editing_2026-09-12.md) — 修多人協作repo既有檔案前先`git fetch && git log HEAD..origin/main`核對落差
+
+## 2026-09-17多session並行協作交接快照（過期，搬移於2026-09-18瘦身）
+- [**🔴🔴 當日四個peer session分工狀態總覽（此為當日快照，狀態早已過時，僅供歷史脈絡查閱）**](../project_multi_session_handoff_2026-09-17.md) — 簡體字清理待辦已完成；記錄本身已聲明「不沿用進行中snapshot」，新session不應以此為基準狀態
+
+## 照片上傳網格疊加功能第一~四輪（✅ 已被第五輪架構收斂取代，搬移於2026-09-18瘦身；第五輪見主索引）
+- [**✅ 使用者上傳照片可選原圖/4×4/5×5永久疊加網格輔助AI辨識比例構圖，6個上傳端點+前端共用選擇器全部接好並live像素驗證通過**](../feedback_grid_overlay_upload_feature_2026-09-17.md) — commit`d89c0f8`；`apply_grid_overlay`後端純函式+`GridOverlayPicker.tsx`前端共用元件；上傳端點盤點踩坑（函式名不能當真照片上傳判準）+混合accept類型陷阱，詳見全文
+- [**✅ 三個功能性缺陷修復：AI生成/素材庫選擇不套網格、prompt未注入辨識引導文字、DanceSwapWizard排除網格checkbox缺失**](../feedback_grid_overlay_three_defects_ai_gen_dance_negative_prompt_2026-09-17.md) — commit`20f50b5`；新增後端`POST /playground/apply-grid`+`GRID_OVERLAY_GUIDANCE_PROMPT`正向prompt常數+DanceSwapWizard本地state版排除checkbox
+- [**✅ 既有素材庫照片backfill補套用5×5網格已完成（跨session交接）**](../feedback_grid_overlay_backfill_existing_library_photos_2026-09-17.md) — 理論資料模型三代legacy欄位並存，實測production資料只有2張圖需處理
+- [**✅ 第四輪根因修復：燒圖時機從「選圖當下」延後到「送出生成當下」**](../feedback_grid_overlay_burn_timing_deferred_to_generate_2026-09-18.md) — commit`5835289`；此設計已被同日稍晚的`f654d25`撤銷，再被第五輪`e678bce`取代為「統一導去獨立燒錄卡片」
+- [**🔴🔴 MediaInput.tsx改回「只能從資產庫選圖」單一入口，撤銷同日稍早的延遲燒入設計**](../feedback_grid_overlay_library_only_reverses_defer_burn_2026-09-18.md) — commit`f654d25`；教訓：改任何機制前先查`git log`看最近改動理由；此設計後續又被`feedback_media_input_upload_removed_beyond_user_intent_2026-09-18`部分還原（本地上傳入口留下，但燒入選項本身於第五輪移除）
 
 ## Playground 體驗直覺化改造（2026-09-10 完成）
 - [**✅ Playground UX改造已完成（2026-09-10）**](../project_playground_ux_overhaul_2026-09-10.md) — 兩份plan-review清單皆已實作+瀏覽器驗收通過：卡片選模式+雙狀態全寬工作區、Ark/Seedance Key表單缺口；OSS雲端儲存開通仍擱置未購買
