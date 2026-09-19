@@ -2,10 +2,11 @@
 
 > 進入本專案工作時 Read 載入。工作區共用規則見根目錄 CLAUDE.md。
 
-## ✅ 多鏡頭工作流獨立稽核完成（2026-09-18~09-19）
-- [**Task 10手動瀏覽器E2E完成，稽核官綜合判斷分支達可merge標準**](project_video_workflow_e2e_task10_completed_2026-09-19.md) — `feature/video-workflow-multi-shot`分支HEAD`374a7b9`；t2v+r2v雙圖生成真實驗證通過；combine因本機缺FFmpeg跳過肉眼複驗，已交叉確認VPS production容器內建FFmpeg不受影響；是否merge回main待使用者裁決
+## ✅ 多鏡頭工作流已merge進main並上線production（2026-09-18~09-19）
+- [**✅ merge commit`94cd506`已推送GitLab+GitHub雙remote，CI job 46034成功，live三層驗證通過**](feedback_video_workflow_merge_to_main_and_deploy_2026-09-19.md) — 側欄「多鏡頭工作流」已上線；merge過程順手修main既有2個TypeScript型別錯誤（與merge無關）；GitHub push protection攔截舊commit明文金鑰（皆已確認失效），使用者手動解除後補推成功
+- [**Task 10手動瀏覽器E2E完成，稽核官綜合判斷分支達可merge標準**](project_video_workflow_e2e_task10_completed_2026-09-19.md) — t2v+r2v雙圖生成真實驗證通過；combine因本機缺FFmpeg跳過肉眼複驗，已交叉確認VPS production容器內建FFmpeg不受影響
 - [**交接記錄（歷史脈絡）：Critical bug/排序UI/37測試三項已通過**](project_video_workflow_independent_audit_handoff_2026-09-18.md) — 環境配置全域`.env`坑+登出重登Windows帳號釋放殭屍process的過程記錄
-- [**🔴 全新worktree/全新環境`output/auth.db`無表導致503**](feedback_worktree_auth_db_never_initialized_on_fresh_env_2026-09-19.md) — `api.py`從未呼叫`auth_db.init_schema()`，本機開發限定坑，VPS早已建表不受影響
+- [**🔴 全新worktree/全新環境`output/auth.db`無表導致503**](feedback_worktree_auth_db_never_initialized_on_fresh_env_2026-09-19.md) — `api.py`從未呼叫`auth_db.init_schema()`，本機開發限定坑，VPS早已建表不受影響（live production同樣存在此缺口，只是資料庫早已建表沒踩到）
 - [**🔴 本機Windows缺FFmpeg導致合成端點500**](feedback_local_windows_missing_ffmpeg_blocks_concat_2026-09-19.md) — VPS容器內建FFmpeg已確認不受影響，純本機依賴缺口
 
 ## Library道具分類破圖（✅ 2026-09-17 已驗收完成，含既有壞資料backfill）
