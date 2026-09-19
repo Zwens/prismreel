@@ -1,13 +1,13 @@
 "use client";
 
-import { LayoutGrid, Layers, Clapperboard, ImagePlus, Clock, Settings, LogOut, Gauge } from "lucide-react";
+import { LayoutGrid, Layers, Clapperboard, Film, ImagePlus, Clock, Settings, LogOut, Gauge } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import PrismReelBranding from "./PrismReelBranding";
 import { logout } from "@/lib/api";
 
-export type GlobalTab = "workspace" | "library" | "videogen" | "imagegen" | "history" | "settings";
+export type GlobalTab = "workspace" | "library" | "videogen" | "videoworkflow" | "imagegen" | "history" | "settings";
 
 interface GlobalSidebarProps {
   activeTab: GlobalTab;
@@ -21,6 +21,7 @@ interface GlobalSidebarProps {
 export const GLOBAL_NAV_ITEMS: { id: GlobalTab; icon: typeof LayoutGrid; hash: string }[] = [
   { id: "workspace", icon: LayoutGrid, hash: "#/" },
   { id: "videogen", icon: Clapperboard, hash: "#/video-gen" },
+  { id: "videoworkflow", icon: Film, hash: "#/video-workflow" },
   { id: "imagegen", icon: ImagePlus, hash: "#/image-gen" },
   { id: "library", icon: Layers, hash: "#/library" },
   { id: "history", icon: Clock, hash: "#/history" },

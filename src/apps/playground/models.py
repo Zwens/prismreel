@@ -103,6 +103,10 @@ class EstimateCostRequest(BaseModel):
     batch_size: Optional[int] = Field(1, ge=1, le=4, description="Number of outputs to generate (1-4)")
 
 
+class ConcatRequest(BaseModel):
+    video_paths: List[str] = Field(..., description="Local playground video paths, in the order they should be joined")
+
+
 class EstimateCostResponse(BaseModel):
     cost_usd: Optional[float] = Field(None, description="Estimated total cost in USD for batch_size outputs, or null when no price table entry exists for this model/resolution")
     per_unit_cost_usd: Optional[float] = Field(None, description="Estimated cost in USD for a single output")

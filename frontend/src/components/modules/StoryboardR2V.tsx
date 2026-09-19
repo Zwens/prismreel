@@ -9,7 +9,7 @@ import { useProjectStore } from "@/store/projectStore";
 import { api, crudApi, type VideoTask, type RefineSSEEvent } from "@/lib/api";
 import { getAssetUrl } from "@/lib/utils";
 import { selectedVariantUrl } from "@/lib/characterImage";
-import { augmentPromptWithAssetTags, resolveAssetByTagName } from "@/lib/assetTags";
+import { augmentPromptWithAssetTags, resolveAssetByTagName, type NamedAsset } from "@/lib/assetTags";
 import { frameLinkedAssetNames } from "@/lib/frameReferenceSlots";
 import {
     BATCH_VIDEO_CONCURRENCY,
@@ -823,7 +823,7 @@ export default function StoryboardR2V() {
             // One resolution pass over all three pools — the tag label is
             // LLM-written and often a shortened form of the real asset
             // name, so it can't be matched exactly (see lib/assetTags).
-            const asset: any = resolveAssetByTagName(name, [characters, scenes, props]);
+            const asset: any = resolveAssetByTagName<NamedAsset>(name, [characters, scenes, props]);
             if (asset) {
                 // Character containers first (reference_sheet / legacy
                 // full_body), then the single image_asset that scenes and
@@ -860,7 +860,7 @@ export default function StoryboardR2V() {
         let match;
         while ((match = tagPattern.exec(prompt)) !== null) {
             const name = match[1];
-            const asset: any = resolveAssetByTagName(name, [characters, scenes, props]);
+            const asset: any = resolveAssetByTagName<NamedAsset>(name, [characters, scenes, props]);
             const hasImage = !!(
                 asset?.reference_sheet?.image_variants?.length
                 || asset?.full_body_asset?.variants?.length
