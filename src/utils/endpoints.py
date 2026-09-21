@@ -5,6 +5,7 @@ PROVIDER_DEFAULTS = {
     "GEMINI": "https://generativelanguage.googleapis.com",
     "KLING": "https://api-beijing.klingai.com/v1",
     "VIDU": "https://api.vidu.cn/ent/v2",
+    "DEEVID": "https://api.deevid.ai/v1/open-api",
 }
 
 
