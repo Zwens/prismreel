@@ -10,14 +10,16 @@
 
 **已查證的關鍵限制**：DeeVid 官方 API（`GET /v1/open-api/usage`）只回傳呼叫次數統計（`totalCalls`/`successCalls`/`failedCalls`），**不提供**點數餘額或每次呼叫實際扣點的查詢端點。官方定價頁也未列出 model/解析度/秒數對應的扣點對照表。因此「已用點數」無法向 DeeVid 官方查證，只能由 Prismreel 自行依約定公式估算並記帳——若日後這個估算值與 DeeVid 後台實際扣點出現落差，需要人工核對調整，這是本設計已知且使用者接受的取捨。
 
-## 2. 核心決策（已與使用者確認）
+## 2. 核心決策（已與使用者確認，2026-09-21 Task 2 動工前查證後修正）
+
+**🔴 修正記錄**：原設計文字寫的 `"Quality V4.7"` 經 Task 2 動工前查證（`GET /v1/open-api/image-video/models` 實際 API 回應，非文件範例）**不存在於 DeeVid 系統**。使用者確認實際要接 `"Quality V4.0"`（`start_image` 分類，即 image-to-video）。`Quality V4.0` 的 `durationRange` 為 `[4, 15]`，非原假設的 1–30 秒，故 duration 上限與使用者提供的三點驗證線性關係（5s=20/15s=60/30s=120）中的 30s 一點已超出實際 model 上限，予以捨棄，僅保留 5s/15s 兩點驗證扣點公式，公式本身（`duration × 4`）不受影響。
 
 | 決策點 | 選擇 | 理由 |
 |---|---|---|
-| 整合範圍 | 僅 `Quality V4.7`，僅 image-to-video（一張圖+提示詞→影片） | 使用者明確表示不需要其他 DeeVid model 或 t2v |
-| 解析度 | 固定 720p | 使用者提供的扣點規則基準即為 720p |
-| 秒數範圍 | 1–30 秒（整數） | 使用者確認的官方上限 |
-| 扣點公式 | `duration_seconds × 4` | 使用者提供 5s=20點/15s=60點/30s=120點，三點皆滿足此線性公式 |
+| 整合範圍 | 僅 `Quality V4.0`（原誤植為不存在的 `Quality V4.7`），僅 image-to-video（`start_image` 模式，一張圖+提示詞→影片） | 使用者明確表示不需要其他 DeeVid model 或 t2v；model 名稱經實際 API 查證修正 |
+| 解析度 | 固定 720p | 使用者提供的扣點規則基準即為 720p；`Quality V4.0` 支援 480p/720p/1080p，720p 選擇不變 |
+| 秒數範圍 | 4–15 秒（整數，`Quality V4.0` 的 `durationRange`） | 原假設 1–30 秒與實際 API `durationRange:[4,15]` 不符，經查證修正上限；下限亦收斂至 4 秒 |
+| 扣點公式 | `duration_seconds × 4` | 使用者提供 5s=20點/15s=60點/30s=120點；30s 已超出 `Quality V4.0` 實際秒數上限（15秒），予以捨棄，僅用 5s/15s 兩點驗證線性關係，公式不變 |
 | 額度總量 | 600 點 / 週期 | 對應 DeeVid Pro 方案月費點數 |
 | 週期起訖 | 每月 20 日重置（例如 9/20～10/19 為一個週期） | 與使用者 DeeVid 訂閱扣款日一致 |
 | 額度用盡行為 | 硬擋：後端直接拒絕新的 DeeVid 生成請求，回傳週期重置日期 | 使用者明確選擇，避免估算值與官方實際扣點落差導致帳戶被鎖 |
@@ -68,27 +70,32 @@ def current_period(now: float) -> tuple[float, float]:
 
 ## 5. Provider Adapter：`src/models/deevid.py`
 
+**已於 Task 2 動工前查證完成（`GET /v1/open-api/image-video/models` 實際 API 回應）**，三步驟流程（非原假設的單步驟）：
+
 ```
 DeeVidModel(VideoGenModel)
   .generate(prompt, output_path, img_url=None, img_path=None, duration=5, **kwargs)
-    1. 解析輸入圖片：走既有 resolve_media_input()（OSS 簽名 URL，同 vidu.py 模式），
-       DeeVid submit API 只接受可公開存取的圖片 URL。
-    2. POST https://api.deevid.ai/v1/open-api/image-video/task/submit
-       body: {"model": "Quality V4.7", "prompt": ..., "image": <url>,
-              "resolution": "720p", "duration": <int 1-30>}
-       （image-to-video 端點路徑待實測確認 —— 使用者提供的文件範例是
-        text-video/task/submit，image-to-video 的確切路徑需第一次實作時
-        呼叫 DeeVid 帳號內建的 API 文件頁確認，不可用文字生文假設）
-    3. 輪詢 GET /v1/open-api/task/status?taskId=<id>，比照 vidu.py 的
+    1. 解析輸入圖片 URL：走既有 resolve_media_input()（OSS 簽名 URL，同 vidu.py 模式）。
+    2. POST https://api.deevid.ai/v1/open-api/file-upload/upload/image
+       （multipart/form-data，欄位 file=<圖片二進位>）
+       回應：{"success": true, "data": {"userImageId": <int>, "imageUrl": <str>}}
+       → 取得 userImageId，供下一步使用。
+    3. POST https://api.deevid.ai/v1/open-api/image-video/start-image/task/submit
+       body: {"model": "Quality V4.0", "prompt": ..., "userImageId": <int>,
+              "resolution": "720p", "duration": <int 4-15>}
+       （端點路徑、欄位名稱、model 名稱、duration 範圍皆已於 2026-09-21
+        實際呼叫 DeeVid 帳號 API 查證，非文件範例推測）
+    4. 輪詢 GET /v1/open-api/task/status?taskId=<id>，比照 vidu.py 的
        poll_interval=10s / max_wait=600s 節奏。
-    4. status=SUCCESS 時下載 resultVideoUrl 存到 output_path。
-    5. 回傳 (output_path, generation_time)。
+    5. status=SUCCESS 時下載 resultVideoUrl 存到 output_path。
+    6. 回傳 (output_path, generation_time)。
 ```
 
-**待實作時二次確認的事項**（不寫死假設，第一次真實 API 呼叫前用 DeeVid 帳號內建文件核對）：
-- image-to-video 端點的確切路徑與 request body 欄位名（`image` vs `imageUrl` vs `init_image` 等）
-- `duration` 是否接受任意 1–30 整數，或只接受特定檔位（使用者提供的三個範例 5/15/30 剛好都是常見檔位，需確認中間值如 10s 是否真的可用）
-- 錯誤回應格式（供 adapter 判斷 submit 失敗 vs 生成失敗）
+**已查證確認的事項**（2026-09-21，實際呼叫 `GET /v1/open-api/image-video/models`）：
+- image-to-video 對應 `start_image` 分類，端點為 `POST /image-video/start-image/task/submit`
+- 圖片輸入非直接傳 URL，需先呼叫 `POST /file-upload/upload/image` 上傳取得 `userImageId`（number），再用該 ID 提交任務
+- `Quality V4.0` 的 `durationRange` 為 `[4, 15]`（非原假設 1–30），且 `supportedDurations` 列出 5/10 為建議檔位，但 `durationRange` 存在代表接受此範圍內任意整數（比照既有 vidu.py 對 duration 的處理方式，不額外限制檔位，僅做上下限 clamp）
+- 錯誤回應格式：文件範例與 submit/status 回應皆為 `{"success": bool, "data": {...}}`；失敗時觀察 HTTP status code 非 200 或 `success: false`（實際失敗案例的 message 欄位格式待 Task 2 實作時以真實錯誤呼叫二次確認，非阻塞項——沿用既有 provider adapter 對非 200 直接 raise 的慣例即可覆蓋）
 
 ## 6. 額度檢查與扣抵時機
 

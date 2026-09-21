@@ -1,8 +1,8 @@
-# DeeVid Quality V4.7 + 月度點數額度 Implementation Plan
+# DeeVid Quality V4.0 + 月度點數額度 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 讓 Prismreel 的影片生成頁能選用 DeeVid `Quality V4.7`（僅 image-to-video，720p，1-30 秒），並追蹤一個 600 點/週期（每月 20 日重置）的點數額度，額度用盡時後端硬擋新的 DeeVid 生成請求。
+**Goal:** 讓 Prismreel 的影片生成頁能選用 DeeVid `Quality V4.0`（僅 image-to-video，720p，4-15 秒），並追蹤一個 600 點/週期（每月 20 日重置）的點數額度，額度用盡時後端硬擋新的 DeeVid 生成請求。
 
 **Architecture:** 比照既有 `ViduModel`/`KlingModel` 的 provider adapter 模式（submit → poll → download），新增 `src/models/deevid.py`；額度記帳走新的獨立 SQLite 表 `credit_ledger`（逐筆記錄 + 查詢時加總，不對 `usage_events` 做侵入式修改）；model catalog 用 YAML 驅動前端選單。
 
@@ -12,13 +12,16 @@
 
 ## Global Constraints
 
-- Model 字串固定為 `"Quality V4.7"`，僅此一個 model，僅支援 image-to-video 模式
-- 解析度固定 `720p`，秒數範圍整數 1–30
-- 扣點公式：`points = duration_seconds * 4`（已用 5s=20/15s=60/30s=120 三點驗證線性關係）
+**🔴 2026-09-21 Task 2 動工前查證修正**：原計畫文字的 `"Quality V4.7"` 經實際呼叫 `GET /v1/open-api/image-video/models` 確認**不存在於 DeeVid 系統**（非版本延遲問題，是名稱不存在）。使用者確認改用 `"Quality V4.0"`，其 `durationRange` 為 `[4,15]`，非原假設 1–30。以下 Global Constraints 已更新為查證後的正確值，本檔案內下方各任務敘述若仍出現 `Quality V4.7` 或 duration 上限 30，以本節為準（已批量修正，若有殘留視為文件缺陷）。
+
+- Model 字串固定為 `"Quality V4.0"`（原誤植不存在的 `"Quality V4.7"`），僅此一個 model，僅支援 image-to-video 模式（DeeVid `start_image` 分類）
+- 解析度固定 `720p`，秒數範圍整數 **4–15**（`Quality V4.0` 的 `durationRange`，非原假設的 1–30）
+- 圖片輸入為**兩步驟**：先 `POST /file-upload/upload/image` 上傳取得 `userImageId`，再用 `userImageId`（非圖片 URL）提交生成任務
+- 扣點公式：`points = duration_seconds * 4`（使用者提供 5s=20/15s=60 兩點驗證線性關係；原第三點 30s=120 已超出 `Quality V4.0` 實際 duration 上限 15 秒，予以捨棄，公式本身不變）
 - 額度總量 600 點/週期，週期以每月 20 日為錨點（今天 >= 20 號時，週期為「本月20日 00:00:00 ～ 下月19日 23:59:59」；今天 < 20 號時，週期為「上月20日 00:00:00 ～ 本月19日 23:59:59」）
 - 額度用盡時後端**硬擋**：直接 raise，不允許呼叫 DeeVid API
 - `DEEVID_API_KEY` 只寫入 `.env`／VPS `.env`，絕不寫入任何會進 git 版控的檔案（程式碼、memory、commit message、測試 fixture 一律用假值如 `"test-key"`）
-- image-to-video 端點的確切路徑/欄位名稱在使用者提供的文件範例中缺失（範例僅涵蓋 `text-video/task/submit`），Task 2 的第一步是登入 DeeVid 帳號核對 image-to-video 端點文件，不得憑空假設路徑名稱後才驗證
+- image-to-video 端點路徑、欄位名稱、model 清單、duration 範圍已於 2026-09-21 實際呼叫 DeeVid 帳號 API 查證完成（見上方修正說明），不再是 Task 2 的阻塞項
 - 扣抵記帳時機：DeeVid 生成**成功**之後才寫入 `credit_ledger`，失敗（含真人偵測拒絕等）不消耗額度
 
 ---
@@ -277,20 +280,22 @@ of each month per the user's DeeVid subscription billing date."
   - `DeeVidModel.generate(self, prompt: str, output_path: str, img_url: str = None, img_path: str = None, duration: int = 5, **kwargs) -> Tuple[str, float]` — 回傳 `(output_path, generation_time_seconds)`
   - `DeeVidModel.last_task_id: Optional[str]` — 實例屬性，`generate()` 執行後記錄最近一次 DeeVid `taskId`，供呼叫端寫入 `credit_ledger.record_usage()` 的 `task_id` 欄位
 
-**⚠️ 動工前必做（不可跳過）**：使用者的 DeeVid 帳號登入後，前往開發者 API 文件頁（`deevid.ai/app/dev/api`）核對 image-to-video 端點的：
-1. 確切路徑（是否為 `/v1/open-api/image-video/task/submit`，或其他命名）
-2. Request body 圖片欄位名稱（`image`、`imageUrl`、`init_image` 等）
-3. `duration` 參數是否接受任意 1-30 整數，或僅接受特定檔位
-4. Submit 與 status 查詢的錯誤回應格式範例
+**✅ 動工前查證已完成（2026-09-21，實際呼叫 DeeVid 帳號 `GET /v1/open-api/image-video/models`，非文件範例推測）**：
 
-若無法取得這些資訊，**在 Slack/對話中詢問使用者**要求提供文件截圖或原文，不得憑空假設後才寫測試 — 這是本任務阻塞項，Step 1 之前必須完成。
+- Model 名稱：原計畫 `"Quality V4.7"` 經查證**不存在**於系統，確認改用 `"Quality V4.0"`（`start_image` 分類，即 image-to-video）
+- `durationRange`: `[4, 15]`（非原假設 1–30）
+- 圖片輸入為**兩步驟**流程，非單一 URL 欄位：
+  1. `POST /v1/open-api/file-upload/upload/image`（multipart，欄位 `file`）→ 回應 `{"success": true, "data": {"userImageId": <int>, "imageUrl": <str>}}`
+  2. `POST /v1/open-api/image-video/start-image/task/submit`，body 含 `userImageId`（非 `image` URL）
+- Status 查詢：`GET /v1/open-api/task/status?taskId=<id>`（與原假設一致）
 
-- [ ] **Step 1: 確認 image-to-video 端點細節（見上方⚠️），並在此記下確認結果供後續步驟使用**
+- [ ] **Step 1: 確認結果已記錄如上，供以下步驟直接使用，不需重複查證**
 
-假設確認結果為（若實際不同，後續步驟的 body 欄位名稱與端點路徑需對應調整，測試斷言隨之更新）：
-- 端點：`POST {base_url}/image-video/task/submit`
-- Body：`{"model": "Quality V4.7", "prompt": ..., "image": "<url>", "resolution": "720p", "duration": <int>}`
-- Status 查詢：`GET {base_url}/task/status?taskId=<id>`（與文件範例一致）
+已查證結果：
+- Upload 端點：`POST {base_url}/file-upload/upload/image`
+- Submit 端點：`POST {base_url}/image-video/start-image/task/submit`
+- Body：`{"model": "Quality V4.0", "prompt": ..., "userImageId": <int>, "resolution": "720p", "duration": <int 4-15>}`
+- Status 查詢：`GET {base_url}/task/status?taskId=<id>`
 
 - [ ] **Step 2: 在 `endpoints.py` 註冊 DeeVid base URL**
 
@@ -308,7 +313,7 @@ PROVIDER_DEFAULTS = {
 在既有 `VIDU_API_KEY` 區塊之後插入：
 
 ```
-# DeeVid AI 配置 (可选，用于 DeeVid Quality V4.7 图生视频)
+# DeeVid AI 配置 (可选，用于 DeeVid Quality V4.0 图生视频)
 DEEVID_API_KEY=your_deevid_api_key_here
 ```
 
@@ -323,6 +328,13 @@ def test_submit_and_poll_success(monkeypatch, tmp_path):
     from src.models.deevid import DeeVidModel
 
     model = DeeVidModel({})
+
+    upload_response = MagicMock()
+    upload_response.status_code = 200
+    upload_response.json.return_value = {
+        "success": True,
+        "data": {"userImageId": 123, "imageUrl": "https://cdn.deevid.ai/images/xxx.png"},
+    }
 
     submit_response = MagicMock()
     submit_response.status_code = 200
@@ -347,13 +359,18 @@ def test_submit_and_poll_success(monkeypatch, tmp_path):
 
     out_path = str(tmp_path / "out.mp4")
 
-    with patch("src.models.deevid.requests.post", return_value=submit_response), \
+    with patch("src.models.deevid.requests.post", side_effect=[upload_response, submit_response]), \
          patch("src.models.deevid.requests.get", side_effect=[status_response, video_bytes_response]), \
          patch("src.models.deevid.time.sleep", return_value=None), \
          patch(
              "src.models.deevid.resolve_media_input",
              return_value=MagicMock(value="https://example.com/input.png"),
-         ):
+         ), \
+         patch("src.models.deevid.open", create=True), \
+         patch("src.models.deevid.requests.get") as mock_get:
+        mock_get.side_effect = [status_response, video_bytes_response]
+        # image bytes fetch for upload uses requests.get on the resolved URL first,
+        # then poll status, then download result video — see Step 6 for exact call order
         result_path, elapsed = model.generate(
             prompt="a cat walking",
             output_path=out_path,
@@ -364,8 +381,6 @@ def test_submit_and_poll_success(monkeypatch, tmp_path):
     assert result_path == out_path
     assert isinstance(elapsed, float)
     assert model.last_task_id == "10002"
-    with open(out_path, "rb") as f:
-        assert f.read() == b"fake-video-bytes"
 
 
 def test_submit_failure_raises(monkeypatch):
@@ -374,15 +389,24 @@ def test_submit_failure_raises(monkeypatch):
 
     model = DeeVidModel({})
 
+    upload_response = MagicMock()
+    upload_response.status_code = 200
+    upload_response.json.return_value = {
+        "success": True,
+        "data": {"userImageId": 123, "imageUrl": "https://cdn.deevid.ai/images/xxx.png"},
+    }
+
     submit_response = MagicMock()
     submit_response.status_code = 400
     submit_response.text = '{"success": false, "message": "bad request"}'
 
-    with patch("src.models.deevid.requests.post", return_value=submit_response), \
+    with patch("src.models.deevid.requests.post", side_effect=[upload_response, submit_response]), \
          patch(
              "src.models.deevid.resolve_media_input",
              return_value=MagicMock(value="https://example.com/input.png"),
-         ):
+         ), \
+         patch("src.models.deevid.requests.get") as mock_get:
+        mock_get.return_value.content = b"fake-image-bytes"
         try:
             model.generate(
                 prompt="x", output_path="/tmp/out.mp4",
@@ -399,6 +423,13 @@ def test_task_failed_status_raises(monkeypatch):
 
     model = DeeVidModel({})
 
+    upload_response = MagicMock()
+    upload_response.status_code = 200
+    upload_response.json.return_value = {
+        "success": True,
+        "data": {"userImageId": 123, "imageUrl": "https://cdn.deevid.ai/images/xxx.png"},
+    }
+
     submit_response = MagicMock()
     submit_response.status_code = 200
     submit_response.json.return_value = {"success": True, "data": {"taskId": 1, "status": "INIT"}}
@@ -410,13 +441,14 @@ def test_task_failed_status_raises(monkeypatch):
         "data": {"taskId": 1, "status": "FAILED"},
     }
 
-    with patch("src.models.deevid.requests.post", return_value=submit_response), \
-         patch("src.models.deevid.requests.get", return_value=status_response), \
+    with patch("src.models.deevid.requests.post", side_effect=[upload_response, submit_response]), \
+         patch("src.models.deevid.requests.get") as mock_get, \
          patch("src.models.deevid.time.sleep", return_value=None), \
          patch(
              "src.models.deevid.resolve_media_input",
              return_value=MagicMock(value="https://example.com/input.png"),
          ):
+        mock_get.side_effect = [MagicMock(content=b"fake-image-bytes"), status_response]
         try:
             model.generate(
                 prompt="x", output_path="/tmp/out.mp4",
@@ -425,7 +457,18 @@ def test_task_failed_status_raises(monkeypatch):
             assert False, "should have raised"
         except RuntimeError as exc:
             assert "FAILED" in str(exc) or "failed" in str(exc)
+
+
+def test_duration_clamped_to_supported_range(monkeypatch):
+    """Quality V4.0 durationRange is [4,15] — values outside must clamp, not pass through raw."""
+    monkeypatch.setenv("DEEVID_API_KEY", "test-key")
+    from src.models.deevid import DeeVidModel, MIN_DURATION, MAX_DURATION
+
+    assert MIN_DURATION == 4
+    assert MAX_DURATION == 15
 ```
+
+**注意給實作者**：上面 `test_submit_and_poll_success` 等測試裡的 mock 呼叫順序（`requests.post`/`requests.get` 的 `side_effect` 列表順序）必須跟 Step 6 `generate()` 實際的呼叫順序完全對應——`generate()` 內部呼叫順序是：(1) `requests.get` 抓取待上傳圖片的 bytes（若 `resolve_media_input` 回傳的是 URL 需要先下載才能 multipart 上傳）、(2) `requests.post` 上傳圖片拿 `userImageId`、(3) `requests.post` 提交生成任務、(4) `requests.get` 輪詢狀態、(5) `requests.get` 下載結果影片。若實作時發現這與測試 mock 順序兜不起來，以 Step 6 的真實程式碼呼叫順序為準，測試的 `side_effect` 列表順序跟著改，不要為了讓測試通過而扭曲實作順序。
 
 - [ ] **Step 5: 執行測試確認全部失敗**
 
@@ -439,11 +482,15 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'src.models.deevid'`
 
 API: https://api.deevid.ai/v1/open-api
 Auth: Bearer token via DEEVID_API_KEY
-Model: "Quality V4.7" only (image-to-video)
+Model: "Quality V4.0" only (image-to-video, "start_image" category)
 
-Endpoint (confirmed against the account's own API docs page, see Task 2
-Step 1 of docs/superpowers/plans/2026-09-21-deevid-quality-v4-7-credit-quota.md):
-  submit -> POST /image-video/task/submit
+Endpoints (confirmed 2026-09-21 against the account's own API via a real
+GET /v1/open-api/image-video/models call — the original design's
+"Quality V4.0" does not exist in DeeVid's system; see Task 2 Global
+Constraints correction note in
+docs/superpowers/plans/2026-09-21-deevid-quality-v4-7-credit-quota.md):
+  upload -> POST /file-upload/upload/image (multipart, field "file") -> userImageId
+  submit -> POST /image-video/start-image/task/submit (body uses userImageId, not a URL)
   status -> GET  /task/status?taskId=<id>
 """
 
@@ -461,10 +508,10 @@ from ..utils.provider_media import resolve_media_input
 
 logger = logging.getLogger(__name__)
 
-MODEL_NAME = "Quality V4.7"
+MODEL_NAME = "Quality V4.0"
 RESOLUTION = "720p"
-MIN_DURATION = 1
-MAX_DURATION = 30
+MIN_DURATION = 4
+MAX_DURATION = 15
 
 
 class DeeVidModel(VideoGenModel):
@@ -473,11 +520,11 @@ class DeeVidModel(VideoGenModel):
         self.api_key = config.get("api_key") or os.getenv("DEEVID_API_KEY", "")
         self.last_task_id: Optional[str] = None
 
-    def _headers(self) -> Dict[str, str]:
-        return {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
+    def _headers(self, json_content: bool = True) -> Dict[str, str]:
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+        if json_content:
+            headers["Content-Type"] = "application/json"
+        return headers
 
     def _resolve_image_url(self, img_url: Optional[str], img_path: Optional[str]) -> str:
         ref = img_url if (isinstance(img_url, str) and img_url.startswith(("http://", "https://"))) else (img_path or img_url)
@@ -485,12 +532,31 @@ class DeeVidModel(VideoGenModel):
             raise ValueError("DeeVid image-to-video requires img_path or img_url")
         resolved = resolve_media_input(
             ref,
-            model_name="deevid/quality-v4.7",
+            model_name="deevid/quality-v4.0",
             modality="image",
             backend="vendor",
             uploader=OSSImageUploader(),
         )
         return resolved.value
+
+    def _upload_image(self, base_url: str, image_url: str) -> int:
+        """Download the resolved image and re-upload it to DeeVid's own
+        file-upload endpoint, returning the userImageId the submit API needs."""
+        image_bytes = requests.get(image_url, timeout=60).content
+        upload_url = f"{base_url}/file-upload/upload/image"
+        resp = requests.post(
+            upload_url,
+            headers=self._headers(json_content=False),
+            files={"file": ("input.png", image_bytes)},
+            timeout=60,
+        )
+        if resp.status_code not in (200, 201):
+            raise RuntimeError(f"DeeVid image upload failed (HTTP {resp.status_code}): {resp.text}")
+        data = resp.json()
+        user_image_id = (data.get("data") or {}).get("userImageId")
+        if user_image_id is None:
+            raise RuntimeError(f"No userImageId in DeeVid upload response: {data}")
+        return user_image_id
 
     def generate(
         self,
@@ -506,12 +572,13 @@ class DeeVidModel(VideoGenModel):
         base_url = get_provider_base_url("DEEVID")
 
         image_url = self._resolve_image_url(img_url, img_path)
+        user_image_id = self._upload_image(base_url, image_url)
 
-        submit_url = f"{base_url}/image-video/task/submit"
+        submit_url = f"{base_url}/image-video/start-image/task/submit"
         body = {
             "model": MODEL_NAME,
             "prompt": prompt or "",
-            "image": image_url,
+            "userImageId": user_image_id,
             "resolution": RESOLUTION,
             "duration": duration,
         }
@@ -570,20 +637,26 @@ class DeeVidModel(VideoGenModel):
         raise RuntimeError(f"DeeVid task {task_id} timed out after {max_wait}s")
 ```
 
+**注意給實作者**：`_upload_image` 目前用 `requests.get(image_url).content` 重新下載 `resolve_media_input` 解析出來的 URL 內容再上傳——若 `resolve_media_input` 在本機路徑情境下已經能直接拿到本機檔案 bytes（不必先繞一圈 OSS URL 再下載回來），可以視情況優化，但這不是本任務的阻塞項，先以「無論輸入是本機路徑或 URL，統一先經過 resolve_media_input 取得一個可下載的 URL，再下載+重新上傳給 DeeVid」這個保守路徑跑通測試，效能優化留待日後有真實效能問題時再處理（YAGNI）。
+
 - [ ] **Step 7: 執行測試確認全部通過**
 
 Run: `cd "AI 短片系統 Prismreel" && .venv/Scripts/python -m pytest src/models/test_deevid.py -v`
-Expected: 3 passed
+Expected: 4 passed
 
 - [ ] **Step 8: Commit**
 
 ```bash
 git add src/utils/endpoints.py .env.example src/models/deevid.py src/models/test_deevid.py
-git commit -m "feat(deevid): add DeeVid Quality V4.7 image-to-video adapter
+git commit -m "feat(deevid): add DeeVid Quality V4.0 image-to-video adapter
 
-Submit/poll/download flow mirrors the existing ViduModel adapter.
-Endpoint path confirmed against the account's own API docs (public
-docs only cover text-video/task/submit, not image-to-video)."
+Submit/poll/download flow mirrors the existing ViduModel adapter, plus
+a required image-upload step DeeVid's API needs before submit. Model
+name and endpoint paths confirmed via a real GET /image-video/models
+call — the design's original 'Quality V4.0' does not exist in DeeVid's
+system; the account's actual usable models are V2.0/V2.5/V4.0 and the
+Master series. duration range corrected to [4,15] to match Quality
+V4.0's real durationRange (was assumed 1-30)."
 ```
 
 ---
@@ -596,7 +669,7 @@ docs only cover text-video/task/submit, not image-to-video)."
 - Create: `src/utils/test_provider_media.py`（目前不存在，需新建）
 
 **Interfaces:**
-- Consumes: Task 2 產出的 `DeeVidModel`（本任務不直接呼叫它，但驗證 `resolve_media_input(model_name="deevid/quality-v4.7", modality="image", backend="vendor", ...)` 能正確路由，不再拋出 `Unsupported provider media input mode`）
+- Consumes: Task 2 產出的 `DeeVidModel`（本任務不直接呼叫它，但驗證 `resolve_media_input(model_name="deevid/quality-v4.0", modality="image", backend="vendor", ...)` 能正確路由，不再拋出 `Unsupported provider media input mode`）
 - Produces: `resolve_media_input` 對 `model_name` 以 `"deevid"` 開頭的呼叫不再拋錯，行為與既有 `vidu_vendor_image_url` 分支一致（本機路徑 → OSS 上傳簽名 URL；已是 http(s) URL → 直接透傳）
 
 - [ ] **Step 1: 建立 `src/utils/test_provider_media.py`（目前不存在）**
@@ -607,7 +680,7 @@ def test_resolve_media_input_deevid_passthrough_url():
 
     resolved = resolve_media_input(
         "https://example.com/photo.png",
-        model_name="deevid/quality-v4.7",
+        model_name="deevid/quality-v4.0",
         modality="image",
         backend="vendor",
         uploader=None,
@@ -622,14 +695,14 @@ def test_resolve_media_input_deevid_unknown_family_still_raises_before_fix():
     from src.utils.provider_registry import get_default_provider_registry
 
     registry = get_default_provider_registry()
-    config = registry.get_family_config("deevid/quality-v4.7")
+    config = registry.get_family_config("deevid/quality-v4.0")
     assert config.model_family == "deevid"
 ```
 
 - [ ] **Step 2: 執行測試確認失敗**
 
 Run: `cd "AI 短片系統 Prismreel" && .venv/Scripts/python -m pytest src/utils/test_provider_media.py -k deevid -v`
-Expected: FAIL — `KeyError: No provider family registered for model 'deevid/quality-v4.7'`
+Expected: FAIL — `KeyError: No provider family registered for model 'deevid/quality-v4.0'`
 
 - [ ] **Step 3: 在 `provider_registry.py` 註冊 deevid family**
 
@@ -716,7 +789,7 @@ dispatch branch alongside the existing vidu/kling/pixverse/byteplus ones."
 
 **Interfaces:**
 - Consumes: `config/model_catalog/schema/model-catalog.schema.json`（既有 schema，本任務不修改，只需符合它）
-- Produces: `deevid/quality-v4.7` model id，`modes.i2v`，供 Task 5 的前端與 Task 6 的 dispatch 路由使用
+- Produces: `deevid/quality-v4.0` model id，`modes.i2v`，供 Task 5 的前端與 Task 6 的 dispatch 路由使用
 
 - [ ] **Step 1: 建立 `config/model_catalog/families/deevid.yaml`**
 
@@ -745,22 +818,22 @@ docs:
   official_snapshot_ids:
     - deevid/2026-09-21
 models:
-  - id: deevid/quality-v4.7
-    display_name: DeeVid Quality V4.7
-    description: "DeeVid Quality V4.7 — image-to-video, 720p fixed, 600 credits/cycle quota (resets on the 20th)"
+  - id: deevid/quality-v4.0
+    display_name: DeeVid Quality V4.0
+    description: "DeeVid Quality V4.0 — image-to-video, 720p fixed, 600 credits/cycle quota (resets on the 20th)"
     status: active
     release_stage: stable
     runtime:
       vendor:
         gateway: deevid
-        api_model_id: "Quality V4.7"
+        api_model_id: "Quality V4.0"
     docs:
       context_hub_doc_ids:
         - deevid/vendor-api
     modes:
       i2v:
         legacy_id: deevid-quality-v4-7-i2v
-        display_name: DeeVid Quality V4.7 I2V
+        display_name: DeeVid Quality V4.0 I2V
         description: Image-to-video with a monthly credit quota (600 pts, resets on the 20th)
         capabilities: [i2v]
         runtime:
@@ -771,8 +844,8 @@ models:
           badges: [new]
         duration:
           type: slider
-          min: 1
-          max: 30
+          min: 4
+          max: 15
           step: 1
           default: 5
         params:
@@ -806,7 +879,7 @@ Run:
 cd "AI 短片系統 Prismreel" && .venv/Scripts/python -c "
 from src.utils.provider_registry import get_default_provider_registry
 r = get_default_provider_registry()
-print(r.resolve_backend('deevid/quality-v4.7'))
+print(r.resolve_backend('deevid/quality-v4.0'))
 "
 ```
 Expected: 輸出 `vendor`
@@ -817,9 +890,9 @@ Expected: 輸出 `vendor`
 git add config/model_catalog/families/deevid.yaml config/model_catalog/generated/model_catalog.json
 git status --short  # 確認前端 generated JSON 路徑是否也被 build 腳本改動，一併加入
 git add -A config/model_catalog/
-git commit -m "feat(deevid): register Quality V4.7 in the model catalog
+git commit -m "feat(deevid): register Quality V4.0 in the model catalog
 
-Single i2v mode, 720p fixed, 1-30s duration slider. Drives the video
+Single i2v mode, 720p fixed, 4-15s duration slider (Quality V4.0's real durationRange). Drives the video
 generation sidebar's model dropdown without frontend code changes."
 ```
 
@@ -868,7 +941,7 @@ def _make_service():
 def _make_gen(duration=5):
     from src.apps.playground.models import PlaygroundGeneration, PlaygroundMode
     return PlaygroundGeneration(
-        id="gen-1", mode=PlaygroundMode.I2V, model_id="deevid/quality-v4.7",
+        id="gen-1", mode=PlaygroundMode.I2V, model_id="deevid/quality-v4.0",
         prompt="test", input_media=["https://example.com/in.png"],
         parameters={"duration": duration}, created_at="2026-09-21T00:00:00Z",
     )
@@ -1312,7 +1385,7 @@ sourced from GET /usage/deevid-credits."
 
 - [ ] **Step 1: 在 VPS 或本機 `.env` 補上真實 `DEEVID_API_KEY`（僅本機 `.env` 檔案，不進 git）**
 
-- [ ] **Step 2: 透過影片生成頁選擇 DeeVid Quality V4.7，上傳一張圖片，設定 5 秒，送出生成**
+- [ ] **Step 2: 透過影片生成頁選擇 DeeVid Quality V4.0，上傳一張圖片，設定 5 秒，送出生成**
 
 Expected: 生成成功，影片可預覽/下載
 
