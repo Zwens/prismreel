@@ -1319,6 +1319,22 @@ export const api = {
         const res = await axios.put(`${API_URL}/library/assets/${assetType}/${assetId}`, patch);
         return res.data;
     },
+    /** 从全局共享池删除一个资产。后端：DELETE /library/assets/{type}/{id}。assetType 单数。
+     *  若仍被任何项目/系列的分镜引用，后端回 409（LibraryAssetInUseError），
+     *  这里把 detail 原样抛出，调用方据此提示用户并可改传 force=true 强制删除。 */
+    deleteLibraryAsset: async (assetType: string, assetId: string, force = false) => {
+        try {
+            const res = await axios.delete(`${API_URL}/library/assets/${assetType}/${assetId}`, {
+                params: force ? { force: true } : undefined,
+            });
+            return res.data;
+        } catch (err) {
+            if (axios.isAxiosError(err) && err.response?.status === 409) {
+                throw err.response.data?.detail ?? err.response.data;
+            }
+            throw err;
+        }
+    },
     /** 把项目/系列来源资产 deep-copy 提升进全局共享池。后端：POST /library/assets/promote。
      *  sourceKind: "project"|"series"；assetType 单数。 */
     promoteAssetToLibrary: async (

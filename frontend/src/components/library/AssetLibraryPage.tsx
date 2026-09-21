@@ -674,6 +674,10 @@ export default function AssetLibraryPage() {
             onClose={() => setSelected(null)}
             onToggleStar={() => toggleStar(selected.sourceId, selected.assetId, selected.type)}
             onPromoted={loadAssets}
+            onDeleted={() => {
+              setSelected(null);
+              loadAssets();
+            }}
           />
         )}
       </div>

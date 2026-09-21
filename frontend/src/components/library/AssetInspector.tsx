@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { X, Star, Download, Sparkles, Loader2, Globe } from "lucide-react";
+import { X, Star, Download, Sparkles, Loader2, Globe, Trash2 } from "lucide-react";
 import type { Character, Scene, Prop, ImageAsset, ImageVariant } from "@/store/projectStore";
 import { characterImageAsset } from "@/lib/characterImage";
 import { mediaUrl } from "@/lib/mediaPath";
@@ -37,6 +37,8 @@ interface AssetInspectorProps {
   onToggleStar: () => void;
   /** 提升到全局成功後回調（父層刷新庫以顯示新入池資產）。可選。 */
   onPromoted?: () => void;
+  /** 刪除成功後回調（父層刷新庫並關閉 inspector）。僅 global 來源顯示刪除按鈕，故僅該情境需要。 */
+  onDeleted?: () => void;
 }
 
 /** Character 走 characterImageAsset（reference_sheet→full_body，歸一化成 ImageAsset 形狀）；scene/prop 用 image_asset。 */
@@ -93,6 +95,7 @@ export default function AssetInspector({
   onClose,
   onToggleStar,
   onPromoted,
+  onDeleted,
 }: AssetInspectorProps) {
   const t = useTranslations("library");
   const TYPE_LABEL: Record<AssetTab, string> = {
@@ -122,6 +125,7 @@ export default function AssetInspector({
   const [activeVariantId, setActiveVariantId] = useState<string | null>(defaultId);
   const [generating, setGenerating] = useState(false);
   const [promoting, setPromoting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // 切換選中資產時重置本地高亮的變體 + 丟棄上一個資產本地追加的變體。
   useEffect(() => {
@@ -292,6 +296,42 @@ export default function AssetInspector({
       toast.error(t("promoteFailed"), { body: msg });
     } finally {
       setPromoting(false);
+    }
+  };
+
+  // 從全局共享池刪除：僅 global 來源顯示按鈕。後端若偵測到仍被任一項目/系列分鏡引用會回
+  // 409（LibraryAssetInUseError），此時二次確認是否 force=true 強制刪除並留下懸空引用。
+  const handleDelete = async () => {
+    if (sourceKind !== "global" || deleting) return;
+    setDeleting(true);
+    try {
+      await api.deleteLibraryAsset(SINGULAR_TYPE[type], asset.id);
+      toast.success(t("deleteSuccess"), { body: t("deleteSuccessBody", { name: asset.name }) });
+      onDeleted?.();
+    } catch (e) {
+      const detail = e as { error?: string; references?: Array<{ owner_title?: string | null; owner_kind?: string }> } | Error;
+      if (typeof detail === "object" && detail !== null && "error" in detail && detail.error === "library_asset_in_use") {
+        const refNames = (detail.references ?? [])
+          .map((r) => r.owner_title || r.owner_kind)
+          .filter(Boolean)
+          .join(", ");
+        const confirmed = window.confirm(t("deleteInUseConfirm", { name: asset.name, refs: refNames || "—" }));
+        if (confirmed) {
+          try {
+            await api.deleteLibraryAsset(SINGULAR_TYPE[type], asset.id, true);
+            toast.success(t("deleteSuccess"), { body: t("deleteSuccessBody", { name: asset.name }) });
+            onDeleted?.();
+          } catch (e2) {
+            const msg = e2 instanceof Error ? e2.message : t("deleteFailed");
+            toast.error(t("deleteFailed"), { body: msg });
+          }
+        }
+      } else {
+        const msg = detail instanceof Error ? detail.message : t("deleteFailed");
+        toast.error(t("deleteFailed"), { body: msg });
+      }
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -483,6 +523,18 @@ export default function AssetInspector({
             <Download size={15} />
             {t("download")}
           </button>
+          {/* 刪除：僅全局共享池資產可從此處刪除（project/series 資產走各自的刪除流程）。 */}
+          {sourceKind === "global" && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-inset border border-status-failed-border text-status-failed-fg text-sm font-medium hover:bg-status-failed-bg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {deleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+              {deleting ? t("deleting") : t("deleteAsset")}
+            </button>
+          )}
         </div>
       </div>
     </aside>
