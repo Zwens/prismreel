@@ -201,6 +201,7 @@ def resolve_media_input(
         or mode.startswith("kling_vendor_")
         or mode.startswith("pixverse_vendor_")
         or mode.startswith("byteplus_ark_")
+        or mode.startswith("deevid_vendor_")
     ):
         if mode.startswith("vidu_vendor_"):
             provider_label = "Vidu"
@@ -208,6 +209,8 @@ def resolve_media_input(
             provider_label = "Kling"
         elif mode.startswith("pixverse_vendor_"):
             provider_label = "Pixverse"
+        elif mode.startswith("deevid_vendor_"):
+            provider_label = "DeeVid"
         else:
             provider_label = "BytePlus"
         return _resolve_vendor_url_mode(

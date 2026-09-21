@@ -102,6 +102,15 @@ DEFAULT_PROVIDER_FAMILIES: Tuple[ProviderFamilyConfig, ...] = (
         audio_input_mode={"vendor": "vidu_vendor_audio_url"},
         reference_video_input_mode={"vendor": "vidu_vendor_video_url"},
     ),
+    ProviderFamilyConfig(
+        model_family="deevid",
+        backend_default="vendor",
+        credential_sources={"vendor": ("DEEVID_API_KEY",)},
+        supported_modalities=("i2v",),
+        image_input_mode={"vendor": "deevid_vendor_image_url"},
+        audio_input_mode={},
+        reference_video_input_mode={},
+    ),
 )
 
 
