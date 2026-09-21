@@ -672,29 +672,39 @@ V4.0's real durationRange (was assumed 1-30)."
 - Consumes: Task 2 產出的 `DeeVidModel`（本任務不直接呼叫它，但驗證 `resolve_media_input(model_name="deevid/quality-v4.0", modality="image", backend="vendor", ...)` 能正確路由，不再拋出 `Unsupported provider media input mode`）
 - Produces: `resolve_media_input` 對 `model_name` 以 `"deevid"` 開頭的呼叫不再拋錯，行為與既有 `vidu_vendor_image_url` 分支一致（本機路徑 → OSS 上傳簽名 URL；已是 http(s) URL → 直接透傳）
 
+**🔴 2026-09-21 Task 3 動工查證後修正（load-bearing plan defect，Task 3 implementer 動手前查證發現，控制端裁決）**：原 Step 1 的兩個測試都經由 `get_default_provider_registry()`（全域函式）驗證，但該函式的優先序是「`config/model_catalog/generated/model_catalog.json` 若能成功載入，直接用它建 registry，`DEFAULT_PROVIDER_FAMILIES` 只在 catalog 載入**拋例外**時才當 fallback」——已用程式碼追蹤+實際執行雙重驗證（`provider_registry.py:108-113` 的 `try/except` 只包住 catalog 載入本身，`get_family_config()` 查無 family 拋的 `KeyError` 是在 registry 已建好之後的查詢層錯誤，不會觸發 fallback）。目前 worktree 內 `model_catalog.json` 已存在且能成功載入（不含 deevid，因為 `deevid.yaml` 要到 Task 4 才建立），所以透過 `get_default_provider_registry()` 測試 `DEFAULT_PROVIDER_FAMILIES` 新增的 deevid entry，在 Task 4 完成前**必定失敗**，形成 Task 3 依賴 Task 4 才能通過的隱性順序，違反每個任務應獨立可驗證的原則。
+
+**裁決**：`resolve_media_input()` 本身已支援可選的 `registry: Optional[ProviderRegistry] = None` 參數（`provider_media.py:170`，未使用時才 fallback 到 `get_default_provider_registry()`，見 `provider_media.py:181`）。改用這個既有注入點，直接建構一個只含 `DEFAULT_PROVIDER_FAMILIES`（含本任務新增的 deevid entry）的 `ProviderRegistry` 傳入測試呼叫，繞開「全域 registry 被 catalog JSON 覆蓋」的問題，讓 Task 3 只驗證「`DEFAULT_PROVIDER_FAMILIES` entry 本身 + dispatch 分支邏輯」這個本任務實際負責的範圍，不依賴 Task 4 是否已跑過 catalog 生成。Task 4 完成後，`get_default_provider_registry()` 的 catalog 路徑自然也會含 deevid（因為 catalog JSON 會被 Task 4 的 build 腳本重新生成含 `deevid.yaml`），兩個來源屆時保持一致，但那是 Task 4 自身該驗證的事，不需要 Task 3 的測試提前依賴它。
+
 - [ ] **Step 1: 建立 `src/utils/test_provider_media.py`（目前不存在）**
 
 ```python
 def test_resolve_media_input_deevid_passthrough_url():
     from src.utils.provider_media import resolve_media_input
+    from src.utils.provider_registry import ProviderRegistry, DEFAULT_PROVIDER_FAMILIES
 
+    fallback_registry = ProviderRegistry(DEFAULT_PROVIDER_FAMILIES)
     resolved = resolve_media_input(
         "https://example.com/photo.png",
         model_name="deevid/quality-v4.0",
         modality="image",
         backend="vendor",
         uploader=None,
+        registry=fallback_registry,
     )
     assert resolved.value == "https://example.com/photo.png"
 
 
-def test_resolve_media_input_deevid_unknown_family_still_raises_before_fix():
-    """Sanity check that the family is actually registered — if this ever
-    raises KeyError again, the DEFAULT_PROVIDER_FAMILIES fallback entry
-    (or the generated catalog YAML) has regressed."""
-    from src.utils.provider_registry import get_default_provider_registry
+def test_deevid_family_registered_in_default_provider_families():
+    """驗證本任務新增的 DEFAULT_PROVIDER_FAMILIES deevid entry 本身正確——
+    刻意繞開 get_default_provider_registry()，因為那個函式在 catalog JSON
+    載入成功時會直接用 catalog 建 registry（不含 deevid，要到 Task 4 建立
+    deevid.yaml 並重新生成 catalog 後才會有），不會走到這個 fallback tuple。
+    這裡改為直接用 DEFAULT_PROVIDER_FAMILIES 建一個獨立 registry 來驗證
+    entry 本身，讓本測試不依賴 Task 4 是否已完成。"""
+    from src.utils.provider_registry import ProviderRegistry, DEFAULT_PROVIDER_FAMILIES
 
-    registry = get_default_provider_registry()
+    registry = ProviderRegistry(DEFAULT_PROVIDER_FAMILIES)
     config = registry.get_family_config("deevid/quality-v4.0")
     assert config.model_family == "deevid"
 ```
@@ -702,7 +712,7 @@ def test_resolve_media_input_deevid_unknown_family_still_raises_before_fix():
 - [ ] **Step 2: 執行測試確認失敗**
 
 Run: `cd "AI 短片系統 Prismreel" && .venv/Scripts/python -m pytest src/utils/test_provider_media.py -k deevid -v`
-Expected: FAIL — `KeyError: No provider family registered for model 'deevid/quality-v4.0'`
+Expected: FAIL — `KeyError: No provider family registered for model 'deevid/quality-v4.0'`（兩個測試都因 `DEFAULT_PROVIDER_FAMILIES` 尚未含 deevid entry 而失敗）
 
 - [ ] **Step 3: 在 `provider_registry.py` 註冊 deevid family**
 
