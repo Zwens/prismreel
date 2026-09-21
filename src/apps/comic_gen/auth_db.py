@@ -66,4 +66,16 @@ def init_schema(conn: sqlite3.Connection) -> None:
         }
         if "duration" not in existing_columns:
             conn.execute("ALTER TABLE usage_events ADD COLUMN duration INTEGER")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS credit_ledger (
+                id TEXT PRIMARY KEY,
+                provider TEXT NOT NULL,
+                points INTEGER NOT NULL,
+                duration INTEGER NOT NULL,
+                task_id TEXT,
+                created_at REAL NOT NULL
+            )
+            """
+        )
         conn.commit()
