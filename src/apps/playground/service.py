@@ -323,6 +323,8 @@ class PlaygroundService:
                     usage = self._generate_video_kling(gen, out_path)
                 elif model_lower.startswith("vidu") or model_lower.startswith("viduq"):
                     usage = self._generate_video_vidu(gen, out_path)
+                elif model_lower.startswith("deevid"):
+                    usage = self._generate_video_deevid(gen, out_path)
                 else:
                     # happyhorse / pixverse 随 DashScope 下线，专属分支已移除；
                     # 未识别的 id 一并落到 Seedance 兜底。
@@ -588,6 +590,43 @@ class PlaygroundService:
             movement_amplitude=params.get("movement_amplitude", "auto"),
         )
         return None  # count-only -- no confirmed price table for vidu yet
+
+    def _generate_video_deevid(self, gen: PlaygroundGeneration, out_path: str) -> Optional[dict]:
+        """Delegate to :class:`DeeVidModel`, enforcing the monthly credit quota
+        before spending it on an API call."""
+        from ...apps.comic_gen import credit_ledger
+        from ...models.deevid import DeeVidModel
+
+        params = gen.parameters
+        duration = int(params.get("duration", 5))
+        estimated_points = duration * 4
+
+        remaining = credit_ledger.get_remaining_points()
+        if estimated_points > remaining:
+            _, period_end = credit_ledger.current_period()
+            from datetime import datetime, timezone
+            reset_date = datetime.fromtimestamp(period_end + 1, tz=timezone.utc).strftime("%Y-%m-%d")
+            raise RuntimeError(
+                f"DeeVid 額度不足：本次需要 {estimated_points} 點，剩餘 {remaining} 點，"
+                f"將於 {reset_date} 重置"
+            )
+
+        img_path, img_url = self._resolve_first_input_media(gen)
+
+        model = DeeVidModel({})
+        model.generate(
+            prompt=gen.prompt,
+            output_path=out_path,
+            img_url=img_url,
+            img_path=img_path,
+            duration=duration,
+        )
+
+        credit_ledger.record_usage(
+            points=estimated_points, duration=duration, task_id=model.last_task_id,
+        )
+
+        return {"provider": "deevid", "duration": duration, "resolution": "720p"}
 
     # ------------------------------------------------------------------
     # Helpers
