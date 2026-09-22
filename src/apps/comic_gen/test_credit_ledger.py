@@ -88,3 +88,87 @@ def test_get_remaining_points_never_negative():
         credit_ledger.record_usage(points=20, duration=5, task_id=None)
     # 31 * 20 = 620 > 600，應 clamp 為 0 而非負數
     assert credit_ledger.get_remaining_points(now) == 0
+
+
+def test_try_reserve_points_success_counts_toward_remaining():
+    from src.apps.comic_gen import credit_ledger
+
+    now = _ts(2026, 9, 25)
+    reservation_id = credit_ledger.try_reserve_points(200, now_ts=now)
+
+    assert reservation_id is not None
+    assert isinstance(reservation_id, str)
+    assert credit_ledger.get_remaining_points(now) == 400
+
+
+def test_try_reserve_points_insufficient_quota_returns_none():
+    from src.apps.comic_gen import credit_ledger
+
+    now = _ts(2026, 9, 25)
+    credit_ledger.record_usage(points=500, duration=5, task_id="task-1")
+
+    reservation_id = credit_ledger.try_reserve_points(200, now_ts=now)
+
+    assert reservation_id is None
+    # 未寫入任何記錄，剩餘額度不變
+    assert credit_ledger.get_remaining_points(now) == 100
+
+
+def test_release_reservation_restores_remaining():
+    from src.apps.comic_gen import credit_ledger
+
+    now = _ts(2026, 9, 25)
+    reservation_id = credit_ledger.try_reserve_points(200, now_ts=now)
+    assert reservation_id is not None
+    assert credit_ledger.get_remaining_points(now) == 400
+
+    credit_ledger.release_reservation(reservation_id)
+
+    assert credit_ledger.get_remaining_points(now) == 600
+
+
+def test_finalize_reservation_updates_task_id_without_changing_points():
+    from src.apps.comic_gen import credit_ledger, auth_db
+
+    now = _ts(2026, 9, 25)
+    reservation_id = credit_ledger.try_reserve_points(200, now_ts=now)
+    assert reservation_id is not None
+
+    credit_ledger.finalize_reservation(reservation_id, task_id="real-task-123")
+
+    assert credit_ledger.get_remaining_points(now) == 400
+
+    conn = auth_db.get_connection()
+    row = conn.execute(
+        "SELECT task_id, points FROM credit_ledger WHERE id = ?", (reservation_id,)
+    ).fetchone()
+    conn.close()
+    assert row["task_id"] == "real-task-123"
+    assert row["points"] == 200
+
+
+def test_try_reserve_points_concurrent_only_one_wins():
+    import threading
+    from src.apps.comic_gen import credit_ledger
+
+    now = _ts(2026, 9, 25)
+    results = []
+    lock = threading.Lock()
+
+    def worker():
+        result = credit_ledger.try_reserve_points(400, now_ts=now)
+        with lock:
+            results.append(result)
+
+    threads = [threading.Thread(target=worker) for _ in range(2)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    successes = [r for r in results if r is not None]
+    failures = [r for r in results if r is None]
+
+    assert len(successes) == 1, f"expected exactly one winner, got {results}"
+    assert len(failures) == 1
+    assert credit_ledger.get_remaining_points(now) == 200

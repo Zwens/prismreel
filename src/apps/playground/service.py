@@ -601,8 +601,9 @@ class PlaygroundService:
         duration = int(params.get("duration", 5))
         estimated_points = duration * 4
 
-        remaining = credit_ledger.get_remaining_points()
-        if estimated_points > remaining:
+        reservation_id = credit_ledger.try_reserve_points(estimated_points, duration=duration)
+        if reservation_id is None:
+            remaining = credit_ledger.get_remaining_points()
             _, period_end = credit_ledger.current_period()
             from datetime import datetime, timezone
             reset_date = datetime.fromtimestamp(period_end + 1, tz=timezone.utc).strftime("%Y-%m-%d")
@@ -614,17 +615,19 @@ class PlaygroundService:
         img_path, img_url = self._resolve_first_input_media(gen)
 
         model = DeeVidModel({})
-        model.generate(
-            prompt=gen.prompt,
-            output_path=out_path,
-            img_url=img_url,
-            img_path=img_path,
-            duration=duration,
-        )
+        try:
+            model.generate(
+                prompt=gen.prompt,
+                output_path=out_path,
+                img_url=img_url,
+                img_path=img_path,
+                duration=duration,
+            )
+        except Exception:
+            credit_ledger.release_reservation(reservation_id)
+            raise
 
-        credit_ledger.record_usage(
-            points=estimated_points, duration=duration, task_id=model.last_task_id,
-        )
+        credit_ledger.finalize_reservation(reservation_id, task_id=model.last_task_id)
 
         return {"provider": "deevid", "duration": duration, "resolution": "720p"}
 

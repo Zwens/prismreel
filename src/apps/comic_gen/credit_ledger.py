@@ -1,9 +1,10 @@
+import sqlite3
 import time
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, Tuple
 
-from .auth_db import get_connection
+from .auth_db import _DB_PATH, get_connection
 
 PERIOD_ANCHOR_DAY = 20
 TOTAL_POINTS_PER_PERIOD = 600
@@ -66,6 +67,85 @@ def record_usage(points: int, duration: int, task_id: Optional[str]) -> None:
             "INSERT INTO credit_ledger (id, provider, points, duration, task_id, created_at) "
             "VALUES (?, 'deevid', ?, ?, ?, ?)",
             (str(uuid.uuid4()), points, duration, task_id, time.time()),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _get_locking_connection() -> sqlite3.Connection:
+    """A connection with isolation_level=None (autocommit) so that we can
+    issue our own explicit BEGIN IMMEDIATE / COMMIT / ROLLBACK boundaries
+    instead of relying on sqlite3's implicit transaction handling."""
+    conn = sqlite3.connect(_DB_PATH, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.isolation_level = None
+    return conn
+
+
+def try_reserve_points(
+    points: int, now_ts: Optional[float] = None, duration: int = 0
+) -> Optional[str]:
+    """Atomically check remaining quota and reserve ``points`` if enough is
+    left, in a single SQLite transaction (BEGIN IMMEDIATE) to close the
+    check-then-act race window between concurrent callers.
+
+    Returns the reservation's ledger row id on success, or None if the
+    current period does not have enough remaining points (in which case
+    nothing is written).
+    """
+    now_ts = time.time() if now_ts is None else now_ts
+    start, end = current_period(now_ts)
+
+    conn = _get_locking_connection()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute(
+            "SELECT COALESCE(SUM(points), 0) AS total FROM credit_ledger "
+            "WHERE provider = 'deevid' AND created_at >= ? AND created_at <= ?",
+            (start, end),
+        ).fetchone()
+        used = row["total"] or 0
+        remaining = max(0, TOTAL_POINTS_PER_PERIOD - used)
+
+        if points > remaining:
+            conn.execute("ROLLBACK")
+            return None
+
+        reservation_id = str(uuid.uuid4())
+        conn.execute(
+            "INSERT INTO credit_ledger (id, provider, points, duration, task_id, created_at) "
+            "VALUES (?, 'deevid', ?, ?, NULL, ?)",
+            (reservation_id, points, duration, now_ts),
+        )
+        conn.execute("COMMIT")
+        return reservation_id
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+    finally:
+        conn.close()
+
+
+def release_reservation(reservation_id: str) -> None:
+    """Delete a previously reserved (but not consumed) ledger row, used when
+    the downstream API call that the reservation was guarding fails."""
+    conn = get_connection()
+    try:
+        conn.execute("DELETE FROM credit_ledger WHERE id = ?", (reservation_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def finalize_reservation(reservation_id: str, task_id: Optional[str]) -> None:
+    """Attach the real provider task_id to a reservation once the API call
+    that consumed it has succeeded. Does not change the reserved points."""
+    conn = get_connection()
+    try:
+        conn.execute(
+            "UPDATE credit_ledger SET task_id = ? WHERE id = ?",
+            (task_id, reservation_id),
         )
         conn.commit()
     finally:
