@@ -5,6 +5,8 @@
 ## ✅ DeeVid Quality V4.0 provider整合+月度點數額度已merge進main（2026-09-22）
 - [**✅ commit `1f78d74`已merge並push，8任務SDD計畫Task1-7完成，Task8（消耗真實額度的端到端驗收）使用者明確選擇跳過**](feedback_deevid_provider_integration_completed_2026-09-22.md) — 動工前查證推翻原始「Quality V4.7」假設，改用實際存在的「Quality V4.0」；殘留風險是真實API回應欄位從未經過submit round trip驗證
 - [**🔴 push後自動安全審查揪出race condition+SSRF（2輪修復），commit `f562f73`已merge**](feedback_deevid_post_push_security_fixes_2026-09-22.md) — quota-bypass查證後判定誤報，但race condition/SSRF/redirect bypass/連線逾時遮蔽錯誤4項屬實；vidu.py/kling.py同款SSRF redirect bypass未修，待follow-up
+- [**✅ DEEVID_API_KEY補UI輸入欄位(`2cb7056`)+admin專屬額度手動校正功能(`c2c2078`)已merge**](feedback_deevid_post_push_security_fixes_2026-09-22.md) — 原設計誤判「跟VIDU_API_KEY一樣只需.env」，實則Vidu有完整UI支援；額度校正功能解決DeeVid官方無餘額查詢API、官網直接消耗系統無法自動得知的落差問題
+- [**🔴 push完只檢查觸發CI的origin(GitLab)，忽略github備份remote落後21個commit，使用者主動問才發現**](feedback_push_must_check_all_configured_remotes_2026-09-22.md) — session收尾或使用者問部署狀態時，須`git remote -v`+`git ls-remote`逐一核對全部remote，不只看觸發部署的那一個
 
 ## ✅ 多鏡頭工作流已merge進main並上線production（2026-09-18~09-19）
 - [**✅ merge commit`94cd506`已推送GitLab+GitHub雙remote，CI job 46034成功，live三層驗證通過**](feedback_video_workflow_merge_to_main_and_deploy_2026-09-19.md) — 側欄「多鏡頭工作流」已上線；merge過程順手修main既有2個TypeScript型別錯誤（與merge無關）；GitHub push protection攔截舊commit明文金鑰（皆已確認失效），使用者手動解除後補推成功
