@@ -43,6 +43,7 @@ type EnvConfig = EnvConfigPayload & {
   KLING_ACCESS_KEY: string;
   KLING_SECRET_KEY: string;
   VIDU_API_KEY: string;
+  DEEVID_API_KEY: string;
   ARK_API_KEY: string;
   ARK_REGION: string;
   ARK_BASE_URL: string;
@@ -53,6 +54,7 @@ const ENDPOINT_PROVIDERS = [
   { key: "GEMINI_BASE_URL", label: "Gemini", placeholder: "https://generativelanguage.googleapis.com" },
   { key: "KLING_BASE_URL", label: "Kling", placeholder: "https://api-beijing.klingai.com/v1" },
   { key: "VIDU_BASE_URL", label: "Vidu", placeholder: "https://api.vidu.cn/ent/v2" },
+  { key: "DEEVID_BASE_URL", label: "DeeVid", placeholder: "https://api.deevid.ai/v1/open-api" },
   { key: "ARK_BASE_URL", label: "Ark (Seedance)", placeholder: "https://ark.ap-southeast.bytepluses.com/api/v3" },
 ];
 
@@ -67,6 +69,7 @@ const DEFAULT_CONFIG: EnvConfig = {
   KLING_ACCESS_KEY: "",
   KLING_SECRET_KEY: "",
   VIDU_API_KEY: "",
+  DEEVID_API_KEY: "",
   ARK_API_KEY: "",
   ARK_REGION: "",
   ARK_BASE_URL: "",
@@ -687,6 +690,11 @@ export default function SettingsPage() {
           <FormRow label="Vidu" hint={t("viduHint")}>
             <FieldLabel>VIDU_API_KEY</FieldLabel>
             <KeyField value={config.VIDU_API_KEY} onChange={(v) => handleChange("VIDU_API_KEY", v)} placeholder={t("viduApiKeyPlaceholder")} />
+          </FormRow>
+
+          <FormRow label="DeeVid" hint={t("deevidHint")}>
+            <FieldLabel>DEEVID_API_KEY</FieldLabel>
+            <KeyField value={config.DEEVID_API_KEY} onChange={(v) => handleChange("DEEVID_API_KEY", v)} placeholder={t("deevidApiKeyPlaceholder")} />
           </FormRow>
 
           {/* BytePlus / Volcano Ark — used by the whole Seedance family. */}

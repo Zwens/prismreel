@@ -22,6 +22,7 @@ type EnvConfig = EnvConfigPayload & {
   KLING_ACCESS_KEY: string;
   KLING_SECRET_KEY: string;
   VIDU_API_KEY: string;
+  DEEVID_API_KEY: string;
   ARK_API_KEY: string;
   ARK_REGION: string;
   ARK_BASE_URL: string;
@@ -32,6 +33,7 @@ const ENDPOINT_PROVIDERS = [
   { key: "DASHSCOPE_BASE_URL", label: "DashScope", placeholder: "https://dashscope.aliyuncs.com" },
   { key: "KLING_BASE_URL", label: "Kling", placeholder: "https://api-beijing.klingai.com/v1" },
   { key: "VIDU_BASE_URL", label: "Vidu", placeholder: "https://api.vidu.cn/ent/v2" },
+  { key: "DEEVID_BASE_URL", label: "DeeVid", placeholder: "https://api.deevid.ai/v1/open-api" },
   { key: "ARK_BASE_URL", label: "Ark (Seedance)", placeholder: "https://ark.ap-southeast.bytepluses.com/api/v3" },
 ];
 
@@ -45,6 +47,7 @@ const DEFAULT_CONFIG: EnvConfig = {
   KLING_ACCESS_KEY: "",
   KLING_SECRET_KEY: "",
   VIDU_API_KEY: "",
+  DEEVID_API_KEY: "",
   ARK_API_KEY: "",
   ARK_REGION: "",
   ARK_BASE_URL: "",
@@ -358,6 +361,26 @@ export default function EnvConfigDialog({ isOpen, onClose, isRequired = false }:
                         value={config.VIDU_API_KEY}
                         onChange={(e) => handleChange("VIDU_API_KEY", e.target.value)}
                         placeholder={t("viduApiKeyPlaceholder")}
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-glass-border">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-foreground">{t("deevidProvider")}</h3>
+                  </div>
+                  <div className="bg-glass border border-glass-border rounded-lg p-4 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        DeeVid API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={config.DEEVID_API_KEY}
+                        onChange={(e) => handleChange("DEEVID_API_KEY", e.target.value)}
+                        placeholder={t("deevidApiKeyPlaceholder")}
                         className={inputClass}
                       />
                     </div>

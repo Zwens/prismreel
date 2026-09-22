@@ -169,6 +169,7 @@ export interface EnvConfigPayload {
     KLING_ACCESS_KEY?: string;
     KLING_SECRET_KEY?: string;
     VIDU_API_KEY?: string;
+    DEEVID_API_KEY?: string;
     ARK_API_KEY?: string;
     ARK_REGION?: string;
     ARK_BASE_URL?: string;

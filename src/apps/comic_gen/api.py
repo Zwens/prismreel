@@ -1405,6 +1405,7 @@ class EnvConfig(BaseModel):
     KLING_ACCESS_KEY: Optional[str] = None
     KLING_SECRET_KEY: Optional[str] = None
     VIDU_API_KEY: Optional[str] = None
+    DEEVID_API_KEY: Optional[str] = None
     # BytePlus ModelArk / Volcano Ark — the whole Seedance family runs here.
     ARK_API_KEY: Optional[str] = None
     ARK_REGION: Optional[str] = None
@@ -4187,6 +4188,7 @@ SECRET_FIELDS = {
     "KLING_ACCESS_KEY",
     "KLING_SECRET_KEY",
     "VIDU_API_KEY",
+    "DEEVID_API_KEY",
     "ARK_API_KEY",
     "OPENAI_API_KEY",
 }
@@ -4239,6 +4241,7 @@ def get_env_config():
             "KLING_ACCESS_KEY": _mask_secret(os.getenv("KLING_ACCESS_KEY")),
             "KLING_SECRET_KEY": _mask_secret(os.getenv("KLING_SECRET_KEY")),
             "VIDU_API_KEY": _mask_secret(os.getenv("VIDU_API_KEY")),
+            "DEEVID_API_KEY": _mask_secret(os.getenv("DEEVID_API_KEY")),
             "ARK_API_KEY": _mask_secret(os.getenv("ARK_API_KEY")),
             "OPENAI_API_KEY": _mask_secret(os.getenv("OPENAI_API_KEY")),
             # Non-secret config.
