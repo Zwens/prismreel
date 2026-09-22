@@ -2,6 +2,9 @@
 
 > 進入本專案工作時 Read 載入。工作區共用規則見根目錄 CLAUDE.md。
 
+## ✅ DeeVid Quality V4.0 provider整合+月度點數額度已merge進main（2026-09-22）
+- [**✅ commit `1f78d74`已merge並push，8任務SDD計畫Task1-7完成，Task8（消耗真實額度的端到端驗收）使用者明確選擇跳過**](feedback_deevid_provider_integration_completed_2026-09-22.md) — 動工前查證推翻原始「Quality V4.7」假設，改用實際存在的「Quality V4.0」；殘留風險是真實API回應欄位從未經過submit round trip驗證
+
 ## ✅ 多鏡頭工作流已merge進main並上線production（2026-09-18~09-19）
 - [**✅ merge commit`94cd506`已推送GitLab+GitHub雙remote，CI job 46034成功，live三層驗證通過**](feedback_video_workflow_merge_to_main_and_deploy_2026-09-19.md) — 側欄「多鏡頭工作流」已上線；merge過程順手修main既有2個TypeScript型別錯誤（與merge無關）；GitHub push protection攔截舊commit明文金鑰（皆已確認失效），使用者手動解除後補推成功
 - [**Task 10手動瀏覽器E2E完成，稽核官綜合判斷分支達可merge標準**](project_video_workflow_e2e_task10_completed_2026-09-19.md) — t2v+r2v雙圖生成真實驗證通過；combine因本機缺FFmpeg跳過肉眼複驗，已交叉確認VPS production容器內建FFmpeg不受影響
