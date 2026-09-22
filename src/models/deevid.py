@@ -6,7 +6,7 @@ Model: "Quality V4.0" only (image-to-video, "start_image" category)
 
 Endpoints (confirmed 2026-09-21 against the account's own API via a real
 GET /v1/open-api/image-video/models call — the original design's
-"Quality V4.0" does not exist in DeeVid's system; see Task 2 Global
+"Quality V4.7" does not exist in DeeVid's system; see Task 2 Global
 Constraints correction note in
 docs/superpowers/plans/2026-09-21-deevid-quality-v4-7-credit-quota.md):
   upload -> POST /file-upload/upload/image (multipart, field "file") -> userImageId

@@ -145,9 +145,79 @@ def test_task_failed_status_raises(monkeypatch):
 
 
 def test_duration_clamped_to_supported_range(monkeypatch):
-    """Quality V4.0 durationRange is [4,15] — values outside must clamp, not pass through raw."""
+    """Quality V4.0 durationRange is [4,15]."""
     monkeypatch.setenv("DEEVID_API_KEY", "test-key")
-    from src.models.deevid import DeeVidModel, MIN_DURATION, MAX_DURATION
+    from src.models.deevid import MIN_DURATION, MAX_DURATION
 
     assert MIN_DURATION == 4
     assert MAX_DURATION == 15
+
+
+def _run_generate_and_capture_submitted_duration(monkeypatch, tmp_path, duration):
+    monkeypatch.setenv("DEEVID_API_KEY", "test-key")
+    from src.models.deevid import DeeVidModel
+
+    model = DeeVidModel({})
+
+    image_bytes_response = MagicMock()
+    image_bytes_response.content = b"fake-image-bytes"
+
+    upload_response = MagicMock()
+    upload_response.status_code = 200
+    upload_response.json.return_value = {
+        "success": True,
+        "data": {"userImageId": 123, "imageUrl": "https://cdn.deevid.ai/images/xxx.png"},
+    }
+
+    submit_response = MagicMock()
+    submit_response.status_code = 200
+    submit_response.json.return_value = {
+        "success": True,
+        "data": {"taskId": 10002, "status": "INIT"},
+    }
+
+    status_response = MagicMock()
+    status_response.status_code = 200
+    status_response.json.return_value = {
+        "success": True,
+        "data": {
+            "taskId": 10002,
+            "status": "SUCCESS",
+            "resultVideoUrl": "https://cdn.deevid.ai/videos/xxx.mp4",
+        },
+    }
+
+    video_bytes_response = MagicMock()
+    video_bytes_response.content = b"fake-video-bytes"
+
+    out_path = str(tmp_path / "out.mp4")
+
+    with patch("src.models.deevid.requests.post", side_effect=[upload_response, submit_response]) as mock_post, \
+         patch("src.models.deevid.requests.get", side_effect=[image_bytes_response, status_response, video_bytes_response]), \
+         patch("src.models.deevid.time.sleep", return_value=None), \
+         patch(
+             "src.models.deevid.resolve_media_input",
+             return_value=MagicMock(value="https://example.com/input.png"),
+         ), \
+         patch("src.models.deevid.open", create=True):
+        model.generate(
+            prompt="a cat walking",
+            output_path=out_path,
+            img_url="https://example.com/input.png",
+            duration=duration,
+        )
+
+    # Second requests.post call is the submit call; its json= body carries duration.
+    submit_call = mock_post.call_args_list[1]
+    submitted_body = submit_call.kwargs["json"]
+    return submitted_body["duration"]
+
+
+def test_duration_above_max_is_clamped_down(monkeypatch, tmp_path):
+    submitted_duration = _run_generate_and_capture_submitted_duration(monkeypatch, tmp_path, duration=30)
+    assert submitted_duration == 15
+
+
+def test_duration_below_min_is_clamped_up(monkeypatch, tmp_path):
+    submitted_duration = _run_generate_and_capture_submitted_duration(monkeypatch, tmp_path, duration=1)
+    assert submitted_duration == 4
