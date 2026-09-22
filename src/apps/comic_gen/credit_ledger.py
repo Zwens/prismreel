@@ -129,24 +129,32 @@ def try_reserve_points(
 
 def release_reservation(reservation_id: str) -> None:
     """Delete a previously reserved (but not consumed) ledger row, used when
-    the downstream API call that the reservation was guarding fails."""
-    conn = get_connection()
+    the downstream API call that the reservation was guarding fails.
+
+    Uses the same 30s-timeout locking connection as try_reserve_points
+    instead of get_connection()'s 5s sqlite3 default: under concurrent load
+    a writer holding the lock for longer than 5s would otherwise make this
+    raise sqlite3.OperationalError('database is locked'), masking the real
+    generation failure and leaking the reservation forever."""
+    conn = _get_locking_connection()
     try:
         conn.execute("DELETE FROM credit_ledger WHERE id = ?", (reservation_id,))
-        conn.commit()
     finally:
         conn.close()
 
 
 def finalize_reservation(reservation_id: str, task_id: Optional[str]) -> None:
     """Attach the real provider task_id to a reservation once the API call
-    that consumed it has succeeded. Does not change the reserved points."""
-    conn = get_connection()
+    that consumed it has succeeded. Does not change the reserved points.
+
+    Uses the same 30s-timeout locking connection as try_reserve_points (see
+    release_reservation for why the 5s get_connection() default is unsafe
+    here)."""
+    conn = _get_locking_connection()
     try:
         conn.execute(
             "UPDATE credit_ledger SET task_id = ? WHERE id = ?",
             (task_id, reservation_id),
         )
-        conn.commit()
     finally:
         conn.close()

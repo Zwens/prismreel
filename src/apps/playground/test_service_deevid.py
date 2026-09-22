@@ -89,3 +89,44 @@ def test_process_video_generation_routes_deevid_model_id():
         service._process_video_generation(gen)
 
     mock_deevid.assert_called_once()
+
+
+def test_generate_video_deevid_releases_reservation_when_resolve_input_media_fails():
+    """_resolve_first_input_media(gen) must run inside the try block so that
+    a failure there still triggers release_reservation -- previously it ran
+    after the reservation but before the try, leaking the reservation
+    forever on failure."""
+    service = _make_service()
+    gen = _make_gen(duration=5)
+
+    from src.apps.comic_gen import credit_ledger
+
+    with patch.object(
+        service, "_resolve_first_input_media", side_effect=ValueError("bad input media")
+    ):
+        with pytest.raises(ValueError, match="bad input media"):
+            service._generate_video_deevid(gen, "/tmp/out.mp4")
+
+    assert credit_ledger.get_remaining_points() == 600  # reservation released, not leaked
+
+
+def test_generate_video_deevid_reraises_original_error_even_if_release_reservation_fails():
+    """If release_reservation itself raises (e.g. it still times out even at
+    30s under extreme contention), the exception that reaches the caller
+    must be the ORIGINAL generation failure, not the release-path exception --
+    otherwise the real root cause is masked by an unrelated DB error."""
+    import sqlite3
+
+    service = _make_service()
+    gen = _make_gen(duration=5)
+
+    fake_model = MagicMock()
+    fake_model.generate.side_effect = RuntimeError("DeeVid task failed: content policy")
+
+    with patch("src.models.deevid.DeeVidModel", return_value=fake_model), \
+         patch(
+             "src.apps.comic_gen.credit_ledger.release_reservation",
+             side_effect=sqlite3.OperationalError("database is locked"),
+         ):
+        with pytest.raises(RuntimeError, match="content policy"):
+            service._generate_video_deevid(gen, "/tmp/out.mp4")

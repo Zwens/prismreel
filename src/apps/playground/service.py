@@ -612,10 +612,9 @@ class PlaygroundService:
                 f"將於 {reset_date} 重置"
             )
 
-        img_path, img_url = self._resolve_first_input_media(gen)
-
         model = DeeVidModel({})
         try:
+            img_path, img_url = self._resolve_first_input_media(gen)
             model.generate(
                 prompt=gen.prompt,
                 output_path=out_path,
@@ -624,7 +623,15 @@ class PlaygroundService:
                 duration=duration,
             )
         except Exception:
-            credit_ledger.release_reservation(reservation_id)
+            try:
+                credit_ledger.release_reservation(reservation_id)
+            except Exception:
+                logger.error(
+                    "DeeVid reservation %s failed to release after generation "
+                    "error; requires manual credit_ledger reconciliation",
+                    reservation_id,
+                    exc_info=True,
+                )
             raise
 
         credit_ledger.finalize_reservation(reservation_id, task_id=model.last_task_id)

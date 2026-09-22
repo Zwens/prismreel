@@ -147,6 +147,42 @@ def test_finalize_reservation_updates_task_id_without_changing_points():
     assert row["points"] == 200
 
 
+def _body_after_docstring(source: str) -> str:
+    """Strip the function signature + docstring, returning just the
+    executable body, so assertions don't false-positive on prose mentioning
+    function names inside the docstring."""
+    import ast
+
+    tree = ast.parse(source)
+    func = tree.body[0]
+    body_nodes = func.body
+    if body_nodes and isinstance(body_nodes[0], ast.Expr) and isinstance(body_nodes[0].value, ast.Constant):
+        body_nodes = body_nodes[1:]
+    return ast.unparse(ast.Module(body=body_nodes, type_ignores=[]))
+
+
+def test_release_reservation_uses_locking_connection_with_long_timeout():
+    """release_reservation must use the same 30s-timeout locking connection
+    as try_reserve_points, not auth_db.get_connection()'s 5s sqlite3 default --
+    otherwise a concurrent writer holding the lock for >5s makes release fail
+    with 'database is locked' instead of actually releasing the reservation."""
+    from src.apps.comic_gen import credit_ledger
+    import inspect
+
+    body = _body_after_docstring(inspect.getsource(credit_ledger.release_reservation))
+    assert "_get_locking_connection" in body
+    assert "get_connection()" not in body
+
+
+def test_finalize_reservation_uses_locking_connection_with_long_timeout():
+    from src.apps.comic_gen import credit_ledger
+    import inspect
+
+    body = _body_after_docstring(inspect.getsource(credit_ledger.finalize_reservation))
+    assert "_get_locking_connection" in body
+    assert "get_connection()" not in body
+
+
 def test_try_reserve_points_concurrent_only_one_wins():
     import threading
     from src.apps.comic_gen import credit_ledger
