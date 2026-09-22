@@ -78,6 +78,8 @@ def test_submit_and_poll_success(monkeypatch, tmp_path):
     model = DeeVidModel({})
 
     image_bytes_response = MagicMock()
+    image_bytes_response.status_code = 200
+    image_bytes_response.is_redirect = False
     image_bytes_response.content = b"fake-image-bytes"
 
     upload_response = MagicMock()
@@ -106,6 +108,8 @@ def test_submit_and_poll_success(monkeypatch, tmp_path):
     }
 
     video_bytes_response = MagicMock()
+    video_bytes_response.status_code = 200
+    video_bytes_response.is_redirect = False
     video_bytes_response.content = b"fake-video-bytes"
 
     out_path = str(tmp_path / "out.mp4")
@@ -141,6 +145,8 @@ def test_submit_failure_raises(monkeypatch):
     model = DeeVidModel({})
 
     image_bytes_response = MagicMock()
+    image_bytes_response.status_code = 200
+    image_bytes_response.is_redirect = False
     image_bytes_response.content = b"fake-image-bytes"
 
     upload_response = MagicMock()
@@ -177,6 +183,8 @@ def test_task_failed_status_raises(monkeypatch):
     model = DeeVidModel({})
 
     image_bytes_response = MagicMock()
+    image_bytes_response.status_code = 200
+    image_bytes_response.is_redirect = False
     image_bytes_response.content = b"fake-image-bytes"
 
     upload_response = MagicMock()
@@ -230,6 +238,8 @@ def _run_generate_and_capture_submitted_duration(monkeypatch, tmp_path, duration
     model = DeeVidModel({})
 
     image_bytes_response = MagicMock()
+    image_bytes_response.status_code = 200
+    image_bytes_response.is_redirect = False
     image_bytes_response.content = b"fake-image-bytes"
 
     upload_response = MagicMock()
@@ -258,6 +268,8 @@ def _run_generate_and_capture_submitted_duration(monkeypatch, tmp_path, duration
     }
 
     video_bytes_response = MagicMock()
+    video_bytes_response.status_code = 200
+    video_bytes_response.is_redirect = False
     video_bytes_response.content = b"fake-video-bytes"
 
     out_path = str(tmp_path / "out.mp4")
@@ -291,3 +303,121 @@ def test_duration_above_max_is_clamped_down(monkeypatch, tmp_path):
 def test_duration_below_min_is_clamped_up(monkeypatch, tmp_path):
     submitted_duration = _run_generate_and_capture_submitted_duration(monkeypatch, tmp_path, duration=1)
     assert submitted_duration == 4
+
+
+def test_upload_image_rejects_redirect_response_instead_of_following_it(monkeypatch):
+    """requests.get() defaults to allow_redirects=True, so a public URL that
+    302-redirects to an internal address (e.g. 169.254.169.254) would bypass
+    _validate_outbound_url, which only checks the initial URL. The fix must
+    pass allow_redirects=False and raise on any 3xx response instead of
+    silently following it."""
+    monkeypatch.setenv("DEEVID_API_KEY", "test-key")
+    from src.models.deevid import DeeVidModel
+
+    model = DeeVidModel({})
+
+    redirect_response = MagicMock()
+    redirect_response.status_code = 302
+    redirect_response.headers = {"Location": "http://169.254.169.254/latest/meta-data/"}
+    redirect_response.is_redirect = True
+
+    with patch("src.models.deevid.requests.get", return_value=redirect_response) as mock_get:
+        with pytest.raises(RuntimeError):
+            model._upload_image("https://api.deevid.ai/v1/open-api", "https://evil.com/redirect-me.png")
+
+    mock_get.assert_called_once()
+    _, kwargs = mock_get.call_args
+    assert kwargs.get("allow_redirects") is False
+
+
+def test_upload_image_normal_200_response_still_works(monkeypatch):
+    """Non-redirect responses must continue to work unaffected."""
+    monkeypatch.setenv("DEEVID_API_KEY", "test-key")
+    from src.models.deevid import DeeVidModel
+
+    model = DeeVidModel({})
+
+    image_bytes_response = MagicMock()
+    image_bytes_response.status_code = 200
+    image_bytes_response.is_redirect = False
+    image_bytes_response.content = b"fake-image-bytes"
+
+    upload_response = MagicMock()
+    upload_response.status_code = 200
+    upload_response.json.return_value = {
+        "success": True,
+        "data": {"userImageId": 123, "imageUrl": "https://cdn.deevid.ai/images/xxx.png"},
+    }
+
+    with patch("src.models.deevid.requests.get", return_value=image_bytes_response) as mock_get, \
+         patch("src.models.deevid.requests.post", return_value=upload_response):
+        user_image_id = model._upload_image("https://api.deevid.ai/v1/open-api", "https://cdn.deevid.ai/xxx.png")
+
+    assert user_image_id == 123
+    _, kwargs = mock_get.call_args
+    assert kwargs.get("allow_redirects") is False
+
+
+def test_generate_rejects_redirect_response_when_downloading_result_video(monkeypatch, tmp_path):
+    """Same redirect-bypass protection must apply to the resultVideoUrl
+    download in generate(), not just the image upload path."""
+    monkeypatch.setenv("DEEVID_API_KEY", "test-key")
+    from src.models.deevid import DeeVidModel
+
+    model = DeeVidModel({})
+
+    image_bytes_response = MagicMock()
+    image_bytes_response.status_code = 200
+    image_bytes_response.is_redirect = False
+    image_bytes_response.content = b"fake-image-bytes"
+
+    upload_response = MagicMock()
+    upload_response.status_code = 200
+    upload_response.json.return_value = {
+        "success": True,
+        "data": {"userImageId": 123, "imageUrl": "https://cdn.deevid.ai/images/xxx.png"},
+    }
+
+    submit_response = MagicMock()
+    submit_response.status_code = 200
+    submit_response.json.return_value = {
+        "success": True,
+        "data": {"taskId": 10002, "status": "INIT"},
+    }
+
+    status_response = MagicMock()
+    status_response.status_code = 200
+    status_response.json.return_value = {
+        "success": True,
+        "data": {
+            "taskId": 10002,
+            "status": "SUCCESS",
+            "resultVideoUrl": "https://evil.com/redirect-me.mp4",
+        },
+    }
+
+    redirect_video_response = MagicMock()
+    redirect_video_response.status_code = 302
+    redirect_video_response.headers = {"Location": "http://169.254.169.254/latest/meta-data/"}
+    redirect_video_response.is_redirect = True
+
+    out_path = str(tmp_path / "out.mp4")
+
+    with patch("src.models.deevid.requests.post", side_effect=[upload_response, submit_response]), \
+         patch("src.models.deevid.requests.get", side_effect=[image_bytes_response, status_response, redirect_video_response]) as mock_get, \
+         patch("src.models.deevid.time.sleep", return_value=None), \
+         patch(
+             "src.models.deevid.resolve_media_input",
+             return_value=MagicMock(value="https://example.com/input.png"),
+         ), \
+         patch("src.models.deevid.open", create=True):
+        with pytest.raises(RuntimeError):
+            model.generate(
+                prompt="a cat walking",
+                output_path=out_path,
+                img_url="https://example.com/input.png",
+                duration=5,
+            )
+
+    last_call_kwargs = mock_get.call_args_list[-1].kwargs
+    assert last_call_kwargs.get("allow_redirects") is False

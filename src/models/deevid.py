@@ -100,7 +100,13 @@ class DeeVidModel(VideoGenModel):
         """Download the resolved image and re-upload it to DeeVid's own
         file-upload endpoint, returning the userImageId the submit API needs."""
         _validate_outbound_url(image_url)
-        image_bytes = requests.get(image_url, timeout=60).content
+        image_resp = requests.get(image_url, timeout=60, allow_redirects=False)
+        if image_resp.is_redirect or 300 <= image_resp.status_code < 400:
+            raise RuntimeError(
+                f"Refusing to follow redirect from {image_url} (SSRF protection); "
+                "if this URL legitimately requires a redirect, resolve it manually first"
+            )
+        image_bytes = image_resp.content
         upload_url = f"{base_url}/file-upload/upload/image"
         resp = requests.post(
             upload_url,
@@ -182,7 +188,13 @@ class DeeVidModel(VideoGenModel):
                 if not video_url:
                     raise RuntimeError(f"DeeVid task {task_id} succeeded but has no resultVideoUrl: {status_data}")
                 _validate_outbound_url(video_url)
-                video_content = requests.get(video_url, timeout=120).content
+                video_resp = requests.get(video_url, timeout=120, allow_redirects=False)
+                if video_resp.is_redirect or 300 <= video_resp.status_code < 400:
+                    raise RuntimeError(
+                        f"Refusing to follow redirect from {video_url} (SSRF protection); "
+                        "if this URL legitimately requires a redirect, resolve it manually first"
+                    )
+                video_content = video_resp.content
                 os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
                 with open(output_path, "wb") as f:
                     f.write(video_content)
