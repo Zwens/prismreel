@@ -45,6 +45,7 @@
 - [**✅ save_to_library()未依media_type分流，video輸出(dance換裝)硬塞image_url造成破圖，已修復部署+舊資料backfill（2026-09-17）**](feedback_library_video_asset_image_url_misroute_2026-09-17.md) — commit`51341d6`；Prop model原生已有video_url欄位但create_library_asset()從未填入；前端AssetLibraryPage/AssetInspector補<video>fallback；改library_assets.json這類pipeline singleton持久化檔須配docker restart才生效
 
 ## AI影片生成 API gotcha
+- [**🔴 新增影片生成provider除了model catalog YAML+adapter+service.py dispatch，還要碰provider_media.py的硬編碼白名單**](feedback_new_video_provider_must_register_provider_media_dispatch_2026-09-21.md) — 2026-09-21 DeeVid整合規劃時發現；`_resolve_vendor_url_mode()`對mode字串是寫死if/elif判斷，只註冊provider_registry.py的family不夠，沒補分支會拋`Unsupported provider media input mode`
 - [**🔴 CF edge cache會卡住部署視窗內的404，源站已修好仍持續破圖**](feedback_cf_edge_cache_stale_404_during_deploy_window.md) — 判斷方法+CF Dashboard自訂清除SOP；排查「檔案明明存在卻404」優先比對此案例
 - [**🔴 claude-in-chrome連續fetch+Blob下載2-3次後渲染器會凍結，需單張逐一執行**](feedback_browser_blob_download_freezes_renderer_after_few_calls_2026-09-15.md) — 根因未查證，僅找到迂迴解法；批量抓縮圖/附件時工具呼叫數與張數1:1，量大時先評估是否可行
 - [**Seedance官方Digital Character Library整合技術參考**](reference_seedance_real_person_face_restriction_and_asset_library.md) — 不需企業認證的官方數位角色庫，asset://<asset_id>直通image_url.url、真實API呼叫已驗證成功生成影片；企業認證+自有虛構角色路徑仍待公司驗證中，見全文「已確認可行路徑」章節
