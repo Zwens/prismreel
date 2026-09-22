@@ -120,6 +120,19 @@ export async function getAllUsersUsage(): Promise<{ user_id: string; summary: Us
     return res.data;
 }
 
+export type DeeVidCredits = {
+    used: number;
+    remaining: number;
+    total: number;
+    period_start: string;
+    period_end: string;
+};
+
+export async function getDeeVidCredits(): Promise<DeeVidCredits> {
+    const res = await axios.get(`${API_URL}/usage/deevid-credits`);
+    return res.data;
+}
+
 export type ProviderMode = "dashscope" | "vendor";
 
 /**

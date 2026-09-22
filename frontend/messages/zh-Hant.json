@@ -2304,6 +2304,10 @@
     "costEstimateNote": "費用為依官方公開價目表估算，可能與實際賬單有出入。",
     "noCostAvailable": "—",
     "loading": "載入中...",
-    "backToSettings": "返回設定"
+    "backToSettings": "返回設定",
+    "deevidCreditsTitle": "DeeVid 額度",
+    "deevidCreditsUsed": "已用 {used} / {total} 點",
+    "deevidCreditsRemaining": "剩餘 {remaining} 點",
+    "deevidCreditsPeriod": "本期：{start} ～ {end}"
   }
 }

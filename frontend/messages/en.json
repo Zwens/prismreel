@@ -2304,6 +2304,10 @@
     "costEstimateNote": "Costs are estimates based on published pricing and may not reflect your exact bill.",
     "noCostAvailable": "—",
     "loading": "Loading...",
-    "backToSettings": "Back to Settings"
+    "backToSettings": "Back to Settings",
+    "deevidCreditsTitle": "DeeVid Credits",
+    "deevidCreditsUsed": "{used} / {total} points used",
+    "deevidCreditsRemaining": "{remaining} points remaining",
+    "deevidCreditsPeriod": "Current cycle: {start} – {end}"
   }
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { getMyUsage, type UsageSummary } from "@/lib/api";
+import { getMyUsage, getDeeVidCredits, type UsageSummary, type DeeVidCredits } from "@/lib/api";
 
 function UsageTable({ summary, kind, title, showCost, showSpec }: { summary: UsageSummary; kind: string; title: string; showCost: boolean; showSpec: boolean }) {
     const t = useTranslations("usage");
@@ -55,16 +55,48 @@ function UsageTable({ summary, kind, title, showCost, showSpec }: { summary: Usa
     );
 }
 
+function DeeVidCreditsCard({ credits }: { credits: DeeVidCredits }) {
+    const t = useTranslations("usage");
+    const pct = credits.total > 0 ? Math.min(100, (credits.used / credits.total) * 100) : 0;
+
+    return (
+        <div className="glass-panel atelier-card p-6 mb-6">
+            <h2 className="text-lg font-display mb-3">{t("deevidCreditsTitle")}</h2>
+            <div className="w-full h-2 rounded-full bg-surface-inset overflow-hidden mb-2">
+                <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+            </div>
+            <p className="text-sm text-text-secondary">
+                {t("deevidCreditsUsed", { used: credits.used, total: credits.total })}
+            </p>
+            <p className="text-sm text-text-secondary">
+                {t("deevidCreditsRemaining", { remaining: credits.remaining })}
+            </p>
+            <p className="text-xs text-text-muted mt-1">
+                {t("deevidCreditsPeriod", { start: credits.period_start, end: credits.period_end })}
+            </p>
+        </div>
+    );
+}
+
 export default function UsagePage() {
     const t = useTranslations("usage");
     const router = useRouter();
     const [summary, setSummary] = useState<UsageSummary | null>(null);
+    const [deevidCredits, setDeevidCredits] = useState<DeeVidCredits | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        getMyUsage()
-            .then((data) => setSummary(data.summary))
-            .catch(() => router.push("/"))
+        Promise.allSettled([getMyUsage(), getDeeVidCredits()])
+            .then(([usageResult, creditsResult]) => {
+                if (usageResult.status === "fulfilled") {
+                    setSummary(usageResult.value.summary);
+                } else {
+                    router.push("/");
+                }
+                if (creditsResult.status === "fulfilled") {
+                    setDeevidCredits(creditsResult.value);
+                }
+            })
             .finally(() => setLoading(false));
     }, [router]);
 
@@ -86,6 +118,7 @@ export default function UsagePage() {
                     </button>
                 </div>
                 <p className="text-xs text-text-muted">{t("costEstimateNote")}</p>
+                {deevidCredits && <DeeVidCreditsCard credits={deevidCredits} />}
                 {summary && (
                     <>
                         <UsageTable summary={summary} kind="llm" title={t("llmSection")} showCost={true} showSpec={false} />
