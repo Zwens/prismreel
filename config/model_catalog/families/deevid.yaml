@@ -1,0 +1,64 @@
+family: deevid
+display_name: DeeVid
+provider: deevid
+routing_prefixes:
+  - deevid
+supported_backends:
+  - vendor
+default_backend: vendor
+credential_sources:
+  vendor:
+    - DEEVID_API_KEY
+supported_modalities:
+  - i2v
+transport:
+  image_input_mode:
+    vendor: deevid_vendor_image_url
+  audio_input_mode: {}
+  reference_video_input_mode: {}
+docs:
+  official_snapshot_ids:
+    - deevid/2026-09-21
+models:
+  - id: deevid/quality-v4.0
+    display_name: DeeVid Quality V4.0
+    description: "DeeVid Quality V4.0 — image-to-video, 720p fixed, 600 credits/cycle quota (resets on the 20th)"
+    status: active
+    release_stage: stable
+    runtime:
+      vendor:
+        gateway: deevid
+        api_model_id: "Quality V4.0"
+    docs:
+      context_hub_doc_ids:
+        - deevid/vendor-api
+    modes:
+      i2v:
+        legacy_id: deevid-quality-v4-0-i2v
+        display_name: DeeVid Quality V4.0 I2V
+        description: Image-to-video with a monthly credit quota (600 pts, resets on the 20th)
+        capabilities: [i2v]
+        runtime:
+        ui:
+          selection_group: i2v
+          visible_in: [video_sidebar]
+          order: 80
+          badges: [new]
+        duration:
+          type: slider
+          min: 4
+          max: 15
+          step: 1
+          default: 5
+        params:
+          resolution:
+            options: [720p]
+            default: 720p
+          seed: false
+          negativePrompt: false
+          promptExtend: false
+          watermark: false
+        inputs:
+          reference_images:
+            max: 1
+            reference_type: image

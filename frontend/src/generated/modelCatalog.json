@@ -1,6 +1,7 @@
 {
   "compat": {
     "legacy_model_ids": {
+      "deevid-quality-v4-0-i2v": "deevid/quality-v4.0#i2v",
       "gemini-3-pro-image": "gemini/gemini-3-pro-image#image",
       "gemini-3.1-flash-image": "gemini/gemini-3.1-flash-image#image",
       "gemini-3.1-flash-lite-image": "gemini/gemini-3.1-flash-lite-image#image",
@@ -45,6 +46,42 @@
     }
   },
   "families": {
+    "deevid": {
+      "backend_env_key": null,
+      "credential_sources": {
+        "vendor": [
+          "DEEVID_API_KEY"
+        ]
+      },
+      "default_backend": "vendor",
+      "display_name": "DeeVid",
+      "docs": {
+        "official_snapshot_ids": [
+          "deevid/2026-09-21"
+        ]
+      },
+      "family": "deevid",
+      "models": [
+        "deevid-quality-v4-0-i2v"
+      ],
+      "provider": "deevid",
+      "routing_prefixes": [
+        "deevid"
+      ],
+      "supported_backends": [
+        "vendor"
+      ],
+      "supported_modalities": [
+        "i2v"
+      ],
+      "transport": {
+        "audio_input_mode": {},
+        "image_input_mode": {
+          "vendor": "deevid_vendor_image_url"
+        },
+        "reference_video_input_mode": {}
+      }
+    },
     "gemini": {
       "backend_env_key": null,
       "credential_sources": {
@@ -237,6 +274,58 @@
     }
   },
   "model_lines": {
+    "deevid/quality-v4.0": {
+      "backend_env_key": null,
+      "credential_sources": {
+        "vendor": [
+          "DEEVID_API_KEY"
+        ]
+      },
+      "default_backend": "vendor",
+      "description": "DeeVid Quality V4.0 — image-to-video, 720p fixed, 600 credits/cycle quota (resets on the 20th)",
+      "display_name": "DeeVid Quality V4.0",
+      "docs": {
+        "context_hub_doc_ids": [
+          "deevid/vendor-api"
+        ],
+        "official_snapshot_ids": [
+          "deevid/2026-09-21"
+        ]
+      },
+      "family": "deevid",
+      "id": "deevid/quality-v4.0",
+      "legacy_model_ids": [
+        "deevid-quality-v4-0-i2v"
+      ],
+      "modes": [
+        "deevid/quality-v4.0#i2v"
+      ],
+      "provider": "deevid",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "deevid"
+      ],
+      "runtime": {
+        "vendor": {
+          "api_model_id": "Quality V4.0",
+          "gateway": "deevid"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "vendor"
+      ],
+      "supported_modalities": [
+        "i2v"
+      ],
+      "transport": {
+        "audio_input_mode": {},
+        "image_input_mode": {
+          "vendor": "deevid_vendor_image_url"
+        },
+        "reference_video_input_mode": {}
+      }
+    },
     "gemini/gemini-3-pro-image": {
       "backend_env_key": null,
       "credential_sources": {
@@ -1018,6 +1107,84 @@
     }
   },
   "models": {
+    "deevid-quality-v4-0-i2v": {
+      "backend_env_key": null,
+      "capabilities": [
+        "i2v"
+      ],
+      "credential_sources": {
+        "vendor": [
+          "DEEVID_API_KEY"
+        ]
+      },
+      "default_backend": "vendor",
+      "description": "Image-to-video with a monthly credit quota (600 pts, resets on the 20th)",
+      "display_name": "DeeVid Quality V4.0 I2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "deevid/vendor-api"
+        ],
+        "official_snapshot_ids": [
+          "deevid/2026-09-21"
+        ]
+      },
+      "duration": {
+        "allow_auto": false,
+        "default": 5,
+        "max": 15,
+        "min": 4,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "deevid",
+      "id": "deevid-quality-v4-0-i2v",
+      "inputs": {
+        "reference_images": {
+          "max": 1,
+          "reference_type": "image"
+        }
+      },
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "720p",
+          "options": [
+            "720p"
+          ]
+        },
+        "seed": false,
+        "watermark": false
+      },
+      "pricing": null,
+      "provider": "deevid",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "deevid"
+      ],
+      "status": "active",
+      "supported_backends": [
+        "vendor"
+      ],
+      "transport": {
+        "audio_input_mode": {},
+        "image_input_mode": {
+          "vendor": "deevid_vendor_image_url"
+        },
+        "reference_video_input_mode": {}
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 80,
+        "recommended": false,
+        "selection_group": "i2v",
+        "visible_in": [
+          "video_sidebar"
+        ]
+      }
+    },
     "gemini-3-pro-image": {
       "backend_env_key": null,
       "capabilities": [
@@ -3712,6 +3879,93 @@
     }
   },
   "modes": {
+    "deevid/quality-v4.0#i2v": {
+      "backend_env_key": null,
+      "capabilities": [
+        "i2v"
+      ],
+      "credential_sources": {
+        "vendor": [
+          "DEEVID_API_KEY"
+        ]
+      },
+      "default_backend": "vendor",
+      "description": "Image-to-video with a monthly credit quota (600 pts, resets on the 20th)",
+      "display_name": "DeeVid Quality V4.0 I2V",
+      "docs": {
+        "context_hub_doc_ids": [
+          "deevid/vendor-api"
+        ],
+        "official_snapshot_ids": [
+          "deevid/2026-09-21"
+        ]
+      },
+      "duration": {
+        "allow_auto": false,
+        "default": 5,
+        "max": 15,
+        "min": 4,
+        "step": 1,
+        "type": "slider"
+      },
+      "family": "deevid",
+      "id": "deevid/quality-v4.0#i2v",
+      "inputs": {
+        "reference_images": {
+          "max": 1,
+          "reference_type": "image"
+        }
+      },
+      "legacy_model_id": "deevid-quality-v4-0-i2v",
+      "mode": "i2v",
+      "model_line_id": "deevid/quality-v4.0",
+      "params": {
+        "negativePrompt": false,
+        "promptExtend": false,
+        "resolution": {
+          "default": "720p",
+          "options": [
+            "720p"
+          ]
+        },
+        "seed": false,
+        "watermark": false
+      },
+      "pricing": null,
+      "provider": "deevid",
+      "release_stage": "stable",
+      "routing_prefixes": [
+        "deevid"
+      ],
+      "runtime": {
+        "vendor": {
+          "api_model_id": "Quality V4.0",
+          "gateway": "deevid"
+        }
+      },
+      "status": "active",
+      "supported_backends": [
+        "vendor"
+      ],
+      "transport": {
+        "audio_input_mode": {},
+        "image_input_mode": {
+          "vendor": "deevid_vendor_image_url"
+        },
+        "reference_video_input_mode": {}
+      },
+      "ui": {
+        "badges": [
+          "new"
+        ],
+        "order": 80,
+        "recommended": false,
+        "selection_group": "i2v",
+        "visible_in": [
+          "video_sidebar"
+        ]
+      }
+    },
     "gemini/gemini-3-pro-image#image": {
       "backend_env_key": null,
       "capabilities": [
