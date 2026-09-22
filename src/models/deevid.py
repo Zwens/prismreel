@@ -14,10 +14,13 @@ docs/superpowers/plans/2026-09-21-deevid-quality-v4-7-credit-quota.md):
   status -> GET  /task/status?taskId=<id>
 """
 
+import ipaddress
 import logging
 import os
+import socket
 import time
 from typing import Any, Dict, Optional, Tuple
+from urllib.parse import urlparse
 
 import requests
 
@@ -32,6 +35,40 @@ MODEL_NAME = "Quality V4.0"
 RESOLUTION = "720p"
 MIN_DURATION = 4
 MAX_DURATION = 15
+
+
+def _validate_outbound_url(url: str) -> None:
+    """Reject URLs that could be used to make this server issue an SSRF
+    request to internal/private infrastructure (e.g. cloud metadata
+    endpoints, localhost, or private network ranges).
+
+    This is input validation only -- it does not defend against DNS
+    rebinding (resolving to a public IP at check time, then to a private
+    IP at request time), which is a separate, more advanced threat model
+    intentionally out of scope here.
+    """
+    parsed = urlparse(url)
+
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Rejected outbound URL (unsupported scheme {parsed.scheme!r}): {url}")
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError(f"Rejected outbound URL (no hostname): {url}")
+
+    if hostname.lower() == "localhost":
+        raise ValueError(f"Rejected outbound URL (localhost): {url}")
+
+    try:
+        resolved_ip = socket.gethostbyname(hostname)
+    except socket.gaierror as exc:
+        raise ValueError(f"Rejected outbound URL (cannot resolve host {hostname!r}): {url}") from exc
+
+    ip = ipaddress.ip_address(resolved_ip)
+    if ip.is_private or ip.is_loopback or ip.is_link_local:
+        raise ValueError(
+            f"Rejected outbound URL (host {hostname!r} resolves to internal address {resolved_ip}): {url}"
+        )
 
 
 class DeeVidModel(VideoGenModel):
@@ -62,6 +99,7 @@ class DeeVidModel(VideoGenModel):
     def _upload_image(self, base_url: str, image_url: str) -> int:
         """Download the resolved image and re-upload it to DeeVid's own
         file-upload endpoint, returning the userImageId the submit API needs."""
+        _validate_outbound_url(image_url)
         image_bytes = requests.get(image_url, timeout=60).content
         upload_url = f"{base_url}/file-upload/upload/image"
         resp = requests.post(
@@ -143,6 +181,7 @@ class DeeVidModel(VideoGenModel):
                 video_url = status_data.get("resultVideoUrl")
                 if not video_url:
                     raise RuntimeError(f"DeeVid task {task_id} succeeded but has no resultVideoUrl: {status_data}")
+                _validate_outbound_url(video_url)
                 video_content = requests.get(video_url, timeout=120).content
                 os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
                 with open(output_path, "wb") as f:

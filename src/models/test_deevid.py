@@ -1,4 +1,74 @@
+import pytest
 from unittest.mock import patch, MagicMock
+
+
+def test_validate_outbound_url_allows_public_https(monkeypatch):
+    monkeypatch.setenv("DEEVID_API_KEY", "test-key")
+    from src.models.deevid import _validate_outbound_url
+
+    _validate_outbound_url("https://cdn.deevid.ai/xxx.png")
+
+
+def test_validate_outbound_url_blocks_link_local_metadata(monkeypatch):
+    monkeypatch.setenv("DEEVID_API_KEY", "test-key")
+    from src.models.deevid import _validate_outbound_url
+
+    with pytest.raises(ValueError):
+        _validate_outbound_url("http://169.254.169.254/latest/meta-data/")
+
+
+def test_validate_outbound_url_blocks_localhost(monkeypatch):
+    monkeypatch.setenv("DEEVID_API_KEY", "test-key")
+    from src.models.deevid import _validate_outbound_url
+
+    with pytest.raises(ValueError):
+        _validate_outbound_url("http://localhost:8080/xxx")
+
+
+def test_validate_outbound_url_blocks_loopback_ip(monkeypatch):
+    monkeypatch.setenv("DEEVID_API_KEY", "test-key")
+    from src.models.deevid import _validate_outbound_url
+
+    with pytest.raises(ValueError):
+        _validate_outbound_url("http://127.0.0.1/xxx")
+
+
+def test_validate_outbound_url_blocks_private_network(monkeypatch):
+    monkeypatch.setenv("DEEVID_API_KEY", "test-key")
+    from src.models.deevid import _validate_outbound_url
+
+    with pytest.raises(ValueError):
+        _validate_outbound_url("http://192.168.1.1/xxx")
+
+
+def test_validate_outbound_url_blocks_non_http_scheme(monkeypatch):
+    monkeypatch.setenv("DEEVID_API_KEY", "test-key")
+    from src.models.deevid import _validate_outbound_url
+
+    with pytest.raises(ValueError):
+        _validate_outbound_url("file:///etc/passwd")
+
+
+def test_generate_raises_before_any_request_when_image_url_is_internal(monkeypatch):
+    monkeypatch.setenv("DEEVID_API_KEY", "test-key")
+    from src.models.deevid import DeeVidModel
+
+    model = DeeVidModel({})
+
+    with patch("src.models.deevid.requests.get") as mock_get, \
+         patch("src.models.deevid.requests.post") as mock_post, \
+         patch(
+             "src.models.deevid.resolve_media_input",
+             return_value=MagicMock(value="http://10.0.0.1/evil.png"),
+         ):
+        with pytest.raises(ValueError):
+            model.generate(
+                prompt="x", output_path="/tmp/out.mp4",
+                img_url="http://10.0.0.1/evil.png", duration=5,
+            )
+
+    mock_get.assert_not_called()
+    mock_post.assert_not_called()
 
 
 def test_submit_and_poll_success(monkeypatch, tmp_path):
