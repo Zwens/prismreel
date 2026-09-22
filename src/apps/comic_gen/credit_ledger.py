@@ -143,6 +143,41 @@ def release_reservation(reservation_id: str) -> None:
         conn.close()
 
 
+def record_manual_adjustment(points: int, note: str, now_ts: Optional[float] = None) -> str:
+    """Record a manual correction for quota consumed outside this system
+    (e.g. a generation run directly through DeeVid's own dashboard, which
+    this system has no way to observe automatically since DeeVid's API
+    exposes no balance-query endpoint).
+
+    Unlike try_reserve_points, this always writes the full requested
+    ``points`` even if it would push the period's usage past the 600-point
+    cap -- the number represents what DeeVid's own dashboard says was
+    really spent, not an estimate this system is choosing to reserve, so it
+    must be recorded as-is. get_remaining_points()'s existing clamp-to-zero
+    logic keeps the displayed remaining value from going negative.
+
+    Returns the new ledger row's id. Raises ValueError for a non-positive
+    points value (a manual correction should never *increase* the period's
+    usage total by exactly a granting a negative charge; use a different
+    mechanism if crediting a refund is ever needed)."""
+    if points <= 0:
+        raise ValueError("points must be positive")
+
+    now_ts = time.time() if now_ts is None else now_ts
+    adjustment_id = str(uuid.uuid4())
+    conn = get_connection()
+    try:
+        conn.execute(
+            "INSERT INTO credit_ledger (id, provider, points, duration, task_id, created_at) "
+            "VALUES (?, 'deevid', ?, 0, ?, ?)",
+            (adjustment_id, points, f"manual-adjustment: {note}", now_ts),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    return adjustment_id
+
+
 def finalize_reservation(reservation_id: str, task_id: Optional[str]) -> None:
     """Attach the real provider task_id to a reservation once the API call
     that consumed it has succeeded. Does not change the reserved points.

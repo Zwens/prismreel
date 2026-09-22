@@ -208,6 +208,34 @@ export default function SettingsPage() {
   const [systemLoading, setSystemLoading] = useState(false);
   const [systemChecked, setSystemChecked] = useState(false);
   const [copiedPath, setCopiedPath] = useState<string | null>(null);
+  const [deevidAdjustPoints, setDeevidAdjustPoints] = useState("");
+  const [deevidAdjustNote, setDeevidAdjustNote] = useState("");
+  const [deevidAdjustSaving, setDeevidAdjustSaving] = useState(false);
+
+  const handleDeevidAdjust = useCallback(async () => {
+    const points = Number(deevidAdjustPoints);
+    if (!Number.isFinite(points) || points <= 0) {
+      toast.error(t("deevidAdjustInvalidPoints"));
+      return;
+    }
+    setDeevidAdjustSaving(true);
+    try {
+      const { adjustDeeVidCredits } = await import("@/lib/api");
+      const result = await adjustDeeVidCredits(points, deevidAdjustNote);
+      toast.success(t("deevidAdjustSuccess", { remaining: result.remaining }));
+      setDeevidAdjustPoints("");
+      setDeevidAdjustNote("");
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 403) {
+        toast.error(t("deevidAdjustForbidden"));
+      } else {
+        toast.error(t("deevidAdjustFailed"));
+      }
+    } finally {
+      setDeevidAdjustSaving(false);
+    }
+  }, [deevidAdjustPoints, deevidAdjustNote, t]);
 
   const loadConfig = useCallback(async () => {
     setLoading(true);
@@ -695,6 +723,35 @@ export default function SettingsPage() {
           <FormRow label="DeeVid" hint={t("deevidHint")}>
             <FieldLabel>DEEVID_API_KEY</FieldLabel>
             <KeyField value={config.DEEVID_API_KEY} onChange={(v) => handleChange("DEEVID_API_KEY", v)} placeholder={t("deevidApiKeyPlaceholder")} />
+            <div className="mt-3 pt-3 border-t border-glass-border">
+              <FieldLabel>{t("deevidAdjustLabel")}</FieldLabel>
+              <p className="text-xs text-text-muted mb-2">{t("deevidAdjustHint")}</p>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  value={deevidAdjustPoints}
+                  onChange={(e) => setDeevidAdjustPoints(e.target.value)}
+                  placeholder={t("deevidAdjustPointsPlaceholder")}
+                  className="w-28 rounded-md border border-glass-border bg-glass px-3 py-2 text-sm text-foreground"
+                />
+                <input
+                  type="text"
+                  value={deevidAdjustNote}
+                  onChange={(e) => setDeevidAdjustNote(e.target.value)}
+                  placeholder={t("deevidAdjustNotePlaceholder")}
+                  className="flex-1 rounded-md border border-glass-border bg-glass px-3 py-2 text-sm text-foreground"
+                />
+                <button
+                  type="button"
+                  onClick={handleDeevidAdjust}
+                  disabled={deevidAdjustSaving}
+                  className="shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                >
+                  {deevidAdjustSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : t("deevidAdjustSubmit")}
+                </button>
+              </div>
+            </div>
           </FormRow>
 
           {/* BytePlus / Volcano Ark — used by the whole Seedance family. */}

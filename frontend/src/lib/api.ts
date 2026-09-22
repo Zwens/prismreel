@@ -133,6 +133,11 @@ export async function getDeeVidCredits(): Promise<DeeVidCredits> {
     return res.data;
 }
 
+export async function adjustDeeVidCredits(points: number, note: string): Promise<DeeVidCredits> {
+    const res = await axios.post(`${API_URL}/usage/deevid-credits/adjust`, { points, note });
+    return res.data;
+}
+
 export type ProviderMode = "dashscope" | "vendor";
 
 /**

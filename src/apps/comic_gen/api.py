@@ -384,6 +384,41 @@ def get_deevid_credits(user=Depends(auth.require_login)):
     }
 
 
+class DeeVidManualAdjustmentRequest(BaseModel):
+    points: int = Field(gt=0)
+    note: str = ""
+
+
+@app.post("/usage/deevid-credits/adjust")
+def adjust_deevid_credits(
+    body: DeeVidManualAdjustmentRequest, _admin=Depends(auth.require_admin)
+):
+    """Manually record quota consumed outside this system (e.g. a generation
+    run directly through DeeVid's own dashboard) since DeeVid's API exposes
+    no balance-query endpoint this system could otherwise reconcile against.
+    Admin-only: the DeeVid quota is a single global allowance shared across
+    all Prismreel accounts, not per-user, so letting any logged-in user
+    adjust it would let one user's manual entry corrupt everyone else's
+    displayed remaining balance."""
+    from datetime import datetime, timezone
+    from . import credit_ledger
+
+    now_ts = time.time()
+    credit_ledger.record_manual_adjustment(points=body.points, note=body.note, now_ts=now_ts)
+
+    start, end = credit_ledger.current_period(now_ts)
+    remaining = credit_ledger.get_remaining_points(now_ts)
+    used = credit_ledger.TOTAL_POINTS_PER_PERIOD - remaining
+
+    return {
+        "used": used,
+        "remaining": remaining,
+        "total": credit_ledger.TOTAL_POINTS_PER_PERIOD,
+        "period_start": datetime.fromtimestamp(start, tz=timezone.utc).strftime("%Y-%m-%d"),
+        "period_end": datetime.fromtimestamp(end, tz=timezone.utc).strftime("%Y-%m-%d"),
+    }
+
+
 @app.get("/admin/usage")
 def admin_get_all_usage(_admin=Depends(auth.require_admin)):
     from . import usage_repo

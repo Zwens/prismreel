@@ -208,3 +208,63 @@ def test_try_reserve_points_concurrent_only_one_wins():
     assert len(successes) == 1, f"expected exactly one winner, got {results}"
     assert len(failures) == 1
     assert credit_ledger.get_remaining_points(now) == 200
+
+
+def test_record_manual_adjustment_reduces_remaining():
+    from src.apps.comic_gen import credit_ledger
+
+    now = _ts(2026, 9, 25)
+    adjustment_id = credit_ledger.record_manual_adjustment(
+        points=10, note="DeeVid官網直接消耗，非系統呼叫", now_ts=now
+    )
+
+    assert isinstance(adjustment_id, str)
+    assert credit_ledger.get_remaining_points(now) == 590
+
+
+def test_record_manual_adjustment_writes_sentinel_task_id():
+    from src.apps.comic_gen import credit_ledger, auth_db
+
+    now = _ts(2026, 9, 25)
+    adjustment_id = credit_ledger.record_manual_adjustment(
+        points=10, note="test note", now_ts=now
+    )
+
+    conn = auth_db.get_connection()
+    row = conn.execute(
+        "SELECT task_id, points, duration FROM credit_ledger WHERE id = ?",
+        (adjustment_id,),
+    ).fetchone()
+    conn.close()
+
+    assert row["task_id"] == "manual-adjustment: test note"
+    assert row["points"] == 10
+    assert row["duration"] == 0
+
+
+def test_record_manual_adjustment_rejects_non_positive_points():
+    from src.apps.comic_gen import credit_ledger
+
+    now = _ts(2026, 9, 25)
+    with pytest.raises(ValueError):
+        credit_ledger.record_manual_adjustment(points=0, note="x", now_ts=now)
+    with pytest.raises(ValueError):
+        credit_ledger.record_manual_adjustment(points=-5, note="x", now_ts=now)
+
+    # 未寫入任何記錄
+    assert credit_ledger.get_remaining_points(now) == 600
+
+
+def test_record_manual_adjustment_can_exceed_remaining_and_clamps_to_zero():
+    """手動校正代表「官方後台真實已消耗」，即使超過本地估算的剩餘額度
+    也必須如實記錄（不能因為本地算出來不夠就拒絕），get_remaining_points
+    本身既有的 clamp-to-zero 邏輯會確保不會顯示負數。"""
+    from src.apps.comic_gen import credit_ledger
+
+    now = _ts(2026, 9, 25)
+    adjustment_id = credit_ledger.record_manual_adjustment(
+        points=700, note="超過本期剩餘額度的校正", now_ts=now
+    )
+
+    assert adjustment_id is not None
+    assert credit_ledger.get_remaining_points(now) == 0
