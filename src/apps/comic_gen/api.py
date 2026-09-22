@@ -365,6 +365,25 @@ def get_my_usage(user=Depends(auth.require_login)):
     return {"user_id": user.id, "summary": usage_repo.get_user_usage_summary(user.id)}
 
 
+@app.get("/usage/deevid-credits")
+def get_deevid_credits(user=Depends(auth.require_login)):
+    from datetime import datetime, timezone
+    from . import credit_ledger
+
+    now_ts = time.time()
+    start, end = credit_ledger.current_period(now_ts)
+    remaining = credit_ledger.get_remaining_points(now_ts)
+    used = credit_ledger.TOTAL_POINTS_PER_PERIOD - remaining
+
+    return {
+        "used": used,
+        "remaining": remaining,
+        "total": credit_ledger.TOTAL_POINTS_PER_PERIOD,
+        "period_start": datetime.fromtimestamp(start, tz=timezone.utc).strftime("%Y-%m-%d"),
+        "period_end": datetime.fromtimestamp(end, tz=timezone.utc).strftime("%Y-%m-%d"),
+    }
+
+
 @app.get("/admin/usage")
 def admin_get_all_usage(_admin=Depends(auth.require_admin)):
     from . import usage_repo
