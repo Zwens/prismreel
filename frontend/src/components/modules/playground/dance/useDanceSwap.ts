@@ -41,6 +41,9 @@ const SHEET_MODEL = 'gemini-3-pro-image';
 export const COMPOSE_MODEL_OPTIONS = ['seedance-2.5-v2v', 'seedance-2.0-v2v'] as const;
 export type ComposeModel = (typeof COMPOSE_MODEL_OPTIONS)[number];
 const DEFAULT_COMPOSE_MODEL: ComposeModel = 'seedance-2.5-v2v';
+const ARK_ASSET_ID_STORAGE_KEY = 'prismreel.dance.arkAssetId';
+const ARK_ASSET_ID_PATTERN = /^asset-[A-Za-z0-9-]+$/;
+export const isValidArkAssetId = (id: string): boolean => ARK_ASSET_ID_PATTERN.test(id.trim());
 
 export type StepState = 'idle' | 'running' | 'done' | 'error';
 
@@ -96,6 +99,10 @@ export interface DanceSwapState {
   composePrompt: string;
   composePromptDirty: boolean;
   useSheet: boolean;
+  /** BytePlus portrait-library asset id (`asset-…`). When valid it replaces
+   *  the sheet as the reference image, sent as `asset://<id>` so Ark resolves
+   *  the authorised face server-side instead of moderating an uploaded one. */
+  arkAssetId: string;
   resolution: string;
   /** 'adaptive' follows the motion clip's own ratio; anything else is an
    *  explicit override. task_type 'reference' has no ratio constraint, so
@@ -134,6 +141,7 @@ const INITIAL: DanceSwapState = {
   composePrompt: '',
   composePromptDirty: false,
   useSheet: true,
+  arkAssetId: '',
   resolution: '720p',
   aspectRatio: 'adaptive',
   duration: null,
@@ -167,6 +175,18 @@ function firstOutput(gen: PlaygroundGenerationResponse): StepResult | null {
 
 export function useDanceSwap() {
   const [state, setState] = useState<DanceSwapState>(INITIAL);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(ARK_ASSET_ID_STORAGE_KEY);
+      if (saved) setState((prev) => (prev.arkAssetId ? prev : { ...prev, arkAssetId: saved }));
+    } catch { /* storage unavailable */ }
+  }, []);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(ARK_ASSET_ID_STORAGE_KEY, state.arkAssetId);
+    } catch { /* storage unavailable */ }
+  }, [state.arkAssetId]);
   const pollers = useRef<Set<ReturnType<typeof setInterval>>>(new Set());
 
   const patch = useCallback((p: Partial<DanceSwapState>) => {
@@ -416,7 +436,8 @@ export function useDanceSwap() {
   // -- step 3 -----------------------------------------------------------
 
   /** The prompt the compose step will send, unless the user has edited it. */
-  const suggestedPrompt = state.useSheet && state.sheet
+  const arkAssetRef = isValidArkAssetId(state.arkAssetId) ? `asset://${state.arkAssetId.trim()}` : null;
+  const suggestedPrompt = arkAssetRef || (state.useSheet && state.sheet)
     ? buildComposePrompt({ outfit: state.outfit, scene: state.scene, hasSheet: true })
     : buildOutfitOnlyPrompt({ outfit: state.outfit, scene: state.scene });
 
@@ -430,7 +451,7 @@ export function useDanceSwap() {
   // the main prompt instead of a negative_prompt param. Computed here (not
   // just inside compose()) so the UI can show the operator the exact text
   // that will be sent, instead of asking them to trust the checkbox blind.
-  const sheetInComposition = Boolean(state.useSheet && state.sheet);
+  const sheetInComposition = Boolean(!arkAssetRef && state.useSheet && state.sheet);
   const gridActiveInComposition = sheetInComposition && state.sheetHasGridOverlay;
   const excludeGridInComposition = gridActiveInComposition && state.appendGridOverlayNegative;
   const finalPrompt = [
@@ -448,7 +469,8 @@ export function useDanceSwap() {
       // input_media[0] is the motion clip; anything after it is a reference
       // image. That ordering is the contract the v2v backend path expects.
       const media = [motion];
-      if (sheetInComposition) media.push(state.sheet!.mediaPath);
+      if (arkAssetRef) media.push(arkAssetRef);
+      else if (sheetInComposition) media.push(state.sheet!.mediaPath);
 
       const gen = await runGeneration({
         mode: 'v2v',
@@ -472,7 +494,7 @@ export function useDanceSwap() {
     }
   }, [
     state.depthJob, state.danceVideoPath, state.resolution, state.aspectRatio, state.duration,
-    sheetInComposition, state.sheet, state.composeModel, finalPrompt, patch, runGeneration,
+    sheetInComposition, arkAssetRef, state.sheet, state.composeModel, finalPrompt, patch, runGeneration,
   ]);
 
   // -- library ----------------------------------------------------------

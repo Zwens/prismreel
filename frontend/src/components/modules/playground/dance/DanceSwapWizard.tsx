@@ -8,7 +8,7 @@ import {
 import { mediaUrl } from '@/lib/mediaPath';
 import { toast } from '@/store/toastStore';
 import AssetSourcePicker from '../AssetSourcePicker';
-import { useDanceSwap, COMPOSE_MODEL_OPTIONS, type StepResult } from './useDanceSwap';
+import { useDanceSwap, COMPOSE_MODEL_OPTIONS, isValidArkAssetId, type StepResult } from './useDanceSwap';
 import type { SheetStyle } from './prompts';
 import GridOverlayPicker, { gridChoiceToParams, type GridOverlayChoice, type GridOverlayColor, type GridOverlaySize } from '@/components/shared/GridOverlayPicker';
 
@@ -628,6 +628,26 @@ export default function DanceSwapWizard() {
               ? t('step3.useSheetOn')
               : t('step3.useSheetOff')}
         </p>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
+            {t('step3.arkAssetId')}
+          </span>
+          <input
+            value={state.arkAssetId}
+            onChange={(e) => patch({ arkAssetId: e.target.value.trim() })}
+            placeholder="asset-2026…"
+            spellCheck={false}
+            className="rounded-[12px] border border-border-subtle bg-surface-inset px-3 py-2.5 font-mono text-[0.75rem] text-foreground outline-none focus:border-primary"
+          />
+          <p className="font-mono text-[0.625rem] leading-relaxed text-text-muted">
+            {state.arkAssetId && !isValidArkAssetId(state.arkAssetId)
+              ? t('step3.arkAssetIdInvalid')
+              : state.arkAssetId
+                ? t('step3.arkAssetIdActive')
+                : t('step3.arkAssetIdHint')}
+          </p>
+        </label>
 
         <label className="flex flex-col gap-1.5">
           <span className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-text-muted">
